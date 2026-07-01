@@ -250,10 +250,15 @@ export function registerRoutes(httpServer: Server, app: Express) {
         natFromHorses?.country ||
         null;
 
-      // Return 404 only if stallion is nowhere at all
+      // Return 404 only if stallion is NOWHERE (no stats, no stud record, no pedigree, no children)
+      // NAD AL SHEBA, FACE TIME BOURBON e stalloni senza figli nel DB → fallback con dati disponibili
       if (!stats && !stud && !spRow && children.length === 0) {
         return res.status(404).json({ error: "Not found" });
       }
+
+      // Fallback: se non ci sono offspring (stats=null), restituisci comunque fee/farm/pedigree
+      // con flag no_offspring_data: true invece di 404
+      const no_offspring_data = !stats && children.length === 0;
 
       res.json({
         name,
@@ -264,7 +269,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
         pedigree,
         nationality,
         has_offspring_data: !!stats,
-        message: stats ? null : "Dati offspring non ancora disponibili",
+        no_offspring_data,
+        message: no_offspring_data
+          ? "Dati sugli offspring non ancora disponibili per questo stallone"
+          : stats
+          ? null
+          : "Dati offspring non ancora disponibili",
       });
     } finally {
       db.close();
