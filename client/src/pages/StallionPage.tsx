@@ -168,7 +168,6 @@ function PedigreeNode({ label, name, highlight }: { label: string; name: string 
         color: highlight ? "hsl(183 70% 65%)" : "hsl(210 8% 75%)",
         letterSpacing: "0.03em",
       }}>
-          <span style={{ fontSize: "22px", marginRight: "8px" }}>{getFlag(stallion?.nationality, name)}</span>
           {name}
         </div>
     </button>
