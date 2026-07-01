@@ -535,4 +535,39 @@ export function registerRoutes(httpServer: Server, app: Express) {
       db.close();
     }
   });
+
+  // ──────────────────────────────────────────
+  // POST /api/run-nightly — trigger manuale nightly_update.py
+  // Protetto da secret header per evitare abusi
+  // ──────────────────────────────────────────
+  app.post("/api/run-nightly", (req, res) => {
+    const secret = req.headers["x-nightly-secret"];
+    const expected = process.env.NIGHTLY_SECRET || "statippica-nightly-2026";
+    if (secret !== expected) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Avvia in background senza bloccare la risposta
+    const { spawn } = require("child_process");
+    const scriptPath = require("path").join(__dirname, "..", "nightly_update.py");
+    const child = spawn("python3", [scriptPath], {
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env },
+    });
+
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
+    child.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
+    child.on("close", (code: number) => {
+      console.log(`[NIGHTLY] exit ${code}\n${stderr.slice(-2000)}`);
+    });
+
+    res.json({
+      started: true,
+      pid: child.pid,
+      message: "nightly_update.py avviato in background",
+    });
+  });
 }
