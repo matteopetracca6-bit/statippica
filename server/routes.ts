@@ -250,112 +250,61 @@ export function registerRoutes(httpServer: Server, app: Express) {
         natFromHorses?.country ||
         null;
 
-      // Return 404 only if stallion is NOWHERE (no stats, no stud record, no pedigree, no children)
-      // NAD AL SHEBA, FACE TIME BOURBON e stalloni senza figli nel DB → fallback con dati disponibili
+      // Return 404 solo se il cavallo non esiste da nessuna parte
       if (!stats && !stud && !spRow && children.length === 0) {
         return res.status(404).json({ error: "Not found" });
       }
 
-      // Fallback: se non ci sono offspring (stats=null), restituisci comunque fee/farm/pedigree
-      // con flag no_offspring_data: true invece di 404
+      // Struttura flat compatibile con StallionPage.tsx
+      // + nuovi campi rating: grade, vp_boost, final_score
       const no_offspring_data = !stats && children.length === 0;
 
-      res.json({
-        name,
-        stats: stats || null,
-        stud: stud || null,
+      const payload = {
+        // Identificazione (flat, come si aspetta StallionPage)
+        sire:            stats?.sire            ?? name,
+        n_figli_totali:  stats?.n_figli_totali  ?? 0,
+        n_in_corsa:      stats?.n_in_corsa      ?? 0,
+        avg_score:       stats?.avg_score       ?? null,
+        grade:           stats?.grade           ?? null,      // NUOVO — voto stallone (SSS…F)
+        vp_boost:        stats?.vp_boost        ?? 0,         // NUOVO — boost VP (max +5)
+        final_score:     stats?.final_score     ?? null,      // NUOVO — punteggio finale
+        pct_top_S:       stats?.pct_top_S       ?? null,
+        avg_earnings:    stats?.avg_earnings    ?? null,
+        max_earnings:    children.length > 0
+                           ? Math.max(...children.map((c: any) => c.career_earnings ?? 0))
+                           : null,
+        avg_win_rate:    children.length > 0
+                           ? (children.reduce((s: number, c: any) => s + (c.win_rate ?? 0), 0) / children.length)
+                           : null,
+        n_SSS:           stats?.n_SSS ?? 0,
+        n_SS:            stats?.n_SS  ?? 0,
+        n_S:             stats?.n_S   ?? 0,
+        n_A:             (stats as any)?.n_A ?? 0,
+        n_B:             (stats as any)?.n_B ?? 0,
+        n_C:             (stats as any)?.n_C ?? 0,
+        n_D:             (stats as any)?.n_D ?? 0,
+        n_E:             (stats as any)?.n_E ?? 0,
+        n_F:             (stats as any)?.n_F ?? 0,
+        // Stud info
+        stud: stud ? {
+          stud_fee_eur:          stud.stud_fee_eur,
+          stud_farm:             stud.stud_farm,
+          stud_status:           stud.stud_status,
+          progeny_earnings_2024: stud.progeny_earnings_2024,
+          media_in_corsa:        stud.media_in_corsa,
+          tot_prod:              stud.tot_prod,
+        } : null,
+        // Children, distribution, pedigree
         children,
         gradeDist,
         pedigree,
         nationality,
-        has_offspring_data: !!stats,
+        // Flag utili
         no_offspring_data,
-        message: no_offspring_data
-          ? "Dati sugli offspring non ancora disponibili per questo stallone"
-          : stats
-          ? null
-          : "Dati offspring non ancora disponibili",
-      });
-    } finally {
-      db.close();
-    }
-  });
+        has_offspring_data: !!stats,
+      };
 
-      // From stallions table (stud fee, etc.)
-      const stud = db.prepare(`
-        SELECT stud_fee_eur, stud_farm, stud_status, progeny_earnings_2024,
-               media_in_corsa, tot_prod, tot_in_corsa, perc_in_corsa,
-               tot_vitt, perc_vitt
-        FROM stallions
-        WHERE name = ?
-        ORDER BY stud_fee_eur DESC
-        LIMIT 1
-      `).get(name) as any;
-
-      // Top children (performance only)
-      const children = db.prepare(`
-        SELECT name, birth_year, grade, score, career_earnings, record_career, win_rate, sire_percentile
-        FROM horse_ratings
-        WHERE sire = ? AND rating_mode = 'performance'
-        ORDER BY career_earnings DESC
-        LIMIT 20
-      `).all(name) as any[];
-
-      // Grade distribution
-      const gradeDist = db.prepare(`
-        SELECT grade, COUNT(*) as cnt
-        FROM horse_ratings
-        WHERE sire = ? AND rating_mode = 'performance'
-        GROUP BY grade
-        ORDER BY cnt DESC
-      `).all(name) as any[];
-
-      // Genealogy: sire, dam, sire_sire, sire_dam, dam_sire, dam_dam
-      // Try from horses table first (self-join), fallback to unire fields
-      const horseSelf = db.prepare(`
-        SELECT h.sire, h.dam, h.unire_sire, h.unire_dam,
-               s.sire AS sire_sire, s.dam AS sire_dam,
-               d.sire AS dam_sire, d.dam AS dam_dam,
-               s.unire_sire AS sire_unire_sire, s.unire_dam AS sire_unire_dam,
-               d.unire_sire AS dam_unire_sire, d.unire_dam AS dam_unire_dam
-        FROM horses h
-        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != ''
-        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam)) AND h.dam IS NOT NULL AND h.dam != ''
-        WHERE UPPER(TRIM(h.name)) = ?
-        LIMIT 1
-      `).get(name) as any;
-
-      // Fallback to curated international pedigree table if horse not found in horses table
-      const spRow = (!horseSelf || (!horseSelf.sire && !horseSelf.unire_sire))
-        ? db.prepare(`SELECT * FROM stallion_pedigree WHERE UPPER(TRIM(name)) = ?`).get(name) as any
-        : null;
-
-      const pedigree = (horseSelf && (horseSelf.sire || horseSelf.unire_sire)) ? {
-        sire:     horseSelf.sire     || horseSelf.unire_sire    || null,
-        dam:      horseSelf.dam      || horseSelf.unire_dam     || null,
-        sire_sire: horseSelf.sire_sire || horseSelf.sire_unire_sire || null,
-        sire_dam:  horseSelf.sire_dam  || horseSelf.sire_unire_dam  || null,
-        dam_sire:  horseSelf.dam_sire  || horseSelf.dam_unire_sire  || null,
-        dam_dam:   horseSelf.dam_dam   || horseSelf.dam_unire_dam   || null,
-      } : spRow ? {
-        sire:     spRow.sire     || null,
-        dam:      spRow.dam      || null,
-        sire_sire: spRow.sire_sire || null,
-        sire_dam:  spRow.sire_dam  || null,
-        dam_sire:  spRow.dam_sire  || null,
-        dam_dam:   spRow.dam_dam   || null,
-      } : null;
-
-      // Nationality: from stallion_pedigree or horses table
-      const natRow = db.prepare(`
-        SELECT sp.nationality FROM stallion_pedigree sp WHERE UPPER(TRIM(sp.name)) = ? LIMIT 1
-      `).get(name) as any;
-      const natFromHorses = db.prepare(`
-        SELECT h.country FROM horses h WHERE UPPER(TRIM(h.name)) = ? LIMIT 1
-      `).get(name) as any;
-      const nationality = natRow?.nationality || natFromHorses?.country || null;
-
-      res.json({ ...stats, stud: stud || null, children, gradeDist, pedigree, nationality });
+      res.json(payload);
     } finally {
       db.close();
     }
