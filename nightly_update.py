@@ -80,10 +80,26 @@ HORSE_GRADE_THRESHOLDS = [
 ]
 
 # Soglie rating stalloni
-STALLION_GRADE_THRESHOLDS = [
-    (85, "SSS"), (72, "SS"), (60, "S"), (48, "A"),
-    (36, "B"),  (25, "C"),  (15, "D"), (8,  "E"), (0, "F"),
-]
+# Soglie stalloni: calcolate dinamicamente sui percentili del dataset reale
+# (sostituite a runtime da build_stallion_grade_thresholds)
+STALLION_GRADE_THRESHOLDS: list[tuple[float, str]] = []
+
+def build_stallion_grade_thresholds(scores: list[float]) -> list[tuple[float, str]]:
+    """
+    Calibra le soglie sui percentili del dataset reale.
+    SSS = top 3%, SS = top 8%, S = top 18%, A = top 35%,
+    B = top 55%, C = top 72%, D = top 85%, E = top 93%, F = resto
+    """
+    if not scores:
+        return [(0, "F")]
+    s = sorted(scores)
+    n = len(s)
+    def pv(p): return s[min(int(p / 100 * n), n - 1)]
+    return [
+        (pv(97), "SSS"), (pv(92), "SS"), (pv(82), "S"), (pv(65), "A"),
+        (pv(45), "B"),   (pv(28), "C"),  (pv(15), "D"), (pv(7),  "E"),
+        (0,      "F"),
+    ]
 
 def score_to_horse_grade(score: float) -> str:
     for threshold, grade in HORSE_GRADE_THRESHOLDS:
@@ -91,8 +107,9 @@ def score_to_horse_grade(score: float) -> str:
             return grade
     return "F"
 
-def score_to_stallion_grade(score: float) -> str:
-    for threshold, grade in STALLION_GRADE_THRESHOLDS:
+def score_to_stallion_grade(score: float, thresholds: list[tuple[float, str]] | None = None) -> str:
+    thr = thresholds or STALLION_GRADE_THRESHOLDS
+    for threshold, grade in thr:
         if score >= threshold:
             return grade
     return "F"
@@ -600,6 +617,10 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
     now_iso = datetime.utcnow().isoformat()
     cutoff  = (datetime.utcnow() - timedelta(days=ACTIVE_MONTHS * 30)).strftime("%Y-%m-%d")
 
+    # Accumula prima tutti i final_score, poi calcola soglie percentili dinamiche
+    all_final_scores: list[float] = []
+    row_buffer: list[tuple] = []
+
     for (sire_name,) in stallions:
         children = conn.execute("""
             SELECT grade FROM horse_ratings
@@ -628,7 +649,10 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
             vp_boost = round((vp_data[sire_key]["earnings"] / max_vp_earnings) * 5.0, 2)
 
         final_score = round(min(stallion_score + vp_boost, 100.0), 2)
-        grade = score_to_stallion_grade(final_score) if final_score > 0 else "N/A"
+        all_final_scores.append(final_score)
+        row_buffer.append((sire_name, n, n_in_corsa, stallion_score,
+                           n_SSS, n_SS, n_S, pct_top_S, round(avg_earnings, 2),
+                           vp_boost, final_score, now_iso))
 
         n_SSS = grade_counts.get("SSS", 0)
         n_SS  = grade_counts.get("SS", 0)
@@ -647,6 +671,14 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
             WHERE UPPER(TRIM(h.sire))=UPPER(TRIM(?)) AND r.race_date >= ?
         """, (sire_name, cutoff)).fetchone()[0] or 0
 
+    # Calcola soglie percentili dinamiche su tutti i final_score raccolti
+    dyn_thresholds = build_stallion_grade_thresholds(all_final_scores)
+    print(f"[RATINGS] Soglie stalloni (percentili): {[(round(t,1),g) for t,g in dyn_thresholds]}", file=sys.stderr)
+
+    for (sire_name, n, n_in_corsa, stallion_score,
+         n_SSS, n_SS, n_S, pct_top_S, avg_earn,
+         vp_boost, final_score, ts) in row_buffer:
+        grade = score_to_stallion_grade(final_score, dyn_thresholds) if final_score > 0 else "N/A"
         conn.execute("""
             INSERT OR REPLACE INTO stallion_rating_stats
                 (sire, n_figli_totali, n_in_corsa, avg_score, grade,
@@ -655,8 +687,8 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
             VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?)
         """, (
             sire_name, n, n_in_corsa, stallion_score, grade,
-            n_SSS, n_SS, n_S, pct_top_S, round(avg_earnings, 2),
-            vp_boost, final_score, now_iso
+            n_SSS, n_SS, n_S, pct_top_S, avg_earn,
+            vp_boost, final_score, ts
         ))
 
     conn.commit()
