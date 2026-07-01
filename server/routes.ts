@@ -412,12 +412,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       const rows = db.prepare(`
         SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
-               sr.avg_score, sr.n_in_corsa, sr.pct_top_S,
+               sr.avg_score, sr.final_score, sr.grade,
+               sr.n_in_corsa, sr.pct_top_S, sr.vp_boost,
                COALESCE(s.country, sp.nationality) AS nationality
         FROM stallions s
         LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
         LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
-        ORDER BY COALESCE(sr.avg_score, 0) DESC
+        ORDER BY COALESCE(sr.final_score, sr.avg_score, 0) DESC
       `).all() as any[];
       res.json(rows);
     } finally {
