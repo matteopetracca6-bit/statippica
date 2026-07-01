@@ -352,7 +352,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const rows = db.prepare(`
         SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
                sr.avg_score, sr.n_in_corsa, sr.pct_top_S,
-               sp.nationality
+               COALESCE(s.country, sp.nationality) AS nationality
         FROM stallions s
         LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
         LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
