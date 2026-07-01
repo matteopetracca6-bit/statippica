@@ -158,16 +158,118 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/stallion/:name
   // ──────────────────────────────────────────────
+   // ──────────────────────────────────────────────
+  // GET /api/stallion/:name
+  // ──────────────────────────────────────────────
   app.get("/api/stallion/:name", (req, res) => {
     const name = decodeURIComponent(req.params.name).toUpperCase();
     const db = getDb();
     try {
-      // Stats aggregate
+      // Stats aggregate (may be null for stallions without offspring data yet)
       const stats = db.prepare(`
-        SELECT * FROM stallion_rating_stats WHERE sire = ?
+        SELECT * FROM stallion_rating_stats
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))
       `).get(name) as any;
 
-      if (!stats) return res.status(404).json({ error: "Not found" });
+      // From stallions table (stud fee, farm, status, etc.)
+      const stud = db.prepare(`
+        SELECT name, stud_fee_eur, stud_farm, stud_status, progeny_earnings_2024,
+               media_in_corsa, tot_prod, tot_in_corsa, perc_in_corsa,
+               tot_vitt, perc_vitt, country
+        FROM stallions
+        WHERE UPPER(TRIM(name)) = UPPER(TRIM(?))
+        ORDER BY stud_fee_eur DESC
+        LIMIT 1
+      `).get(name) as any;
+
+      // Top children (performance only) - empty if no offspring data
+      const children = db.prepare(`
+        SELECT name, birth_year, grade, score, career_earnings, record_career, win_rate, sire_percentile
+        FROM horse_ratings
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
+        ORDER BY career_earnings DESC
+        LIMIT 20
+      `).all(name) as any[];
+
+      // Grade distribution - empty if no offspring data
+      const gradeDist = db.prepare(`
+        SELECT grade, COUNT(*) as cnt
+        FROM horse_ratings
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
+        GROUP BY grade
+        ORDER BY cnt DESC
+      `).all(name) as any[];
+
+      // Genealogy: try horses table first, then fallback to stallion_pedigree
+      const horseSelf = db.prepare(`
+        SELECT h.sire, h.dam, h.unire_sire, h.unire_dam,
+               s.sire AS sire_sire, s.dam AS sire_dam,
+               d.sire AS dam_sire, d.dam AS dam_dam,
+               s.unire_sire AS sire_unire_sire, s.unire_dam AS sire_unire_dam,
+               d.unire_sire AS dam_unire_sire, d.unire_dam AS dam_unire_dam
+        FROM horses h
+        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != ''
+        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam)) AND h.dam IS NOT NULL AND h.dam != ''
+        WHERE UPPER(TRIM(h.name)) = UPPER(TRIM(?))
+        LIMIT 1
+      `).get(name) as any;
+
+      const spRow = db.prepare(`
+        SELECT * FROM stallion_pedigree
+        WHERE UPPER(TRIM(name)) = UPPER(TRIM(?))
+        LIMIT 1
+      `).get(name) as any;
+
+      const pedigree = (horseSelf && (horseSelf.sire || horseSelf.unire_sire)) ? {
+        sire: horseSelf.sire || horseSelf.unire_sire || null,
+        dam: horseSelf.dam || horseSelf.unire_dam || null,
+        sire_sire: horseSelf.sire_sire || horseSelf.sire_unire_sire || null,
+        sire_dam: horseSelf.sire_dam || horseSelf.sire_unire_dam || null,
+        dam_sire: horseSelf.dam_sire || horseSelf.dam_unire_sire || null,
+        dam_dam: horseSelf.dam_dam || horseSelf.dam_unire_dam || null,
+      } : spRow ? {
+        sire: spRow.sire || null,
+        dam: spRow.dam || null,
+        sire_sire: spRow.sire_sire || null,
+        sire_dam: spRow.sire_dam || null,
+        dam_sire: spRow.dam_sire || null,
+        dam_dam: spRow.dam_dam || null,
+      } : null;
+
+      // Nationality: prefer stallion_pedigree, fallback to stallions.country, then horses.country
+      const natFromHorses = db.prepare(`
+        SELECT h.country
+        FROM horses h
+        WHERE UPPER(TRIM(h.name)) = UPPER(TRIM(?))
+        LIMIT 1
+      `).get(name) as any;
+
+      const nationality =
+        spRow?.nationality ||
+        stud?.country ||
+        natFromHorses?.country ||
+        null;
+
+      // Return 404 only if stallion is nowhere at all
+      if (!stats && !stud && !spRow && children.length === 0) {
+        return res.status(404).json({ error: "Not found" });
+      }
+
+      res.json({
+        name,
+        stats: stats || null,
+        stud: stud || null,
+        children,
+        gradeDist,
+        pedigree,
+        nationality,
+        has_offspring_data: !!stats,
+        message: stats ? null : "Dati offspring non ancora disponibili",
+      });
+    } finally {
+      db.close();
+    }
+  });
 
       // From stallions table (stud fee, etc.)
       const stud = db.prepare(`
