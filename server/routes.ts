@@ -350,10 +350,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const db = getDb();
     try {
       const rows = db.prepare(`
-        SELECT s.name, s.breed, s.birth_year, s.country,
-               sr.avg_score, sr.n_in_corsa, sr.pct_top_S
+        SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
+               sr.avg_score, sr.n_in_corsa, sr.pct_top_S,
+               sp.nationality
         FROM stallions s
         LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
+        LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
         ORDER BY COALESCE(sr.avg_score, 0) DESC
       `).all() as any[];
       res.json(rows);
