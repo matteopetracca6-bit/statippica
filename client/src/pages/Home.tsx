@@ -54,6 +54,8 @@ const GRADE_COLORS: Record<string, string> = {
 interface StallionRow {
   name: string;
   avg_score: number | null;
+  final_score: number | null;
+  grade: string | null;
   n_in_corsa: number | null;
   pct_top_S: number | null;
   birth_year?: number;
@@ -210,7 +212,7 @@ function StallionCardSection({ stats, isLoading }: { stats: Stats | undefined; i
                     {s.name}
                   </span>
                   <span className="tabular" style={{ textAlign: "center", fontSize: "13px", color: "hsl(210 10% 72%)" }}>
-                    {s.avg_score != null ? s.avg_score.toFixed(1) : "—"}
+                    {(s.final_score ?? s.avg_score) != null ? (s.final_score ?? s.avg_score)!.toFixed(1) : "—"}
                   </span>
                   <span className="tabular" style={{ textAlign: "center", fontSize: "13px", color: "hsl(210 8% 55%)" }}>
                     {s.n_in_corsa ?? "—"}
