@@ -776,6 +776,30 @@ def phase_notify(new_horses: int, new_races: int, horses_updated: int):
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
+def phase_seed_vp(conn: sqlite3.Connection):
+    """Popola vendopuledri_stalloni_rankings dai dati hardcoded se la tabella è vuota."""
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM vendopuledri_stalloni_rankings").fetchone()[0]
+        if count > 0:
+            print(f"[SEED_VP] Tabella già popolata ({count} righe), skip.", file=sys.stderr)
+            return
+    except sqlite3.OperationalError:
+        pass  # tabella non esiste ancora, procediamo
+
+    print("[SEED_VP] Tabella vuota — eseguo seed da dati hardcoded...", file=sys.stderr)
+    try:
+        # Importa seed_vp_data se disponibile nella stessa directory
+        import importlib.util, os as _os
+        seed_path = _os.path.join(_os.path.dirname(__file__), "seed_vp_data.py")
+        spec = importlib.util.spec_from_file_location("seed_vp_data", seed_path)
+        mod  = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod.seed(str(DB_PATH))
+        print("[SEED_VP] Seed completato.", file=sys.stderr)
+    except Exception as e:
+        print(f"[SEED_VP] WARN: seed fallito: {e}", file=sys.stderr)
+
+
 def main():
     print(f"[START] {datetime.utcnow().isoformat()} — StatIppica nightly_update.py", file=sys.stderr)
 
@@ -784,6 +808,7 @@ def main():
     init_db(conn)
 
     try:
+        phase_seed_vp(conn)                         # seed VP hardcoded se tabella vuota
         new_horses               = phase_discovery(conn)
         horses_updated, new_races = phase_update(conn)
         phase_ratings(conn)
