@@ -3,10 +3,8 @@ import type { Server } from "http";
 import Database from "better-sqlite3";
 import path from "path";
 
-// On Render, use persistent disk at /data/data.db; otherwise use local data.db
-const DB_PATH = process.env.RENDER
-  ? "/data/data.db"
-  : path.resolve(process.cwd(), "data.db");
+// DB lives in project root (committed to repo, updated nightly via git push)
+const DB_PATH = path.resolve(process.cwd(), "data.db");
 
 function getDb() {
   return new Database(DB_PATH, { readonly: true });
