@@ -56,6 +56,7 @@ interface StallionRow {
   avg_score: number | null;
   final_score: number | null;
   grade: string | null;
+  n_figli_totali: number | null;
   n_in_corsa: number | null;
   pct_top_S: number | null;
   birth_year?: number;
@@ -168,13 +169,14 @@ function StallionCardSection({ stats, isLoading }: { stats: Stats | undefined; i
 
           {/* Column headers */}
           <div style={{
-            display: "grid", gridTemplateColumns: "1fr 80px 80px 80px",
+            display: "grid", gridTemplateColumns: "1fr 56px 72px 64px 72px",
             padding: "8px 18px",
             borderBottom: "1px solid hsl(220 10% 12%)",
             fontSize: "10px", fontWeight: 700,
             color: "hsl(210 8% 38%)", letterSpacing: "0.08em", textTransform: "uppercase",
           }}>
             <span>Stallone</span>
+            <span style={{ textAlign: "center" }}>Voto</span>
             <span style={{ textAlign: "center" }}>Score</span>
             <span style={{ textAlign: "center" }}>Figli</span>
             <span style={{ textAlign: "center" }}>Top-S%</span>
@@ -195,11 +197,12 @@ function StallionCardSection({ stats, isLoading }: { stats: Stats | undefined; i
                 <a
                   data-testid={`row-stallion-${i}`}
                   style={{
-                    display: "grid", gridTemplateColumns: "1fr 80px 80px 80px",
+                    display: "grid", gridTemplateColumns: "1fr 56px 72px 64px 72px",
                     padding: "10px 18px",
                     textDecoration: "none",
                     borderBottom: "1px solid hsl(220 10% 11%)",
                     transition: "background 0.1s",
+                    alignItems: "center",
                   }}
                   onMouseEnter={e => (e.currentTarget.style.background = "hsl(220 10% 13%)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
@@ -211,17 +214,20 @@ function StallionCardSection({ stats, isLoading }: { stats: Stats | undefined; i
                   }}>
                     {s.name}
                   </span>
+                  <span style={{ textAlign: "center" }}>
+                    {s.grade ? <GradeBadge grade={s.grade} size="sm" /> : <span style={{ color: "hsl(210 8% 40%)", fontSize: "12px" }}>—</span>}
+                  </span>
                   <span className="tabular" style={{ textAlign: "center", fontSize: "13px", color: "hsl(210 10% 72%)" }}>
                     {(s.final_score ?? s.avg_score) != null ? (s.final_score ?? s.avg_score)!.toFixed(1) : "—"}
                   </span>
                   <span className="tabular" style={{ textAlign: "center", fontSize: "13px", color: "hsl(210 8% 55%)" }}>
-                    {s.n_in_corsa ?? "—"}
+                    {s.n_figli_totali ?? s.n_in_corsa ?? "—"}
                   </span>
                   <span className="tabular" style={{
                     textAlign: "center", fontSize: "13px",
                     color: s.pct_top_S && s.pct_top_S >= 20 ? "hsl(183 80% 55%)" : "hsl(210 8% 55%)",
                   }}>
-                    {s.pct_top_S != null ? `${s.pct_top_S}%` : "—"}
+                    {s.pct_top_S != null ? `${s.pct_top_S.toFixed(1)}%` : "—"}
                   </span>
                 </a>
               </Link>
