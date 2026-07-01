@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: statippica
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install && npm run build && cp data.db /data/data.db
+    startCommand: NODE_ENV=production node dist/index.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER
+        value: "true"
+      - key: PORT
+        value: "10000"
+    disk:
+      name: statippica-data
+      mountPath: /data
+      sizeGB: 1

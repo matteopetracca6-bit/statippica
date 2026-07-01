@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── FONT ─────────────────────────────────────────── */
+@layer base {
+  :root {
+    --font-body: 'Satoshi', 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* ─── DARK PALETTE — Racing / Analytics ──────────────
+   Primary accent: Electric Teal (#00C4C4)
+   Background: deep graphite (#0D0E10)
+   Surfaces: dark card layers
+   Text: near-white
+──────────────────────────────────────────────────── */
+:root {
+  --background: 220 13% 7%;
+  --foreground: 210 10% 88%;
+
+  --card: 220 12% 10%;
+  --card-foreground: 210 10% 88%;
+
+  --popover: 220 12% 10%;
+  --popover-foreground: 210 10% 88%;
+
+  --primary: 183 100% 38%;
+  --primary-foreground: 220 13% 7%;
+
+  --secondary: 220 10% 16%;
+  --secondary-foreground: 210 10% 70%;
+
+  --muted: 220 10% 14%;
+  --muted-foreground: 210 8% 52%;
+
+  --accent: 183 80% 22%;
+  --accent-foreground: 183 100% 85%;
+
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 220 10% 18%;
+  --input: 220 10% 18%;
+  --ring: 183 100% 38%;
+
+  --radius: 0.5rem;
+
+  /* Custom tokens */
+  --grade-sss: 51 100% 50%;
+  --grade-ss: 0 0% 75%;
+  --grade-s: 30 60% 50%;
+  --grade-a: 183 35% 47%;
+  --grade-b: 103 35% 40%;
+  --grade-c: 20 50% 44%;
+  --grade-d: 40 4% 47%;
+  --grade-e: 40 3% 35%;
+  --grade-f: 40 3% 24%;
+}
+
+/* Light mode not needed — racing dashboards are always dark */
+.dark {
+  --background: 220 13% 7%;
+  --foreground: 210 10% 88%;
+  --card: 220 12% 10%;
+  --card-foreground: 210 10% 88%;
+  --popover: 220 12% 10%;
+  --popover-foreground: 210 10% 88%;
+  --primary: 183 100% 38%;
+  --primary-foreground: 220 13% 7%;
+  --secondary: 220 10% 16%;
+  --secondary-foreground: 210 10% 70%;
+  --muted: 220 10% 14%;
+  --muted-foreground: 210 8% 52%;
+  --accent: 183 80% 22%;
+  --accent-foreground: 183 100% 85%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 220 10% 18%;
+  --input: 220 10% 18%;
+  --ring: 183 100% 38%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Numeric columns */
+.tabular { font-variant-numeric: tabular-nums lining-nums; }
+
+/* Grade badges */
+.grade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.grade-SSS { background: hsl(51 100% 50% / 0.15); color: hsl(51 100% 60%); border: 1px solid hsl(51 100% 50% / 0.4); }
+.grade-SS  { background: hsl(0 0% 75% / 0.1);    color: hsl(0 0% 85%);   border: 1px solid hsl(0 0% 75% / 0.3); }
+.grade-S   { background: hsl(30 60% 50% / 0.15); color: hsl(30 80% 65%); border: 1px solid hsl(30 60% 50% / 0.4); }
+.grade-A   { background: hsl(183 50% 35% / 0.2); color: hsl(183 70% 60%); border: 1px solid hsl(183 50% 35% / 0.5); }
+.grade-B   { background: hsl(100 40% 30% / 0.2); color: hsl(100 50% 55%); border: 1px solid hsl(100 40% 30% / 0.5); }
+.grade-C   { background: hsl(25 50% 30% / 0.2);  color: hsl(25 60% 55%);  border: 1px solid hsl(25 50% 30% / 0.5); }
+.grade-D   { background: hsl(40 5% 25% / 0.4);  color: hsl(40 5% 55%);  border: 1px solid hsl(40 5% 30% / 0.5); }
+.grade-E   { background: hsl(40 4% 18% / 0.6);  color: hsl(40 4% 45%);  border: 1px solid hsl(40 4% 25% / 0.5); }
+.grade-F   { background: hsl(40 3% 12% / 0.8);  color: hsl(40 3% 38%);  border: 1px solid hsl(40 3% 20% / 0.5); }
+.grade-NA  { background: hsl(220 10% 18% / 0.6); color: hsl(210 8% 45%); border: 1px solid hsl(220 10% 25% / 0.4); }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--background)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.fade-in { animation: fadeIn 0.25s ease both; }
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--secondary)) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+}
