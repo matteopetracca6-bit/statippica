@@ -317,41 +317,49 @@ export function registerRoutes(httpServer: Server, app: Express) {
   app.get("/api/compare", (req, res) => {
     const { name1, year1, name2, year2 } = req.query as Record<string, string>;
     if (!name1 || !name2) return res.status(400).json({ error: "name1 e name2 obbligatori" });
-
-    const getHorse = (name: string, year?: string) => {
-      const row = year
-        ? (db.prepare(`SELECT * FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) AND birth_year = ? LIMIT 1`).get(name, parseInt(year)) as any)
-        : (db.prepare(`SELECT * FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) ORDER BY birth_year DESC LIMIT 1`).get(name) as any);
-      if (!row) return null;
-      const ped = db.prepare(`
-        SELECT h.sire, h.dam,
-          s.sire AS sire_sire, s.dam AS sire_dam,
-          d.sire AS dam_sire, d.dam AS dam_dam
-        FROM horses h
-        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire))
-        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam))
-        LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(h.name))
-        WHERE UPPER(TRIM(h.name)) = ? AND h.birth_year = ?
-        LIMIT 1
-      `).get(row.name, row.birth_year) as any;
-      return { ...row, pedigree: ped || null };
-    };
-
-    const h1 = getHorse(name1, year1);
-    const h2 = getHorse(name2, year2);
-    res.json({ horse1: h1, horse2: h2 });
+    const db = getDb();
+    try {
+      const getHorse = (name: string, year?: string) => {
+        const row = year
+          ? (db.prepare(`SELECT * FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) AND birth_year = ? LIMIT 1`).get(name, parseInt(year)) as any)
+          : (db.prepare(`SELECT * FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) ORDER BY birth_year DESC LIMIT 1`).get(name) as any);
+        if (!row) return null;
+        const ped = db.prepare(`
+          SELECT h.sire, h.dam,
+            s.sire AS sire_sire, s.dam AS sire_dam,
+            d.sire AS dam_sire, d.dam AS dam_dam
+          FROM horses h
+          LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire))
+          LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam))
+          LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(h.name))
+          WHERE UPPER(TRIM(h.name)) = ? AND h.birth_year = ?
+          LIMIT 1
+        `).get(row.name, row.birth_year) as any;
+        return { ...row, pedigree: ped || null };
+      };
+      const h1 = getHorse(name1, year1);
+      const h2 = getHorse(name2, year2);
+      res.json({ horse1: h1, horse2: h2 });
+    } finally {
+      db.close();
+    }
   });
 
   // ── Lista stalloni per dropdown ──────────────────────────────────────────
   app.get("/api/stallions", (_req, res) => {
-    const rows = db.prepare(`
-      SELECT s.name, s.breed, s.birth_year, s.country,
-             sr.avg_score, sr.n_in_corsa, sr.pct_top_S
-      FROM stallions s
-      LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
-      ORDER BY COALESCE(sr.avg_score, 0) DESC
-    `).all() as any[];
-    res.json(rows);
+    const db = getDb();
+    try {
+      const rows = db.prepare(`
+        SELECT s.name, s.breed, s.birth_year, s.country,
+               sr.avg_score, sr.n_in_corsa, sr.pct_top_S
+        FROM stallions s
+        LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
+        ORDER BY COALESCE(sr.avg_score, 0) DESC
+      `).all() as any[];
+      res.json(rows);
+    } finally {
+      db.close();
+    }
   });
 
   app.get("/api/stats", (_req, res) => {
