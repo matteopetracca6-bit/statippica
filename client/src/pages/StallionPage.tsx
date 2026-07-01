@@ -26,6 +26,10 @@ interface StallionData {
   max_earnings: number;
   avg_win_rate: number;
   pct_top_S: number;
+  grade: string | null;       // voto stallone (SSS…F)
+  vp_boost: number;           // boost VendoPuledri (max +5)
+  final_score: number | null; // punteggio finale con boost
+  no_offspring_data?: boolean;
   stud?: {
     stud_fee_eur: number;
     stud_farm: string;
@@ -217,9 +221,14 @@ export default function StallionPage() {
       {!isSearch && !isLoading && stallion && (
         <>
           {/* Header */}
-          <h1 style={{ fontSize: "22px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.04em", marginBottom: "6px" }}>
-            {stallion.sire}
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "6px", flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.04em", margin: 0 }}>
+              {stallion.sire}
+            </h1>
+            {stallion.grade && (
+              <GradeBadge grade={stallion.grade} size="lg" />
+            )}
+          </div>
           <div style={{ fontSize: "13px", color: "hsl(210 8% 50%)", marginBottom: "24px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <span>{stallion.n_figli_totali} prodotti totali</span>
             <span>·</span>
@@ -236,7 +245,49 @@ export default function StallionPage() {
                 <span>{stallion.stud.stud_farm}</span>
               </>
             )}
+            {stallion.no_offspring_data && (
+              <span style={{ color: "hsl(40 60% 55%)" }}>· Dati prodotti non ancora disponibili</span>
+            )}
           </div>
+
+          {/* Rating card — visibile solo se ci sono dati offspring */}
+          {!stallion.no_offspring_data && stallion.final_score != null && (
+            <div style={{
+              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
+              borderRadius: "12px", padding: "18px 22px", marginBottom: "18px",
+              display: "flex", alignItems: "center", gap: "28px", flexWrap: "wrap",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Rating Stallone</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+                  {stallion.grade && <GradeBadge grade={stallion.grade} size="lg" />}
+                  <span className="tabular" style={{ fontSize: "26px", fontWeight: 800, color: "hsl(210 10% 90%)" }}>
+                    {stallion.final_score.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Score base</div>
+                <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(210 10% 75%)" }}>
+                  {stallion.avg_score?.toFixed(1) ?? "—"}
+                </div>
+              </div>
+              {(stallion.vp_boost ?? 0) > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>VP Boost</div>
+                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(120 50% 55%)" }}>
+                    +{(stallion.vp_boost ?? 0).toFixed(2)}
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>% top-S</div>
+                <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(183 60% 55%)" }}>
+                  {stallion.pct_top_S != null ? `${stallion.pct_top_S.toFixed(1)}%` : "—"}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", marginBottom: "22px" }}>
