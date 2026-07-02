@@ -338,17 +338,37 @@ def init_db(conn: sqlite3.Connection):
         except sqlite3.OperationalError:
             pass
 
-    # Normalizzazione una tantum (idempotente, si ripete ogni notte ma è economica):
-    # allinea sire/dam esistenti allo stesso formato canonico (maiuscolo + trim) usato
-    # dalle nuove scritture, altrimenti varianti tipo "nome" vs "NOME" restano stringhe
-    # diverse e causano join duplicati / genealogie non trovate.
-    conn.execute("UPDATE horses SET sire = UPPER(TRIM(sire)) WHERE sire IS NOT NULL AND sire != UPPER(TRIM(sire))")
-    conn.execute("UPDATE horses SET dam  = UPPER(TRIM(dam))  WHERE dam  IS NOT NULL AND dam  != UPPER(TRIM(dam))")
-    conn.execute("UPDATE horse_ratings SET sire = UPPER(TRIM(sire)) WHERE sire IS NOT NULL AND sire != UPPER(TRIM(sire))")
-    # stallion_rating_stats è dato interamente derivato/ricalcolato ogni notte da
-    # phase_stallion_ratings: le righe con sire non canonico sono "sporche" residue
-    # di run precedenti — le eliminiamo, verranno rigenerate pulite più avanti.
-    conn.execute("DELETE FROM stallion_rating_stats WHERE sire != UPPER(TRIM(sire))")
+    # Normalizzazione completa una tantum (idempotente, si ripete ogni notte ma è
+    # economica): allinea sire/dam esistenti allo stesso formato canonico usato dalle
+    # nuove scritture. Fatta in Python (non solo SQL TRIM/UPPER) perché intercetta
+    # anche spazi doppi interni ("MUSCLE  HILL"), che TRIM() non tocca essendo un
+    # comando che agisce solo sui bordi della stringa.
+    to_fix_horses = []
+    for rowid, sire, dam in conn.execute(
+        "SELECT rowid, sire, dam FROM horses WHERE sire IS NOT NULL OR dam IS NOT NULL"
+    ).fetchall():
+        new_sire, new_dam = _normalize_name(sire), _normalize_name(dam)
+        if new_sire != sire or new_dam != dam:
+            to_fix_horses.append((new_sire, new_dam, rowid))
+    if to_fix_horses:
+        conn.executemany("UPDATE horses SET sire=?, dam=? WHERE rowid=?", to_fix_horses)
+        print(f"[INIT] Normalizzati sire/dam di {len(to_fix_horses)} cavalli esistenti.", file=sys.stderr)
+
+    to_fix_ratings = []
+    for rowid, sire in conn.execute(
+        "SELECT rowid, sire FROM horse_ratings WHERE sire IS NOT NULL"
+    ).fetchall():
+        new_sire = _normalize_name(sire)
+        if new_sire != sire:
+            to_fix_ratings.append((new_sire, rowid))
+    if to_fix_ratings:
+        conn.executemany("UPDATE horse_ratings SET sire=? WHERE rowid=?", to_fix_ratings)
+        print(f"[INIT] Normalizzati sire di {len(to_fix_ratings)} righe horse_ratings.", file=sys.stderr)
+
+    # stallion_rating_stats è dato interamente derivato: lo svuotiamo sempre qui,
+    # verrà rigenerato pulito da phase_stallion_ratings partendo dai sire ormai
+    # canonici sopra — niente più righe duplicate residue da run precedenti.
+    conn.execute("DELETE FROM stallion_rating_stats")
 
     conn.commit()
 
@@ -600,19 +620,20 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
         age = int(m.group(3))
         result["birth_year"] = datetime.utcnow().year - age
 
-    # Pattern primario: "PADRE / codice / MADRE cat.mc" (formato osservato più comune)
-    m2 = re.search(
-        r"\b([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s*/\s*[a-zA-Z]\d*\s*/\s*([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s+cat\.mc",
-        text
-    )
-    if not m2:
-        # Fallback più permissivo: stessa struttura PADRE / codice / MADRE, ma senza
-        # richiedere il marcatore "cat.mc" subito dopo (potrebbe non esserci per
-        # tutti i cavalli/formati pagina) — si ferma al primo confine plausibile
-        # (due maiuscole consecutive separate da spazio seguite da altro testo minuscolo,
-        # oppure fine stringa).
+    # Formato reale confermato: subito dopo il marcatore sesso/età compare
+    # "PADRE / MADRE" (due parti, non tre) seguito da "carriera...", es:
+    # "INCREDIBLE RUN f.i.3 UP FRONT LARRY / ANGELIQUE carriera1004972,40..."
+    m2 = None
+    if m:
+        tail = text[m.end():m.end() + 200]
         m2 = re.search(
-            r"\b([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s*/\s*[a-zA-Z]\d*\s*/\s*([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)(?:\s+[a-z]|\s*$)",
+            r"^\s*([A-Z][A-Za-z0-9À-ÖØ-öø-ÿ'.\- ]*?)\s*/\s*([A-Z][A-Za-z0-9À-ÖØ-öø-ÿ'.\- ]*?)\s+[a-z]",
+            tail
+        )
+    if not m2:
+        # Fallback per eventuali pagine con formato diverso (padre / codice / madre)
+        m2 = re.search(
+            r"\b([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s*/\s*[a-zA-Z]\d*\s*/\s*([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)(?:\s+cat\.mc|\s+[a-z]|\s*$)",
             text
         )
     if m2:
