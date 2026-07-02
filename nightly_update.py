@@ -4,6 +4,8 @@ nightly_update.py — StatIppica
 Eseguito ogni notte su Render (cron job o trigger esterno).
 
 Fasi:
+  0. RESULTS    — legge hRis.php per ogni ippodromo degli ultimi 2 gg,
+                  inserisce gare nuove e aggiunge cavalli sconosciuti al DB
   1. DISCOVERY  — legge homepage Trottoweb, trova cavalli nuovi, inserisce carriera completa
   2. UPDATE     — aggiorna cavalli attivi (ultimi 6 mesi) con nuove gare
   3. RATINGS    — ricalcola rating SSS..F per tutti i cavalli
@@ -388,6 +390,209 @@ def _parse_float(val: str) -> float:
 # ─────────────────────────────────────────────
 # FASE 1 — DISCOVERY
 # ─────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# FASE 0 — RESULTS (hRis.php per ippodromo)
+# ─────────────────────────────────────────────
+
+TROTTOWEB_RESULTS_HOME = "https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php"
+TROTTOWEB_HORSE_DETAIL = "https://www.trottoweb.it/TrottoWeb/php_resp/hCav.php"
+NON_CLASSIF = {"r.p.", "r.c.", "r.a.", "rit.", "tnc", "cad.", "disq."}
+
+
+def _parse_hris_row(row: str) -> Optional[dict]:
+    """Parsa una riga di risultato da hRis.php.
+    Classificati: pos° | num | nome+driver | nome | tempo | dist | sesso | driver
+    Ritirati:     num  | nome+driver | nome | motivo | dist | sesso | driver | vuoto
+    """
+    cells = [c.strip() for c in row.strip().strip("|").split("|")]
+    while cells and not cells[-1]:
+        cells.pop()
+    if len(cells) < 4:
+        return None
+    if cells[0].startswith("--"):
+        return None
+
+    pos_raw = cells[0]
+    is_classified = "º" in pos_raw
+    pos_match = re.match(r"(\d+)", pos_raw)
+    placement = int(pos_match.group(1)) if (pos_match and is_classified) else None
+
+    if is_classified:
+        horse_name = cells[3].upper().strip() if len(cells) > 3 else ""
+        time_raw   = cells[4] if len(cells) > 4 else ""
+        dist_raw   = cells[5] if len(cells) > 5 else ""
+        driver     = cells[7].strip() if len(cells) > 7 else (cells[6].strip() if len(cells) > 6 else "")
+    else:
+        horse_name = cells[2].upper().strip() if len(cells) > 2 else ""
+        time_raw   = cells[3] if len(cells) > 3 else ""
+        dist_raw   = cells[4] if len(cells) > 4 else ""
+        driver     = cells[6].strip() if len(cells) > 6 else (cells[5].strip() if len(cells) > 5 else "")
+        placement  = None
+
+    time_km = None if (not time_raw or time_raw in NON_CLASSIF or not re.match(r"\d", time_raw)) else time_raw
+    dist_match = re.match(r"(\d+)", str(dist_raw))
+    distance = int(dist_match.group(1)) if dist_match else None
+
+    if not horse_name or len(horse_name) < 2:
+        return None
+
+    return {
+        "name": horse_name,
+        "placement": placement,
+        "time_km": time_km,
+        "distance": distance,
+        "driver": driver,
+        "is_classified": is_classified,
+    }
+
+
+def _fetch_hris_convegni(days_back: int = 2) -> list[dict]:
+    """Legge la homepage risultati e restituisce convegni degli ultimi days_back giorni."""
+    soup = fetch_url(TROTTOWEB_RESULTS_HOME)
+    if not soup:
+        return []
+
+    cutoff = (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+    convegni = []
+
+    for a_tag in soup.find_all("a", id="link_risultati"):
+        href = a_tag.get("href", "")
+        m = re.search(r"data=(\d{4}-\d{2}-\d{2})", href)
+        if not m:
+            continue
+        data = m.group(1)
+        if data < cutoff:
+            continue
+
+        m_sigla = re.search(r"sigla=([A-Z]+)", href)
+        m_ippo  = re.search(r"ippodromo=([^&]+)", href)
+        m_note  = re.search(r"note_giorno=([^&]*)", href)
+
+        sigla     = m_sigla.group(1) if m_sigla else ""
+        ippodromo = requests.utils.unquote(m_ippo.group(1)).replace("+", " ") if m_ippo else ""
+        note      = requests.utils.unquote(m_note.group(1)).replace("+", " ") if m_note else ""
+
+        if "?" in href:
+            full_url = "https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php?" + href.split("?", 1)[-1]
+        else:
+            full_url = "https://www.trottoweb.it/TrottoWeb/php_resp/" + href
+
+        convegni.append({
+            "data": data, "sigla": sigla, "ippodromo": ippodromo,
+            "note_giorno": note, "url": full_url,
+        })
+
+    print(f"[RESULTS] Convegni trovati (ultimi {days_back}gg): {len(convegni)}", file=sys.stderr)
+    for c in convegni:
+        print(f"  - {c['data']} {c['ippodromo']} ({c['sigla']})", file=sys.stderr)
+    return convegni
+
+
+def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> bool:
+    """Aggiunge il cavallo al DB se non esiste ancora. Tenta recupero profilo da hCav.php."""
+    existing = conn.execute("SELECT 1 FROM horses WHERE name = ?", (horse_name,)).fetchone()
+    if existing:
+        return False
+
+    detail = {}
+    detail_soup = fetch_url(TROTTOWEB_HORSE_DETAIL, params={"cavallo": horse_name})
+    if detail_soup:
+        detail = parse_horse_detail(detail_soup, horse_name)
+
+    try:
+        conn.execute("""
+            INSERT OR IGNORE INTO horses
+                (name, birth_year, sex, country, sire, dam, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            horse_name, detail.get("birth_year"), detail.get("sex"),
+            detail.get("country"), detail.get("sire"), detail.get("dam"),
+            datetime.utcnow().isoformat()
+        ))
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f"  [WARN] Insert horse {horse_name}: {e}", file=sys.stderr)
+        return False
+
+
+def phase_results(conn: sqlite3.Connection, days_back: int = 2) -> tuple[int, int]:
+    """FASE 0 — Scarica risultati ultime giornate da hRis.php di Trottoweb.
+    Inserisce gare nuove e cavalli sconosciuti nel DB.
+    Ritorna (new_horses, new_races).
+    """
+    print(f"[RESULTS] Avvio raccolta risultati ultimi {days_back} giorni...", file=sys.stderr)
+    convegni = _fetch_hris_convegni(days_back)
+
+    total_new_races  = 0
+    total_new_horses = 0
+
+    for conv in convegni:
+        print(f"[RESULTS] Leggo {conv['ippodromo']} {conv['data']}...", file=sys.stderr)
+        soup = fetch_url(conv["url"])
+        if not soup:
+            continue
+
+        raw_text = soup.get_text("\n", strip=True)
+        race_num = 0
+        current_race_horses: list[dict] = []
+
+        def flush_race(horses: list[dict], race_n: int):
+            nonlocal total_new_races, total_new_horses
+            for h in horses:
+                name = h["name"]
+                is_new = _ensure_horse_in_db(conn, name)
+                if is_new:
+                    total_new_horses += 1
+                    print(f"    [NEW] {name}", file=sys.stderr)
+
+                race_code = f"{conv['data']}_{conv['sigla']}_R{race_n}"
+                try:
+                    cur = conn.execute("""
+                        INSERT OR IGNORE INTO races
+                            (horse_name, race_date, track, placement, placement_raw,
+                             time_km, distance, driver, prize_net, prize_gross, race_code)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                    """, (
+                        name, conv["data"], conv["ippodromo"],
+                        h["placement"], str(h["placement"]) if h["placement"] else "nr",
+                        h["time_km"], h["distance"], h["driver"],
+                        0.0, 0.0, race_code
+                    ))
+                    if cur.rowcount > 0:
+                        total_new_races += 1
+                        _update_horse_career_stats(conn, name)
+                except sqlite3.Error as e:
+                    print(f"    [WARN] {name} {conv['data']}: {e}", file=sys.stderr)
+            conn.commit()
+
+        for line in raw_text.split("\n"):
+            if not line.startswith("|"):
+                continue
+            parsed = _parse_hris_row(line)
+            if parsed is None:
+                continue
+
+            is_first = parsed.get("is_classified") and parsed.get("placement") == 1
+            if is_first and current_race_horses:
+                flush_race(current_race_horses, race_num)
+                current_race_horses = []
+                race_num += 1
+            elif is_first:
+                race_num += 1
+
+            current_race_horses.append(parsed)
+
+        if current_race_horses:
+            flush_race(current_race_horses, race_num)
+
+        print(f"  -> {conv['ippodromo']}: fino a ora {total_new_races} gare nuove, {total_new_horses} cavalli nuovi", file=sys.stderr)
+
+    print(f"[RESULTS] TOTALE: {total_new_races} gare nuove, {total_new_horses} cavalli nuovi", file=sys.stderr)
+    return total_new_horses, total_new_races
+
+
 def phase_discovery(conn: sqlite3.Connection) -> int:
     print("[DISCOVERY] Lettura homepage Trottoweb...", file=sys.stderr)
     soup = fetch_url(TROTTOWEB_BASE)
@@ -840,14 +1045,21 @@ def main():
     init_db(conn)
 
     try:
-        phase_seed_vp(conn)                         # seed VP hardcoded se tabella vuota
-        new_horses               = phase_discovery(conn)
-        horses_updated, new_races = phase_update(conn)
-        phase_ratings(conn)
-        phase_stallion_ratings(conn)
+        phase_seed_vp(conn)                              # seed VP hardcoded se tabella vuota
+        r_horses, r_races = phase_results(conn, days_back=2)  # FASE 0: risultati hRis.php
+        d_horses          = phase_discovery(conn)        # FASE 1: cavalli nuovi da homepage
+        u_updated, u_races = phase_update(conn)          # FASE 2: aggiorna cavalli attivi
+        phase_ratings(conn)                              # FASE 3: rating cavalli
+        phase_stallion_ratings(conn)                     # FASE 3b: rating stalloni
+
+        # Somma contributi da fase 0 + fasi 1/2
+        new_horses    = r_horses + d_horses
+        new_races     = r_races  + u_races
+        horses_updated = u_updated
     finally:
         conn.close()
 
+    # Push solo se ci sono aggiornamenti reali
     phase_sync()
     phase_git_push()
     phase_notify(new_horses, new_races, horses_updated)
