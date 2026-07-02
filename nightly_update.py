@@ -429,11 +429,6 @@ def init_db(conn: sqlite3.Connection):
     except sqlite3.IntegrityError as e:
         print(f"[WARN] Impossibile creare indice univoco horses (duplicati residui?): {e}", file=sys.stderr)
 
-    # stallion_rating_stats è dato interamente derivato: lo svuotiamo sempre qui,
-    # verrà rigenerato pulito da phase_stallion_ratings partendo dai sire ormai
-    # canonici sopra — niente più righe duplicate residue da run precedenti.
-    conn.execute("DELETE FROM stallion_rating_stats")
-
     conn.commit()
 
 # ─────────────────────────────────────────────
@@ -1433,6 +1428,13 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
     volume_multiplier usa n_figli_totali (il numero reale, non solo quelli nel DB).
     """
     print("[RATINGS] Calcolo rating stalloni...", file=sys.stderr)
+
+    # stallion_rating_stats è dato interamente derivato: lo svuotiamo QUI (non in
+    # init_db) perché questa è l'UNICA funzione che lo ripopola subito dopo.
+    # Se lo svuotamento stesse in init_db, qualsiasi altro script che chiama
+    # init_db() senza poi richiamare questa funzione (es. fill_pedigree.py)
+    # lascerebbe la tabella vuota — bug reale successo in produzione.
+    conn.execute("DELETE FROM stallion_rating_stats")
 
     stallions = conn.execute("""
         SELECT DISTINCT sire FROM horse_ratings
