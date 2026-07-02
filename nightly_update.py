@@ -896,14 +896,20 @@ def phase_ratings(conn: sqlite3.Connection):
 #          + boost vendopuledri (max +5 punti, normalizzato)
 # ─────────────────────────────────────────────
 def phase_stallion_ratings(conn: sqlite3.Connection):
+    """
+    Calcola rating stalloni.
+    n_figli_totali = MAX(vp_total_offspring, figli_nel_db) — usa VP quando disponibile.
+    n_in_corsa     = figli con almeno una gara negli ultimi ACTIVE_MONTHS.
+    volume_multiplier usa n_figli_totali (il numero reale, non solo quelli nel DB).
+    """
     print("[RATINGS] Calcolo rating stalloni...", file=sys.stderr)
 
     stallions = conn.execute("""
         SELECT DISTINCT sire FROM horse_ratings
-        WHERE sire IS NOT NULL AND sire != '' AND rating_mode='performance'
+        WHERE sire IS NOT NULL AND sire != \'\' AND rating_mode=\'performance\'
     """).fetchall()
 
-    # Leggi dati vendopuledri per boost
+    # Leggi dati VP: offspring reale + earnings per boost
     vp_data: dict[str, dict] = {}
     try:
         vp_rows = conn.execute("""
@@ -917,58 +923,57 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
                     "earnings":  row[2] or 0.0,
                 }
     except sqlite3.OperationalError:
-        pass  # tabella non ancora presente
+        pass
 
     max_vp_earnings = max((v["earnings"] for v in vp_data.values()), default=1.0) or 1.0
-
     now_iso = datetime.utcnow().isoformat()
     cutoff  = (datetime.utcnow() - timedelta(days=ACTIVE_MONTHS * 30)).strftime("%Y-%m-%d")
 
-    # Accumula prima tutti i final_score, poi calcola soglie percentili dinamiche
     all_final_scores: list[float] = []
     row_buffer: list[tuple] = []
 
     for (sire_name,) in stallions:
         children = conn.execute("""
             SELECT grade FROM horse_ratings
-            WHERE UPPER(TRIM(sire))=UPPER(TRIM(?)) AND rating_mode='performance'
+            WHERE UPPER(TRIM(sire))=UPPER(TRIM(?)) AND rating_mode=\'performance\'
         """, (sire_name,)).fetchall()
 
         if not children:
             continue
 
-        n = len(children)
-        vm = volume_multiplier(n)
+        n_db   = len(children)
+        sire_key = sire_name.upper()
+
+        # n_figli_totali: usa vp_total_offspring se >= n_db (fonte più autorevole)
+        vp_offspring   = vp_data.get(sire_key, {}).get("offspring", 0)
+        n_figli_totali = max(vp_offspring, n_db)
+
+        # volume_multiplier sul numero reale di figli (non solo quelli nel DB)
+        vm = volume_multiplier(n_figli_totali)
 
         grade_counts = {g: 0 for g in GRADE_WEIGHTS}
         for (grade,) in children:
             if grade in grade_counts:
                 grade_counts[grade] += 1
 
-        weighted_sum = sum(GRADE_WEIGHTS[g] * c for g, c in grade_counts.items())
-        base_score = weighted_sum / n if n > 0 else 0.0
+        n_SSS = grade_counts.get("SSS", 0)
+        n_SS  = grade_counts.get("SS", 0)
+        n_S   = grade_counts.get("S", 0)
+        pct_top_S = round((n_SSS + n_SS + n_S) / n_db * 100, 2) if n_db > 0 else 0.0
+
+        weighted_sum  = sum(GRADE_WEIGHTS[g] * c for g, c in grade_counts.items())
+        base_score    = weighted_sum / n_db if n_db > 0 else 0.0
         stallion_score = round(base_score * vm, 2)
 
-        # Boost vendopuledri: max +5 punti, normalizzato sul massimo dataset
-        sire_key = sire_name.upper()
         vp_boost = 0.0
         if sire_key in vp_data and max_vp_earnings > 0:
             vp_boost = round((vp_data[sire_key]["earnings"] / max_vp_earnings) * 5.0, 2)
 
         final_score = round(min(stallion_score + vp_boost, 100.0), 2)
-        all_final_scores.append(final_score)
-        row_buffer.append((sire_name, n, n_in_corsa, stallion_score,
-                           n_SSS, n_SS, n_S, pct_top_S, round(avg_earnings, 2),
-                           vp_boost, final_score, now_iso))
-
-        n_SSS = grade_counts.get("SSS", 0)
-        n_SS  = grade_counts.get("SS", 0)
-        n_S   = grade_counts.get("S", 0)
-        pct_top_S = round((n_SSS + n_SS + n_S) / n * 100, 2) if n > 0 else 0.0
 
         avg_earnings = conn.execute("""
             SELECT AVG(career_earnings) FROM horse_ratings
-            WHERE UPPER(TRIM(sire))=UPPER(TRIM(?)) AND rating_mode='performance'
+            WHERE UPPER(TRIM(sire))=UPPER(TRIM(?)) AND rating_mode=\'performance\'
         """, (sire_name,)).fetchone()[0] or 0.0
 
         n_in_corsa = conn.execute("""
@@ -978,11 +983,17 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
             WHERE UPPER(TRIM(h.sire))=UPPER(TRIM(?)) AND r.race_date >= ?
         """, (sire_name, cutoff)).fetchone()[0] or 0
 
-    # Calcola soglie percentili dinamiche su tutti i final_score raccolti
-    dyn_thresholds = build_stallion_grade_thresholds(all_final_scores)
-    print(f"[RATINGS] Soglie stalloni (percentili): {[(round(t,1),g) for t,g in dyn_thresholds]}", file=sys.stderr)
+        all_final_scores.append(final_score)
+        row_buffer.append((
+            sire_name, n_figli_totali, n_in_corsa, stallion_score,
+            n_SSS, n_SS, n_S, pct_top_S, round(avg_earnings, 2),
+            vp_boost, final_score, now_iso
+        ))
 
-    for (sire_name, n, n_in_corsa, stallion_score,
+    dyn_thresholds = build_stallion_grade_thresholds(all_final_scores)
+    print(f"[RATINGS] Soglie stalloni: {[(round(t,1),g) for t,g in dyn_thresholds]}", file=sys.stderr)
+
+    for (sire_name, n_figli_totali, n_in_corsa, stallion_score,
          n_SSS, n_SS, n_S, pct_top_S, avg_earn,
          vp_boost, final_score, ts) in row_buffer:
         grade = score_to_stallion_grade(final_score, dyn_thresholds) if final_score > 0 else "N/A"
@@ -993,17 +1004,15 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
                  vp_boost, final_score, last_updated)
             VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?)
         """, (
-            sire_name, n, n_in_corsa, stallion_score, grade,
+            sire_name, n_figli_totali, n_in_corsa, stallion_score, grade,
             n_SSS, n_SS, n_S, pct_top_S, avg_earn,
             vp_boost, final_score, ts
         ))
 
     conn.commit()
-    print(f"[RATINGS] Rating stalloni: {len(stallions)}", file=sys.stderr)
+    print(f"[RATINGS] Rating stalloni: {len(row_buffer)} (VP data: {len(vp_data)} stalloni)", file=sys.stderr)
 
-# ─────────────────────────────────────────────
-# DB helpers
-# ─────────────────────────────────────────────
+
 def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
     inserted = 0
     for r in races:
