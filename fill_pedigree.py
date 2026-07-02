@@ -194,11 +194,16 @@ def _fallback_trottoweb_pedigree(name: str) -> dict:
 
 
 def fill_horses_sire_dam(conn, limit: Optional[int] = None) -> int:
-    query = "SELECT name, birth_year FROM horses WHERE sire IS NULL OR dam IS NULL"
+    query = """
+        SELECT name, birth_year FROM horses
+        WHERE sire IS NULL OR dam IS NULL
+        ORDER BY birth_year DESC
+    """
     if limit:
         query += f" LIMIT {int(limit)}"
     rows = conn.execute(query).fetchall()
-    print(f"[PEDIGREE] FASE 1 — cavalli con sire/dam mancante: {len(rows)}", file=sys.stderr)
+    print(f"[PEDIGREE] FASE 1 — cavalli con sire/dam mancante: {len(rows)} "
+          f"(ordinati dai più recenti)", file=sys.stderr)
 
     filled = 0
     for i, (name, birth_year) in enumerate(rows, 1):
@@ -212,12 +217,19 @@ def fill_horses_sire_dam(conn, limit: Optional[int] = None) -> int:
 
 
 def fill_grandparents(conn, limit: Optional[int] = None, use_anact: bool = True) -> int:
+    # Genitori distinti, ordinati per l'anno di nascita PIU' RECENTE tra i
+    # figli che li referenziano (es. se un cavallo è padre sia di un puledro
+    # 2024 sia di uno 2015, viene trattato con la priorità del 2024).
     rows = conn.execute("""
-        SELECT DISTINCT sire AS name FROM horses WHERE sire IS NOT NULL AND sire != ''
-        UNION
-        SELECT DISTINCT dam AS name FROM horses WHERE dam IS NOT NULL AND dam != ''
+        SELECT name, MAX(birth_year) AS max_year FROM (
+            SELECT sire AS name, birth_year FROM horses WHERE sire IS NOT NULL AND sire != ''
+            UNION ALL
+            SELECT dam AS name, birth_year FROM horses WHERE dam IS NOT NULL AND dam != ''
+        )
+        GROUP BY name
+        ORDER BY max_year DESC, name ASC
     """).fetchall()
-    all_names = sorted({r[0] for r in rows if r[0]})
+    all_names = [r[0] for r in rows if r[0]]
 
     complete = {r[0] for r in conn.execute("""
         SELECT name FROM stallion_pedigree
@@ -230,7 +242,7 @@ def fill_grandparents(conn, limit: Optional[int] = None, use_anact: bool = True)
 
     print(f"[PEDIGREE] FASE 2 — genitori distinti: {len(all_names)}, "
           f"già completi (saltati): {len(complete & set(all_names))}, "
-          f"da fare in questo giro: {len(todo)}", file=sys.stderr)
+          f"da fare in questo giro: {len(todo)} (ordinati dai più recenti)", file=sys.stderr)
 
     filled = 0
     anact_hits = 0
