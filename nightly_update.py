@@ -40,7 +40,10 @@ from bs4 import BeautifulSoup
 # ─────────────────────────────────────────────
 TROTTOWEB_BASE  = "https://www.trottoweb.it/TrottoWeb/php_resp"
 TROTTOWEB_HORSE = "https://www.trottoweb.it/TrottoWeb/php_resp/horse.php"
-TROTTOWEB_RACES = "https://www.trottoweb.it/TrottoWeb/php_resp/races.php"
+# ATTENZIONE: hCav.php e races.php (sotto www.trottoweb.it/.../php_resp/) NON ESISTONO —
+# erano endpoint mai verificati. L'endpoint reale che restituisce profilo + storico gare
+# completo (senza bisogno di JavaScript) vive sul dominio legacy trottoweb.com:
+TROTTOWEB_CAVAN = "http://www.trottoweb.com/Sviluppo/php/cavAn.php"
 
 DB_PATH       = Path(os.environ.get("DB_PATH", "trotto_master.db"))
 REPO_DB_PATH  = Path(os.environ.get("REPO_DB_PATH", "data.db"))  # root repo
@@ -438,18 +441,34 @@ def _parse_float(val: str) -> float:
     except ValueError:
         return 0.0
 
-def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_year: Optional[int]) -> int:
+def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_year: Optional[int] = None) -> int:
     """
-    Recupera l'intera carriera di un cavallo da races.php e la inserisce nel DB
-    (INSERT OR IGNORE -> colma solo i buchi, non duplica nulla).
+    Recupera profilo + intera carriera di un cavallo da cavAn.php (endpoint reale,
+    dominio legacy trottoweb.com) e li inserisce/aggiorna nel DB.
+    Le gare vengono inserite con INSERT OR IGNORE -> colma solo i buchi, non duplica.
     Filtra le gare precedenti a MIN_RACE_DATE.
     Ritorna il numero di gare effettivamente inserite (nuove).
     """
-    races_soup = fetch_url(TROTTOWEB_RACES, params={"cavallo": name, "anno": birth_year})
-    if not races_soup:
+    data = _fetch_cavan(name)
+    if not data:
         return 0
-    races = parse_races(races_soup, name)
-    races = _filter_min_date(races)
+
+    # Aggiorna il profilo solo per i campi che abbiamo effettivamente recuperato
+    # (COALESCE mantiene il valore esistente se il nuovo è NULL)
+    if any(k in data for k in ("sex", "country", "birth_year", "sire", "dam")):
+        conn.execute("""
+            UPDATE horses SET
+                sex        = COALESCE(?, sex),
+                country    = COALESCE(?, country),
+                birth_year = COALESCE(?, birth_year),
+                sire       = COALESCE(?, sire),
+                dam        = COALESCE(?, dam)
+            WHERE name = ?
+        """, (data.get("sex"), data.get("country"), data.get("birth_year"),
+              data.get("sire"), data.get("dam"), name))
+        conn.commit()
+
+    races = _filter_min_date(data.get("races", []))
     inserted = _insert_races(conn, races)
     if inserted > 0:
         _update_horse_career_stats(conn, name)
@@ -462,18 +481,97 @@ def _mark_backfilled(conn: sqlite3.Connection, name: str):
     """, (datetime.utcnow().isoformat(), name))
     conn.commit()
 
-# ─────────────────────────────────────────────
-# FASE 1 — DISCOVERY
-# ─────────────────────────────────────────────
+def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
+    """
+    Parsa cavAn.php (trottoweb.com) — contiene sia il profilo del cavallo
+    (sesso/età/padre/madre) sia lo storico gare COMPLETO, in un'unica richiesta.
+    Formato osservato:
+      "FABIO BI m.i.5"  ->  m/f . i(ndigeno)/e(stero) . età
+      "MANOFMANYMISSIONS / ROUGE BI"  ->  PADRE / MADRE (a volte con codice in mezzo)
+      righe tabella: data(link con data=/ippod=/codice=/n_corsa=) | Ngara^track | piazz. | dist | tempo | note | premio | video
+    Ritorna dict con: sex, country, birth_year (stimato da età), sire, dam, races (list).
+    """
+    result: dict = {"races": []}
+    text = soup.get_text(" ", strip=True)
 
-# ─────────────────────────────────────────────
-# ─────────────────────────────────────────────
-# FASE 0 — RESULTS (hRis.php per ippodromo)
-# ─────────────────────────────────────────────
+    m = re.search(r"\b([mf])\.([ie])\.(\d{1,2})\b", text)
+    if m:
+        result["sex"] = "M" if m.group(1) == "m" else "F"
+        result["country"] = "ITA" if m.group(2) == "i" else "EST"
+        # L'età è "anni compiuti nella stagione corrente": approssimiamo l'anno di nascita
+        # come anno_corrente - età. Può sbagliare di ±1 rispetto al vero anno solare di nascita.
+        age = int(m.group(3))
+        result["birth_year"] = datetime.utcnow().year - age
 
-TROTTOWEB_RESULTS_HOME = "https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php"
-TROTTOWEB_HORSE_DETAIL = "https://www.trottoweb.it/TrottoWeb/php_resp/hCav.php"
-NON_CLASSIF = {"r.p.", "r.c.", "r.a.", "rit.", "tnc", "cad.", "disq."}
+    m2 = re.search(
+        r"\b([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s*/\s*[a-zA-Z]\d*\s*/\s*([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s+cat\.mc",
+        text
+    )
+    if m2:
+        result["sire"] = m2.group(1).strip()
+        result["dam"]  = m2.group(2).strip()
+
+    for tr in soup.find_all("tr"):
+        tds = tr.find_all("td")
+        if len(tds) < 6:
+            continue
+
+        link = tds[0].find("a", href=True)
+        href = link["href"] if link else ""
+        m_date  = re.search(r"data=(\d{4}-\d{2}-\d{2})", href)
+        m_ippod = re.search(r"ippod=([A-Za-z]{2,4})", href)
+        m_cod   = re.search(r"codice=(\d+)", href)
+        m_nc    = re.search(r"n_corsa=(\d+)", href)
+        if not m_date:
+            continue  # riga non è una gara (es. header, paginazione)
+
+        race_date = m_date.group(1)
+        track     = (m_ippod.group(1) if m_ippod else "").upper()
+        codice    = m_cod.group(1) if m_cod else ""
+        n_corsa   = m_nc.group(1) if m_nc else ""
+
+        placement_raw = tds[2].get_text(strip=True) if len(tds) > 2 else ""
+        m_pos = re.match(r"(\d+)", placement_raw)
+        placement = int(m_pos.group(1)) if (m_pos and "\u00b0" in placement_raw) else None
+
+        dist_raw = tds[3].get_text(strip=True) if len(tds) > 3 else ""
+        m_dist = re.match(r"(\d+)", dist_raw)
+        distance = int(m_dist.group(1)) if m_dist else None
+
+        time_raw = tds[4].get_text(strip=True) if len(tds) > 4 else ""
+        time_km = None
+        m_time = re.match(r"(\d+)\.(\d+)\.(\d+)", time_raw)
+        if m_time:
+            time_km = f"{m_time.group(1)}'{m_time.group(2)}\"{m_time.group(3)}"
+
+        prize_raw = tds[6].get_text(strip=True) if len(tds) > 6 else "0"
+        prize = _parse_float(prize_raw) if prize_raw not in ("---", "") else 0.0
+
+        result["races"].append({
+            "horse_name":    horse_name.upper(),
+            "race_date":     race_date,
+            "track":         track,
+            "placement":     placement,
+            "placement_raw": placement_raw,
+            "time_km":       time_km,
+            "distance":      distance,
+            "driver":        "",
+            "prize_net":     prize,
+            "prize_gross":   prize,
+            "race_code":     f"{race_date}_{codice}" if codice else f"{race_date}_{track}_{n_corsa}",
+        })
+
+    return result
+
+
+def _fetch_cavan(name: str) -> dict:
+    """Fetch + parse di cavAn.php per un cavallo. Ritorna dict vuoto {'races': []} se non raggiungibile."""
+    soup = fetch_url(TROTTOWEB_CAVAN, params={"nome": name})
+    if not soup:
+        return {"races": []}
+    return _parse_cavan_page(soup, name)
+
+
 
 
 def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str) -> list[dict]:
@@ -595,9 +693,10 @@ def _get_missing_convegni(conn: sqlite3.Connection) -> list[dict]:
 
 def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> tuple[bool, Optional[int]]:
     """
-    Aggiunge il cavallo al DB se non esiste. Tenta recupero profilo da hCav.php.
-    Ritorna (is_new, birth_year) — birth_year è quello appena recuperato/già presente,
-    utile al chiamante per andare a recuperare subito la carriera completa.
+    Aggiunge il cavallo al DB se non esiste (come stub minimo — nome soltanto).
+    Il profilo completo (sesso/età/padre/madre) e la carriera arrivano subito dopo
+    tramite _fetch_and_insert_full_career(), che usa l'endpoint reale cavAn.php.
+    Ritorna (is_new, birth_year) — birth_year è None qui, verrà popolato dal catch-up.
     """
     existing = conn.execute(
         "SELECT birth_year FROM horses WHERE name = ?", (horse_name,)
@@ -605,23 +704,17 @@ def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> tuple[bool
     if existing:
         return False, existing[0]
 
-    detail = {}
-    detail_soup = fetch_url(TROTTOWEB_HORSE_DETAIL, params={"cavallo": horse_name})
-    if detail_soup:
-        detail = parse_horse_detail(detail_soup, horse_name)
     try:
         conn.execute("""
             INSERT OR IGNORE INTO horses
-                (name, birth_year, sex, country, sire, dam, last_updated, backfill_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-        """, (horse_name, detail.get("birth_year"), detail.get("sex"),
-              detail.get("country"), detail.get("sire"), detail.get("dam"),
-              datetime.utcnow().isoformat()))
+                (name, last_updated, backfill_status)
+            VALUES (?, ?, 'pending')
+        """, (horse_name, datetime.utcnow().isoformat()))
         conn.commit()
-        return True, detail.get("birth_year")
+        return True, None
     except sqlite3.Error as e:
         print(f"  [WARN] Insert horse {horse_name}: {e}", file=sys.stderr)
-        return False, detail.get("birth_year")
+        return False, None
 
 
 def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
@@ -665,22 +758,24 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
                 print(f"      +{caught_up} gare storiche recuperate", file=sys.stderr)
                 _mark_backfilled(conn, name)
 
-            try:
-                cur = conn.execute("""
-                    INSERT OR IGNORE INTO races
-                        (horse_name, race_date, track, placement, placement_raw,
-                         time_km, distance, driver, prize_net, prize_gross, race_code)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
-                """, (name, h["race_date"], h["track"],
-                      h["placement"], str(h["placement"]) if h["placement"] else "nr",
-                      h["time_km"], h["distance"], h["driver"],
-                      h["prize"], h["prize"], h["race_code"]))
-                if cur.rowcount > 0:
-                    total_new_races += 1
-                    conv_races += 1
-                    _update_horse_career_stats(conn, name)
-            except sqlite3.Error as e:
-                print(f"    [WARN] {name}: {e}", file=sys.stderr)
+            race_dict = {
+                "horse_name":    name,
+                "race_date":     h["race_date"],
+                "track":         h["track"],
+                "placement":     h["placement"],
+                "placement_raw": str(h["placement"]) if h["placement"] else "nr",
+                "time_km":       h["time_km"],
+                "distance":      h["distance"],
+                "driver":        h["driver"],
+                "prize_net":     h["prize"],
+                "prize_gross":   h["prize"],
+                "race_code":     h["race_code"],
+            }
+            n_inserted = _insert_races(conn, [race_dict])
+            if n_inserted > 0:
+                total_new_races += 1
+                conv_races += 1
+                _update_horse_career_stats(conn, name)
 
         conn.commit()
         print(f"  -> {conv['ippodromo']} {conv['data']}: +{conv_races} gare, +{conv_horses} cavalli nuovi", file=sys.stderr)
@@ -797,43 +892,14 @@ def phase_discovery(conn: sqlite3.Connection) -> int:
     new_count = 0
     for h in horse_list:
         name = h["name"]
-        birth_year = h["birth_year"]
-
-        existing = conn.execute(
-            "SELECT 1 FROM horses WHERE name=? AND (birth_year=? OR birth_year IS NULL)",
-            (name, birth_year)
-        ).fetchone()
-        if existing:
+        is_new, _ = _ensure_horse_in_db(conn, name)
+        if not is_new:
             continue
 
-        detail_soup = fetch_url(h["url_detail"])
-        if not detail_soup:
-            continue
-
-        horse_data = parse_horse_detail(detail_soup, name)
-        if birth_year and not horse_data.get("birth_year"):
-            horse_data["birth_year"] = birth_year
-
-        try:
-            conn.execute("""
-                INSERT OR IGNORE INTO horses
-                    (name, birth_year, sex, country, sire, dam, last_updated, backfill_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-            """, (
-                horse_data.get("name"), horse_data.get("birth_year"),
-                horse_data.get("sex"), horse_data.get("country"),
-                horse_data.get("sire"), horse_data.get("dam"),
-                datetime.utcnow().isoformat()
-            ))
-            conn.commit()
-        except sqlite3.Error as e:
-            print(f"  [WARN] Insert horse {name}: {e}", file=sys.stderr)
-            continue
-
-        caught_up = _fetch_and_insert_full_career(conn, name, horse_data.get("birth_year"))
+        caught_up = _fetch_and_insert_full_career(conn, name)
         _mark_backfilled(conn, name)
         new_count += 1
-        print(f"  [NEW] {name} ({birth_year}) -> +{caught_up} gare storiche", file=sys.stderr)
+        print(f"  [NEW] {name} -> +{caught_up} gare storiche", file=sys.stderr)
 
     print(f"[DISCOVERY] Nuovi cavalli inseriti: {new_count}", file=sys.stderr)
     return new_count
@@ -859,15 +925,8 @@ def phase_update(conn: sqlite3.Connection) -> tuple[int, int]:
     new_races_total = 0
 
     for name, birth_year in active_horses:
-        races_soup = fetch_url(TROTTOWEB_RACES, params={"cavallo": name, "anno": birth_year})
-        if not races_soup:
-            continue
-
-        races = parse_races(races_soup, name)
-        races = _filter_min_date(races)
-        inserted = _insert_races(conn, races)
+        inserted = _fetch_and_insert_full_career(conn, name, birth_year)
         if inserted > 0:
-            _update_horse_career_stats(conn, name)
             updated_count += 1
             new_races_total += inserted
             print(f"  [UPD] {name}: +{inserted} gare", file=sys.stderr)
@@ -1148,6 +1207,16 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
     inserted = 0
     for r in races:
         try:
+            # Un cavallo non corre due volte lo stesso giorno: se esiste già una gara
+            # per (cavallo, data) — anche con race_code diverso, perché arrivata da
+            # un'altra fonte (hRis.php vs cavAn.php) — non duplichiamo.
+            already = conn.execute(
+                "SELECT 1 FROM races WHERE horse_name=? AND race_date=?",
+                (r.get("horse_name"), r.get("race_date"))
+            ).fetchone()
+            if already:
+                continue
+
             cursor = conn.execute("""
                 INSERT OR IGNORE INTO races
                     (horse_name, race_date, track, placement, placement_raw,
