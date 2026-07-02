@@ -6,15 +6,18 @@ Eseguito ogni notte su Render (cron job o trigger esterno).
 Fasi:
   0. RESULTS    — legge hRis.php per ogni ippodromo degli ultimi 2 gg,
                   inserisce gare nuove e aggiunge cavalli sconosciuti al DB
+                  (i cavalli nuovi vengono messi subito in pari con la carriera completa)
   1. DISCOVERY  — legge homepage Trottoweb, trova cavalli nuovi, inserisce carriera completa
   2. UPDATE     — aggiorna cavalli attivi (ultimi 6 mesi) con nuove gare
+  2b. BACKFILL  — ricontrolla a rotazione i cavalli esistenti (dal 2012 in poi) per colmare
+                  eventuali buchi nello storico gare, un batch per notte
   3. RATINGS    — ricalcola rating SSS..F per tutti i cavalli
                   + rating stalloni con volume multiplier + boost vendopuledri
   4. SYNC       — copia DB in data.db (root del repo)
   5. GIT PUSH   — git push su GitHub → Render rideploya automaticamente
-  6. NOTIFICA   — stampa JSON {new_horses, new_races, horses_updated}
+  6. NOTIFICA   — stampa JSON {new_horses, new_races, horses_updated, horses_backfilled}
 
-Output finale su stdout (ultima riga): JSON con chiavi new_horses, new_races, horses_updated
+Output finale su stdout (ultima riga): JSON con chiavi new_horses, new_races, horses_updated, horses_backfilled
 """
 
 import os
@@ -48,6 +51,15 @@ GITHUB_REPO   = os.environ.get("GITHUB_REPO", "statippica")
 
 ACTIVE_MONTHS = 6
 REQUEST_DELAY = 0.5
+
+# Lavoriamo solo con gare dal 2012 in avanti (storico precedente non tracciato)
+MIN_RACE_DATE = os.environ.get("MIN_RACE_DATE", "2012-01-01")
+
+# Backfill storico: quanti cavalli "mettere in pari" per ogni esecuzione notturna.
+# Il cron gira lun+gio, quindi con batch=250 ~22.000 cavalli vengono coperti in poche settimane.
+BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_BATCH_SIZE", "250"))
+# Dopo quanti giorni un cavallo già "done" viene ricontrollato (Trottoweb può correggere dati vecchi)
+REBACKFILL_DAYS = int(os.environ.get("REBACKFILL_DAYS", "180"))
 
 SESSION = requests.Session()
 SESSION.headers.update({
@@ -247,6 +259,19 @@ def init_db(conn: sqlite3.Connection):
         except sqlite3.OperationalError:
             pass  # colonna già esistente
 
+    # Colonne per il tracking del backfill storico (gap-filling) su horses
+    for col, typ in [
+        ("backfill_status",  "TEXT DEFAULT 'pending'"),
+        ("last_backfill_at", "TEXT"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE horses ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass  # colonna già esistente
+
+    # Cavalli inseriti prima di questa modifica non hanno backfill_status -> pending
+    conn.execute("UPDATE horses SET backfill_status='pending' WHERE backfill_status IS NULL")
+
     conn.commit()
 
 # ─────────────────────────────────────────────
@@ -365,6 +390,10 @@ def parse_races(soup: BeautifulSoup, horse_name: str) -> list[dict]:
 
     return races
 
+def _filter_min_date(races: list[dict], min_date: str = MIN_RACE_DATE) -> list[dict]:
+    """Scarta le gare precedenti a MIN_RACE_DATE (lavoriamo solo dal 2012 in avanti)."""
+    return [r for r in races if r.get("race_date") and r["race_date"] >= min_date]
+
 def _parse_date(val: str) -> Optional[str]:
     if not val:
         return None
@@ -386,6 +415,30 @@ def _parse_float(val: str) -> float:
         return float(val)
     except ValueError:
         return 0.0
+
+def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_year: Optional[int]) -> int:
+    """
+    Recupera l'intera carriera di un cavallo da races.php e la inserisce nel DB
+    (INSERT OR IGNORE -> colma solo i buchi, non duplica nulla).
+    Filtra le gare precedenti a MIN_RACE_DATE.
+    Ritorna il numero di gare effettivamente inserite (nuove).
+    """
+    races_soup = fetch_url(TROTTOWEB_RACES, params={"cavallo": name, "anno": birth_year})
+    if not races_soup:
+        return 0
+    races = parse_races(races_soup, name)
+    races = _filter_min_date(races)
+    inserted = _insert_races(conn, races)
+    if inserted > 0:
+        _update_horse_career_stats(conn, name)
+    return inserted
+
+def _mark_backfilled(conn: sqlite3.Connection, name: str):
+    conn.execute("""
+        UPDATE horses SET backfill_status='done', last_backfill_at=?
+        WHERE name=?
+    """, (datetime.utcnow().isoformat(), name))
+    conn.commit()
 
 # ─────────────────────────────────────────────
 # FASE 1 — DISCOVERY
@@ -518,10 +571,18 @@ def _get_missing_convegni(conn: sqlite3.Connection) -> list[dict]:
     return missing
 
 
-def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> bool:
-    """Aggiunge il cavallo al DB se non esiste. Tenta recupero profilo da hCav.php."""
-    if conn.execute("SELECT 1 FROM horses WHERE name = ?", (horse_name,)).fetchone():
-        return False
+def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> tuple[bool, Optional[int]]:
+    """
+    Aggiunge il cavallo al DB se non esiste. Tenta recupero profilo da hCav.php.
+    Ritorna (is_new, birth_year) — birth_year è quello appena recuperato/già presente,
+    utile al chiamante per andare a recuperare subito la carriera completa.
+    """
+    existing = conn.execute(
+        "SELECT birth_year FROM horses WHERE name = ?", (horse_name,)
+    ).fetchone()
+    if existing:
+        return False, existing[0]
+
     detail = {}
     detail_soup = fetch_url(TROTTOWEB_HORSE_DETAIL, params={"cavallo": horse_name})
     if detail_soup:
@@ -529,16 +590,16 @@ def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> bool:
     try:
         conn.execute("""
             INSERT OR IGNORE INTO horses
-                (name, birth_year, sex, country, sire, dam, last_updated)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (name, birth_year, sex, country, sire, dam, last_updated, backfill_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
         """, (horse_name, detail.get("birth_year"), detail.get("sex"),
               detail.get("country"), detail.get("sire"), detail.get("dam"),
               datetime.utcnow().isoformat()))
         conn.commit()
-        return True
+        return True, detail.get("birth_year")
     except sqlite3.Error as e:
         print(f"  [WARN] Insert horse {horse_name}: {e}", file=sys.stderr)
-        return False
+        return False, detail.get("birth_year")
 
 
 def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
@@ -546,6 +607,8 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
     FASE 0 — Scarica i convegni mancanti da Trottoweb e li inserisce nel DB.
     Usa gap detection: confronta convegni disponibili vs presenti nel DB.
     Parser CSS-based: funziona per gare con e senza premi.
+    I cavalli nuovi vengono messi subito in pari con l'intera carriera storica
+    (dal 2012 in avanti), non solo con la gara del convegno corrente.
     Ritorna (new_horses, new_races).
     """
     print("[RESULTS] Controllo convegni mancanti...", file=sys.stderr)
@@ -571,10 +634,14 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
         conv_horses = 0
         for h in rows:
             name = h["name"]
-            if _ensure_horse_in_db(conn, name):
+            is_new, birth_year = _ensure_horse_in_db(conn, name)
+            if is_new:
                 total_new_horses += 1
                 conv_horses += 1
-                print(f"    [NEW] {name}", file=sys.stderr)
+                print(f"    [NEW] {name} -> recupero carriera completa...", file=sys.stderr)
+                caught_up = _fetch_and_insert_full_career(conn, name, birth_year)
+                print(f"      +{caught_up} gare storiche recuperate", file=sys.stderr)
+                _mark_backfilled(conn, name)
 
             try:
                 cur = conn.execute("""
@@ -728,8 +795,8 @@ def phase_discovery(conn: sqlite3.Connection) -> int:
         try:
             conn.execute("""
                 INSERT OR IGNORE INTO horses
-                    (name, birth_year, sex, country, sire, dam, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (name, birth_year, sex, country, sire, dam, last_updated, backfill_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
             """, (
                 horse_data.get("name"), horse_data.get("birth_year"),
                 horse_data.get("sex"), horse_data.get("country"),
@@ -741,14 +808,10 @@ def phase_discovery(conn: sqlite3.Connection) -> int:
             print(f"  [WARN] Insert horse {name}: {e}", file=sys.stderr)
             continue
 
-        races_soup = fetch_url(TROTTOWEB_RACES, params={"cavallo": name, "anno": birth_year})
-        if races_soup:
-            races = parse_races(races_soup, name)
-            _insert_races(conn, races)
-
-        _update_horse_career_stats(conn, name)
+        caught_up = _fetch_and_insert_full_career(conn, name, horse_data.get("birth_year"))
+        _mark_backfilled(conn, name)
         new_count += 1
-        print(f"  [NEW] {name} ({birth_year})", file=sys.stderr)
+        print(f"  [NEW] {name} ({birth_year}) -> +{caught_up} gare storiche", file=sys.stderr)
 
     print(f"[DISCOVERY] Nuovi cavalli inseriti: {new_count}", file=sys.stderr)
     return new_count
@@ -779,6 +842,7 @@ def phase_update(conn: sqlite3.Connection) -> tuple[int, int]:
             continue
 
         races = parse_races(races_soup, name)
+        races = _filter_min_date(races)
         inserted = _insert_races(conn, races)
         if inserted > 0:
             _update_horse_career_stats(conn, name)
@@ -788,6 +852,51 @@ def phase_update(conn: sqlite3.Connection) -> tuple[int, int]:
 
     print(f"[UPDATE] Cavalli aggiornati: {updated_count}, gare nuove: {new_races_total}", file=sys.stderr)
     return updated_count, new_races_total
+
+# ─────────────────────────────────────────────
+# FASE 2b — BACKFILL GAP (cavalli esistenti con buchi nello storico)
+# ─────────────────────────────────────────────
+def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BATCH_SIZE) -> tuple[int, int]:
+    """
+    Ricontrolla a rotazione i cavalli già presenti nel DB per colmare eventuali buchi
+    nello storico gare (dal 2012 in avanti). Un batch per esecuzione, per non sovraccaricare
+    Trottoweb né far scadere il timeout del cron. Ogni cavallo viene rivisitato al massimo
+    ogni REBACKFILL_DAYS giorni.
+
+    Ritorna (horses_backfilled, new_races_found).
+    """
+    print(f"[BACKFILL] Batch size: {batch_size}", file=sys.stderr)
+
+    # Rimetti in 'pending' i cavalli il cui ultimo controllo è troppo vecchio
+    rebackfill_cutoff = (datetime.utcnow() - timedelta(days=REBACKFILL_DAYS)).isoformat()
+    conn.execute("""
+        UPDATE horses SET backfill_status='pending'
+        WHERE backfill_status='done' AND (last_backfill_at IS NULL OR last_backfill_at < ?)
+    """, (rebackfill_cutoff,))
+    conn.commit()
+
+    pending = conn.execute("""
+        SELECT name, birth_year FROM horses
+        WHERE backfill_status IS NULL OR backfill_status = 'pending'
+        ORDER BY last_backfill_at IS NOT NULL, last_backfill_at ASC, name ASC
+        LIMIT ?
+    """, (batch_size,)).fetchall()
+
+    print(f"[BACKFILL] Cavalli da controllare in questo batch: {len(pending)}", file=sys.stderr)
+
+    horses_backfilled = 0
+    new_races_found = 0
+
+    for name, birth_year in pending:
+        inserted = _fetch_and_insert_full_career(conn, name, birth_year)
+        _mark_backfilled(conn, name)
+        horses_backfilled += 1
+        if inserted > 0:
+            new_races_found += inserted
+            print(f"  [GAP] {name}: +{inserted} gare recuperate", file=sys.stderr)
+
+    print(f"[BACKFILL] Cavalli controllati: {horses_backfilled}, gare colmate: {new_races_found}", file=sys.stderr)
+    return horses_backfilled, new_races_found
 
 # ─────────────────────────────────────────────
 # FASE 3 — RATINGS cavalli
@@ -1104,12 +1213,13 @@ def phase_git_push():
 # ─────────────────────────────────────────────
 # FASE 6 — NOTIFICA
 # ─────────────────────────────────────────────
-def phase_notify(new_horses: int, new_races: int, horses_updated: int):
+def phase_notify(new_horses: int, new_races: int, horses_updated: int, horses_backfilled: int = 0):
     payload = {
-        "new_horses":     new_horses,
-        "new_races":      new_races,
-        "horses_updated": horses_updated,
-        "timestamp":      datetime.utcnow().isoformat() + "Z"
+        "new_horses":        new_horses,
+        "new_races":         new_races,
+        "horses_updated":    horses_updated,
+        "horses_backfilled": horses_backfilled,
+        "timestamp":         datetime.utcnow().isoformat() + "Z"
     }
     print(json.dumps(payload))
 
@@ -1157,23 +1267,25 @@ def main():
 
     try:
         phase_seed_vp(conn)                              # seed VP hardcoded se tabella vuota
-        r_horses, r_races = phase_results(conn)               # FASE 0: risultati hRis.php
-        d_horses          = phase_discovery(conn)        # FASE 1: cavalli nuovi da homepage
+        r_horses, r_races = phase_results(conn)               # FASE 0: risultati hRis.php (+ catch-up cavalli nuovi)
+        d_horses          = phase_discovery(conn)        # FASE 1: cavalli nuovi da homepage (+ catch-up)
         u_updated, u_races = phase_update(conn)          # FASE 2: aggiorna cavalli attivi
+        b_horses, b_races  = phase_backfill_gaps(conn)   # FASE 2b: colma buchi storici cavalli esistenti
         phase_ratings(conn)                              # FASE 3: rating cavalli
         phase_stallion_ratings(conn)                     # FASE 3b: rating stalloni
 
-        # Somma contributi da fase 0 + fasi 1/2
-        new_horses    = r_horses + d_horses
-        new_races     = r_races  + u_races
+        # Somma contributi da fase 0 + fasi 1/2/2b
+        new_horses     = r_horses + d_horses
+        new_races      = r_races  + u_races + b_races
         horses_updated = u_updated
+        horses_backfilled = b_horses
     finally:
         conn.close()
 
     # Push solo se ci sono aggiornamenti reali
     phase_sync()
     phase_git_push()
-    phase_notify(new_horses, new_races, horses_updated)
+    phase_notify(new_horses, new_races, horses_updated, horses_backfilled)
 
     print(f"[END] {datetime.utcnow().isoformat()}", file=sys.stderr)
 

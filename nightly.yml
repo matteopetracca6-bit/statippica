@@ -1,0 +1,30 @@
+name: Nightly Update
+
+on:
+  schedule:
+    # Ogni notte alle 00:30 UTC (02:30 CEST in estate, 01:30 CET in inverno)
+    - cron: '30 0 * * *'
+  workflow_dispatch: {}   # permette anche il trigger manuale da GitHub UI
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run nightly_update.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: python3 nightly_update.py
