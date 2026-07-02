@@ -37,6 +37,16 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
+# Senza questo, l'output può restare "bloccato" in un buffer per minuti prima
+# di comparire nei log di GitHub Actions (non essendo un terminale interattivo,
+# Python usa di default un buffering a blocchi, non riga-per-riga) — dando
+# l'impressione che lo script sia fermo anche quando sta lavorando normalmente.
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
@@ -1247,12 +1257,15 @@ def phase_update(conn: sqlite3.Connection) -> tuple[int, int]:
     updated_count = 0
     new_races_total = 0
 
-    for name, birth_year in active_horses:
+    for i, (name, birth_year) in enumerate(active_horses, 1):
         inserted = _fetch_and_insert_full_career(conn, name, birth_year)
         if inserted > 0:
             updated_count += 1
             new_races_total += inserted
             print(f"  [UPD] {name}: +{inserted} gare", file=sys.stderr)
+        if i % 25 == 0:
+            print(f"  ... {i}/{len(active_horses)} cavalli controllati "
+                  f"({updated_count} con gare nuove finora)", file=sys.stderr)
 
     print(f"[UPDATE] Cavalli aggiornati: {updated_count}, gare nuove: {new_races_total}", file=sys.stderr)
     return updated_count, new_races_total
@@ -1298,6 +1311,9 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
         if inserted > 0:
             new_races_found += inserted
             print(f"  [GAP] {name}: +{inserted} gare recuperate", file=sys.stderr)
+        if horses_backfilled % 25 == 0:
+            print(f"  ... {horses_backfilled}/{len(pending)} cavalli controllati "
+                  f"({new_races_found} gare colmate finora)", file=sys.stderr)
 
     print(f"[BACKFILL] Cavalli controllati: {horses_backfilled}, gare colmate: {new_races_found}", file=sys.stderr)
     return horses_backfilled, new_races_found
