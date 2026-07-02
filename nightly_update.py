@@ -24,6 +24,7 @@ import os
 import re
 import json
 import shutil
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -559,6 +560,26 @@ def _normalize_name(s: Optional[str]) -> Optional[str]:
         return s
     return re.sub(r"\s+", " ", s.strip()).upper()
 
+class _HardTimeout(Exception):
+    pass
+
+def _hard_timeout(seconds: int):
+    """Context manager: uccide l'operazione in corso dopo N secondi, qualunque sia
+    la causa del blocco (rete che non chiude la connessione, regex pathologica,
+    ecc.) — il timeout di requests da solo non basta a coprire tutti i casi."""
+    class _Ctx:
+        def __enter__(self):
+            def _handler(signum, frame):
+                raise _HardTimeout(f"operazione bloccata oltre {seconds}s")
+            self._old = signal.signal(signal.SIGALRM, _handler)
+            signal.alarm(seconds)
+            return self
+        def __exit__(self, *exc):
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, self._old)
+            return False
+    return _Ctx()
+
 def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_year: Optional[int] = None) -> int:
     """
     Recupera profilo + intera carriera di un cavallo da cavAn.php (endpoint reale,
@@ -567,7 +588,12 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
     Filtra le gare precedenti a MIN_RACE_DATE.
     Ritorna il numero di gare effettivamente inserite (nuove).
     """
-    data = _fetch_cavan(name)
+    try:
+        with _hard_timeout(90):
+            data = _fetch_cavan(name)
+    except _HardTimeout:
+        print(f"  [TIMEOUT] {name}: operazione bloccata oltre 90s, salto e proseguo.", file=sys.stderr)
+        return 0
     if not data:
         return 0
 
