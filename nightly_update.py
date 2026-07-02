@@ -1196,6 +1196,12 @@ def phase_sync():
     if not DB_PATH.exists():
         print(f"[SYNC] WARN: {DB_PATH} non trovato, skip.", file=sys.stderr)
         return
+    try:
+        if DB_PATH.resolve() == REPO_DB_PATH.resolve():
+            print("[SYNC] DB_PATH e REPO_DB_PATH coincidono, nessuna copia necessaria.", file=sys.stderr)
+            return
+    except OSError:
+        pass  # se resolve() fallisce per qualche motivo, proviamo comunque la copia
     shutil.copy2(str(DB_PATH), str(REPO_DB_PATH))
     print("[SYNC] OK.", file=sys.stderr)
 
