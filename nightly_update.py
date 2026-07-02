@@ -259,8 +259,25 @@ def init_db(conn: sqlite3.Connection):
         except sqlite3.OperationalError:
             pass  # colonna già esistente
 
-    # Colonne per il tracking del backfill storico (gap-filling) su horses
+    # Migrazione difensiva: il data.db di produzione può essere stato creato con uno
+    # schema più vecchio/ridotto di "horses" (CREATE TABLE IF NOT EXISTS non aggiunge
+    # colonne mancanti a una tabella già esistente). Aggiungiamo qui TUTTE le colonne
+    # attese, comprese quelle di tracking del backfill storico (gap-filling).
     for col, typ in [
+        ("sex",              "TEXT"),
+        ("country",          "TEXT"),
+        ("sire",             "TEXT"),
+        ("dam",              "TEXT"),
+        ("unire_sire",       "TEXT"),
+        ("unire_dam",        "TEXT"),
+        ("career_races",     "INTEGER DEFAULT 0"),
+        ("career_wins",      "INTEGER DEFAULT 0"),
+        ("career_places",    "INTEGER DEFAULT 0"),
+        ("career_earnings",  "REAL DEFAULT 0"),
+        ("record_career",    "TEXT"),
+        ("record_short",     "TEXT"),
+        ("record_long",      "TEXT"),
+        ("last_updated",     "TEXT"),
         ("backfill_status",  "TEXT DEFAULT 'pending'"),
         ("last_backfill_at", "TEXT"),
     ]:
@@ -281,6 +298,11 @@ def fetch_url(url: str, params: dict = None, retries: int = 3) -> Optional[Beaut
     for attempt in range(retries):
         try:
             resp = SESSION.get(url, params=params, timeout=20)
+            if resp.status_code == 404:
+                # 404 non si risolve ritentando: niente backoff, fallisce subito.
+                print(f"  [INFO] fetch {url} -> 404 (pagina inesistente, skip)", file=sys.stderr)
+                time.sleep(REQUEST_DELAY)
+                return None
             resp.raise_for_status()
             time.sleep(REQUEST_DELAY)
             return BeautifulSoup(resp.text, "html.parser")
