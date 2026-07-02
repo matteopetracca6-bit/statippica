@@ -596,6 +596,25 @@ def _parse_float(val: str) -> float:
     except ValueError:
         return 0.0
 
+def _time_to_seconds(time_str: Optional[str]) -> Optional[float]:
+    """
+    Converte un tempo sul km in secondi totali. Tollerante a entrambi i formati
+    presenti nel DB:
+      - "1'14\"6"  (apostrofo/virgolette — quello che lo script produceva finora)
+      - "1.14.6"   (punti — quello effettivamente presente nei dati reali/legacy,
+                    causa del bug "Miglior tempo 0.0°": la vecchia regex non
+                    riconosceva questo formato e restituiva sempre None)
+    """
+    if not time_str:
+        return None
+    m = re.match(r"(\d+)'(\d+)\"(\d+)", time_str)
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2)) + int(m.group(3)) / 10
+    m = re.match(r"(\d+)\.(\d+)\.(\d+)$", time_str.strip())
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2)) + int(m.group(3)) / 10
+    return None
+
 _INVISIBLE_CHARS = re.compile(
     "[\u200b\u200c\u200d\u200e\u200f\ufeff\u2060\u00ad]"  # zero-width space/joiner/mark, BOM, word-joiner, soft hyphen
 )
@@ -1299,19 +1318,11 @@ def phase_ratings(conn: sqlite3.Connection):
         pos = sum(1 for e in all_earnings if e <= earnings)
         return round(pos / n_earn * 100, 2)
 
-    def time_to_seconds(time_str: str) -> Optional[float]:
-        if not time_str:
-            return None
-        m = re.match(r"(\d+)'(\d+)\"(\d+)", time_str)
-        if m:
-            return int(m.group(1)) * 60 + int(m.group(2)) + int(m.group(3)) / 10
-        return None
-
-    all_times = sorted([t for r in horses if (t := time_to_seconds(r[6] or ""))])
+    all_times = sorted([t for r in horses if (t := _time_to_seconds(r[6] or ""))])
     n_times = len(all_times)
 
     def time_pct(record: str) -> float:
-        t = time_to_seconds(record or "")
+        t = _time_to_seconds(record or "")
         if not t or n_times == 0:
             return 0.0
         pos = sum(1 for x in all_times if x >= t)
@@ -1537,11 +1548,25 @@ def _update_horse_career_stats(conn: sqlite3.Connection, horse_name: str):
         SELECT
             COUNT(*) as n_races,
             SUM(CASE WHEN placement=1 THEN 1 ELSE 0 END) as wins,
-            SUM(COALESCE(prize_net, 0)) as earnings,
-            MIN(time_km) as best_time
+            SUM(COALESCE(prize_net, 0)) as earnings
         FROM races
         WHERE horse_name=? AND placement IS NOT NULL
     """, (horse_name,)).fetchone()
+
+    # Record km: va calcolato come minimo NUMERICO reale (secondi totali), non
+    # con MIN(time_km) SQL, che confronta le stringhe carattere per carattere
+    # e può scegliere un tempo che "sembra" più piccolo da leggere ma non è
+    # realmente il più veloce (es. testo con formati misti apostrofo/punti).
+    best_time_str = None
+    best_seconds = None
+    for (t,) in conn.execute(
+        "SELECT time_km FROM races WHERE horse_name=? AND time_km IS NOT NULL", (horse_name,)
+    ).fetchall():
+        secs = _time_to_seconds(t)
+        if secs is not None and (best_seconds is None or secs < best_seconds):
+            best_seconds = secs
+            best_time_str = t
+
     if stats:
         conn.execute("""
             UPDATE horses SET
@@ -1550,7 +1575,7 @@ def _update_horse_career_stats(conn: sqlite3.Connection, horse_name: str):
             WHERE name=?
         """, (
             stats[0] or 0, stats[1] or 0, stats[2] or 0.0,
-            stats[3], datetime.utcnow().isoformat(), horse_name
+            best_time_str, datetime.utcnow().isoformat(), horse_name
         ))
         conn.commit()
 
