@@ -338,6 +338,11 @@ def init_db(conn: sqlite3.Connection):
         except sqlite3.OperationalError:
             pass
 
+    # Unisce cavalli duplicati per varianti di nome (stesso cavallo, spazi/maiuscole
+    # diverse) PRIMA di normalizzare sire/dam, così i riferimenti dei figli ai genitori
+    # duplicati vengono ripuntati insieme alla riga del cavallo stesso.
+    _merge_duplicate_horses(conn)
+
     # Normalizzazione completa una tantum (idempotente, si ripete ogni notte ma è
     # economica): allinea sire/dam esistenti allo stesso formato canonico usato dalle
     # nuove scritture. Fatta in Python (non solo SQL TRIM/UPPER) perché intercetta
@@ -598,6 +603,83 @@ def _mark_backfilled(conn: sqlite3.Connection, name: str):
     """, (datetime.utcnow().isoformat(), name))
     conn.commit()
 
+def _merge_duplicate_horses(conn: sqlite3.Connection):
+    """
+    Prima che sire/dam venissero normalizzati, anche il NOME del cavallo stesso
+    poteva essere salvato con varianti di spazi/maiuscole (es. "IN SCREAM GIO" vs
+    "IN SCREAM  GIO" con doppio spazio interno, invisibile a schermo). Siccome la
+    chiave primaria di 'horses' è (name, birth_year), ogni variante crea una riga
+    fisicamente diversa: stesso cavallo mostrato più volte in UI, gare/statistiche
+    frammentate tra le copie.
+
+    Uniamo qui in modo conservativo: solo cavalli con lo STESSO anno di nascita
+    NON NULLO vengono uniti automaticamente (per non rischiare di fondere per errore
+    due cavalli realmente diversi che condividono nome ma hanno anno sconosciuto).
+    Le gare della copia vengono ripuntate al nome canonico (quello con più gare),
+    evitando duplicati per (cavallo, data); le righe superflue vengono eliminate.
+    """
+    rows = conn.execute(
+        "SELECT rowid, name, birth_year FROM horses WHERE birth_year IS NOT NULL"
+    ).fetchall()
+
+    groups: dict[tuple, list] = {}
+    for rowid, name, birth_year in rows:
+        groups.setdefault((_normalize_name(name), birth_year), []).append((rowid, name))
+
+    merged_count = 0
+    for (norm_name, birth_year), variants in groups.items():
+        raw_names = {v[1] for v in variants}
+        if len(raw_names) <= 1 and norm_name in raw_names:
+            continue  # nessun duplicato, nome già canonico
+
+        def race_count(nm: str) -> int:
+            return conn.execute("SELECT COUNT(*) FROM races WHERE horse_name=?", (nm,)).fetchone()[0]
+
+        # Se una delle varianti è già esattamente nella forma canonica, usiamola
+        # direttamente come riga canonica (rinominare una riga diversa in quel nome
+        # scontrerebbe la chiave primaria, visto che esiste già).
+        exact = [v for v in variants if v[1] == norm_name]
+        if exact:
+            canonical_rowid, canonical_raw = exact[0]
+            other_variants = [v for v in variants if v[0] != canonical_rowid]
+        else:
+            variants_sorted = sorted(variants, key=lambda v: -race_count(v[1]))
+            canonical_rowid, canonical_raw = variants_sorted[0]
+            other_variants = variants_sorted[1:]
+            try:
+                conn.execute("UPDATE horses SET name=? WHERE rowid=?", (norm_name, canonical_rowid))
+            except sqlite3.IntegrityError:
+                continue  # collisione imprevista: si autorisolve al prossimo giro
+
+        for rowid, raw_name in other_variants:
+            if raw_name == norm_name:
+                continue
+            for race_id, race_date in conn.execute(
+                "SELECT id, race_date FROM races WHERE horse_name=?", (raw_name,)
+            ).fetchall():
+                exists = conn.execute(
+                    "SELECT 1 FROM races WHERE horse_name=? AND race_date=?", (norm_name, race_date)
+                ).fetchone()
+                if exists:
+                    conn.execute("DELETE FROM races WHERE id=?", (race_id,))
+                else:
+                    conn.execute("UPDATE races SET horse_name=? WHERE id=?", (norm_name, race_id))
+
+            # Eventuali cavalli che avessero questa variante come padre/madre
+            conn.execute("UPDATE horses SET sire=? WHERE sire=?", (norm_name, raw_name))
+            conn.execute("UPDATE horses SET dam=? WHERE dam=?", (norm_name, raw_name))
+            conn.execute("UPDATE horse_ratings SET sire=? WHERE sire=?", (norm_name, raw_name))
+
+            conn.execute("DELETE FROM horse_ratings WHERE name=?", (raw_name,))
+            conn.execute("DELETE FROM horses WHERE rowid=?", (rowid,))
+            merged_count += 1
+
+        _update_horse_career_stats(conn, norm_name)
+
+    if merged_count:
+        conn.commit()
+        print(f"[INIT] Uniti {merged_count} cavalli duplicati (varianti di nome).", file=sys.stderr)
+
 def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
     """
     Parsa cavAn.php (trottoweb.com) — contiene sia il profilo del cavallo
@@ -609,6 +691,7 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
     Ritorna dict con: sex, country, birth_year (stimato da età), sire, dam, races (list).
     """
     result: dict = {"races": []}
+    horse_name = _normalize_name(horse_name)
     text = soup.get_text(" ", strip=True)
 
     m = re.search(r"\b([mf])\.([ie])\.(\d{1,2})\b", text)
@@ -677,7 +760,7 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
         prize = _parse_float(prize_raw) if prize_raw not in ("---", "") else 0.0
 
         result["races"].append({
-            "horse_name":    horse_name.upper(),
+            "horse_name":    horse_name,
             "race_date":     race_date,
             "track":         track,
             "placement":     placement,
@@ -725,7 +808,7 @@ def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str
                 return el.get_text(strip=True) if el else ""
 
             # nome_cav_u = con premi | nome_cav = senza premi
-            horse_name = (td("nome_cav_u") or td("nome_cav")).upper().strip()
+            horse_name = _normalize_name(td("nome_cav_u") or td("nome_cav"))
             pos_raw    = td("piaz_u") or td("piaz")
             time_raw   = td("tempo_u") or td("tempo")
             dist_raw   = td("dist_cav_u") or td("dist_cav")
@@ -828,6 +911,7 @@ def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> tuple[bool
     tramite _fetch_and_insert_full_career(), che usa l'endpoint reale cavAn.php.
     Ritorna (is_new, birth_year) — birth_year è None qui, verrà popolato dal catch-up.
     """
+    horse_name = _normalize_name(horse_name)
     existing = conn.execute(
         "SELECT birth_year FROM horses WHERE name = ?", (horse_name,)
     ).fetchone()
