@@ -1,10 +1,8 @@
 name: StatIppica — Nightly Update
-
 on:
-  # Lunedì e giovedì alle 02:30 CEST = 00:30 UTC
+  # Ogni notte alle 00:30 UTC (02:30 CEST in estate, 01:30 CET in inverno)
   schedule:
-    - cron: "30 0 * * 1,4"
-
+    - cron: "30 0 * * *"
   # Trigger manuale dalla tab Actions di GitHub
   workflow_dispatch:
     inputs:
@@ -12,25 +10,20 @@ on:
         description: "Motivo del trigger manuale"
         required: false
         default: "trigger manuale"
-
 jobs:
   nightly-update:
     name: Esegui nightly_update.py
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    timeout-minutes: 45
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Installa dipendenze
         run: pip install requests beautifulsoup4
-
       - name: Esegui nightly_update.py
         env:
           DB_PATH: data.db
@@ -39,7 +32,6 @@ jobs:
           GITHUB_USER: matteopetracca6-bit
           GITHUB_REPO: statippica
         run: python nightly_update.py
-
       - name: Trigger deploy Render dopo aggiornamento DB
         if: success()
         run: |
