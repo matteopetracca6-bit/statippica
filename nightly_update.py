@@ -371,6 +371,54 @@ def init_db(conn: sqlite3.Connection):
         conn.executemany("UPDATE horse_ratings SET sire=? WHERE rowid=?", to_fix_ratings)
         print(f"[INIT] Normalizzati sire di {len(to_fix_ratings)} righe horse_ratings.", file=sys.stderr)
 
+    # BUG CRITICO scoperto: la PRIMARY KEY dichiarata nel CREATE TABLE per
+    # horse_ratings (name, birth_year, rating_mode) non è mai stata applicata
+    # davvero sullo schema di produzione (stesso tipo di schema-drift già visto
+    # per la colonna last_updated mancante). Senza un vincolo di unicità reale,
+    # "INSERT OR REPLACE" si comporta come un semplice INSERT: ogni notte che
+    # phase_ratings gira crea una riga duplicata in più per OGNI cavallo, invece
+    # di sovrascrivere quella esistente. Deduplica (tiene lo score più alto per
+    # gruppo) e poi crea un indice univoco reale — SQLite può aggiungerlo a una
+    # tabella già esistente, a differenza della PRIMARY KEY.
+    dupe_groups = conn.execute("""
+        SELECT name, birth_year, rating_mode, COUNT(*) c
+        FROM horse_ratings
+        GROUP BY name, birth_year, rating_mode
+        HAVING c > 1
+    """).fetchall()
+    dupe_rows_removed = 0
+    for name, birth_year, rating_mode, cnt in dupe_groups:
+        rowids = conn.execute("""
+            SELECT rowid FROM horse_ratings
+            WHERE name=? AND birth_year IS ? AND rating_mode IS ?
+            ORDER BY score DESC, rowid DESC
+        """, (name, birth_year, rating_mode)).fetchall()
+        for (rowid,) in rowids[1:]:
+            conn.execute("DELETE FROM horse_ratings WHERE rowid=?", (rowid,))
+            dupe_rows_removed += 1
+    if dupe_rows_removed:
+        print(f"[INIT] Rimosse {dupe_rows_removed} righe duplicate in horse_ratings "
+              f"(mancava un indice univoco reale).", file=sys.stderr)
+
+    try:
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_horse_ratings_unique
+            ON horse_ratings(name, birth_year, rating_mode)
+        """)
+    except sqlite3.IntegrityError as e:
+        print(f"[WARN] Impossibile creare indice univoco horse_ratings (duplicati residui?): {e}", file=sys.stderr)
+
+    # Stessa protezione difensiva su horses: dopo il merge dei duplicati sopra
+    # non dovrebbero più essercene, ma aggiungiamo comunque l'indice per essere
+    # sicuri che eventuali INSERT futuri rispettino davvero l'unicità.
+    try:
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_horses_unique
+            ON horses(name, birth_year)
+        """)
+    except sqlite3.IntegrityError as e:
+        print(f"[WARN] Impossibile creare indice univoco horses (duplicati residui?): {e}", file=sys.stderr)
+
     # stallion_rating_stats è dato interamente derivato: lo svuotiamo sempre qui,
     # verrà rigenerato pulito da phase_stallion_ratings partendo dai sire ormai
     # canonici sopra — niente più righe duplicate residue da run precedenti.
@@ -548,16 +596,24 @@ def _parse_float(val: str) -> float:
     except ValueError:
         return 0.0
 
+_INVISIBLE_CHARS = re.compile(
+    "[\u200b\u200c\u200d\u200e\u200f\ufeff\u2060\u00ad]"  # zero-width space/joiner/mark, BOM, word-joiner, soft hyphen
+)
+
 def _normalize_name(s: Optional[str]) -> Optional[str]:
     """
     Normalizza un nome (cavallo/padre/madre) in forma canonica: maiuscolo,
-    spazi iniziali/finali rimossi, spazi interni multipli collassati in uno solo.
-    Senza questo, varianti come "NOME  COGNOME" (doppio spazio) o "nome cognome"
-    (minuscolo) risultano stringhe diverse pur essendo lo stesso cavallo/stallone,
-    causando join duplicati e genealogie non trovate.
+    spazi iniziali/finali rimossi, spazi interni multipli collassati in uno solo,
+    caratteri invisibili (zero-width space e simili, che \\s non intercetta ma sono
+    presenti in alcune pagine scrapate) rimossi del tutto.
+    Senza questo, varianti come "NOME  COGNOME" (doppio spazio), "nome cognome"
+    (minuscolo), o "NOME\u200bCOGNOME" (zero-width space invisibile) risultano
+    stringhe diverse pur essendo lo stesso cavallo/stallone, causando join duplicati
+    e genealogie non trovate.
     """
     if not s:
         return s
+    s = _INVISIBLE_CHARS.sub(" ", s)
     return re.sub(r"\s+", " ", s.strip()).upper()
 
 class _HardTimeout(Exception):
