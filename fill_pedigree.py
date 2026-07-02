@@ -70,6 +70,13 @@ ANACT_HEADERS = {
 ANACT_SESSION = requests.Session()
 ANACT_SESSION.headers.update(ANACT_HEADERS)
 
+# Se ANACT fallisce ripetutamente (es. server autocomplete irraggiungibile da
+# GitHub Actions), smettiamo di riprovarci per il resto della run invece di
+# perdere 20s+ per ogni cavallo su un servizio che non risponde comunque.
+_ANACT_CONSECUTIVE_FAILURES = 0
+_ANACT_DISABLED = False
+ANACT_FAILURE_THRESHOLD = 3
+
 ANACT_KEY_MAP = {
     "p": "sire", "m": "dam",
     "pp": "sire_sire", "mp": "sire_dam",
@@ -97,10 +104,18 @@ def _anact_extract_pedigree_json(html: str) -> Optional[list]:
 def _anact_search_codice(name: str) -> Optional[str]:
     for input_name in ("cavallo", "cavalli", "nome"):
         try:
-            resp = ANACT_SESSION.get(
-                f"{ANACT_AUTOCOMPLETE_BASE}{input_name}/autocomplete",
-                params={"search": name}, timeout=15
-            )
+            with nu._hard_timeout(20):
+                resp = ANACT_SESSION.get(
+                    f"{ANACT_AUTOCOMPLETE_BASE}{input_name}/autocomplete",
+                    params={"search": name}, timeout=8
+                )
+        except nu._HardTimeout:
+            print(f"    [ANACT-SEARCH TIMEOUT] {name}: server autocomplete irraggiungibile, "
+                  f"salto ANACT per questo cavallo.", file=sys.stderr)
+            return None  # problema di connessione: inutile ritentare altre varianti
+        except requests.exceptions.RequestException:
+            return None  # stesso motivo: probabile problema di rete, non di nome
+        try:
             if resp.status_code != 200:
                 continue
             data = resp.json().get("data", [])
@@ -219,14 +234,27 @@ def fill_grandparents(conn, limit: Optional[int] = None, use_anact: bool = True)
 
     filled = 0
     anact_hits = 0
+    global _ANACT_CONSECUTIVE_FAILURES, _ANACT_DISABLED
     for name in todo:
         result = None
-        if use_anact:
+        source = "Trottoweb"
+        if use_anact and not _ANACT_DISABLED:
             result = _anact_fetch_full_pedigree(name)
             if result:
                 anact_hits += 1
+                source = "ANACT"
+                _ANACT_CONSECUTIVE_FAILURES = 0
+            else:
+                _ANACT_CONSECUTIVE_FAILURES += 1
+                if _ANACT_CONSECUTIVE_FAILURES >= ANACT_FAILURE_THRESHOLD:
+                    _ANACT_DISABLED = True
+                    print(f"  [ANACT] {ANACT_FAILURE_THRESHOLD} fallimenti consecutivi -> "
+                          f"disattivo ANACT per il resto della run, uso solo Trottoweb.",
+                          file=sys.stderr)
         if not result:
             result = _fallback_trottoweb_pedigree(name)
+
+        print(f"  [{filled+1}/{len(todo)}] {name}: fonte={source}", file=sys.stderr)
 
         sire = result.get("sire")
         dam = result.get("dam")
