@@ -297,6 +297,47 @@ def init_db(conn: sqlite3.Connection):
     # Cavalli inseriti prima di questa modifica non hanno backfill_status -> pending
     conn.execute("UPDATE horses SET backfill_status='pending' WHERE backfill_status IS NULL")
 
+    # Stessa migrazione difensiva anche per horse_ratings e stallion_rating_stats:
+    # il data.db di produzione può avere uno schema più vecchio anche qui.
+    for col, typ in [
+        ("sire",            "TEXT"),
+        ("grade",            "TEXT"),
+        ("score",            "REAL"),
+        ("earn_percentile",  "REAL"),
+        ("time_percentile",  "REAL"),
+        ("sire_percentile",  "REAL"),
+        ("career_races",     "INTEGER"),
+        ("career_wins",      "INTEGER"),
+        ("career_earnings",  "REAL"),
+        ("record_career",    "TEXT"),
+        ("win_rate",         "REAL"),
+        ("rating_mode",      "TEXT DEFAULT 'performance'"),
+        ("last_updated",     "TEXT"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE horse_ratings ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass
+
+    for col, typ in [
+        ("n_figli_totali",  "INTEGER"),
+        ("n_in_corsa",      "INTEGER"),
+        ("avg_score",       "REAL"),
+        ("grade",           "TEXT"),
+        ("n_SSS",           "INTEGER DEFAULT 0"),
+        ("n_SS",            "INTEGER DEFAULT 0"),
+        ("n_S",             "INTEGER DEFAULT 0"),
+        ("pct_top_S",       "REAL"),
+        ("avg_earnings",    "REAL"),
+        ("vp_boost",        "REAL DEFAULT 0"),
+        ("final_score",     "REAL"),
+        ("last_updated",    "TEXT"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE stallion_rating_stats ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass
+
     conn.commit()
 
 # ─────────────────────────────────────────────
