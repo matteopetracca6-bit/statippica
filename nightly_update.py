@@ -53,6 +53,10 @@ GITHUB_USER   = os.environ.get("GITHUB_USER", "matteopetracca6-bit")
 GITHUB_REPO   = os.environ.get("GITHUB_REPO", "statippica")
 
 ACTIVE_MONTHS = 6
+# Anche i cavalli "attivi" possono essere tanti (migliaia): limitiamo quanti
+# riscaricare per notte, dando priorità a quelli aggiornati meno di recente,
+# così ogni run fa progressi garantiti senza rischiare timeout illimitati.
+ACTIVE_UPDATE_BATCH_SIZE = int(os.environ.get("ACTIVE_UPDATE_BATCH_SIZE", "3000"))
 REQUEST_DELAY = 0.5
 
 # Lavoriamo solo con gare dal 2012 in avanti (storico precedente non tracciato)
@@ -470,8 +474,9 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
 
     races = _filter_min_date(data.get("races", []))
     inserted = _insert_races(conn, races)
-    if inserted > 0:
-        _update_horse_career_stats(conn, name)
+    # Aggiorniamo last_updated sempre (anche con 0 gare nuove trovate) — serve alla
+    # rotazione di phase_update, che dà priorità ai cavalli controllati meno di recente.
+    _update_horse_career_stats(conn, name)
     return inserted
 
 def _mark_backfilled(conn: sqlite3.Connection, name: str):
@@ -916,10 +921,11 @@ def phase_update(conn: sqlite3.Connection) -> tuple[int, int]:
         FROM horses h
         JOIN races r ON r.horse_name = h.name
         WHERE r.race_date >= ?
-        ORDER BY h.name
-    """, (cutoff,)).fetchall()
+        ORDER BY h.last_updated IS NOT NULL, h.last_updated ASC, h.name ASC
+        LIMIT ?
+    """, (cutoff, ACTIVE_UPDATE_BATCH_SIZE)).fetchall()
 
-    print(f"[UPDATE] Cavalli attivi trovati: {len(active_horses)}", file=sys.stderr)
+    print(f"[UPDATE] Cavalli attivi in questo batch: {len(active_horses)} (batch size: {ACTIVE_UPDATE_BATCH_SIZE})", file=sys.stderr)
 
     updated_count = 0
     new_races_total = 0
