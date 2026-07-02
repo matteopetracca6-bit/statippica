@@ -610,26 +610,35 @@ def _time_to_seconds(time_val) -> Optional[float]:
     """
     Converte un tempo sul km in secondi totali. Tollerante a più formati
     presenti nel DB (dati legacy + fonti diverse nel tempo):
-      - numero (int/float): interpretato come decimi di secondo, es. 746 -> 74.6s
-        (coerente con quanto si aspetta il frontend: time_km / 10)
-      - "1'14\"6"  (apostrofo/virgolette — quello che lo script produceva finora)
-      - "1.14.6"   (punti — quello effettivamente presente nei dati reali/legacy,
-                    causa del bug "Miglior tempo 0.0°": la vecchia regex non
-                    riconosceva questo formato e restituiva sempre None)
+      - "1'14\"6"    (apostrofo/virgolette — quello che lo script produceva finora)
+      - "1.14.6"     (punti, minuto esplicito — presente in alcuni record legacy)
+      - "13.3" / 13.3 (numero o stringa a un solo punto — il formato standard
+                       "record al km" del trotto italiano: SS.T con il minuto
+                       implicito (quasi tutti i tempi al km sono "1'xx"y"),
+                       quindi si sommano 60s. Confermato sui dati reali: valori
+                       come 13.3-18.7 diventano 73.3-78.7s, un range plausibile
+                       per il trotto — ERA la causa del bug "Miglior tempo 0.0°",
+                       la vecchia regex non riconosceva affatto questo formato)
     """
     if time_val is None:
         return None
-    if isinstance(time_val, (int, float)):
-        return float(time_val) / 10
     time_str = str(time_val).strip()
     if not time_str:
         return None
     m = re.match(r"(\d+)'(\d+)\"(\d+)", time_str)
     if m:
         return int(m.group(1)) * 60 + int(m.group(2)) + int(m.group(3)) / 10
-    m = re.match(r"(\d+)\.(\d+)\.(\d+)$", time_str)
+    m = re.match(r"^(\d+)\.(\d+)\.(\d+)$", time_str)
     if m:
         return int(m.group(1)) * 60 + int(m.group(2)) + int(m.group(3)) / 10
+    # Numero puro o stringa a un solo punto (es. 13.3, "13.3"): formato standard
+    # "record al km", minuto implicito -> sommiamo 60s.
+    m = re.match(r"^(\d+)(?:\.(\d+))?$", time_str)
+    if m:
+        try:
+            return 60.0 + float(time_str)
+        except ValueError:
+            return None
     return None
 
 _INVISIBLE_CHARS = re.compile(
