@@ -338,6 +338,18 @@ def init_db(conn: sqlite3.Connection):
         except sqlite3.OperationalError:
             pass
 
+    # Normalizzazione una tantum (idempotente, si ripete ogni notte ma è economica):
+    # allinea sire/dam esistenti allo stesso formato canonico (maiuscolo + trim) usato
+    # dalle nuove scritture, altrimenti varianti tipo "nome" vs "NOME" restano stringhe
+    # diverse e causano join duplicati / genealogie non trovate.
+    conn.execute("UPDATE horses SET sire = UPPER(TRIM(sire)) WHERE sire IS NOT NULL AND sire != UPPER(TRIM(sire))")
+    conn.execute("UPDATE horses SET dam  = UPPER(TRIM(dam))  WHERE dam  IS NOT NULL AND dam  != UPPER(TRIM(dam))")
+    conn.execute("UPDATE horse_ratings SET sire = UPPER(TRIM(sire)) WHERE sire IS NOT NULL AND sire != UPPER(TRIM(sire))")
+    # stallion_rating_stats è dato interamente derivato/ricalcolato ogni notte da
+    # phase_stallion_ratings: le righe con sire non canonico sono "sporche" residue
+    # di run precedenti — le eliminiamo, verranno rigenerate pulite più avanti.
+    conn.execute("DELETE FROM stallion_rating_stats WHERE sire != UPPER(TRIM(sire))")
+
     conn.commit()
 
 # ─────────────────────────────────────────────
@@ -510,6 +522,18 @@ def _parse_float(val: str) -> float:
     except ValueError:
         return 0.0
 
+def _normalize_name(s: Optional[str]) -> Optional[str]:
+    """
+    Normalizza un nome (cavallo/padre/madre) in forma canonica: maiuscolo,
+    spazi iniziali/finali rimossi, spazi interni multipli collassati in uno solo.
+    Senza questo, varianti come "NOME  COGNOME" (doppio spazio) o "nome cognome"
+    (minuscolo) risultano stringhe diverse pur essendo lo stesso cavallo/stallone,
+    causando join duplicati e genealogie non trovate.
+    """
+    if not s:
+        return s
+    return re.sub(r"\s+", " ", s.strip()).upper()
+
 def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_year: Optional[int] = None) -> int:
     """
     Recupera profilo + intera carriera di un cavallo da cavAn.php (endpoint reale,
@@ -521,6 +545,9 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
     data = _fetch_cavan(name)
     if not data:
         return 0
+
+    sire_norm = _normalize_name(data.get("sire"))
+    dam_norm  = _normalize_name(data.get("dam"))
 
     # Aggiorna il profilo solo per i campi che abbiamo effettivamente recuperato
     # (COALESCE mantiene il valore esistente se il nuovo è NULL)
@@ -534,7 +561,7 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
                 dam        = COALESCE(?, dam)
             WHERE name = ?
         """, (data.get("sex"), data.get("country"), data.get("birth_year"),
-              data.get("sire"), data.get("dam"), name))
+              sire_norm, dam_norm, name))
         conn.commit()
 
     races = _filter_min_date(data.get("races", []))
@@ -573,10 +600,21 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
         age = int(m.group(3))
         result["birth_year"] = datetime.utcnow().year - age
 
+    # Pattern primario: "PADRE / codice / MADRE cat.mc" (formato osservato più comune)
     m2 = re.search(
         r"\b([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s*/\s*[a-zA-Z]\d*\s*/\s*([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s+cat\.mc",
         text
     )
+    if not m2:
+        # Fallback più permissivo: stessa struttura PADRE / codice / MADRE, ma senza
+        # richiedere il marcatore "cat.mc" subito dopo (potrebbe non esserci per
+        # tutti i cavalli/formati pagina) — si ferma al primo confine plausibile
+        # (due maiuscole consecutive separate da spazio seguite da altro testo minuscolo,
+        # oppure fine stringa).
+        m2 = re.search(
+            r"\b([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)\s*/\s*[a-zA-Z]\d*\s*/\s*([A-Z][A-Z0-9À-ÖØ-öø-ÿ'.\- ]{1,40}?)(?:\s+[a-z]|\s*$)",
+            text
+        )
     if m2:
         result["sire"] = m2.group(1).strip()
         result["dam"]  = m2.group(2).strip()
@@ -1125,7 +1163,7 @@ def phase_ratings(conn: sqlite3.Connection):
     now_iso = datetime.utcnow().isoformat()
     for (name, birth_year), data in scores.items():
         sire_row = conn.execute("SELECT sire FROM horses WHERE name=? AND birth_year=?", (name, birth_year)).fetchone()
-        sire_name = (sire_row[0] or "").upper() if sire_row else ""
+        sire_name = _normalize_name(sire_row[0]) if (sire_row and sire_row[0]) else ""
         sp = sire_pct(sire_name, data["score"])
         horse_row = conn.execute(
             "SELECT career_races, career_wins, career_earnings, record_career FROM horses WHERE name=? AND birth_year=?",
