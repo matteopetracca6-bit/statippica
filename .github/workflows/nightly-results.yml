@@ -37,6 +37,10 @@ jobs:
       - name: Trigger deploy Render dopo aggiornamento DB
         if: success()
         run: |
+          # Pausa breve: da' tempo al webhook GitHub->Render di arrivare, altrimenti
+          # Render puo' deployare l'ultimo commit che conosceva PRIMA di questo push
+          # (race condition osservata: deploy sull'commit precedente, non quello nuovo)
+          sleep 15
           curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
