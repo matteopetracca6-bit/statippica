@@ -28,6 +28,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+import urllib.parse
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -301,7 +302,21 @@ def init_db(conn: sqlite3.Connection):
 # ─────────────────────────────────────────────
 # TROTTOWEB HELPERS
 # ─────────────────────────────────────────────
+
+# Circuit breaker: se un host rifiuta la connessione troppe volte di fila
+# (server giù, blocco temporaneo, ecc.) smettiamo di insistere per il resto
+# della run invece di ritentare 3 volte per OGNI richiesta successiva,
+# il che sprecherebbe ore su migliaia di cavalli senza recuperare nulla.
+_CONSECUTIVE_FAILURES: dict[str, int] = {}
+_CIRCUIT_OPEN: set[str] = set()
+CIRCUIT_BREAKER_THRESHOLD = int(os.environ.get("CIRCUIT_BREAKER_THRESHOLD", "8"))
+
 def fetch_url(url: str, params: dict = None, retries: int = 3) -> Optional[BeautifulSoup]:
+    host = urllib.parse.urlparse(url).netloc
+
+    if host in _CIRCUIT_OPEN:
+        return None  # host segnato come irraggiungibile, non ritentiamo nemmeno
+
     for attempt in range(retries):
         try:
             resp = SESSION.get(url, params=params, timeout=20)
@@ -309,13 +324,22 @@ def fetch_url(url: str, params: dict = None, retries: int = 3) -> Optional[Beaut
                 # 404 non si risolve ritentando: niente backoff, fallisce subito.
                 print(f"  [INFO] fetch {url} -> 404 (pagina inesistente, skip)", file=sys.stderr)
                 time.sleep(REQUEST_DELAY)
+                _CONSECUTIVE_FAILURES[host] = 0
                 return None
             resp.raise_for_status()
             time.sleep(REQUEST_DELAY)
+            _CONSECUTIVE_FAILURES[host] = 0
             return BeautifulSoup(resp.text, "html.parser")
         except Exception as e:
             print(f"  [WARN] fetch {url} tentativo {attempt+1}/{retries}: {e}", file=sys.stderr)
             time.sleep(2 ** attempt)
+
+    # Tutti i tentativi falliti: conta come UN fallimento verso l'host (non uno per retry)
+    _CONSECUTIVE_FAILURES[host] = _CONSECUTIVE_FAILURES.get(host, 0) + 1
+    if _CONSECUTIVE_FAILURES[host] >= CIRCUIT_BREAKER_THRESHOLD:
+        _CIRCUIT_OPEN.add(host)
+        print(f"  [CIRCUIT-BREAKER] {host} irraggiungibile per {CIRCUIT_BREAKER_THRESHOLD} richieste consecutive "
+              f"-> smetto di ritentare per il resto di questa run.", file=sys.stderr)
     return None
 
 def parse_horse_list_from_homepage(soup: BeautifulSoup) -> list[dict]:
@@ -569,11 +593,12 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
     return result
 
 
-def _fetch_cavan(name: str) -> dict:
-    """Fetch + parse di cavAn.php per un cavallo. Ritorna dict vuoto {'races': []} se non raggiungibile."""
+def _fetch_cavan(name: str) -> Optional[dict]:
+    """Fetch + parse di cavAn.php per un cavallo. Ritorna None se il fetch è fallito
+    (host irraggiungibile ecc.) — diverso da una pagina raggiunta ma senza gare."""
     soup = fetch_url(TROTTOWEB_CAVAN, params={"nome": name})
     if not soup:
-        return {"races": []}
+        return None
     return _parse_cavan_page(soup, name)
 
 
@@ -1362,30 +1387,45 @@ def phase_seed_vp(conn: sqlite3.Connection):
 
 
 def main():
-    print(f"[START] {datetime.utcnow().isoformat()} — StatIppica nightly_update.py", file=sys.stderr)
+    # NIGHTLY_MODE: "results" (gare mancanti + cavalli nuovi trovati lì),
+    #               "maintenance" (aggiorna/backfilla cavalli già esistenti),
+    #               "full" (tutto insieme, comportamento originale — default)
+    mode = os.environ.get("NIGHTLY_MODE", "full").strip().lower()
+    if mode not in ("results", "maintenance", "full"):
+        print(f"[WARN] NIGHTLY_MODE='{mode}' non riconosciuto, uso 'full'.", file=sys.stderr)
+        mode = "full"
+
+    print(f"[START] {datetime.utcnow().isoformat()} — StatIppica nightly_update.py (mode={mode})", file=sys.stderr)
 
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     init_db(conn)
 
-    try:
-        phase_seed_vp(conn)                              # seed VP hardcoded se tabella vuota
-        r_horses, r_races = phase_results(conn)               # FASE 0: risultati hRis.php (+ catch-up cavalli nuovi)
-        d_horses          = phase_discovery(conn)        # FASE 1: cavalli nuovi da homepage (+ catch-up)
-        u_updated, u_races = phase_update(conn)          # FASE 2: aggiorna cavalli attivi
-        b_horses, b_races  = phase_backfill_gaps(conn)   # FASE 2b: colma buchi storici cavalli esistenti
-        phase_ratings(conn)                              # FASE 3: rating cavalli
-        phase_stallion_ratings(conn)                     # FASE 3b: rating stalloni
+    new_horses = new_races = horses_updated = horses_backfilled = 0
 
-        # Somma contributi da fase 0 + fasi 1/2/2b
-        new_horses     = r_horses + d_horses
-        new_races      = r_races  + u_races + b_races
-        horses_updated = u_updated
-        horses_backfilled = b_horses
+    try:
+        phase_seed_vp(conn)  # seed VP hardcoded se tabella vuota
+
+        if mode in ("results", "full"):
+            r_horses, r_races = phase_results(conn)   # FASE 0: risultati hRis.php (+ catch-up cavalli nuovi)
+            d_horses          = phase_discovery(conn)  # FASE 1: cavalli nuovi da homepage (+ catch-up)
+            new_horses += r_horses + d_horses
+            new_races  += r_races
+
+        if mode in ("maintenance", "full"):
+            u_updated, u_races = phase_update(conn)         # FASE 2: aggiorna cavalli attivi
+            b_horses, b_races  = phase_backfill_gaps(conn)  # FASE 2b: colma buchi storici cavalli esistenti
+            new_races          += u_races + b_races
+            horses_updated      = u_updated
+            horses_backfilled   = b_horses
+
+        # Il rating va ricalcolato in ogni caso: qualunque modalità può aver
+        # cambiato dati che influenzano i punteggi.
+        phase_ratings(conn)             # FASE 3: rating cavalli
+        phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
     finally:
         conn.close()
 
-    # Push solo se ci sono aggiornamenti reali
     phase_sync()
     phase_git_push()
     phase_notify(new_horses, new_races, horses_updated, horses_backfilled)
