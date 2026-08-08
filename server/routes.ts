@@ -2,6 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import Database from "better-sqlite3";
 import path from "path";
+import { predictBreeding, loadBreedingModel } from "./breeding";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -569,5 +570,64 @@ export function registerRoutes(httpServer: Server, app: Express) {
       pid: child.pid,
       message: "nightly_update.py avviato in background",
     });
+  });
+
+  // ──────────────────────────────────────────────
+  // BREEDING — stima accoppiamento stallone x fattrice
+  // Il modello (breeding_model.json) è addestrato offline da
+  // train_breeding_model.py via GitHub Actions; qui si fa solo inferenza.
+  // ──────────────────────────────────────────────
+  const breedingModelLoaded = loadBreedingModel(
+    path.resolve(process.cwd(), "breeding_model.json")
+  );
+  if (!breedingModelLoaded) {
+    console.warn("[BREEDING] breeding_model.json non trovato: /api/breeding/* risponderà 503 " +
+                  "finché non viene generato da train_breeding_model.py");
+  }
+
+  // GET /api/breeding/predict?stallion=NOME&mare=NOME
+  app.get("/api/breeding/predict", (req, res) => {
+    const stallion = ((req.query.stallion as string) || "").trim();
+    const mare = ((req.query.mare as string) || "").trim();
+    if (!stallion || !mare) {
+      return res.status(400).json({ ok: false, error: "Parametri richiesti: stallion, mare" });
+    }
+    const db = getDb();
+    try {
+      const result = predictBreeding(db, stallion, mare);
+      if (!result.ok) {
+        // 503 se manca il modello, 404 se mancano i dati del cavallo
+        const missingModel = (result.error || "").includes("breeding_model.json");
+        return res.status(missingModel ? 503 : 404).json(result);
+      }
+      res.json(result);
+    } catch (e: any) {
+      console.error("[BREEDING] errore predizione:", e?.message);
+      res.status(500).json({ ok: false, error: "Errore interno nella predizione" });
+    } finally {
+      db.close();
+    }
+  });
+
+  // GET /api/breeding/info — stato del modello (per la UI)
+  app.get("/api/breeding/info", (_req, res) => {
+    try {
+      const modelPath = path.resolve(process.cwd(), "breeding_model.json");
+      const fs = require("fs");
+      if (!fs.existsSync(modelPath)) {
+        return res.status(503).json({ available: false, error: "Modello non ancora generato" });
+      }
+      const m = JSON.parse(fs.readFileSync(modelPath, "utf-8"));
+      res.json({
+        available: true,
+        trained_at: m.trained_at,
+        n_samples: m.n_samples,
+        cv_r2_score: m.cv_r2_score,
+        cv_auc_poor: m.cv_auc_poor,
+        feature_importances: m.feature_importances,
+      });
+    } catch (e: any) {
+      res.status(500).json({ available: false, error: e?.message });
+    }
   });
 }
