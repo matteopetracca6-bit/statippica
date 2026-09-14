@@ -52,6 +52,46 @@ MODEL_PATH = Path(os.environ.get("BREEDING_MODEL_PATH", "breeding_model.json"))
 
 POOR_GRADES = {"D", "E", "F"}
 
+# ── Criteri minimi di validazione ────────────────────────────
+# Un modello puo' essere presentato come supporto decisionale solo se supera
+# soglie esplicite e documentate. Con R2 <= 0 il regressore e' peggio della
+# media; con AUC ~ 0.5 il classificatore non discrimina.
+MIN_R2_DECISION = 0.20
+MIN_AUC_DECISION = 0.65
+MIN_R2_EXPERIMENTAL = 0.0
+MIN_AUC_EXPERIMENTAL = 0.55
+MIN_SAMPLES_DECISION = 500
+
+METHODOLOGY_NOTICE = (
+    "Modello sperimentale: la validazione e' una cross-validation casuale a 5 fold, "
+    "senza split temporale ne' split per gruppi familiari. Gli output non sono "
+    "supporto decisionale finche' validation_status non e' 'decision_support_ready'."
+)
+
+
+def validation_status(cv_r2: float, cv_auc: float, n_samples: int) -> dict:
+    """Classifica lo stato del modello secondo criteri espliciti."""
+    if (cv_r2 >= MIN_R2_DECISION and cv_auc >= MIN_AUC_DECISION
+            and n_samples >= MIN_SAMPLES_DECISION):
+        status = "decision_support_ready"
+    elif cv_r2 >= MIN_R2_EXPERIMENTAL or cv_auc >= MIN_AUC_EXPERIMENTAL:
+        status = "experimental"
+    else:
+        status = "not_ready"
+    return {
+        "validation_status": status,
+        "is_decision_support_ready": status == "decision_support_ready",
+        "validation_criteria": {
+            "min_r2_decision": MIN_R2_DECISION,
+            "min_auc_decision": MIN_AUC_DECISION,
+            "min_samples_decision": MIN_SAMPLES_DECISION,
+            "min_r2_experimental": MIN_R2_EXPERIMENTAL,
+            "min_auc_experimental": MIN_AUC_EXPERIMENTAL,
+            "cv_scheme": "KFold(5) casuale, non temporale, non per famiglia",
+        },
+        "methodology_notice": METHODOLOGY_NOTICE,
+    }
+
 FEATURES = [
     "s_time", "s_earn", "s_win", "s_score", "s_races",
     "m_time", "m_earn", "m_win", "m_score", "m_races",
@@ -214,6 +254,9 @@ def main():
         "feature_importances": {f: round(float(v), 4) for f, v in zip(FEATURES, imp)},
         "score_model": export_gb_model(reg, "regressor"),
         "poor_model": export_gb_model(clf, "classifier"),
+        **validation_status(round(float(cv_r2.mean()), 4),
+                           round(float(cv_auc.mean()), 4),
+                           int(len(X))),
         "grade_earnings": grade_earnings_map(conn),
         # Soglie voto (stesse di nightly_update.py) per mappare score->voto lato server
         "grade_thresholds": [[97, "SSS"], [90, "SS"], [80, "S"], [65, "A"],
@@ -222,6 +265,8 @@ def main():
     conn.close()
 
     Path(args.out).write_text(json.dumps(payload))
+    print(f"[TRAIN] validation_status: {payload['validation_status']} "
+          f"(decision support: {payload['is_decision_support_ready']})", file=sys.stderr)
     size_kb = Path(args.out).stat().st_size / 1024
     print(f"[TRAIN] Modello salvato in {args.out} ({size_kb:.0f} KB)", file=sys.stderr)
 
