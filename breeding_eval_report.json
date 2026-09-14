@@ -1,0 +1,109 @@
+{
+  "n_samples": 180,
+  "n_samples_before_target_filter": 371,
+  "n_family_groups": 36,
+  "poor_prevalence": 0.372,
+  "feature_coverage": {
+    "s_time": 1.0,
+    "s_earn": 1.0,
+    "s_win": 1.0,
+    "s_score": 1.0,
+    "s_races": 1.0,
+    "m_time": 1.0,
+    "m_earn": 1.0,
+    "m_win": 1.0,
+    "m_score": 1.0,
+    "m_races": 1.0,
+    "ds_time": 0.006,
+    "ss_time": 0.0
+  },
+  "features_used": [
+    "s_time",
+    "s_earn",
+    "s_win",
+    "s_score",
+    "s_races",
+    "m_time",
+    "m_earn",
+    "m_win",
+    "m_score",
+    "m_races"
+  ],
+  "dropped_features_low_coverage": [
+    "ds_time",
+    "ss_time"
+  ],
+  "baselines": {
+    "target_mean": {
+      "mae": 16.565,
+      "rmse": 19.534,
+      "r2": 0.0
+    },
+    "mid_parent_score": {
+      "mae": 24.213,
+      "rmse": 29.365,
+      "r2": -1.2597
+    }
+  },
+  "regression_oof_by_family": {
+    "gb_150_d3": {
+      "mae": 18.108,
+      "rmse": 22.058,
+      "r2": -0.2751
+    },
+    "gb_60_d2": {
+      "mae": 16.733,
+      "rmse": 20.214,
+      "r2": -0.0708
+    },
+    "ridge_a10": {
+      "mae": 16.778,
+      "rmse": 20.227,
+      "r2": -0.0721
+    }
+  },
+  "regression_temporal_holdout": {
+    "split_year": 2021,
+    "n_train": 74,
+    "n_test": 106,
+    "mae": 20.145,
+    "rmse": 24.013,
+    "r2": -0.6422
+  },
+  "classification_oof_by_family": {
+    "auc": 0.6697,
+    "pr_auc": 0.5291,
+    "pr_auc_baseline_prevalence": 0.3722,
+    "brier": 0.2602
+  },
+  "trained_at": "2026-09-14T23:15:46.641948+00:00",
+  "min_child_races": 10,
+  "features": [
+    "s_time",
+    "s_earn",
+    "s_win",
+    "s_score",
+    "s_races",
+    "m_time",
+    "m_earn",
+    "m_win",
+    "m_score",
+    "m_races"
+  ],
+  "validation_status": "experimental",
+  "is_decision_support_ready": false,
+  "validation_criteria": {
+    "min_r2_decision": 0.2,
+    "min_auc_decision": 0.65,
+    "min_samples_decision": 500,
+    "min_r2_experimental": 0.0,
+    "min_auc_experimental": 0.55,
+    "cv_scheme": "GroupKFold(5) per stallone + holdout temporale"
+  },
+  "methodology_notice": "Validazione out-of-fold con GroupKFold per stallone (nessuna famiglia condivisa fra train e validation) piu' holdout temporale per anno di nascita del figlio. Gli output non sono supporto decisionale finche' validation_status non e' 'decision_support_ready'.",
+  "components": {
+    "score_regressor_beats_mean_baseline": false,
+    "score_regressor_usable": false,
+    "poor_classifier_usable": true
+  }
+}
