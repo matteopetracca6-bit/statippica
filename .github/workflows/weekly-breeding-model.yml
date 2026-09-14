@@ -31,7 +31,10 @@ jobs:
           git config user.email "nightly@statippica.bot"
           git config user.name "StatIppica Breeding Trainer"
           git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
-          git add breeding_model.json
+          # Il report di validazione va versionato insieme al modello: il server e la
+          # documentazione lo usano per dire se il modello e' utilizzabile o solo
+          # sperimentale. Senza, resterebbe pubblicato un report vecchio e non coerente.
+          git add breeding_model.json breeding_eval_report.json
           git commit -m "breeding model retrain $(date -u '+%Y-%m-%d')" || echo "nessuna modifica"
           git push origin main || echo "push saltato"
       - name: Trigger deploy Render
