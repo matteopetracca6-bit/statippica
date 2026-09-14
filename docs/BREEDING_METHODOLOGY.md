@@ -95,3 +95,41 @@ python3 train_breeding_model.py --report /tmp/rep.json
 ```
 
 Parametri da variabili d'ambiente: `MIN_CHILD_RACES`, `TEMPORAL_SPLIT_YEAR`, `MIN_FEATURE_COVERAGE`, `DB_PATH`, `BREEDING_MODEL_PATH`, `BREEDING_REPORT_PATH`.
+
+## 7. Copertura dei genitori (fase `parents_coverage`)
+
+Il limite principale del dataset non è il calcolo del rating, ma la **raccolta dati**:
+delle 7.719 fattrici citate nel campo `dam`, solo 1.911 hanno una riga in `horses`
+e 1.594 un rating `performance`; 5.808 non sono mai state raccolte. Lato stalloni,
+solo 71 su 571 hanno un rating da carriera. Nessuna madre "raccolta ma non valutata"
+esiste (0 casi con corse e senza rating): il collo di bottiglia è a monte.
+
+`nightly_update.py` include quindi la **FASE 2c — `phase_parents_coverage`**:
+
+- seleziona i genitori citati come `sire`/`dam` ma assenti da `horses` (o senza carriera),
+  ordinati per numero di figli nel DB, con **metà quota riservata alle fattrici**
+  (gli stalloni hanno centinaia di figli e altrimenti monopolizzerebbero ogni batch);
+- ne scarica profilo e carriera completa da `cavAn.php`, a batch
+  (`PARENT_COVERAGE_BATCH_SIZE`, default 150 per esecuzione) con pausa tra le richieste;
+- usa `PARENT_MIN_RACE_DATE` (default 2000-01-01) invece di `MIN_RACE_DATE` (2012):
+  i genitori hanno corso prima del 2012 e col filtro standard risulterebbero senza carriera;
+- marca `parent_fetch_at` a ogni tentativo, così un genitore introvabile non viene
+  richiesto a ogni esecuzione successiva (idempotenza e coda che avanza sempre).
+
+### Perché i voti già pubblicati non cambiano
+
+I soggetti recuperati sono marcati `source_role='parent_backfill'`. In `phase_ratings`
+essi **ricevono** un punteggio calcolato contro il pool storico, ma **non entrano**
+nei pool di percentile (guadagni, tempo, gruppo per stallone). Senza questa
+separazione, aggiungere migliaia di cavalli anziani e selezionati sposterebbe il voto
+di ogni cavallo già mostrato nel sito.
+
+Verifica eseguita su copia del database: dopo l'inserimento di 500 soggetti
+`parent_backfill` con carriere molto ricche (caso peggiore), i rating dei 16.015
+cavalli esistenti risultano **invariati (0 differenze)** e i 500 nuovi ricevono
+regolarmente il proprio rating.
+
+Il modello breeding va riaddestrato dopo alcune esecuzioni notturne: l'aumento di
+copertura amplia il dataset degli accoppiamenti utilizzabili (oggi 180 dopo il filtro
+≥10 corse) ed è la condizione necessaria — non sufficiente — perché la validazione
+possa passare da `experimental` a uno stato più solido.
