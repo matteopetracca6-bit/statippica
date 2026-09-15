@@ -79,7 +79,14 @@ MIN_RACE_DATE = os.environ.get("MIN_RACE_DATE", "2012-01-01")
 # dataset breeding sono le madri: 5.808 fattrici su 7.719 non hanno una riga in
 # `horses`, quindi nessun rating. Con batch 150 e cron bisettimanale la coda si
 # esaurisce in alcuni mesi senza sovraccaricare Trottoweb.
-PARENT_COVERAGE_BATCH_SIZE = int(os.environ.get("PARENT_COVERAGE_BATCH_SIZE", "150"))
+# DEFAULT 0 = FASE DISATTIVATA. Verifica sul campo (15/09/2026): cavAn.php copre
+# solo i cavalli "da 2 a 14 anni (10 per le femmine) presenti nel nostro database";
+# le fattrici sono piu' vecchie e la pagina risponde "Nome sconosciuto".
+# Test su 40 fattrici reali (le piu' citate, incluse quelle con lettera recente):
+# 0 trovate su 40. Tenere la fase attiva significherebbe scaricare 150 pagine a
+# vuoto ogni notte. Va riattivata SOLO dopo aver collegato una fonte che copra
+# gli stalloni/fattrici a carriera conclusa (ANACT/UNIRE): vedi docs sezione 7.
+PARENT_COVERAGE_BATCH_SIZE = int(os.environ.get("PARENT_COVERAGE_BATCH_SIZE", "0"))
 # I genitori hanno corso PRIMA del 2012: applicare MIN_RACE_DATE anche a loro
 # azzererebbe la loro carriera e li lascerebbe senza rating utile.
 PARENT_MIN_RACE_DATE = os.environ.get("PARENT_MIN_RACE_DATE", "2000-01-01")
@@ -1345,51 +1352,86 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
 # senza una propria riga in `horses` (o senza carriera): finché mancano, non
 # hanno rating e l'accoppiamento non è utilizzabile dal modello breeding.
 # ─────────────────────────────────────────────
-def _missing_parents(conn: sqlite3.Connection, limit: int) -> list[tuple[str, str, int]]:
-    """Genitori da recuperare, ordinati per numero di figli nel DB (più figli =
-    più accoppiamenti sbloccati per ogni pagina scaricata).
+def _parent_candidates(conn: sqlite3.Connection) -> tuple[list[tuple[str, str, int]], int]:
+    """
+    Calcola in memoria (NON con una JOIN SQL) i genitori citati come sire/dam che
+    non hanno ancora una carriera nel DB.
 
-    La metà della quota è riservata alle fattrici: gli stalloni hanno centinaia
-    di figli a testa e monopolizzerebbero ogni batch, mentre il buco di
-    copertura più grave (e il lato che pesa di più nel modello breeding) sono
-    proprio le madri, che hanno 1-3 figli ciascuna.
-    Ritorna [(nome, ruolo, n_figli)]."""
+    Il confronto va fatto su nome normalizzato (maiuscolo, spazi collassati): una
+    JOIN del tipo `ON UPPER(TRIM(h.name)) = p.pname` non puo' usare l'indice su
+    `horses(name)` e degenera in una scansione completa per ogni riga — su ~23.000
+    cavalli il job resta bloccato per ore. Caricare due colonne in Python e usare
+    dizionari costa pochi secondi.
+
+    Ritorna (candidati ordinati per numero di figli, totale candidati).
+    """
+    known: dict[str, tuple[int, Optional[str]]] = {}
+    for name, races, fetched in conn.execute(
+        "SELECT name, COALESCE(career_races, 0), parent_fetch_at FROM horses"
+    ):
+        key = _normalize_name(name)
+        if not key:
+            continue
+        prev = known.get(key)
+        # A parita' di nome tiene la versione con piu' corse (difensivo: i duplicati
+        # dovrebbero gia' essere stati uniti da _merge_duplicate_horses).
+        if prev is None or races > prev[0]:
+            known[key] = (races, fetched)
+
+    counts: dict[tuple[str, str], int] = {}
+    for sire, dam in conn.execute("SELECT sire, dam FROM horses"):
+        for raw, role in ((dam, "dam"), (sire, "sire")):
+            pname = _normalize_name(raw)
+            if not pname:
+                continue
+            row = known.get(pname)
+            # Gia' coperto: ha corse note, oppure e' gia' stato tentato senza esito
+            # (parent_fetch_at valorizzato) e non va richiesto a ogni esecuzione.
+            if row is not None and (row[0] > 0 or row[1] is not None):
+                continue
+            counts[(pname, role)] = counts.get((pname, role), 0) + 1
+
+    ordered = sorted(
+        ((n, role, c) for (n, role), c in counts.items()),
+        key=lambda t: (-t[2], t[0]),
+    )
+    return ordered, len({n for n, _, _ in ordered})
+
+
+def _missing_parents(conn: sqlite3.Connection, limit: int) -> list[tuple[str, str, int]]:
+    """Genitori da recuperare, ordinati per numero di figli nel DB (piu' figli =
+    piu' accoppiamenti sbloccati per ogni pagina scaricata).
+
+    Meta' della quota e' riservata alle fattrici: gli stalloni hanno centinaia di
+    figli a testa e monopolizzerebbero ogni batch, mentre il buco di copertura
+    piu' grave (e il lato che pesa di piu' nel modello breeding) sono le madri,
+    che hanno 1-3 figli ciascuna.
+    """
+    ordered, _ = _parent_candidates(conn)
+    return _split_quota(ordered, limit)
+
+
+def _split_quota(ordered: list[tuple[str, str, int]], limit: int) -> list[tuple[str, str, int]]:
     half = max(1, limit // 2)
-    dams = _missing_parents_by_role(conn, "dam", half)
-    sires = _missing_parents_by_role(conn, "sire", limit - len(dams))
-    out = dams + sires
-    if len(out) < limit:  # un ruolo è esaurito: riempi con l'altro
-        seen = {n for n, _, _ in out}
-        extra = _missing_parents_by_role(conn, "dam", limit) + \
-                _missing_parents_by_role(conn, "sire", limit)
-        for row in extra:
+    out: list[tuple[str, str, int]] = []
+    seen: set[str] = set()
+    for role, quota in (("dam", half), ("sire", limit - half)):
+        taken = 0
+        for row in ordered:
+            if taken >= quota:
+                break
+            if row[1] == role and row[0] not in seen:
+                out.append(row)
+                seen.add(row[0])
+                taken += 1
+    if len(out) < limit:  # un ruolo e' esaurito: riempi con l'altro
+        for row in ordered:
             if len(out) >= limit:
                 break
             if row[0] not in seen:
                 out.append(row)
                 seen.add(row[0])
     return out[:limit]
-
-
-def _missing_parents_by_role(conn: sqlite3.Connection, role: str, limit: int) -> list[tuple[str, str, int]]:
-    if limit <= 0:
-        return []
-    col = "dam" if role == "dam" else "sire"
-    rows = conn.execute(f"""
-        WITH parents AS (
-            SELECT UPPER(TRIM({col})) AS pname, '{role}' AS role FROM horses
-             WHERE {col} IS NOT NULL AND TRIM({col}) <> ''
-        )
-        SELECT p.pname, p.role, COUNT(*) AS n_figli
-        FROM parents p
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = p.pname
-        WHERE h.name IS NULL
-           OR (COALESCE(h.career_races, 0) = 0 AND h.parent_fetch_at IS NULL)
-        GROUP BY p.pname, p.role
-        ORDER BY n_figli DESC, p.pname ASC
-        LIMIT ?
-    """, (limit,)).fetchall()
-    return [(r[0], r[1], r[2]) for r in rows]
 
 
 def phase_parents_coverage(conn: sqlite3.Connection,
@@ -1410,26 +1452,16 @@ def phase_parents_coverage(conn: sqlite3.Connection,
         print("[PARENTS] Fase disattivata (batch_size=0).", file=sys.stderr)
         return 0, 0
 
-    todo = _missing_parents(conn, batch_size)
-    total_missing = conn.execute("""
-        WITH parents AS (
-            SELECT UPPER(TRIM(dam)) AS pname FROM horses
-             WHERE dam IS NOT NULL AND TRIM(dam) <> ''
-            UNION
-            SELECT UPPER(TRIM(sire)) AS pname FROM horses
-             WHERE sire IS NOT NULL AND TRIM(sire) <> ''
-        )
-        SELECT COUNT(*) FROM parents p
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = p.pname
-        WHERE h.name IS NULL
-           OR (COALESCE(h.career_races, 0) = 0 AND h.parent_fetch_at IS NULL)
-    """).fetchone()[0]
+    ordered, total_missing = _parent_candidates(conn)
+    todo = _split_quota(ordered, batch_size)
 
     print(f"[PARENTS] Genitori senza carriera nel DB: {total_missing}; "
           f"in questo batch: {len(todo)}", file=sys.stderr)
 
     processed = 0
     races_added = 0
+    found = 0
+    not_found = 0
     now_iso = datetime.utcnow().isoformat()
 
     for pname, role, n_figli in todo:
@@ -1450,6 +1482,16 @@ def phase_parents_coverage(conn: sqlite3.Connection,
         """, (now_iso, pname))
         conn.commit()
 
+        # Distinguiamo "genitore non presente nella fonte" da "presente ma senza
+        # gare": senza questa misura non si capisce se la fase sta lavorando a vuoto.
+        row = conn.execute(
+            "SELECT COALESCE(career_races,0), sex FROM horses WHERE UPPER(TRIM(name))=?",
+            (pname,)).fetchone()
+        if row and (row[0] > 0 or row[1]):
+            found += 1
+        else:
+            not_found += 1
+
         processed += 1
         races_added += inserted
         if inserted > 0:
@@ -1460,8 +1502,15 @@ def phase_parents_coverage(conn: sqlite3.Connection,
                   f"({races_added} gare inserite finora)", file=sys.stderr)
         time.sleep(REQUEST_DELAY)
 
-    print(f"[PARENTS] Genitori processati: {processed}, gare inserite: {races_added}, "
+    hit = (found / processed * 100) if processed else 0.0
+    print(f"[PARENTS] Genitori processati: {processed} (trovati nella fonte: {found}, "
+          f"assenti: {not_found}, resa {hit:.0f}%), gare inserite: {races_added}, "
           f"coda residua stimata: {max(0, total_missing - processed)}", file=sys.stderr)
+    if processed >= 20 and hit < 5:
+        print("[PARENTS] ATTENZIONE: la fonte non sta restituendo i genitori richiesti "
+              "(resa sotto il 5%). Disattivare la fase (PARENT_COVERAGE_BATCH_SIZE=0) "
+              "finche' non e' collegata una fonte che copre i cavalli a carriera conclusa.",
+              file=sys.stderr)
     return processed, races_added
 
 

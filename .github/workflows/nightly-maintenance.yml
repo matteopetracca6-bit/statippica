@@ -35,11 +35,11 @@ jobs:
           GITHUB_REPO: statippica
           ACTIVE_UPDATE_BATCH_SIZE: "800"
           BACKFILL_BATCH_SIZE: "150"
-          # FASE 2c: fattrici e stalloni citati come genitori ma mai raccolti.
-          # 150 per notte con pausa fra le richieste: ~5 minuti in piu' sul job
-          # (che oggi dura ~23 minuti, con timeout a 360), e la coda dei ~6.300
-          # genitori mancanti si esaurisce in circa sei settimane.
-          PARENT_COVERAGE_BATCH_SIZE: "150"
+          # FASE 2c (copertura genitori): DISATTIVATA finche' non c'e' una fonte
+          # valida. cavAn.php copre solo cavalli da 2 a 14 anni (10 per le femmine):
+          # test su 40 fattrici reali -> 0 trovate. Con 150 scaricherebbe pagine a
+          # vuoto ogni notte. Rimettere 150 quando sara' collegata ANACT/UNIRE.
+          PARENT_COVERAGE_BATCH_SIZE: "0"
         run: python nightly_update.py
       - name: Trigger deploy Render dopo aggiornamento DB
         if: success()

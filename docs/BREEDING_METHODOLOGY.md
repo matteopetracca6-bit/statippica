@@ -133,3 +133,29 @@ Il modello breeding va riaddestrato dopo alcune esecuzioni notturne: l'aumento d
 copertura amplia il dataset degli accoppiamenti utilizzabili (oggi 180 dopo il filtro
 ≥10 corse) ed è la condizione necessaria — non sufficiente — perché la validazione
 possa passare da `experimental` a uno stato più solido.
+
+### 7.1 Verifica sul campo: la fonte attuale non copre le fattrici (15/09/2026)
+
+La fase è stata implementata e testata contro la fonte reale, e il risultato è negativo:
+
+- `cavAn.php` dichiara esplicitamente il proprio perimetro: *"indigeni ed esteri da 2 a 14 anni
+  (10 per le femmine) presenti nel nostro database"*. Per un nome fuori perimetro risponde
+  "Nome sconosciuto", con HTTP 200 — quindi il fallimento è silenzioso.
+- Test su 40 fattrici reali (le più citate, comprese quelle con iniziale di annata recente):
+  **0 trovate su 40**. Anche `VARENNE`, come stallone a carriera conclusa, non è recuperabile.
+- La stessa limitazione spiega perché `fill_pedigree.py` completa i genitori "via fallback
+  Trottoweb" senza recuperare dati reali, e perché ANACT (`13.39.149.176:3000`) risulta
+  irraggiungibile sia dalla sandbox sia da GitHub Actions (log: *"3 fallimenti consecutivi →
+  disattivo ANACT"*).
+
+Conseguenze operative:
+
+- `PARENT_COVERAGE_BATCH_SIZE` ha **default 0**: la fase resta nel codice, testata e pronta,
+  ma non gira, per non scaricare 150 pagine a vuoto ogni notte.
+- La fase registra ora la **resa** (genitori trovati / processati) e avvisa nei log se scende
+  sotto il 5%: se la fonte cambia perimetro, ce ne accorgiamo dai log invece che per caso.
+- `parent_fetch_at` rende comunque la coda avanzante e idempotente.
+
+**Il vincolo non è quindi di modellazione ma di accesso ai dati**: senza una fonte che copra i
+cavalli a carriera conclusa (ANACT/UNIRE o equivalente), la copertura delle fattrici non può
+aumentare e il dataset breeding resta sui ~180 accoppiamenti utilizzabili.
