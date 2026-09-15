@@ -74,6 +74,22 @@ REQUEST_DELAY = 0.5
 # Lavoriamo solo con gare dal 2012 in avanti (storico precedente non tracciato)
 MIN_RACE_DATE = os.environ.get("MIN_RACE_DATE", "2012-01-01")
 
+# ── Copertura genitori (fattrici/stalloni citati ma assenti dal DB) ──
+# Quanti genitori mancanti recuperare per esecuzione. Il collo di bottiglia del
+# dataset breeding sono le madri: 5.808 fattrici su 7.719 non hanno una riga in
+# `horses`, quindi nessun rating. Con batch 150 e cron bisettimanale la coda si
+# esaurisce in alcuni mesi senza sovraccaricare Trottoweb.
+# Quanti genitori mancanti recuperare per esecuzione, dalla banca dati UNIRE
+# (vedi unire_source.py). Servono 2 richieste per genitore, con 1 secondo di
+# pausa: 100 genitori = circa 4 minuti su un job che oggi dura ~23 minuti.
+# NOTA: Trottoweb (cavAn.php) non puo' essere usato per questo — copre solo
+# cavalli "da 2 a 14 anni (10 per le femmine)" e su 40 fattrici reali ne ha
+# trovate 0. UNIRE copre gli anni di nascita dal 1900.
+PARENT_COVERAGE_BATCH_SIZE = int(os.environ.get("PARENT_COVERAGE_BATCH_SIZE", "100"))
+# Usato solo se in futuro si recuperassero le singole gare dei genitori: UNIRE
+# fornisce i totali di carriera gia' aggregati, non l'elenco delle corse.
+PARENT_MIN_RACE_DATE = os.environ.get("PARENT_MIN_RACE_DATE", "2000-01-01")
+
 # Backfill storico: quanti cavalli "mettere in pari" per ogni esecuzione notturna.
 # Il cron gira lun+gio, quindi con batch=250 ~22.000 cavalli vengono coperti in poche settimane.
 BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_BATCH_SIZE", "250"))
@@ -299,6 +315,12 @@ def init_db(conn: sqlite3.Connection):
         ("last_updated",     "TEXT"),
         ("backfill_status",  "TEXT DEFAULT 'pending'"),
         ("last_backfill_at", "TEXT"),
+        # Cavalli aggiunti dalla fase di copertura genitori (fattrici e stalloni
+        # citati come padre/madre ma non presenti nella popolazione scrapata).
+        # Servono al modello breeding, ma NON devono entrare nei pool di
+        # percentile: altrimenti tutti i voti già pubblicati cambierebbero.
+        ("source_role",      "TEXT"),
+        ("parent_fetch_at",  "TEXT"),
     ]:
         try:
             conn.execute(f"ALTER TABLE horses ADD COLUMN {col} {typ}")
@@ -676,7 +698,8 @@ def _hard_timeout(seconds: int):
             return False
     return _Ctx()
 
-def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_year: Optional[int] = None) -> int:
+def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_year: Optional[int] = None,
+                                  min_race_date: str = MIN_RACE_DATE) -> int:
     """
     Recupera profilo + intera carriera di un cavallo da cavAn.php (endpoint reale,
     dominio legacy trottoweb.com) e li inserisce/aggiorna nel DB.
@@ -711,7 +734,7 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
               sire_norm, dam_norm, name))
         conn.commit()
 
-    races = _filter_min_date(data.get("races", []))
+    races = _filter_min_date(data.get("races", []), min_race_date)
     inserted = _insert_races(conn, races)
     # Aggiorniamo last_updated sempre (anche con 0 gare nuove trovate) — serve alla
     # rotazione di phase_update, che dà priorità ai cavalli controllati meno di recente.
@@ -1293,12 +1316,18 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
     conn.execute("""
         UPDATE horses SET backfill_status='pending'
         WHERE backfill_status='done' AND (last_backfill_at IS NULL OR last_backfill_at < ?)
+          AND COALESCE(source_role, '') <> 'parent_backfill'
     """, (rebackfill_cutoff,))
     conn.commit()
 
+    # I genitori recuperati da UNIRE (source_role='parent_backfill') non vanno
+    # ricercati su Trottoweb: non esistono in quel perimetro e il tentativo, oltre
+    # a essere sprecato, azzererebbe i loro totali di carriera via
+    # _update_horse_career_stats (che li ricalcola dalla tabella `races`, vuota per loro).
     pending = conn.execute("""
         SELECT name, birth_year FROM horses
-        WHERE backfill_status IS NULL OR backfill_status = 'pending'
+        WHERE (backfill_status IS NULL OR backfill_status = 'pending')
+          AND COALESCE(source_role, '') <> 'parent_backfill'
         ORDER BY last_backfill_at IS NOT NULL, last_backfill_at ASC, name ASC
         LIMIT ?
     """, (batch_size,)).fetchall()
@@ -1323,6 +1352,270 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
     return horses_backfilled, new_races_found
 
 # ─────────────────────────────────────────────
+# FASE 2c — COPERTURA GENITORI
+# Fattrici e stalloni citati come padre/madre di cavalli presenti nel DB, ma
+# senza una propria riga in `horses` (o senza carriera): finché mancano, non
+# hanno rating e l'accoppiamento non è utilizzabile dal modello breeding.
+# ─────────────────────────────────────────────
+def _parent_candidates(conn: sqlite3.Connection) -> tuple[list[tuple[str, str, int]], int]:
+    """
+    Calcola in memoria (NON con una JOIN SQL) i genitori citati come sire/dam che
+    non hanno ancora una carriera nel DB.
+
+    Il confronto va fatto su nome normalizzato (maiuscolo, spazi collassati): una
+    JOIN del tipo `ON UPPER(TRIM(h.name)) = p.pname` non puo' usare l'indice su
+    `horses(name)` e degenera in una scansione completa per ogni riga — su ~23.000
+    cavalli il job resta bloccato per ore. Caricare due colonne in Python e usare
+    dizionari costa pochi secondi.
+
+    Ritorna (candidati ordinati per numero di figli, totale candidati).
+    """
+    known: dict[str, tuple[int, Optional[str]]] = {}
+    for name, races, fetched in conn.execute(
+        "SELECT name, COALESCE(career_races, 0), parent_fetch_at FROM horses"
+    ):
+        key = _normalize_name(name)
+        if not key:
+            continue
+        prev = known.get(key)
+        # A parita' di nome tiene la versione con piu' corse (difensivo: i duplicati
+        # dovrebbero gia' essere stati uniti da _merge_duplicate_horses).
+        if prev is None or races > prev[0]:
+            known[key] = (races, fetched)
+
+    counts: dict[tuple[str, str], int] = {}
+    for sire, dam in conn.execute("SELECT sire, dam FROM horses"):
+        for raw, role in ((dam, "dam"), (sire, "sire")):
+            pname = _normalize_name(raw)
+            if not pname:
+                continue
+            row = known.get(pname)
+            # Gia' coperto: ha corse note, oppure e' gia' stato tentato senza esito
+            # (parent_fetch_at valorizzato) e non va richiesto a ogni esecuzione.
+            if row is not None and (row[0] > 0 or row[1] is not None):
+                continue
+            counts[(pname, role)] = counts.get((pname, role), 0) + 1
+
+    ordered = sorted(
+        ((n, role, c) for (n, role), c in counts.items()),
+        key=lambda t: (-t[2], t[0]),
+    )
+    return ordered, len({n for n, _, _ in ordered})
+
+
+def _missing_parents(conn: sqlite3.Connection, limit: int) -> list[tuple[str, str, int]]:
+    """Genitori da recuperare, ordinati per numero di figli nel DB (piu' figli =
+    piu' accoppiamenti sbloccati per ogni pagina scaricata).
+
+    Meta' della quota e' riservata alle fattrici: gli stalloni hanno centinaia di
+    figli a testa e monopolizzerebbero ogni batch, mentre il buco di copertura
+    piu' grave (e il lato che pesa di piu' nel modello breeding) sono le madri,
+    che hanno 1-3 figli ciascuna.
+    """
+    ordered, _ = _parent_candidates(conn)
+    return _split_quota(ordered, limit)
+
+
+def _split_quota(ordered: list[tuple[str, str, int]], limit: int) -> list[tuple[str, str, int]]:
+    half = max(1, limit // 2)
+    out: list[tuple[str, str, int]] = []
+    seen: set[str] = set()
+    for role, quota in (("dam", half), ("sire", limit - half)):
+        taken = 0
+        for row in ordered:
+            if taken >= quota:
+                break
+            if row[1] == role and row[0] not in seen:
+                out.append(row)
+                seen.add(row[0])
+                taken += 1
+    if len(out) < limit:  # un ruolo e' esaurito: riempi con l'altro
+        for row in ordered:
+            if len(out) >= limit:
+                break
+            if row[0] not in seen:
+                out.append(row)
+                seen.add(row[0])
+    return out[:limit]
+
+
+def _upsert_unire_parent(conn: sqlite3.Connection, data: dict) -> bool:
+    """Scrive (o aggiorna) un genitore recuperato da UNIRE.
+
+    I totali di carriera arrivano gia' aggregati dalla fonte: non abbiamo le
+    singole gare, quindi NON va chiamato _update_horse_career_stats(), che li
+    ricalcolerebbe dalla tabella `races` azzerandoli.
+    backfill_status='done' tiene questi soggetti fuori da phase_backfill_gaps,
+    che altrimenti li cercherebbe ogni notte su Trottoweb (dove non esistono).
+    """
+    name = _normalize_name(data.get("name"))
+    if not name:
+        return False
+    now_iso = datetime.utcnow().isoformat()
+    exists = conn.execute("SELECT 1 FROM horses WHERE name=?", (name,)).fetchone()
+    if exists:
+        conn.execute("""
+            UPDATE horses SET
+                birth_year      = COALESCE(?, birth_year),
+                sex             = COALESCE(?, sex),
+                country         = COALESCE(?, country),
+                sire            = COALESCE(?, sire),
+                dam             = COALESCE(?, dam),
+                career_races    = ?,
+                career_wins     = ?,
+                career_places   = ?,
+                career_earnings = ?,
+                record_career   = COALESCE(?, record_career),
+                source_role     = COALESCE(source_role, 'parent_backfill'),
+                backfill_status = 'done',
+                last_updated    = ?
+            WHERE name = ?
+        """, (data.get("birth_year"), data.get("sex"), data.get("country"),
+              _normalize_name(data.get("sire")), _normalize_name(data.get("dam")),
+              data.get("career_races", 0), data.get("career_wins", 0),
+              data.get("career_places", 0), data.get("career_earnings", 0.0),
+              data.get("record_career"), now_iso, name))
+    else:
+        conn.execute("""
+            INSERT INTO horses
+                (name, birth_year, sex, country, sire, dam,
+                 career_races, career_wins, career_places, career_earnings,
+                 record_career, source_role, backfill_status, last_updated)
+            VALUES (?,?,?,?,?,?, ?,?,?,?, ?, 'parent_backfill', 'done', ?)
+        """, (name, data.get("birth_year"), data.get("sex"), data.get("country"),
+              _normalize_name(data.get("sire")), _normalize_name(data.get("dam")),
+              data.get("career_races", 0), data.get("career_wins", 0),
+              data.get("career_places", 0), data.get("career_earnings", 0.0),
+              data.get("record_career"), now_iso))
+    conn.commit()
+    return True
+
+
+def _child_lookup_key(conn: sqlite3.Connection, parent_name: str, role: str) -> Optional[tuple]:
+    """Un figlio (nome, sesso, anno) da cui raggiungere il genitore su UNIRE.
+
+    La ricerca UNIRE richiede nome+sesso+anno tutti e tre, e dell'anno di
+    nascita di una fattrice non sappiamo nulla: si parte quindi dal figlio,
+    di cui conosciamo tutto, e si segue il link della madre nella riga.
+    Scegliamo il figlio piu' vecchio con dati completi: i nati nell'ultimo anno
+    possono non essere ancora presenti nella banca dati (aggiornata al 2024).
+    """
+    col = "dam" if role == "dam" else "sire"
+    return conn.execute(f"""
+        SELECT name, sex, birth_year FROM horses
+        WHERE UPPER(TRIM({col})) = ?
+          AND birth_year IS NOT NULL AND sex IS NOT NULL AND TRIM(COALESCE(sex,'')) <> ''
+        ORDER BY birth_year ASC
+        LIMIT 1
+    """, (parent_name,)).fetchone()
+
+
+def phase_parents_coverage(conn: sqlite3.Connection,
+                           batch_size: int = PARENT_COVERAGE_BATCH_SIZE) -> tuple[int, int]:
+    """
+    FASE 2c — recupera da UNIRE (banca dati ufficiale del trotto, vedi
+    unire_source.py) le fattrici e gli stalloni citati come genitori ma assenti
+    dal DB, cosi' che phase_ratings possa calcolarne il rating.
+
+    Trottoweb NON puo' servire a questo scopo: copre solo i cavalli da 2 a 14
+    anni (10 per le femmine), quindi ignora per costruzione i riproduttori a
+    carriera conclusa (verifica: 0 fattrici trovate su 40).
+
+    I soggetti recuperati sono marcati source_role='parent_backfill': entrano
+    nei rating ma NON nei pool di percentile, quindi i voti gia' pubblicati
+    restano invariati.
+
+    Ritorna (genitori_recuperati, genitori_con_carriera).
+    """
+    if batch_size <= 0:
+        print("[PARENTS] Fase disattivata (batch_size=0).", file=sys.stderr)
+        return 0, 0
+
+    try:
+        import unire_source
+    except ImportError as e:
+        print(f"[PARENTS] unire_source non disponibile ({e}): salto la fase.", file=sys.stderr)
+        return 0, 0
+
+    ordered, total_missing = _parent_candidates(conn)
+    todo = _split_quota(ordered, batch_size)
+    print(f"[PARENTS] Genitori senza carriera nel DB: {total_missing}; "
+          f"in questo batch: {len(todo)} (fonte: UNIRE)", file=sys.stderr)
+
+    recovered = 0
+    with_career = 0
+    not_found = 0
+    unavailable = False
+    now_iso = datetime.utcnow().isoformat()
+
+    for processed, (pname, role, n_figli) in enumerate(todo, 1):
+        child = _child_lookup_key(conn, pname, role)
+        if not child:
+            # Nessun figlio con sesso+anno noti: non c'e' modo di interrogare UNIRE.
+            _ensure_horse_in_db(conn, pname)
+            conn.execute("UPDATE horses SET parent_fetch_at=?, source_role=COALESCE(source_role,'parent_backfill'), "
+                         "backfill_status='done' WHERE UPPER(TRIM(name))=?", (now_iso, pname))
+            conn.commit()
+            not_found += 1
+            continue
+
+        child_name, child_sex, child_year = child
+        parents = None
+        data = None
+        try:
+            with _hard_timeout(180):
+                parents = unire_source.find_parent_ids(child_name, child_sex, child_year)
+                if parents:
+                    found_name, cid = parents.get(role, (None, None))
+                    # Guardia sull'omonimia/disallineamento: procediamo solo se il
+                    # nome del genitore su UNIRE coincide con quello che abbiamo.
+                    if cid and found_name == pname:
+                        data = unire_source.fetch_horse(cid)
+        except unire_source.UnireUnavailable as e:
+            # La fonte e' giu': interrompiamo la fase SENZA marcare i genitori
+            # come gia' tentati, altrimenti un disservizio temporaneo li
+            # escluderebbe per sempre dalla coda. Riprendiamo la notte dopo.
+            print(f"[PARENTS] Fonte UNIRE non raggiungibile ({e}): interrompo la fase "
+                  f"dopo {processed - 1} genitori, la coda resta intatta.", file=sys.stderr)
+            unavailable = True
+            break
+        except _HardTimeout:
+            print(f"  [TIMEOUT] UNIRE bloccata su {child_name}, salto.", file=sys.stderr)
+
+        if data and _upsert_unire_parent(conn, data):
+            recovered += 1
+            if data.get("career_races", 0) > 0:
+                with_career += 1
+                print(f"  [PARENT] {pname} ({role}, {n_figli} figli): "
+                      f"{data['career_races']} corse, {data.get('career_earnings', 0):.0f} EUR",
+                      file=sys.stderr)
+        else:
+            _ensure_horse_in_db(conn, pname)
+            conn.execute("UPDATE horses SET source_role=COALESCE(source_role,'parent_backfill'), "
+                         "backfill_status='done' WHERE UPPER(TRIM(name))=?", (pname,))
+            not_found += 1
+
+        # parent_fetch_at marca il tentativo: la coda avanza sempre e un genitore
+        # irrecuperabile non viene richiesto a ogni esecuzione successiva.
+        conn.execute("UPDATE horses SET parent_fetch_at=? WHERE UPPER(TRIM(name))=?",
+                     (now_iso, pname))
+        conn.commit()
+
+        if processed % 25 == 0:
+            print(f"  ... {processed}/{len(todo)} genitori ({recovered} recuperati)", file=sys.stderr)
+
+    attempted = recovered + not_found
+    hit = (recovered / attempted * 100) if attempted else 0.0
+    print(f"[PARENTS] Recuperati: {recovered}/{attempted} (resa {hit:.0f}%), "
+          f"di cui con carriera: {with_career}; non trovati: {not_found}; "
+          f"coda residua stimata: {max(0, total_missing - recovered)}", file=sys.stderr)
+    if not unavailable and attempted >= 20 and hit < 20:
+        print("[PARENTS] ATTENZIONE: resa sotto il 20%, la fonte potrebbe aver cambiato "
+              "formato o perimetro. Controllare unire_source.py.", file=sys.stderr)
+    return recovered, with_career
+
+
+# ─────────────────────────────────────────────
 # FASE 3 — RATINGS cavalli
 # ─────────────────────────────────────────────
 def phase_ratings(conn: sqlite3.Connection):
@@ -1330,13 +1623,25 @@ def phase_ratings(conn: sqlite3.Connection):
 
     horses = conn.execute("""
         SELECT h.name, h.birth_year, h.sire,
-               h.career_races, h.career_wins, h.career_earnings, h.record_career
+               h.career_races, h.career_wins, h.career_earnings, h.record_career,
+               COALESCE(h.source_role, '') AS source_role
         FROM horses h
         WHERE h.career_races > 0
     """).fetchall()
 
+    # POOL DI RIFERIMENTO: solo la popolazione "corsa" originale. I genitori
+    # recuperati dalla fase di copertura ricevono un punteggio calcolato CONTRO
+    # questo pool, ma non lo modificano: così aumentare la copertura non
+    # cambia i voti già pubblicati degli altri cavalli.
+    pool = [r for r in horses if r[7] != "parent_backfill"]
+    n_backfill = len(horses) - len(pool)
+    if n_backfill:
+        print(f"[RATINGS] {n_backfill} genitori recuperati: valutati contro il pool "
+              f"storico di {len(pool)} cavalli, esclusi dal calcolo dei percentili.",
+              file=sys.stderr)
+
     # Percentili earnings
-    all_earnings = sorted([r[5] for r in horses if r[5]])
+    all_earnings = sorted([r[5] for r in pool if r[5]])
     n_earn = len(all_earnings)
 
     def earn_pct(earnings: float) -> float:
@@ -1345,7 +1650,7 @@ def phase_ratings(conn: sqlite3.Connection):
         pos = sum(1 for e in all_earnings if e <= earnings)
         return round(pos / n_earn * 100, 2)
 
-    all_times = sorted([t for r in horses if (t := _time_to_seconds(r[6] or ""))])
+    all_times = sorted([t for r in pool if (t := _time_to_seconds(r[6] or ""))])
     n_times = len(all_times)
 
     def time_pct(record: str) -> float:
@@ -1357,7 +1662,8 @@ def phase_ratings(conn: sqlite3.Connection):
 
     scores = {}
     for row in horses:
-        name, birth_year, sire, career_races, career_wins, career_earnings, record_career = row
+        (name, birth_year, sire, career_races, career_wins,
+         career_earnings, record_career, _source_role) = row
         if not career_races:
             continue
         ep = earn_pct(career_earnings or 0)
@@ -1371,9 +1677,13 @@ def phase_ratings(conn: sqlite3.Connection):
             "win_rate": round(win_rate, 2),
         }
 
-    # Percentili per sire
+    # Percentili per sire — anche qui il gruppo di confronto resta la popolazione
+    # storica: i genitori recuperati non spostano il percentile dei figli.
+    backfill_keys = {(r[0], r[1]) for r in horses if r[7] == "parent_backfill"}
     sire_groups: dict[str, list[float]] = {}
     for (name, birth_year), data in scores.items():
+        if (name, birth_year) in backfill_keys:
+            continue
         row = conn.execute("SELECT sire FROM horses WHERE name=? AND birth_year=?", (name, birth_year)).fetchone()
         if row and row[0]:
             sire_groups.setdefault(row[0].upper(), []).append(data["score"])
@@ -1740,7 +2050,9 @@ def main():
         if mode in ("maintenance", "full"):
             u_updated, u_races = phase_update(conn)         # FASE 2: aggiorna cavalli attivi
             b_horses, b_races  = phase_backfill_gaps(conn)  # FASE 2b: colma buchi storici cavalli esistenti
-            new_races          += u_races + b_races
+            p_parents, p_races = phase_parents_coverage(conn)  # FASE 2c: fattrici/stalloni mancanti
+            new_races          += u_races + b_races + p_races
+            new_horses         += p_parents
             horses_updated      = u_updated
             horses_backfilled   = b_horses
 

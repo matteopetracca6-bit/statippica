@@ -32,6 +32,71 @@ interface BreedingModel {
   poor_model: GBModel;
   grade_earnings: Record<string, { avg_earnings: number; n: number }>;
   grade_thresholds: [number, string][];
+  // Campi introdotti dal gate di validazione (assenti negli artefatti legacy)
+  validation_status?: "decision_support_ready" | "experimental" | "not_ready";
+  is_decision_support_ready?: boolean;
+  validation_criteria?: Record<string, unknown>;
+  methodology_notice?: string;
+}
+
+// ── Gate di validazione ─────────────────────────────────
+// Fallback per artefatti generati prima dell'introduzione dei campi:
+// lo stato viene ricalcolato dalle metriche presenti nel JSON.
+const MIN_R2_DECISION = 0.20;
+const MIN_AUC_DECISION = 0.65;
+const MIN_SAMPLES_DECISION = 500;
+const MIN_R2_EXPERIMENTAL = 0;
+const MIN_AUC_EXPERIMENTAL = 0.55;
+
+const DEFAULT_NOTICE =
+  "Modello sperimentale: validazione con cross-validation casuale, senza split " +
+  "temporale ne' per gruppi familiari. Gli output non costituiscono supporto " +
+  "decisionale ne' stima economica.";
+
+export interface ValidationInfo {
+  validation_status: "decision_support_ready" | "experimental" | "not_ready";
+  is_decision_support_ready: boolean;
+  methodology_notice: string;
+  validation_criteria: Record<string, unknown>;
+}
+
+export function getValidationInfo(m: Partial<BreedingModel>): ValidationInfo {
+  const r2 = typeof m.cv_r2_score === "number" ? m.cv_r2_score : -Infinity;
+  const auc = typeof m.cv_auc_poor === "number" ? m.cv_auc_poor : 0;
+  const n = typeof m.n_samples === "number" ? m.n_samples : 0;
+
+  let status = m.validation_status;
+  if (!status) {
+    if (r2 >= MIN_R2_DECISION && auc >= MIN_AUC_DECISION && n >= MIN_SAMPLES_DECISION) {
+      status = "decision_support_ready";
+    } else if (r2 >= MIN_R2_EXPERIMENTAL || auc >= MIN_AUC_EXPERIMENTAL) {
+      status = "experimental";
+    } else {
+      status = "not_ready";
+    }
+  }
+  return {
+    validation_status: status,
+    is_decision_support_ready:
+      m.is_decision_support_ready ?? status === "decision_support_ready",
+    methodology_notice: m.methodology_notice ?? DEFAULT_NOTICE,
+    validation_criteria: m.validation_criteria ?? {
+      min_r2_decision: MIN_R2_DECISION,
+      min_auc_decision: MIN_AUC_DECISION,
+      min_samples_decision: MIN_SAMPLES_DECISION,
+      min_r2_experimental: MIN_R2_EXPERIMENTAL,
+      min_auc_experimental: MIN_AUC_EXPERIMENTAL,
+      source: "fallback calcolato lato server (artefatto legacy)",
+    },
+  };
+}
+
+export function readModelFile(modelPath = "breeding_model.json"): Partial<BreedingModel> | null {
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve(modelPath), "utf-8"));
+  } catch {
+    return null;
+  }
 }
 
 let MODEL: BreedingModel | null = null;
@@ -112,6 +177,14 @@ export interface BreedingPrediction {
   roi_estimate?: number | null;      // (guadagni attesi - prezzo monta) / prezzo monta
   missing_data?: string[];           // feature riempite con la mediana (trasparenza)
   model_info?: { trained_at: string; n_samples: number; cv_r2: number; cv_auc: number };
+  // Trasparenza metodologica
+  validation_status?: string;
+  is_decision_support_ready?: boolean;
+  methodology_notice?: string;
+  disabled_outputs?: string[];
+  // Proxy descrittivo: media storica osservata dei guadagni per il voto predetto.
+  // Non e' una previsione economica individuale.
+  grade_avg_earnings_observed?: number | null;
 }
 
 export function predictBreeding(db: Database.Database, stallionName: string, mareName: string): BreedingPrediction {
@@ -154,13 +227,25 @@ export function predictBreeding(db: Database.Database, stallionName: string, mar
   `).get(stallionName) as { stud_fee_eur: number | null } | undefined;
   const studFee = feeRow?.stud_fee_eur ?? null;
 
+  const validation = getValidationInfo(M);
+  const disabled: string[] = [];
+
   let roi: number | null = null;
-  if (studFee && studFee > 0 && expectedEarnings !== null) {
+  if (!validation.is_decision_support_ready) {
+    // ROI non difendibile: combina una predizione non validata con medie
+    // aggregate e ignora costi di allevamento, mantenimento, mortalita' e varianza.
+    disabled.push("roi_estimate");
+  } else if (studFee && studFee > 0 && expectedEarnings !== null) {
     roi = Math.round(((expectedEarnings - studFee) / studFee) * 100) / 100;
   }
 
   return {
     ok: true,
+    validation_status: validation.validation_status,
+    is_decision_support_ready: validation.is_decision_support_ready,
+    methodology_notice: validation.methodology_notice,
+    disabled_outputs: disabled,
+    grade_avg_earnings_observed: expectedEarnings,
     stallion: stallionName,
     mare: mareName,
     predicted_score: Math.round(predictedScore * 10) / 10,
