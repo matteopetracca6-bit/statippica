@@ -134,7 +134,7 @@ copertura amplia il dataset degli accoppiamenti utilizzabili (oggi 180 dopo il f
 ≥10 corse) ed è la condizione necessaria — non sufficiente — perché la validazione
 possa passare da `experimental` a uno stato più solido.
 
-### 7.1 Verifica sul campo: la fonte attuale non copre le fattrici (15/09/2026)
+### 7.1 Verifica sul campo: Trottoweb non copre le fattrici (15/09/2026)
 
 La fase è stata implementata e testata contro la fonte reale, e il risultato è negativo:
 
@@ -156,6 +156,44 @@ Conseguenze operative:
   sotto il 5%: se la fonte cambia perimetro, ce ne accorgiamo dai log invece che per caso.
 - `parent_fetch_at` rende comunque la coda avanzante e idempotente.
 
-**Il vincolo non è quindi di modellazione ma di accesso ai dati**: senza una fonte che copra i
-cavalli a carriera conclusa (ANACT/UNIRE o equivalente), la copertura delle fattrici non può
-aumentare e il dataset breeding resta sui ~180 accoppiamenti utilizzabili.
+**Il vincolo non era quindi di modellazione ma di accesso ai dati.** È stato risolto: vedi 7.2.
+
+### 7.2 Fonte risolutiva: banca dati UNIRE (15/09/2026)
+
+Modulo: `unire_source.py`. Fonte: `https://www.unire.it/index.php/ita/trotto/list` — banca dati
+ufficiale del trotto italiano, anni di nascita **dal 1900 al 2026**, quindi include i riproduttori
+a carriera conclusa che Trottoweb esclude per costruzione.
+
+Per ogni cavallo la scheda espone anagrafica (sesso, anno, paese, allevatore), genealogia su più
+generazioni e i **totali di carriera**: corse, vittorie, piazzamenti, record al km, vincite —
+esattamente gli input del rating performance.
+
+**Come si raggiunge una fattrice.** La ricerca richiede obbligatoriamente *nome + sesso + anno*
+(con il solo nome risponde "Ho trovato 0 cavalli"), e l'anno di nascita di una madre non lo
+conosciamo. Si parte allora da un **figlio**, di cui sappiamo tutto, e si segue il link
+`list?id_cav=<id>` della fattrice presente nella riga dei risultati. Una sola ricerca sblocca la
+madre per tutti i suoi figli. Il nome trovato viene confrontato con quello nel DB prima di
+scrivere, perché la ricerca è "contiene" e restituisce anche omonimi parziali.
+
+**Resa misurata** su genitori reali del nostro DB: **9 su 10 recuperati** (7 con carriera
+effettiva, gli altri mai corsi), contro 0 su 40 di Trottoweb. Bonus: si popolano anche
+`sire`/`dam` del genitore stesso, cioè i nonni.
+
+**Accorgimenti di produzione:**
+
+- `PARENT_COVERAGE_BATCH_SIZE` ora ha default **100** (attivo in `nightly-maintenance.yml`):
+  2 richieste per genitore con 1 secondo di pausa ≈ 4 minuti su un job che dura ~23 minuti.
+- I soggetti sono marcati `source_role='parent_backfill'` e `backfill_status='done'`: restano
+  fuori dai pool di percentile (i voti già pubblicati non cambiano — verificato: 0 variazioni su
+  23.016 rating esistenti) e fuori da `phase_backfill_gaps`, che altrimenti li cercherebbe su
+  Trottoweb e, non trovandoli, **azzererebbe i loro totali di carriera** ricalcolandoli dalla
+  tabella `races` (per loro vuota, perché UNIRE fornisce gli aggregati e non le singole corse).
+- `UnireUnavailable` distingue "fonte giù" da "cavallo assente": in caso di disservizio la fase
+  si interrompe **senza** marcare `parent_fetch_at`, così un 502 temporaneo non brucia
+  definitivamente centinaia di genitori dalla coda. 3 tentativi con backoff progressivo.
+- La resa resta loggata ogni notte, con avviso sotto il 20%.
+- Limite noto: la fonte dichiara "dati aggiornati al 17-04-2024". Adeguato per carriere concluse,
+  non per la forma recente, che continua ad arrivare da Trottoweb.
+
+Coda attuale: **6.642 genitori** da recuperare → a 100 per notte, copertura completa in circa
+**due mesi**, con i riproduttori più citati (più figli nel DB) serviti per primi.
