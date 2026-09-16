@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getFlag, KNOWN_STALLION_NATIONALITY, COUNTRY_FLAG } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
-import { ArrowLeft, Trophy, Clock, Flag, Coins } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin } from "lucide-react";
 
 interface HorseData {
   name: string;
@@ -60,6 +60,34 @@ interface Sibling {
   career_earnings: number;
 }
 
+interface Neighbors {
+  prev: { name: string; birth_year: number; grade: string; score: number } | null;
+  next: { name: string; birth_year: number; grade: string; score: number } | null;
+}
+
+interface HorseStats {
+  yearlyStats: { year: string; races: number; wins: number; places: number; earnings: number; best_time: number; avg_time: number }[];
+  bestRaces: Race[];
+  trackStats: { track: string; races: number; wins: number; places: number; earnings: number }[];
+}
+
+const panelStyle: React.CSSProperties = {
+  background: "hsl(220 12% 10%)",
+  border: "1px solid hsl(220 10% 16%)",
+  borderRadius: "12px",
+  padding: "20px 22px",
+  marginBottom: "22px",
+};
+
+const panelTitle: React.CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 600,
+  color: "hsl(210 8% 50%)",
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  marginBottom: "14px",
+};
+
 function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div style={{
@@ -75,7 +103,7 @@ function Stat({ label, value, sub }: { label: string; value: string | number; su
   );
 }
 
-function PercentileBar({ label, value, max = 100 }: { label: string; value: number | null; max?: number }) {
+function PercentileBar({ label, value }: { label: string; value: number | null }) {
   if (value == null) return null;
   const pct = Math.min(100, Math.max(0, value));
   const color = pct >= 90 ? "hsl(51 100% 55%)" : pct >= 70 ? "hsl(183 100% 45%)" : pct >= 40 ? "hsl(100 50% 50%)" : "hsl(25 55% 50%)";
@@ -89,6 +117,51 @@ function PercentileBar({ label, value, max = 100 }: { label: string; value: numb
         <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: "3px", transition: "width 0.6s ease" }} />
       </div>
     </div>
+  );
+}
+
+function NavArrow({ direction, neighbor, onClick }: {
+  direction: "prev" | "next";
+  neighbor: { name: string; birth_year: number; grade: string; score: number } | null;
+  onClick: (name: string, year: number) => void;
+}) {
+  if (!neighbor) return <div style={{ flex: 1 }} />;
+  const isNext = direction === "next";
+  return (
+    <button
+      onClick={() => onClick(neighbor.name, neighbor.birth_year)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "10px 14px",
+        borderRadius: "10px",
+        background: "hsl(220 12% 12%)",
+        border: "1px solid hsl(220 10% 18%)",
+        cursor: "pointer",
+        flex: 1,
+        maxWidth: "240px",
+        justifyContent: isNext ? "flex-end" : "flex-start",
+        transition: "background 0.15s, border-color 0.15s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(220 12% 16%)"; e.currentTarget.style.borderColor = "hsl(183 40% 30%)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "hsl(220 12% 12%)"; e.currentTarget.style.borderColor = "hsl(220 10% 18%)"; }}
+    >
+      {!isNext && <ChevronLeft size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
+      <div style={{ textAlign: isNext ? "right" : "left", overflow: "hidden" }}>
+        <div style={{ fontSize: "10px", color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          {isNext ? "Score superiore" : "Score inferiore"}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: isNext ? "flex-end" : "flex-start" }}>
+          <GradeBadge grade={neighbor.grade} size="sm" />
+          <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 75%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {neighbor.name}
+          </span>
+          <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 45%)", flexShrink: 0 }}>{neighbor.score?.toFixed(1)}</span>
+        </div>
+      </div>
+      {isNext && <ChevronRight size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
+    </button>
   );
 }
 
@@ -106,32 +179,30 @@ function HorsePedigreeNode({ label, name, isStallion, highlight }: {
   }
   const handleClick = () => {
     if (isStallion) navigate(`/stallion/${encodeURIComponent(name)}`);
+    else navigate(`/horse/${encodeURIComponent(name)}/0`);
   };
-  const isClickable = isStallion;
   return (
     <div
-      onClick={isClickable ? handleClick : undefined}
+      onClick={handleClick}
       style={{
         padding: "10px 14px", borderRadius: "8px", textAlign: "left", width: "100%",
-        cursor: isClickable ? "pointer" : "default",
+        cursor: "pointer",
         background: highlight
           ? (isStallion ? "hsl(183 30% 10%)" : "hsl(320 15% 10%)")
           : "hsl(220 12% 11%)",
         border: highlight
           ? (isStallion ? "1px solid hsl(183 40% 25%)" : "1px solid hsl(320 20% 22%)")
           : "1px solid hsl(220 10% 18%)",
-        transition: isClickable ? "background 0.15s, border-color 0.15s" : undefined,
+        transition: "background 0.15s, border-color 0.15s",
       }}
-      onMouseEnter={isClickable ? (e: any) => { e.currentTarget.style.background = highlight ? "hsl(183 30% 14%)" : "hsl(220 12% 15%)"; } : undefined}
-      onMouseLeave={isClickable ? (e: any) => { e.currentTarget.style.background = highlight ? (isStallion ? "hsl(183 30% 10%)" : "hsl(320 15% 10%)") : "hsl(220 12% 11%)"; } : undefined}
+      onMouseEnter={(e: any) => { e.currentTarget.style.background = highlight ? "hsl(183 30% 14%)" : "hsl(220 12% 15%)"; }}
+      onMouseLeave={(e: any) => { e.currentTarget.style.background = highlight ? (isStallion ? "hsl(183 30% 10%)" : "hsl(320 15% 10%)") : "hsl(220 12% 11%)"; }}
     >
       <div style={{ fontSize: "10px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>{label}</div>
       <div style={{
         fontSize: highlight ? "13px" : "12px",
         fontWeight: highlight ? 700 : 600,
-        color: highlight
-          ? (isStallion ? "hsl(183 70% 65%)" : "hsl(320 50% 75%)")
-          : "hsl(210 8% 75%)",
+        color: highlight ? (isStallion ? "hsl(183 70% 65%)" : "hsl(320 50% 75%)") : "hsl(210 8% 75%)",
         letterSpacing: "0.03em",
       }}>{name}</div>
     </div>
@@ -145,7 +216,6 @@ export default function HorsePage() {
   const name = params?.name ? decodeURIComponent(params.name) : "";
   const year = params?.year ?? "0";
 
-  // If year is 0, show search only
   if (year === "0" || !name) {
     return (
       <div style={{ padding: "28px 32px", maxWidth: "600px" }}>
@@ -160,6 +230,26 @@ export default function HorsePage() {
     queryFn: async () => {
       const r = await apiRequest("GET", `/api/horse/${encodeURIComponent(name)}/${year}`);
       if (!r.ok) throw new Error("Not found");
+      return r.json();
+    },
+    enabled: !!name && year !== "0",
+  });
+
+  const { data: neighbors } = useQuery<Neighbors>({
+    queryKey: ["/api/horse", name, year, "neighbors"],
+    queryFn: async () => {
+      const r = await apiRequest("GET", `/api/horse/${encodeURIComponent(name)}/${year}/neighbors`);
+      if (!r.ok) return { prev: null, next: null };
+      return r.json();
+    },
+    enabled: !!name && year !== "0",
+  });
+
+  const { data: stats } = useQuery<HorseStats>({
+    queryKey: ["/api/horse", name, year, "stats"],
+    queryFn: async () => {
+      const r = await apiRequest("GET", `/api/horse/${encodeURIComponent(name)}/${year}/stats`);
+      if (!r.ok) return null;
       return r.json();
     },
     enabled: !!name && year !== "0",
@@ -186,24 +276,36 @@ export default function HorsePage() {
   const SEX_LABEL: Record<string, string> = { M: "Maschio", F: "Femmina" };
   const MODE_LABEL = horse.rating_mode === "performance" ? "Gare" : "Pedigree";
 
+  const navigateTo = (hName: string, hYear: number) => {
+    navigate(`/horse/${encodeURIComponent(hName)}/${hYear}`);
+  };
+
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1000px" }} className="fade-in">
-      {/* Back + search */}
-      <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "24px" }}>
+    <div style={{ padding: "28px 32px", maxWidth: "1100px" }} className="fade-in">
+      {/* Top bar: back + search */}
+      <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "16px" }}>
         <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
           <ArrowLeft size={16} /> Indietro
         </button>
         <div style={{ flex: 1, maxWidth: "380px" }}><HorseSearchBar /></div>
       </div>
 
+      {/* Prev/Next navigation */}
+      {neighbors && (neighbors.prev || neighbors.next) && (
+        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+          <NavArrow direction="prev" neighbor={neighbors.prev} onClick={navigateTo} />
+          <NavArrow direction="next" neighbor={neighbors.next} onClick={navigateTo} />
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", marginBottom: "24px", flexWrap: "wrap" }}>
         <GradeBadge grade={horse.grade ?? "N/A"} size="lg" />
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.03em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "20px" }}>{getFlag(horse.country, horse.name)}</span>
-              {horse.name}
-            </h1>
+            <span style={{ fontSize: "20px" }}>{getFlag(horse.country, horse.name)}</span>
+            {horse.name}
+          </h1>
           <div style={{ fontSize: "13px", color: "hsl(210 8% 52%)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <span>{horse.birth_year}</span>
             <span>·</span>
@@ -218,25 +320,17 @@ export default function HorsePage() {
 
       {/* Genealogy */}
       {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (
-        <div style={{
-          background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-          borderRadius: "12px", padding: "20px 22px", marginBottom: "24px",
-        }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "16px" }}>
-            Genealogia
-          </div>
+        <div style={panelStyle}>
+          <div style={panelTitle}>Genealogia (clicca per navigare)</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
-            {/* Paternal grandparents */}
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
               <HorsePedigreeNode label="Nonno pat." name={horse.pedigree.sire_sire} isStallion />
               <HorsePedigreeNode label="Nonna pat." name={horse.pedigree.sire_dam} isStallion={false} />
             </div>
-            {/* Parents */}
             <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "0 20px" }}>
               <HorsePedigreeNode label="Padre (Sire)" name={horse.pedigree.sire} isStallion highlight />
               <HorsePedigreeNode label="Madre (Dam)" name={horse.pedigree.dam} isStallion={false} highlight />
             </div>
-            {/* Maternal grandparents */}
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "16px" }}>
               <HorsePedigreeNode label="Nonno mat." name={horse.pedigree.dam_sire} isStallion />
               <HorsePedigreeNode label="Nonna mat." name={horse.pedigree.dam_dam} isStallion={false} />
@@ -246,7 +340,7 @@ export default function HorsePage() {
       )}
 
       {/* Stats grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", marginBottom: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", marginBottom: "22px" }}>
         <Stat label="Corse totali" value={horse.career_races ?? "—"} />
         <Stat label="Vittorie" value={horse.career_wins ?? "—"} sub={horse.win_rate != null ? `${horse.win_rate.toFixed(1)}% win rate` : undefined} />
         <Stat label="Piazzamenti" value={horse.career_places ?? "—"} />
@@ -256,13 +350,8 @@ export default function HorsePage() {
 
       {/* Percentile bars */}
       {horse.rating_mode === "performance" && (
-        <div style={{
-          background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-          borderRadius: "12px", padding: "20px 22px", marginBottom: "24px",
-        }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-            Percentili generazione {horse.birth_year}
-          </div>
+        <div style={panelStyle}>
+          <div style={panelTitle}>Percentili generazione {horse.birth_year}</div>
           <PercentileBar label="Guadagni" value={horse.earn_percentile} />
           <PercentileBar label="Miglior tempo" value={horse.time_percentile} />
           {horse.sire_percentile != null && (
@@ -271,15 +360,41 @@ export default function HorsePage() {
         </div>
       )}
 
+      {/* Year-by-year breakdown */}
+      {stats?.yearlyStats && stats.yearlyStats.length > 0 && (
+        <div style={panelStyle}>
+          <div style={panelTitle}>Carriera anno per anno</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
+                  {["Anno", "Corse", "Vitt.", "Piazz.", "Guadagni", "Miglior tempo", "Tempo medio"].map(h => (
+                    <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {stats.yearlyStats.map((y, i) => (
+                  <tr key={y.year} style={{ borderBottom: i < stats.yearlyStats.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 60%)", fontWeight: 600 }}>{y.year}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.races}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>{y.wins}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.places}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 70% 55%)" }}>{y.best_time ? `1.${(y.best_time / 10).toFixed(1)}` : "—"}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.avg_time ? `1.${(y.avg_time / 10).toFixed(1)}` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
         {/* Last races */}
-        <div style={{
-          background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-          borderRadius: "12px", padding: "20px 22px",
-        }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-            Ultime gare
-          </div>
+        <div style={panelStyle}>
+          <div style={panelTitle}>Ultime gare</div>
           {horse.races?.length ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {horse.races.slice(0, 10).map((r, i) => (
@@ -326,13 +441,8 @@ export default function HorsePage() {
         </div>
 
         {/* Siblings */}
-        <div style={{
-          background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-          borderRadius: "12px", padding: "20px 22px",
-        }}>
-          <div style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-            Fratellastri top (stesso padre)
-          </div>
+        <div style={panelStyle}>
+          <div style={panelTitle}>Fratellastri top (stesso padre)</div>
           {horse.siblings?.length ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               {horse.siblings.map((s, i) => (
@@ -359,6 +469,99 @@ export default function HorsePage() {
           )}
         </div>
       </div>
+
+      {/* Track stats + Best races */}
+      {stats && (stats.bestRaces.length > 0 || stats.trackStats.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "0" }}>
+          {/* Best races */}
+          {stats.bestRaces.length > 0 && (
+            <div style={panelStyle}>
+              <div style={panelTitle}>Migliori gare (per premio)</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {stats.bestRaces.map((r, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: "10px",
+                    padding: "7px 0",
+                    borderBottom: i < stats.bestRaces.length - 1 ? "1px solid hsl(220 10% 15%)" : "none",
+                  }}>
+                    <div className="tabular" style={{
+                      minWidth: "24px", height: "24px", borderRadius: "6px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontWeight: 700,
+                      background: r.placement === 1 ? "hsl(51 100% 50% / 0.15)" : "hsl(220 10% 14%)",
+                      color: r.placement === 1 ? "hsl(51 100% 60%)" : "hsl(210 8% 50%)",
+                      border: "1px solid",
+                      borderColor: r.placement === 1 ? "hsl(51 100% 50% / 0.3)" : "hsl(220 10% 20%)",
+                    }}>
+                      {r.placement_raw ?? r.placement ?? "—"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "12px", color: "hsl(210 8% 65%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.track || "—"} {r.race_date ? `· ${r.race_date}` : ""}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)" }}>
+                        {r.driver || ""} {r.distance ? `· ${r.distance}m` : ""}
+                      </div>
+                    </div>
+                    <div className="tabular" style={{ fontSize: "12px", fontWeight: 700, color: "hsl(51 80% 60%)", flexShrink: 0 }}>
+                      €{r.prize_net?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Track stats */}
+          {stats.trackStats.length > 0 && (
+            <div style={panelStyle}>
+              <div style={panelTitle}>Statistiche per ippodromo</div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
+                      {["Ippodromo", "Corse", "Vitt.", "Piazz.", "Guadagni"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "6px 8px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.trackStats.map((t, i) => (
+                      <tr key={t.track} style={{ borderBottom: i < stats.trackStats.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
+                        <td style={{ padding: "7px 8px", color: "hsl(210 8% 65%)", fontSize: "11px" }}>{t.track}</td>
+                        <td className="tabular" style={{ padding: "7px 8px", color: "hsl(210 8% 50%)" }}>{t.races}</td>
+                        <td className="tabular" style={{ padding: "7px 8px", color: "hsl(51 80% 55%)" }}>{t.wins}</td>
+                        <td className="tabular" style={{ padding: "7px 8px", color: "hsl(183 60% 55%)" }}>{t.places}</td>
+                        <td className="tabular" style={{ padding: "7px 8px", color: "hsl(51 80% 55%)" }}>€{t.earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Link to sire page */}
+      {horse.sire && (
+        <div style={{ marginTop: "16px" }}>
+          <Link href={`/stallion/${encodeURIComponent(horse.sire)}`}>
+            <a style={{
+              display: "inline-flex", alignItems: "center", gap: "8px",
+              padding: "10px 16px", borderRadius: "10px",
+              background: "hsl(183 30% 10%)", border: "1px solid hsl(183 40% 25%)",
+              color: "hsl(183 70% 65%)", textDecoration: "none", fontSize: "13px", fontWeight: 600,
+              transition: "background 0.15s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = "hsl(183 30% 14%)"}
+              onMouseLeave={e => e.currentTarget.style.background = "hsl(183 30% 10%)"}
+            >
+              Vedi scheda stallone: {horse.sire} →
+            </a>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

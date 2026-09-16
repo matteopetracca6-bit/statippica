@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
-import { ArrowLeft, Search, X } from "lucide-react";
+import { ArrowLeft, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Pedigree {
   sire: string | null;
@@ -26,9 +26,9 @@ interface StallionData {
   max_earnings: number;
   avg_win_rate: number;
   pct_top_S: number;
-  grade: string | null;       // voto stallone (SSS…F)
-  vp_boost: number;           // boost VendoPuledri (max +5)
-  final_score: number | null; // punteggio finale con boost
+  grade: string | null;
+  vp_boost: number;
+  final_score: number | null;
   no_offspring_data?: boolean;
   stud?: {
     stud_fee_eur: number;
@@ -41,6 +41,7 @@ interface StallionData {
   children: Child[];
   gradeDist: { grade: string; cnt: number }[];
   pedigree: Pedigree | null;
+  nationality?: string | null;
 }
 
 interface Child {
@@ -63,11 +64,39 @@ interface SearchResult {
   pct_top_S: number;
 }
 
+interface Neighbors {
+  prev: { name: string; grade: string; final_score: number } | null;
+  next: { name: string; grade: string; final_score: number } | null;
+}
+
+interface StallionStats {
+  offspringByYear: { birth_year: number; total: number; top_count: number; avg_score: number; avg_earn: number }[];
+  topOffspring: Child[];
+  gradeEarnings: { grade: string; avg_earn: number; cnt: number }[];
+}
+
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const GRADE_COLORS: Record<string, string> = {
   SSS: "hsl(51 100% 55%)", SS: "hsl(0 0% 78%)", S: "hsl(30 70% 60%)",
   A: "hsl(183 60% 55%)", B: "hsl(100 45% 50%)", C: "hsl(25 55% 52%)",
   D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(40 3% 28%)"
+};
+
+const panelStyle: React.CSSProperties = {
+  background: "hsl(220 12% 10%)",
+  border: "1px solid hsl(220 10% 16%)",
+  borderRadius: "12px",
+  padding: "20px 22px",
+  marginBottom: "22px",
+};
+
+const panelTitle: React.CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 600,
+  color: "hsl(210 8% 50%)",
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  marginBottom: "14px",
 };
 
 function StallionSearchBar({ onSelect }: { onSelect: (name: string) => void }) {
@@ -96,7 +125,6 @@ function StallionSearchBar({ onSelect }: { onSelect: (name: string) => void }) {
           value={q}
           onChange={e => { setQ(e.target.value.toUpperCase()); setOpen(true); }}
           placeholder="Cerca stallone..."
-          data-testid="input-stallion-search"
           style={{ flex: 1, background: "none", border: "none", outline: "none", color: "hsl(210 10% 88%)", fontSize: "14px", letterSpacing: "0.03em" }}
         />
         {q && <button onClick={() => { setQ(""); setOpen(false); }}><X size={14} style={{ color: "hsl(210 8% 45%)" }} /></button>}
@@ -168,8 +196,53 @@ function PedigreeNode({ label, name, highlight }: { label: string; name: string 
         color: highlight ? "hsl(183 70% 65%)" : "hsl(210 8% 75%)",
         letterSpacing: "0.03em",
       }}>
-          {name}
+        {name}
+      </div>
+    </button>
+  );
+}
+
+function StallionNavArrow({ direction, neighbor, onClick }: {
+  direction: "prev" | "next";
+  neighbor: { name: string; grade: string; final_score: number } | null;
+  onClick: (name: string) => void;
+}) {
+  if (!neighbor) return <div style={{ flex: 1 }} />;
+  const isNext = direction === "next";
+  return (
+    <button
+      onClick={() => onClick(neighbor.name)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "10px 14px",
+        borderRadius: "10px",
+        background: "hsl(220 12% 12%)",
+        border: "1px solid hsl(220 10% 18%)",
+        cursor: "pointer",
+        flex: 1,
+        maxWidth: "240px",
+        justifyContent: isNext ? "flex-end" : "flex-start",
+        transition: "background 0.15s, border-color 0.15s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(220 12% 16%)"; e.currentTarget.style.borderColor = "hsl(183 40% 30%)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "hsl(220 12% 12%)"; e.currentTarget.style.borderColor = "hsl(220 10% 18%)"; }}
+    >
+      {!isNext && <ChevronLeft size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
+      <div style={{ textAlign: isNext ? "right" : "left", overflow: "hidden" }}>
+        <div style={{ fontSize: "10px", color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          {isNext ? "Score superiore" : "Score inferiore"}
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: isNext ? "flex-end" : "flex-start" }}>
+          <GradeBadge grade={neighbor.grade} size="sm" />
+          <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 75%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {neighbor.name}
+          </span>
+          <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 45%)", flexShrink: 0 }}>{neighbor.final_score?.toFixed(1)}</span>
+        </div>
+      </div>
+      {isNext && <ChevronRight size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
     </button>
   );
 }
@@ -191,16 +264,48 @@ export default function StallionPage() {
     enabled: !isSearch,
   });
 
+  const { data: neighbors } = useQuery<Neighbors>({
+    queryKey: ["/api/stallion", stallionName, "neighbors"],
+    queryFn: async () => {
+      const r = await apiRequest("GET", `/api/stallion/${encodeURIComponent(stallionName)}/neighbors`);
+      if (!r.ok) return { prev: null, next: null };
+      return r.json();
+    },
+    enabled: !isSearch,
+  });
+
+  const { data: stats } = useQuery<StallionStats>({
+    queryKey: ["/api/stallion", stallionName, "stats"],
+    queryFn: async () => {
+      const r = await apiRequest("GET", `/api/stallion/${encodeURIComponent(stallionName)}/stats`);
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !isSearch,
+  });
+
   const totalDist = stallion?.gradeDist.reduce((s, g) => s + g.cnt, 0) ?? 1;
 
+  const navigateTo = (sName: string) => {
+    navigate(`/stallion/${encodeURIComponent(sName)}`);
+  };
+
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1000px" }} className="fade-in">
-      <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "24px", flexWrap: "wrap" }}>
+    <div style={{ padding: "28px 32px", maxWidth: "1100px" }} className="fade-in">
+      <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
         <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
           <ArrowLeft size={16} /> Indietro
         </button>
         <StallionSearchBar onSelect={name => navigate(`/stallion/${encodeURIComponent(name)}`)} />
       </div>
+
+      {/* Prev/Next navigation */}
+      {neighbors && (neighbors.prev || neighbors.next) && (
+        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+          <StallionNavArrow direction="prev" neighbor={neighbors.prev} onClick={navigateTo} />
+          <StallionNavArrow direction="next" neighbor={neighbors.next} onClick={navigateTo} />
+        </div>
+      )}
 
       {isSearch && (
         <div style={{ fontSize: "14px", color: "hsl(210 8% 45%)", marginTop: "12px" }}>
@@ -249,7 +354,7 @@ export default function StallionPage() {
             )}
           </div>
 
-          {/* Rating card — visibile solo se ci sono dati offspring */}
+          {/* Rating card */}
           {!stallion.no_offspring_data && stallion.final_score != null && (
             <div style={{
               background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
@@ -310,26 +415,17 @@ export default function StallionPage() {
 
           {/* Genealogy */}
           {stallion.pedigree && (stallion.pedigree.sire || stallion.pedigree.dam) && (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "20px 22px", marginBottom: "22px",
-            }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "16px" }}>
-                Genealogia
-              </div>
-              {/* Pedigree grid: 3 columns — grandparents paterni | parents | grandparents materni */}
+            <div style={panelStyle}>
+              <div style={panelTitle}>Genealogia (clicca per navigare tra stalloni)</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
-                {/* Paternal grandparents */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
                   <PedigreeNode label="Nonno pat." name={stallion.pedigree.sire_sire} />
                   <PedigreeNode label="Nonna pat." name={stallion.pedigree.sire_dam} />
                 </div>
-                {/* Parents */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "0 20px", position: "relative" }}>
                   <PedigreeNode label="Padre (Sire)" name={stallion.pedigree.sire} highlight />
                   <PedigreeNode label="Madre (Dam)" name={stallion.pedigree.dam} highlight />
                 </div>
-                {/* Maternal grandparents */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "16px" }}>
                   <PedigreeNode label="Nonno mat." name={stallion.pedigree.dam_sire} />
                   <PedigreeNode label="Nonna mat." name={stallion.pedigree.dam_dam} />
@@ -339,13 +435,8 @@ export default function StallionPage() {
           )}
 
           {/* Grade distribution */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "12px", padding: "20px 22px", marginBottom: "22px",
-          }}>
-            <div style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-              Distribuzione figli (in corsa)
-            </div>
+          <div style={panelStyle}>
+            <div style={panelTitle}>Distribuzione figli (in corsa)</div>
             <div style={{ display: "flex", height: "24px", borderRadius: "4px", overflow: "hidden", gap: "2px", marginBottom: "10px" }}>
               {GRADE_ORDER.map(g => {
                 const cnt = stallion.gradeDist.find(d => d.grade === g)?.cnt ?? 0;
@@ -373,14 +464,38 @@ export default function StallionPage() {
             </div>
           </div>
 
-          {/* Top children */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "12px", padding: "20px 22px",
-          }}>
-            <div style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-              Top prodotti (per guadagni)
+          {/* Offspring by year (new panel) */}
+          {stats?.offspringByYear && stats.offspringByYear.length > 0 && (
+            <div style={panelStyle}>
+              <div style={panelTitle}>Produzione per anno</div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
+                      {["Anno", "Figli totali", "Top (SSS+SS+S)", "Score medio", "Guadagno medio"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.offspringByYear.map((y, i) => (
+                      <tr key={y.birth_year} style={{ borderBottom: i < stats.offspringByYear.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 60%)", fontWeight: 600 }}>{y.birth_year}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.total}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: y.top_count > 0 ? "hsl(51 80% 55%)" : "hsl(210 8% 40%)" }}>{y.top_count}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.avg_score?.toFixed(1) ?? "—"}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.avg_earn?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+          )}
+
+          {/* Top children */}
+          <div style={panelStyle}>
+            <div style={panelTitle}>Top prodotti (per guadagni)</div>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
@@ -390,14 +505,16 @@ export default function StallionPage() {
                 </tr>
               </thead>
               <tbody>
-                {stallion.children.map((c, i) => (
-                  <tr key={`${c.name}-${c.birth_year}`} style={{ borderBottom: i < stallion.children.length - 1 ? "1px solid hsl(220 10% 14%)" : "none", transition: "background 0.1s" }}
+                {(stats?.topOffspring ?? stallion.children).map((c, i, arr) => (
+                  <tr key={`${c.name}-${c.birth_year}`} style={{ borderBottom: i < arr.length - 1 ? "1px solid hsl(220 10% 14%)" : "none", transition: "background 0.1s" }}
                     onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 14%)"}
                     onMouseLeave={e => e.currentTarget.style.background = "none"}
                   >
                     <td style={{ padding: "9px 10px" }}>
                       <Link href={`/horse/${encodeURIComponent(c.name)}/${c.birth_year}`}>
-                        <a style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 80%)", textDecoration: "none", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "5px" }}><span>{getFlag(c.country, c.name)}</span><span>{c.name}</span></a>
+                        <a style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 80%)", textDecoration: "none", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "5px" }}>
+                          <span>{c.name}</span>
+                        </a>
                       </Link>
                     </td>
                     <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.birth_year}</td>
@@ -412,6 +529,36 @@ export default function StallionPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Grade earnings map (context for ROI) */}
+          {stats?.gradeEarnings && stats.gradeEarnings.length > 0 && (
+            <div style={panelStyle}>
+              <div style={panelTitle}>Guadagni medi per voto (tutta la popolazione)</div>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                {GRADE_ORDER.map(g => {
+                  const ge = stats.gradeEarnings.find(e => e.grade === g);
+                  if (!ge) return null;
+                  return (
+                    <div key={g} style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: "4px",
+                      padding: "10px 14px", borderRadius: "8px",
+                      background: "hsl(220 12% 12%)", border: "1px solid hsl(220 10% 17%)",
+                      minWidth: "90px",
+                    }}>
+                      <GradeBadge grade={g} size="sm" />
+                      <div className="tabular" style={{ fontSize: "13px", fontWeight: 700, color: "hsl(51 80% 60%)" }}>
+                        €{ge.avg_earn >= 1000 ? `${(ge.avg_earn / 1000).toFixed(0)}k` : Math.round(ge.avg_earn)}
+                      </div>
+                      <div style={{ fontSize: "10px", color: "hsl(210 8% 40%)" }}>{ge.cnt} cavalli</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "10px" }}>
+                Dati reali dal database StatIppica. Usati dal modello ROI per stimare il ritorno economico degli accoppiamenti.
+              </div>
+            </div>
+          )}
         </>
       )}
 

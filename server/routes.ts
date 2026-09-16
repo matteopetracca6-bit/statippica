@@ -461,6 +461,161 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // ──────────────────────────────────────────────
+  // GET /api/horse/:name/:year/neighbors — prev/next horse by score rank
+  // ──────────────────────────────────────────────
+  app.get("/api/horse/:name/:year/neighbors", (req, res) => {
+    const name = decodeURIComponent(req.params.name).toUpperCase();
+    const year = parseInt(req.params.year);
+    const db = getDb();
+    try {
+      const current = db.prepare(`
+        SELECT score, grade FROM horse_ratings
+        WHERE name = ? AND birth_year = ? AND rating_mode = 'performance'
+      `).get(name, year) as any;
+      if (!current) return res.json({ prev: null, next: null });
+      const score = current.score ?? 0;
+      // Next: higher score, same or nearby birth year
+      const next = db.prepare(`
+        SELECT name, birth_year, grade, score FROM horse_ratings
+        WHERE rating_mode = 'performance' AND score > ?
+          AND name != ?
+        ORDER BY score ASC, birth_year DESC
+        LIMIT 1
+      `).get(score, name) as any;
+      // Prev: lower score
+      const prev = db.prepare(`
+        SELECT name, birth_year, grade, score FROM horse_ratings
+        WHERE rating_mode = 'performance' AND score < ?
+          AND name != ?
+        ORDER BY score DESC, birth_year DESC
+        LIMIT 1
+      `).get(score, name) as any;
+      res.json({ prev, next });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/stallion/:name/neighbors — prev/next stallion by final_score
+  // ──────────────────────────────────────────────
+  app.get("/api/stallion/:name/neighbors", (req, res) => {
+    const name = decodeURIComponent(req.params.name).toUpperCase();
+    const db = getDb();
+    try {
+      const current = db.prepare(`
+        SELECT final_score FROM stallion_rating_stats
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))
+      `).get(name) as any;
+      if (!current || current.final_score == null) return res.json({ prev: null, next: null });
+      const score = current.final_score;
+      const next = db.prepare(`
+        SELECT sire AS name, grade, final_score FROM stallion_rating_stats
+        WHERE final_score > ? AND UPPER(TRIM(sire)) != UPPER(TRIM(?))
+        ORDER BY final_score ASC LIMIT 1
+      `).get(score, name) as any;
+      const prev = db.prepare(`
+        SELECT sire AS name, grade, final_score FROM stallion_rating_stats
+        WHERE final_score < ? AND UPPER(TRIM(sire)) != UPPER(TRIM(?))
+        ORDER BY final_score DESC LIMIT 1
+      `).get(score, name) as any;
+      res.json({ prev, next });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/horse/:name/:year/stats — year-by-year career breakdown
+  // ──────────────────────────────────────────────
+  app.get("/api/horse/:name/:year/stats", (req, res) => {
+    const name = decodeURIComponent(req.params.name).toUpperCase();
+    const year = parseInt(req.params.year);
+    const db = getDb();
+    try {
+      // Year-by-year stats from races
+      const yearlyStats = db.prepare(`
+        SELECT strftime('%Y', race_date) AS year,
+               COUNT(*) AS races,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS wins,
+               SUM(CASE WHEN placement <= 3 THEN 1 ELSE 0 END) AS places,
+               SUM(prize_net) AS earnings,
+               MIN(time_km) AS best_time,
+               AVG(time_km) AS avg_time
+        FROM races
+        WHERE horse_name = ? AND race_date IS NOT NULL
+        GROUP BY strftime('%Y', race_date)
+        ORDER BY year ASC
+      `).all(name) as any[];
+
+      // Best races (top 5 by prize)
+      const bestRaces = db.prepare(`
+        SELECT race_date, track, placement, placement_raw, time_km,
+               distance, driver, prize_net, prize_gross, race_code
+        FROM races
+        WHERE horse_name = ? AND prize_net > 0
+        ORDER BY prize_net DESC
+        LIMIT 5
+      `).all(name) as any[];
+
+      // Track stats (performance by venue)
+      const trackStats = db.prepare(`
+        SELECT track,
+               COUNT(*) AS races,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS wins,
+               SUM(CASE WHEN placement <= 3 THEN 1 ELSE 0 END) AS places,
+               SUM(prize_net) AS earnings
+        FROM races
+        WHERE horse_name = ? AND track IS NOT NULL AND track != ''
+        GROUP BY track
+        ORDER BY races DESC
+        LIMIT 10
+      `).all(name) as any[];
+
+      res.json({ yearlyStats, bestRaces, trackStats });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/stallion/:name/stats — offspring yearly trend + ROI data
+  // ──────────────────────────────────────────────
+  app.get("/api/stallion/:name/stats", (req, res) => {
+    const name = decodeURIComponent(req.params.name).toUpperCase();
+    const db = getDb();
+    try {
+      // Offspring by birth year
+      const offspringByYear = db.prepare(`
+        SELECT birth_year,
+               COUNT(*) AS total,
+               SUM(CASE WHEN grade IN ('SSS','SS','S') THEN 1 ELSE 0 END) AS top_count,
+               AVG(score) AS avg_score,
+               AVG(career_earnings) AS avg_earn
+        FROM horse_ratings
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
+          AND birth_year IS NOT NULL
+        GROUP BY birth_year
+        ORDER BY birth_year ASC
+      `).all(name) as any[];
+
+      // Top offspring by earnings (top 10)
+      const topOffspring = db.prepare(`
+        SELECT name, birth_year, grade, score, career_earnings,
+               record_career, win_rate, sire_percentile
+        FROM horse_ratings
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
+        ORDER BY career_earnings DESC
+        LIMIT 10
+      `).all(name) as any[];
+
+      // Grade earnings map (for ROI context)
+      const gradeEarnings = db.prepare(`
+        SELECT grade, AVG(career_earnings) AS avg_earn, COUNT(*) AS cnt
+        FROM horse_ratings
+        WHERE rating_mode = 'performance' AND career_earnings > 0
+        GROUP BY grade
+      `).all() as any[];
+
+      res.json({ offspringByYear, topOffspring, gradeEarnings });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
   // POST /api/advisor
   // Body: { fattrice: string, budget_max?: number }
   // ──────────────────────────────────────────────
