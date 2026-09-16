@@ -132,10 +132,10 @@ STALLION_GRADE_THRESHOLDS: list[tuple[float, str]] = []
 
 # Percentili comuni per cavalli e stalloni:
 #   SSS = top 1%,  SS = top 5%,  S = top 10%, A = top 25%,
-#   B   = top 40%, C  = top 60%, D = top 75%, E = top 80%, F = resto (bottom 20%)
+#   B   = top 40%, C  = top 60%, D = top 75%, E = top 90%, F = resto (bottom 10%)
 _GRADE_PERCENTILES = [
     (99, "SSS"), (95, "SS"), (90, "S"), (75, "A"),
-    (60, "B"),   (40, "C"),  (25, "D"), (20, "E"),
+    (60, "B"),   (40, "C"),  (25, "D"), (10, "E"),
 ]
 
 def _build_percentile_thresholds(scores: list[float]) -> list[tuple[float, str]]:

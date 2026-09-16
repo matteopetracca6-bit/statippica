@@ -213,8 +213,8 @@ per i cavalli in corsa (rating `performance`) sia per gli stalloni.
 | B | top 40% | Sopra la media |
 | C | top 60% | Nella media |
 | D | top 75% | Sotto la media |
-| E | top 80% | Debole |
-| F | bottom 20% | Scarso |
+| E | top 90% | Debole |
+| F | bottom 10% | Scarso |
 
 Le soglie sono calcolate da `build_horse_grade_thresholds()` e
 `build_stallion_grade_thresholds()` in `nightly_update.py`, sul pool di riferimento

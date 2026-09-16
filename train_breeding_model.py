@@ -293,10 +293,10 @@ def grade_earnings_map(conn: sqlite3.Connection) -> dict:
 
 # Percentili per le soglie di voto (identici a nightly_update.py):
 #   SSS = top 1%,  SS = top 5%,  S = top 10%, A = top 25%,
-#   B   = top 40%, C  = top 60%, D = top 75%, E = top 80%, F = resto
+#   B   = top 40%, C  = top 60%, D = top 75%, E = top 90%, F = resto
 _GRADE_PERCENTILES = [
     (99, "SSS"), (95, "SS"), (90, "S"), (75, "A"),
-    (60, "B"),   (40, "C"),  (25, "D"), (20, "E"),
+    (60, "B"),   (40, "C"),  (25, "D"), (10, "E"),
 ]
 
 def compute_grade_thresholds(conn: sqlite3.Connection) -> list[list]:
