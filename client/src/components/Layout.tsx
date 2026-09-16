@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { TrendingUp, Trophy, Dna, ChevronLeft, ChevronRight, GitCompare } from "lucide-react";
+import { TrendingUp, Trophy, Dna, ChevronLeft, ChevronRight, GitCompare, Home as HomeIcon, Activity, Award, Network } from "lucide-react";
 import logoHorse from "@assets/statippica-logo.png";
 
 // Il logo è un tondo su fondo nero: borderRadius 50% evita che si vedano gli
@@ -31,6 +31,10 @@ export default function Layout({ children }: LayoutProps) {
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/advisor", label: "Advisor", icon: Dna },
     { href: "/compare", label: "Comparazione", icon: GitCompare },
+    { href: "/allevamenti", label: "Allevamenti", icon: HomeIcon },
+    { href: "/trend", label: "Trend", icon: Activity },
+    { href: "/top", label: "Top Gare", icon: Award },
+    { href: "/pedigree", label: "Pedigree", icon: Network },
   ];
 
   return (

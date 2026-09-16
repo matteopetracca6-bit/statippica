@@ -616,6 +616,267 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // ──────────────────────────────────────────────
+  // GET /api/stud-farms — ranking allevamenti per qualita' produzione
+  // ──────────────────────────────────────────────
+  app.get("/api/stud-farms", (_req, res) => {
+    const db = getDb();
+    try {
+      const farms = db.prepare(`
+        SELECT
+          s.stud_farm,
+          COUNT(DISTINCT s.name) AS n_stallions,
+          COALESCE(SUM(sr.n_figli_totali), 0) AS n_figli_totali,
+          COALESCE(SUM(sr.n_in_corsa), 0) AS n_in_corsa,
+          COALESCE(ROUND(AVG(sr.avg_score), 1), 0) AS avg_score,
+          COALESCE(ROUND(AVG(sr.final_score), 1), 0) AS avg_final_score,
+          COALESCE(ROUND(AVG(sr.pct_top_S), 1), 0) AS pct_top_S,
+          COALESCE(SUM(sr.n_SSS), 0) AS n_SSS,
+          COALESCE(SUM(sr.n_SS), 0) AS n_SS,
+          COALESCE(SUM(sr.n_S), 0) AS n_S,
+          COALESCE(SUM(sr.avg_earnings), 0) AS total_earnings
+        FROM stallions s
+        LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
+        WHERE s.stud_farm IS NOT NULL AND s.stud_farm != ''
+        GROUP BY s.stud_farm
+        HAVING COUNT(DISTINCT s.name) >= 1
+        ORDER BY avg_final_score DESC
+      `).all() as any[];
+
+      // For each farm, get the best stallion
+      const result = farms.map(f => {
+        const bestStallion = db.prepare(`
+          SELECT s.name, sr.final_score, sr.grade, sr.n_figli_totali, sr.pct_top_S,
+                 s.stud_fee_eur
+          FROM stallions s
+          LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
+          WHERE s.stud_farm = ? AND sr.final_score IS NOT NULL
+          ORDER BY sr.final_score DESC LIMIT 1
+        `).get(f.stud_farm) as any;
+        return { ...f, best_stallion: bestStallion || null };
+      });
+
+      res.json(result);
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/trends — andamenti temporali rating e guadagni
+  // ──────────────────────────────────────────────
+  app.get("/api/trends", (_req, res) => {
+    const db = getDb();
+    try {
+      // Grade distribution by birth year (last 15 years)
+      const gradeByYear = db.prepare(`
+        SELECT birth_year, grade, COUNT(*) as cnt
+        FROM horse_ratings
+        WHERE rating_mode = 'performance'
+          AND grade IS NOT NULL
+          AND birth_year >= 2010
+        GROUP BY birth_year, grade
+        ORDER BY birth_year ASC
+      `).all() as any[];
+
+      // Avg earnings by birth year
+      const earningsByYear = db.prepare(`
+        SELECT birth_year,
+               COUNT(*) as n_horses,
+               ROUND(AVG(career_earnings), 0) as avg_earnings,
+               ROUND(AVG(career_races), 0) as avg_races,
+               ROUND(AVG(career_wins), 0) as avg_wins,
+               ROUND(AVG(win_rate), 1) as avg_win_rate
+        FROM horse_ratings
+        WHERE rating_mode = 'performance'
+          AND birth_year >= 2010
+          AND career_races > 0
+        GROUP BY birth_year
+        ORDER BY birth_year ASC
+      `).all() as any[];
+
+      // Total races and horses per year (from races table)
+      const racesPerYear = db.prepare(`
+        SELECT strftime('%Y', race_date) as year,
+               COUNT(*) as n_races,
+               COUNT(DISTINCT horse_name) as n_horses,
+               ROUND(AVG(prize_net), 0) as avg_prize,
+               SUM(prize_net) as total_prize
+        FROM races
+        WHERE race_date IS NOT NULL
+          AND strftime('%Y', race_date) >= '2012'
+        GROUP BY year
+        ORDER BY year ASC
+      `).all() as any[];
+
+      // Top tracks by race count
+      const topTracks = db.prepare(`
+        SELECT track,
+               COUNT(*) as n_races,
+               ROUND(AVG(prize_net), 0) as avg_prize,
+               SUM(prize_net) as total_prize
+        FROM races
+        WHERE track IS NOT NULL AND track != ''
+          AND race_date IS NOT NULL
+        GROUP BY track
+        ORDER BY n_races DESC
+        LIMIT 15
+      `).all() as any[];
+
+      res.json({ gradeByYear, earningsByYear, racesPerYear, topTracks });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/top-races — migliori gare di sempre
+  // ──────────────────────────────────────────────
+  app.get("/api/top-races", (req, res) => {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const db = getDb();
+    try {
+      // Top races by prize
+      const topPrize = db.prepare(`
+        SELECT horse_name, race_date, track, race_code, race_number,
+               placement, placement_raw, time_km, distance, driver,
+               prize_net, prize_gross, total_starters, start_pos
+        FROM races
+        WHERE prize_net > 0
+        ORDER BY prize_net DESC
+        LIMIT ?
+      `).all(limit) as any[];
+
+      // Fastest times (filter by distance to compare fairly — 1600m and 2100m most common)
+      const fastestTimes = db.prepare(`
+        SELECT horse_name, race_date, track, time_km, distance, placement,
+               prize_net, driver
+        FROM races
+        WHERE time_km IS NOT NULL AND time_km > 0
+          AND distance IN (1600, 2100)
+          AND placement = 1
+        ORDER BY time_km ASC
+        LIMIT 20
+      `).all() as any[];
+
+      // Biggest upsets (high start_pos with win + good prize)
+      const upsets = db.prepare(`
+        SELECT horse_name, race_date, track, placement, start_pos,
+               total_starters, prize_net, driver, time_km
+        FROM races
+        WHERE placement = 1
+          AND start_pos >= 10
+          AND total_starters >= 12
+          AND prize_net >= 5000
+        ORDER BY prize_net DESC
+        LIMIT 15
+      `).all() as any[];
+
+      // Most dominant horses (by total prize won)
+      const dominantHorses = db.prepare(`
+        SELECT horse_name,
+               COUNT(*) as n_races,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) as n_wins,
+               ROUND(100.0 * SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) / COUNT(*), 1) as win_rate,
+               SUM(prize_net) as total_earnings,
+               MAX(prize_net) as biggest_prize
+        FROM races
+        WHERE prize_net > 0
+        GROUP BY horse_name
+        ORDER BY total_earnings DESC
+        LIMIT 20
+      `).all() as any[];
+
+      res.json({ topPrize, fastestTimes, upsets, dominantHorses });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/pedigree/:name — albero genealogico 4 generazioni + inbreeding
+  // ──────────────────────────────────────────────
+  app.get("/api/pedigree/:name", (req, res) => {
+    const name = decodeURIComponent(req.params.name).toUpperCase().trim();
+    const db = getDb();
+    try {
+      // Build pedigree tree recursively (4 generations)
+      function getHorse(n: string): any {
+        if (!n) return null;
+        const h = db.prepare(`
+          SELECT name, birth_year, sire, dam, sex, country, career_earnings, career_wins, career_races
+          FROM horses WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) LIMIT 1
+        `).get(n) as any;
+        if (!h) return { name: n, birth_year: null, sire: null, dam: null, missing: true };
+        return h;
+      }
+
+      function buildTree(n: string, depth: number): any {
+        if (depth > 4 || !n) return null;
+        const h = getHorse(n);
+        if (!h) return null;
+        return {
+          name: h.name,
+          birth_year: h.birth_year,
+          sex: h.sex,
+          country: h.country,
+          career_earnings: h.career_earnings,
+          career_wins: h.career_wins,
+          career_races: h.career_races,
+          sire: h.sire ? buildTree(h.sire, depth + 1) : null,
+          dam: h.dam ? buildTree(h.dam, depth + 1) : null,
+          missing: h.missing || false,
+        };
+      }
+
+      const tree = buildTree(name, 0);
+      if (!tree) {
+        return res.status(404).json({ error: "Cavallo non trovato" });
+      }
+
+      // Compute inbreeding coefficient (Wright's formula, simplified)
+      // Collect all ancestors with their paths
+      const ancestors: Map<string, number[]> = new Map();
+      function collectAncestors(node: any, path: number[]) {
+        if (!node || !node.name || node.missing) return;
+        const existing = ancestors.get(node.name.toUpperCase());
+        if (existing) {
+          existing.push(...path);
+        } else {
+          ancestors.set(node.name.toUpperCase(), [...path]);
+        }
+        collectAncestors(node.sire, [...path, 1]); // 1 = sire side
+        collectAncestors(node.dam, [...path, 2]); // 2 = dam side
+      }
+      collectAncestors(tree, []);
+
+      // Find common ancestors (appear on both sire and dam side)
+      const commonAncestors: { name: string; sirePath: number[]; damPath: number[]; contribution: number }[] = [];
+      for (const [ancestorName, paths] of ancestors) {
+        if (paths.length < 2) continue;
+        // Check if ancestor appears on both sire and dam sides
+        const sirePaths = paths.filter((_, i) => i % 2 === 0 && paths[i] === 1);
+        const damPaths = paths.filter((_, i) => i % 2 === 0 && paths[i] === 2);
+        if (sirePaths.length > 0 && damPaths.length > 0) {
+          const minSireGen = Math.min(...sirePaths.map((_, i) => Math.ceil((i + 1) / 2)));
+          const minDamGen = Math.min(...damPaths.map((_, i) => Math.ceil((i + 1) / 2)));
+          const contribution = Math.pow(0.5, minSireGen + minDamGen);
+          commonAncestors.push({ name: ancestorName, sirePath: sirePaths, damPath: damPaths, contribution });
+        }
+      }
+
+      // Simplified inbreeding coefficient
+      const inbreedingCoeff = commonAncestors.reduce((sum, a) => sum + a.contribution, 0);
+
+      // Get rating if available
+      const rating = db.prepare(`
+        SELECT grade, score, career_earnings, career_races, career_wins, win_rate
+        FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) AND rating_mode = 'performance' LIMIT 1
+      `).get(name) as any;
+
+      res.json({
+        horse: tree,
+        rating: rating || null,
+        inbreeding_coefficient: Math.round(inbreedingCoeff * 1000) / 10,
+        common_ancestors: commonAncestors.slice(0, 10),
+      });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
   // GET /api/advisor/simulate?stallion=NOME&mare=NOME
   // Simulazione breeding: distribuzione probabilita' voti figli,
   // guadagni attesi, costo allevamento, ROI

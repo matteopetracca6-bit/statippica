@@ -10,6 +10,10 @@ import StallionPage from "./pages/StallionPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import AdvisorPage from "./pages/AdvisorPage";
 import ComparePage from "./pages/ComparePage";
+import StudFarmsPage from "./pages/StudFarmsPage";
+import TrendsPage from "./pages/TrendsPage";
+import TopRacesPage from "./pages/TopRacesPage";
+import PedigreePage from "./pages/PedigreePage";
 import NotFound from "./pages/not-found";
 
 export default function App() {
@@ -25,6 +29,10 @@ export default function App() {
               <Route path="/leaderboard" component={LeaderboardPage} />
               <Route path="/advisor" component={AdvisorPage} />
               <Route path="/compare" component={ComparePage} />
+              <Route path="/allevamenti" component={StudFarmsPage} />
+              <Route path="/trend" component={TrendsPage} />
+              <Route path="/top" component={TopRacesPage} />
+              <Route path="/pedigree" component={PedigreePage} />
               <Route component={NotFound} />
             </Switch>
           </Layout>
