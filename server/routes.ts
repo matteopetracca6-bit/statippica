@@ -616,6 +616,162 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // ──────────────────────────────────────────────
+  // GET /api/advisor/simulate?stallion=NOME&mare=NOME
+  // Simulazione breeding: distribuzione probabilita' voti figli,
+  // guadagni attesi, costo allevamento, ROI
+  // ──────────────────────────────────────────────
+  app.get("/api/advisor/simulate", (req, res) => {
+    const stallion = ((req.query.stallion as string) || "").trim().toUpperCase();
+    const mare = ((req.query.mare as string) || "").trim().toUpperCase();
+    if (!stallion || !mare) {
+      return res.status(400).json({ error: "Parametri richiesti: stallion, mare" });
+    }
+    const db = getDb();
+    try {
+      // Grade distribution for stallion's existing offspring
+      const offspringGrades = db.prepare(`
+        SELECT grade, COUNT(*) as cnt
+        FROM horse_ratings
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
+          AND grade IS NOT NULL
+        GROUP BY grade
+      `).all(stallion) as any[];
+
+      // Also check if mare has a sire (for inbreeding check)
+      const mareData = db.prepare(`
+        SELECT name, birth_year, sire, dam FROM horses WHERE name = ? LIMIT 1
+      `).get(mare) as any;
+
+      // Grade earnings map (population averages)
+      const gradeEarningsRows = db.prepare(`
+        SELECT grade, AVG(career_earnings) as avg_earn, COUNT(*) as cnt
+        FROM horse_ratings
+        WHERE rating_mode = 'performance' AND career_earnings > 0
+        GROUP BY grade
+      `).all() as any[];
+
+      // Stud fee
+      const studRow = db.prepare(`
+        SELECT stud_fee_eur FROM stallions WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) LIMIT 1
+      `).get(stallion) as any;
+
+      // Build probability distribution
+      const GRADE_LIST = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+      const totalOffspring = offspringGrades.reduce((s: number, g: any) => s + g.cnt, 0);
+
+      // If stallion has offspring data, use it; otherwise fall back to population distribution
+      const popRows = db.prepare(`
+        SELECT grade, COUNT(*) as cnt FROM horse_ratings
+        WHERE rating_mode = 'performance' AND grade IS NOT NULL GROUP BY grade
+      `).all() as any[];
+      const popTotal = popRows.reduce((s: number, g: any) => s + g.cnt, 0);
+
+      const gradeEarnings = new Map<string, number>();
+      for (const r of gradeEarningsRows) gradeEarnings.set(r.grade, r.avg_earn || 0);
+
+      const distribution = GRADE_LIST.map(g => {
+        const stallionCnt = offspringGrades.find((r: any) => r.grade === g)?.cnt ?? 0;
+        const popCnt = popRows.find((r: any) => r.grade === g)?.cnt ?? 0;
+        const prob = totalOffspring >= 10
+          ? stallionCnt / totalOffspring
+          : popCnt / popTotal;
+        const avgEarn = gradeEarnings.get(g) ?? 0;
+        const expectedEarn = prob * avgEarn;
+        return {
+          grade: g,
+          probability: Math.round(prob * 1000) / 10,
+          stallion_count: stallionCnt,
+          population_count: popCnt,
+          avg_earnings: Math.round(avgEarn),
+          expected_earnings: Math.round(expectedEarn),
+        };
+      });
+
+      // Cost model (matching roi_model.py)
+      const studFee = studRow?.stud_fee_eur ?? 0;
+      const COSTI = {
+        riproduzione: 430 + 80 + 400 + 15 * 340,
+        puledro_anno1: 9 * 180 + 96 + 500,
+        yearling: 15 * 365 + 500 + 600,
+        training: 350 * 18 + 15 * 30 * 18 + 500 * 1.5 + 600 * 1.5,
+        agone: 500 * 4 + 600 * 4 + 1500,
+      };
+      const costoBase = studFee + COSTI.riproduzione + COSTI.puledro_anno1 + COSTI.yearling + COSTI.training + COSTI.agone;
+      const costoSeMorte = studFee + 430 + 80 + 400 + 15 * 340;
+      const costoAtteso = Math.round(0.95 * costoBase + 0.05 * costoSeMorte);
+
+      const ricavoAtteso = distribution.reduce((s: number, d: any) => s + d.expected_earnings, 0);
+      const roi = costoAtteso > 0 ? (ricavoAtteso - costoAtteso) / costoAtteso : 0;
+      const probRecupero = distribution.filter((d: any) => d.avg_earnings >= costoAtteso).reduce((s: number, d: any) => s + d.probability / 100, 0);
+
+      // Inbreeding check
+      let inbreedingRisk = false;
+      let inbreedingAncestor: string | null = null;
+      if (mareData) {
+        const mareAncestors = new Set<string>();
+        if (mareData.sire) mareAncestors.add(mareData.sire.toUpperCase());
+        if (mareData.dam) mareAncestors.add(mareData.dam.toUpperCase());
+        // Check stallion's parents
+        const stallionParents = db.prepare(`
+          SELECT sire, dam FROM horses WHERE name = ? LIMIT 1
+        `).get(stallion) as any;
+        if (stallionParents) {
+          if (stallionParents.sire && mareAncestors.has(stallionParents.sire.toUpperCase())) {
+            inbreedingRisk = true;
+            inbreedingAncestor = stallionParents.sire;
+          }
+          if (!inbreedingRisk && stallionParents.dam && mareAncestors.has(stallionParents.dam.toUpperCase())) {
+            inbreedingRisk = true;
+            inbreedingAncestor = stallionParents.dam;
+          }
+        }
+        // Also check grandparents
+        if (!inbreedingRisk && mareData.sire) {
+          const mareSireParents = db.prepare(`
+            SELECT sire, dam FROM horses WHERE name = ? LIMIT 1
+          `).get(mareData.sire.toUpperCase()) as any;
+          if (mareSireParents) {
+            if (mareSireParents.sire) mareAncestors.add(mareSireParents.sire.toUpperCase());
+            if (mareSireParents.dam) mareAncestors.add(mareSireParents.dam.toUpperCase());
+          }
+        }
+      }
+
+      res.json({
+        stallion,
+        mare,
+        mareData: mareData || null,
+        stud_fee: studFee,
+        distribution,
+        total_offspring: totalOffspring,
+        source: totalOffspring >= 10 ? "stallion_offspring" : "population_fallback",
+        costs: {
+          stud_fee: studFee,
+          riproduzione: Math.round(COSTI.riproduzione),
+          puledro_anno1: Math.round(COSTI.puledro_anno1),
+          yearling: Math.round(COSTI.yearling),
+          training: Math.round(COSTI.training),
+          agone: Math.round(COSTI.agone),
+          costo_base: Math.round(costoBase),
+          costo_se_morte: Math.round(costoSeMorte),
+          costo_atteso: costoAtteso,
+        },
+        roi: {
+          costo_atteso: costoAtteso,
+          ricavo_atteso: Math.round(ricavoAtteso),
+          utile_atteso: Math.round(ricavoAtteso - costoAtteso),
+          roi_pct: Math.round(roi * 1000) / 10,
+          prob_recupero_costi: Math.round(probRecupero * 1000) / 10,
+        },
+        inbreeding: {
+          risk: inbreedingRisk,
+          ancestor: inbreedingAncestor,
+        },
+      });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
   // POST /api/advisor
   // Body: { fattrice: string, budget_max?: number }
   // ──────────────────────────────────────────────

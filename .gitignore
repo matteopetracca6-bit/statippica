@@ -13,3 +13,4 @@ data.db-journal
 
 *.log
 .DS_Store
+__pycache__/

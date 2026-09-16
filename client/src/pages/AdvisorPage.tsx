@@ -1,9 +1,17 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
-import { Search, Dna, AlertCircle, Euro, TrendingUp, Users } from "lucide-react";
+import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+
+const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+const GRADE_COLORS: Record<string, string> = {
+  SSS: "hsl(183 100% 55%)", SS: "hsl(150 80% 50%)", S: "hsl(120 60% 50%)",
+  A: "hsl(60 80% 55%)", B: "hsl(30 80% 58%)", C: "hsl(15 70% 55%)",
+  D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(0 60% 45%)",
+};
 
 interface AdvisorResult {
   found: boolean;
@@ -27,9 +35,150 @@ interface Candidate {
   progeny_earnings_2024: number;
 }
 
+interface Simulation {
+  stallion: string;
+  mare: string;
+  stud_fee: number;
+  distribution: { grade: string; probability: number; stallion_count: number; avg_earnings: number; expected_earnings: number }[];
+  total_offspring: number;
+  source: string;
+  costs: { stud_fee: number; riproduzione: number; puledro_anno1: number; yearling: number; training: number; agone: number; costo_base: number; costo_se_morte: number; costo_atteso: number };
+  roi: { costo_atteso: number; ricavo_atteso: number; utile_atteso: number; roi_pct: number; prob_recupero_costi: number };
+  inbreeding: { risk: boolean; ancestor: string | null };
+}
+
+function SimulationPanel({ stallion, mare }: { stallion: string; mare: string }) {
+  const { data: sim, isLoading } = useQuery<Simulation>({
+    queryKey: ["/api/advisor/simulate", stallion, mare],
+    queryFn: () => apiRequest("GET", `/api/advisor/simulate?stallion=${encodeURIComponent(stallion)}&mare=${encodeURIComponent(mare)}`).then(r => r.json()),
+    staleTime: 120000,
+  });
+
+  if (isLoading) return <TrottingHorseLoader label="Simulazione in corso..." />;
+
+  if (!sim) return <div style={{ padding: "16px", color: "hsl(210 8% 45%)", fontSize: "13px" }}>Errore caricamento simulazione.</div>;
+
+  const maxProb = Math.max(...sim.distribution.map(d => d.probability), 1);
+  const roiPositive = sim.roi.roi_pct >= 0;
+
+  return (
+    <div style={{ marginTop: "12px", padding: "16px 18px", background: "hsl(220 12% 8%)", borderRadius: "10px", border: "1px solid hsl(220 10% 14%)" }}>
+      {/* Grade probability distribution */}
+      <div style={{ marginBottom: "18px" }}>
+        <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
+          Distribuzione voti puledro atteso
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {sim.distribution.map(d => (
+            <div key={d.grade} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: "32px", textAlign: "center" }}>
+                <GradeBadge grade={d.grade} size="sm" />
+              </div>
+              <div style={{ flex: 1, height: "22px", background: "hsl(220 10% 12%)", borderRadius: "4px", overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", width: `${(d.probability / maxProb) * 100}%`,
+                  background: `${GRADE_COLORS[d.grade]}88`, borderRadius: "4px",
+                  transition: "width 0.5s ease",
+                }} />
+              </div>
+              <div style={{ width: "50px", textAlign: "right", fontSize: "12px", fontWeight: 700, color: GRADE_COLORS[d.grade] }}>
+                {d.probability.toFixed(1)}%
+              </div>
+              <div style={{ width: "70px", textAlign: "right", fontSize: "11px", color: "hsl(210 8% 45%)" }}>
+                €{(d.avg_earnings / 1000).toFixed(0)}k
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: "10px", color: "hsl(210 8% 35%)", marginTop: "8px" }}>
+          {sim.source === "stallion_offspring"
+            ? `Basato su ${sim.total_offspring} figli esistenti di questo stallone`
+            : "Dati insufficienti sullo stallone — uso distribuzione popolazione generale"}
+        </div>
+      </div>
+
+      {/* Inbreeding warning */}
+      {sim.inbreeding?.risk && (
+        <div style={{
+          background: "hsl(0 50% 20% / 0.3)", border: "1px solid hsl(0 50% 35%)",
+          borderRadius: "8px", padding: "10px 14px", marginBottom: "14px",
+          display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "hsl(0 60% 60%)",
+        }}>
+          <AlertCircle size={14} /> Rischio inbreeding: antenato comune <strong>{sim.inbreeding.ancestor}</strong>
+        </div>
+      )}
+
+      {/* Cost breakdown */}
+      <div style={{ marginBottom: "16px" }}>
+        <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>
+          Costi allevamento (costi vivi, 2.5 anni)
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
+          {[
+            ["Stud fee", sim.costs.stud_fee],
+            ["Riproduzione", sim.costs.riproduzione],
+            ["Puledro anno 1", sim.costs.puledro_anno1],
+            ["Yearling", sim.costs.yearling],
+            ["Training", sim.costs.training],
+            ["Attività agonistica", sim.costs.agone],
+          ].map(([label, val]) => (
+            <div key={label as string} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "3px 0" }}>
+              <span style={{ color: "hsl(210 8% 50%)" }}>{label}</span>
+              <span className="tabular" style={{ color: "hsl(210 8% 65%)" }}>
+                €{(val as number).toLocaleString("it-IT")}
+              </span>
+            </div>
+          ))}
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "6px 0 0", borderTop: "1px solid hsl(220 10% 14%)", gridColumn: "1 / -1" }}>
+            <span style={{ color: "hsl(210 8% 60%)", fontWeight: 700 }}>Costo atteso (95% sopravvivenza)</span>
+            <span className="tabular" style={{ color: "hsl(15 70% 55%)", fontWeight: 700 }}>
+              €{sim.costs.costo_atteso.toLocaleString("it-IT")}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ROI summary */}
+      <div style={{
+        background: roiPositive ? "hsl(100 30% 12%)" : "hsl(0 30% 12%)",
+        border: `1px solid ${roiPositive ? "hsl(100 50% 30%)" : "hsl(0 50% 30%)"}`,
+        borderRadius: "10px", padding: "14px 18px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
+        <div>
+          <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
+            ROI atteso
+          </div>
+          <div style={{
+            fontSize: "22px", fontWeight: 800,
+            color: roiPositive ? "hsl(100 60% 55%)" : "hsl(0 60% 55%)",
+          }}>
+            {sim.roi.roi_pct > 0 ? "+" : ""}{sim.roi.roi_pct.toFixed(1)}%
+          </div>
+          <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "2px" }}>
+            Ricavo atteso: €{sim.roi.ricavo_atteso.toLocaleString("it-IT")} · Utile: €{sim.roi.utile_atteso.toLocaleString("it-IT")}
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
+            Prob. recupero costi
+          </div>
+          <div style={{ fontSize: "22px", fontWeight: 800, color: "hsl(183 80% 55%)" }}>
+            {sim.roi.prob_recupero_costi.toFixed(1)}%
+          </div>
+          <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "2px" }}>
+            P(cavalli con guadagni ≥ costo)
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdvisorPage() {
   const [fattrice, setFattrice] = useState("");
   const [budget, setBudget] = useState("");
+  const [expandedStallion, setExpandedStallion] = useState<string | null>(null);
   const [, navigate] = useLocation();
 
   const { mutate, data, isPending, error } = useMutation<AdvisorResult, Error, { fattrice: string; budget_max?: number }>({
@@ -42,8 +191,11 @@ export default function AdvisorPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!fattrice.trim()) return;
+    setExpandedStallion(null);
     mutate({ fattrice: fattrice.trim(), budget_max: budget ? parseInt(budget) : undefined });
   }
+
+  const mareName = data?.fattrice?.name || fattrice.trim();
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: "920px" }}>
@@ -53,7 +205,7 @@ export default function AdvisorPage() {
           Advisor Allevatore
         </h1>
         <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
-          Inserisci la tua fattrice e ottieni i migliori stalloni compatibili per pedigree e ROI atteso.
+          Inserisci la tua fattrice: per ogni stallone compatibile vedrai la distribuzione probabilita' voti del puledro, i guadagni stimati e il ROI.
         </p>
       </div>
 
@@ -125,14 +277,14 @@ export default function AdvisorPage() {
         </button>
       </form>
 
-      {/* Results */}
+      {/* Loading */}
+      {isPending && <TrottingHorseLoader label="Ricerca stalloni compatibili..." />}
+
+      {/* Not found */}
       {data && !data.found && (
         <div>
           {(data.suggestions?.length ?? 0) > 0 ? (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "20px 22px",
-            }}>
+            <div style={{ background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "12px", padding: "20px 22px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px", color: "hsl(25 55% 55%)", fontSize: "13px" }}>
                 <AlertCircle size={16} /> Fattrice non trovata esattamente. Intendevi:
               </div>
@@ -145,8 +297,7 @@ export default function AdvisorPage() {
                     padding: "10px 14px", borderRadius: "8px",
                     background: "none", border: "1px solid hsl(220 10% 20%)",
                     color: "hsl(210 8% 75%)", cursor: "pointer", marginBottom: "6px",
-                    fontSize: "13px", letterSpacing: "0.03em",
-                    transition: "background 0.1s",
+                    fontSize: "13px", letterSpacing: "0.03em", transition: "background 0.1s",
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 15%)"}
                   onMouseLeave={e => e.currentTarget.style.background = "none"}
@@ -168,6 +319,7 @@ export default function AdvisorPage() {
         </div>
       )}
 
+      {/* Results */}
       {data?.found && data.fattrice && (
         <div className="fade-in">
           {/* Fattrice info */}
@@ -201,71 +353,87 @@ export default function AdvisorPage() {
             )}
           </div>
 
-          {/* Candidates table */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "12px", overflow: "hidden",
-          }}>
-            <div style={{ padding: "16px 22px 0", fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 80%)" }}>
-              {data.candidates?.length ?? 0} stalloni compatibili
-              {data.budget_max && ` (budget ≤ €${data.budget_max.toLocaleString("it-IT")})`}
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "14px" }}>
-                <thead style={{ background: "hsl(220 12% 9%)" }}>
-                  <tr>
-                    {["Stallone", "Monta", "Allevamento", "Avg score", "In corsa", "% top-S", "Guad. medi", "Prod. 2024"].map(h => (
-                      <th key={h} style={{
-                        textAlign: "left", padding: "10px 14px",
-                        fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)",
-                        textTransform: "uppercase", letterSpacing: "0.05em",
-                        borderBottom: "1px solid hsl(220 10% 16%)",
-                      }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.candidates?.map((c, i) => (
-                    <tr
-                      key={c.name}
-                      data-testid={`row-candidate-${i}`}
-                      style={{ borderBottom: "1px solid hsl(220 10% 13%)", transition: "background 0.1s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 13%)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "none"}
-                    >
-                      <td style={{ padding: "11px 14px" }}>
-                        <Link href={`/stallion/${encodeURIComponent(c.name)}`}>
-                          <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none", letterSpacing: "0.04em" }}>
-                            {c.name}
-                          </a>
-                        </Link>
-                      </td>
-                      <td className="tabular" style={{ padding: "11px 14px", fontSize: "13px", color: c.stud_fee_eur ? "hsl(51 80% 58%)" : "hsl(210 8% 42%)" }}>
-                        {c.stud_fee_eur ? `€${c.stud_fee_eur.toLocaleString("it-IT")}` : "—"}
-                      </td>
-                      <td style={{ padding: "11px 14px", fontSize: "12px", color: "hsl(210 8% 50%)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {c.stud_farm || "—"}
-                      </td>
-                      <td className="tabular" style={{ padding: "11px 14px", fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)" }}>
-                        {c.avg_score?.toFixed(1) ?? "—"}
-                      </td>
-                      <td className="tabular" style={{ padding: "11px 14px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>
-                        {c.n_in_corsa ?? "—"}
-                      </td>
-                      <td className="tabular" style={{ padding: "11px 14px", fontSize: "12px", color: c.pct_top_S >= 20 ? "hsl(100 50% 55%)" : "hsl(210 8% 52%)" }}>
-                        {c.pct_top_S != null ? `${c.pct_top_S.toFixed(1)}%` : "—"}
-                      </td>
-                      <td className="tabular" style={{ padding: "11px 14px", fontSize: "12px", color: "hsl(51 70% 55%)" }}>
-                        {c.avg_earnings != null ? `€${c.avg_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"}
-                      </td>
-                      <td className="tabular" style={{ padding: "11px 14px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>
-                        {c.progeny_earnings_2024 ? `€${(c.progeny_earnings_2024 / 1000).toFixed(0)}k` : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Candidates */}
+          <div style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 80%)", marginBottom: "12px" }}>
+            {data.candidates?.length ?? 0} stalloni compatibili — clicca per vedere la simulazione
+            {data.budget_max && ` (budget ≤ €${data.budget_max.toLocaleString("it-IT")})`}
+          </div>
+
+          {/* Candidate cards with expandable simulation */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {data.candidates?.map((c, i) => {
+              const expanded = expandedStallion === c.name;
+              return (
+                <div key={c.name} style={{
+                  background: "hsl(220 12% 10%)",
+                  border: expanded ? "1px solid hsl(183 100% 38% / 0.3)" : "1px solid hsl(220 10% 16%)",
+                  borderRadius: "12px", overflow: "hidden",
+                  transition: "border-color 0.15s",
+                }}>
+                  {/* Candidate header row */}
+                  <div
+                    data-testid={`row-candidate-${i}`}
+                    onClick={() => setExpandedStallion(expanded ? null : c.name)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "12px 18px", cursor: "pointer",
+                      transition: "background 0.1s",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 13%)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}
+                  >
+                    <Link href={`/stallion/${encodeURIComponent(c.name)}`} onClick={e => e.stopPropagation()}>
+                      <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none", letterSpacing: "0.04em" }}
+                        onMouseEnter={e => e.currentTarget.style.color = "hsl(183 80% 62%)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "hsl(210 10% 85%)"}
+                      >
+                        {c.name}
+                      </a>
+                    </Link>
+
+                    {/* Stats badges */}
+                    <div style={{ display: "flex", gap: "10px", flex: 1, alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Euro size={11} style={{ color: "hsl(51 80% 55%)" }} />
+                        <span className="tabular" style={{ fontSize: "12px", color: c.stud_fee_eur ? "hsl(51 80% 58%)" : "hsl(210 8% 42%)" }}>
+                          {c.stud_fee_eur ? `€${c.stud_fee_eur.toLocaleString("it-IT")}` : "—"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <TrendingUp size={11} style={{ color: "hsl(183 80% 55%)" }} />
+                        <span className="tabular" style={{ fontSize: "12px", color: "hsl(183 80% 58%)", fontWeight: 700 }}>
+                          {c.avg_score?.toFixed(1) ?? "—"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Users size={11} style={{ color: "hsl(210 8% 50%)" }} />
+                        <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 55%)" }}>
+                          {c.n_in_corsa ?? "—"} in gara
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Sparkles size={11} style={{ color: c.pct_top_S >= 20 ? "hsl(100 50% 55%)" : "hsl(210 8% 52%)" }} />
+                        <span className="tabular" style={{ fontSize: "12px", color: c.pct_top_S >= 20 ? "hsl(100 50% 55%)" : "hsl(210 8% 52%)" }}>
+                          {c.pct_top_S != null ? `${c.pct_top_S.toFixed(1)}% top-S` : "—"}
+                        </span>
+                      </div>
+                      <span className="tabular" style={{ fontSize: "12px", color: "hsl(51 70% 55%)" }}>
+                        €{c.avg_earnings != null ? c.avg_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 }) : "—"} medi
+                      </span>
+                    </div>
+
+                    {expanded
+                      ? <ChevronUp size={16} style={{ color: "hsl(183 80% 55%)", flexShrink: 0 }} />
+                      : <ChevronDown size={16} style={{ color: "hsl(210 8% 40%)", flexShrink: 0 }} />}
+                  </div>
+
+                  {/* Expandable simulation */}
+                  {expanded && mareName && (
+                    <SimulationPanel stallion={c.name} mare={mareName} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

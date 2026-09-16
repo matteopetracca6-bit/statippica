@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import HorseSearchBar from "../components/HorseSearchBar";
 import GradeBadge from "../components/GradeBadge";
+import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { Trophy, TrendingUp, Users, Flag, Search, X, ChevronRight } from "lucide-react";
 
 interface Stats {
@@ -190,7 +191,7 @@ function StallionCardSection({ stats, isLoading }: { stats: Stats | undefined; i
               </div>
             ) : !stallions ? (
               <div style={{ padding: "24px", textAlign: "center", color: "hsl(210 8% 40%)", fontSize: "13px" }}>
-                Caricamento...
+                <TrottingHorseLoader label="Caricamento stalloni..." />
               </div>
             ) : stallions.map((s, i) => (
               <Link key={s.name} href={`/stallion/${encodeURIComponent(s.name)}`}>
