@@ -333,13 +333,6 @@ export default function ComparePage() {
                   better="lower"
                   format={v => `1:${(v / 10).toFixed(1)}`}
                 />
-                <StatRow
-                  label="Velocità km/h"
-                  v1={h1.record_career ? 36000 / h1.record_career : null}
-                  v2={h2.record_career ? 36000 / h2.record_career : null}
-                  better="higher"
-                  format={v => `${v.toFixed(1)} km/h`}
-                />
               </div>
             </>
           )}
