@@ -2,10 +2,15 @@ import type { Express } from "express";
 import type { Server } from "http";
 import Database from "better-sqlite3";
 import path from "path";
-import { predictBreeding, loadBreedingModel } from "./breeding";
+import { predictBreeding, loadBreedingModel, getValidationInfo } from "./breeding";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
+
+// Lock applicativo per il trigger manuale della pipeline nightly:
+// impedisce due esecuzioni concorrenti nello stesso processo Node.
+let nightlyRunning = false;
+let nightlyStartedAt: string | null = null;
 
 function getDb() {
   return new Database(DB_PATH, { readonly: true });
@@ -43,6 +48,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.grade, hr.score, hr.rating_mode
         FROM horses h
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
+                                  AND hr.rating_mode = 'performance'
         WHERE h.name LIKE ?
         ORDER BY h.birth_year DESC
         LIMIT 20
@@ -69,6 +75,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.sire_percentile, hr.rating_mode, hr.win_rate
         FROM horses h
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
+                                  AND hr.rating_mode = 'performance'
         WHERE h.name = ? AND h.birth_year = ?
       `).get(name, year) as any;
 
@@ -542,11 +549,28 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // Protetto da secret header per evitare abusi
   // ──────────────────────────────────────────
   app.post("/api/run-nightly", (req, res) => {
+    // Fail-closed: senza NIGHTLY_SECRET configurato l'endpoint e' disabilitato.
+    // Nessun segreto di default hardcoded.
+    const expected = process.env.NIGHTLY_SECRET;
+    if (!expected) {
+      return res.status(503).json({
+        error: "Endpoint disabilitato: NIGHTLY_SECRET non configurato",
+      });
+    }
     const secret = req.headers["x-nightly-secret"];
-    const expected = process.env.NIGHTLY_SECRET || "statippica-nightly-2026";
-    if (secret !== expected) {
+    if (typeof secret !== "string" || secret !== expected) {
       return res.status(401).json({ error: "Unauthorized" });
     }
+
+    // Lock in memoria: evita esecuzioni concorrenti sullo stesso database
+    if (nightlyRunning) {
+      return res.status(409).json({
+        error: "nightly_update.py e' gia' in esecuzione",
+        started_at: nightlyStartedAt,
+      });
+    }
+    nightlyRunning = true;
+    nightlyStartedAt = new Date().toISOString();
 
     // Avvia in background senza bloccare la risposta
     const { spawn } = require("child_process");
@@ -562,7 +586,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
     child.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
     child.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
     child.on("close", (code: number) => {
+      nightlyRunning = false;
       console.log(`[NIGHTLY] exit ${code}\n${stderr.slice(-2000)}`);
+    });
+    child.on("error", (err: Error) => {
+      nightlyRunning = false;
+      console.error("[NIGHTLY] spawn error:", err?.message);
     });
 
     res.json({
@@ -618,6 +647,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         return res.status(503).json({ available: false, error: "Modello non ancora generato" });
       }
       const m = JSON.parse(fs.readFileSync(modelPath, "utf-8"));
+      const v = getValidationInfo(m);
       res.json({
         available: true,
         trained_at: m.trained_at,
@@ -625,6 +655,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
         cv_r2_score: m.cv_r2_score,
         cv_auc_poor: m.cv_auc_poor,
         feature_importances: m.feature_importances,
+        validation_status: v.validation_status,
+        is_decision_support_ready: v.is_decision_support_ready,
+        validation_criteria: v.validation_criteria,
+        methodology_notice: v.methodology_notice,
       });
     } catch (e: any) {
       res.status(500).json({ available: false, error: e?.message });
