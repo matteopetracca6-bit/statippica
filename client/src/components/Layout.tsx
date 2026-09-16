@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { TrendingUp, Trophy, Dna, ChevronLeft, ChevronRight, GitCompare } from "lucide-react";
-import logoHorse from "@assets/logo-horse.jpg";
+import logoHorse from "@assets/statippica-logo.png";
 
+// Il logo è un tondo su fondo nero: borderRadius 50% evita che si vedano gli
+// angoli squadrati contro lo sfondo della sidebar, che è quasi nero ma non nero.
 function TrottingHorse({ size = 36 }: { size?: number; color?: string }) {
   return (
     <img
       src={logoHorse}
       width={size}
       height={size}
-      alt="StatIppica - Trotto MAISM"
-      style={{ objectFit: "contain", borderRadius: "4px" }}
+      alt="StatIppica — Il trotto italiano con l'AI"
+      style={{ objectFit: "contain", borderRadius: "50%" }}
     />
   );
 }
