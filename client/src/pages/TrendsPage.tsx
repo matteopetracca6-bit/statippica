@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const GRADE_COLORS: Record<string, string> = {
@@ -21,6 +21,8 @@ type View = "grades" | "earnings" | "races" | "tracks";
 
 export default function TrendsPage() {
   const [view, setView] = useState<View>("grades");
+  const [hoveredBar, setHoveredBar] = useState<string | null>(null);
+  const [hoveredTrack, setHoveredTrack] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery<TrendsData>({
     queryKey: ["/api/trends"],
@@ -32,24 +34,40 @@ export default function TrendsPage() {
   const fmtK = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : fmt(v);
 
   // Build stacked bar data for grades by year
-  const years = data ? [...new Set(data.gradeByYear.map(g => g.birth_year))].sort() : [];
-  const gradeDataByYear = years.map(yr => {
+  const years = useMemo(() => data ? [...new Set(data.gradeByYear.map(g => g.birth_year))].sort() : [], [data]);
+  const gradeDataByYear = useMemo(() => years.map(yr => {
     const grades = GRADE_ORDER.map(g => ({
       grade: g,
       cnt: data!.gradeByYear.find(d => d.birth_year === yr && d.grade === g)?.cnt ?? 0,
     }));
     const total = grades.reduce((s, g) => s + g.cnt, 0);
     return { year: yr, grades, total };
-  });
+  }), [years, data]);
 
-  // Max for scaling earnings chart
-  const maxEarnings = data ? Math.max(...data.earningsByYear.map(e => e.avg_earnings), 1) : 1;
-  const maxRaces = data ? Math.max(...data.racesPerYear.map(r => r.n_races), 1) : 1;
-  const maxTrackRaces = data ? Math.max(...data.topTracks.map(t => t.n_races), 1) : 1;
+  const maxEarnings = useMemo(() => data ? Math.max(...data.earningsByYear.map(e => e.avg_earnings), 1) : 1, [data]);
+  const maxRaces = useMemo(() => data ? Math.max(...data.racesPerYear.map(r => r.n_races), 1) : 1, [data]);
+  const maxTrackRaces = useMemo(() => data ? Math.max(...data.topTracks.map(t => t.n_races), 1) : 1, [data]);
+
+  // Toggle group for grades view
+  const [showGrades, setShowGrades] = useState<Set<string>>(new Set(GRADE_ORDER));
+
+  const toggleGrade = (g: string) => {
+    const next = new Set(showGrades);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    if (next.size === 0) return; // keep at least one
+    setShowGrades(next);
+  };
+
+  const views: { key: View; label: string }[] = [
+    { key: "grades", label: "Voti per anno" },
+    { key: "earnings", label: "Guadagni per anno" },
+    { key: "races", label: "Gare per anno" },
+    { key: "tracks", label: "Top ippodromi" },
+  ];
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: "1000px" }}>
-      <div style={{ marginBottom: "24px" }}>
+      <div style={{ marginBottom: "20px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>
           Trend Temporali
         </h1>
@@ -59,22 +77,19 @@ export default function TrendsPage() {
       </div>
 
       {/* View tabs */}
-      <div style={{ display: "flex", gap: "6px", marginBottom: "20px" }}>
-        {([
-          ["grades", "Voti per anno"],
-          ["earnings", "Guadagni per anno"],
-          ["races", "Gare per anno"],
-          ["tracks", "Top ippodromi"],
-        ] as const).map(([key, label]) => (
+      <div style={{ display: "flex", gap: "4px", marginBottom: "20px" }}>
+        {views.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setView(key)}
             style={{
-              padding: "6px 14px", borderRadius: "8px", cursor: "pointer",
+              padding: "7px 14px", borderRadius: "8px", cursor: "pointer",
               background: view === key ? "hsl(183 100% 38%)" : "hsl(220 10% 14%)",
               color: view === key ? "hsl(220 13% 7%)" : "hsl(210 8% 55%)",
               border: "none", fontSize: "12px", fontWeight: 700,
-              transition: "all 0.15s",
+              transition: "all 0.2s ease",
+              transform: view === key ? "scale(1.05)" : "scale(1)",
+              boxShadow: view === key ? "0 2px 8px hsl(183 100% 38% / 0.3)" : "none",
             }}
           >
             {label}
@@ -93,134 +108,269 @@ export default function TrendsPage() {
             <div style={{
               background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
               borderRadius: "12px", padding: "24px",
+              transition: "border-color 0.3s",
             }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Distribuzione voti per anno di nascita
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Distribuzione voti per anno di nascita
+                </div>
+                <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)" }}>
+                  {gradeDataByYear.reduce((s, y) => s + y.total, 0)} cavalli totali
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "240px", padding: "0 4px" }}>
-                {gradeDataByYear.map(yd => (
-                  <div key={yd.year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", minWidth: 0 }}>
-                    <div style={{
-                      display: "flex", flexDirection: "column-reverse", height: "200px",
-                      width: "100%", borderRadius: "4px 4px 0 0", overflow: "hidden",
-                    }}>
-                      {yd.grades.map(g => g.cnt > 0 && (
-                        <div
-                          key={g.grade}
-                          title={`${yd.year} ${g.grade}: ${g.cnt}`}
-                          style={{
-                            height: `${(g.cnt / yd.total) * 100}%`,
-                            background: GRADE_COLORS[g.grade] + "88",
-                            borderTop: `1px solid ${GRADE_COLORS[g.grade]}`,
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yd.year}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Legend */}
-              <div style={{ display: "flex", gap: "10px", marginTop: "16px", flexWrap: "wrap", justifyContent: "center" }}>
+
+              {/* Interactive legend — toggle grades */}
+              <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
                 {GRADE_ORDER.map(g => (
-                  <div key={g} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px" }}>
-                    <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: GRADE_COLORS[g] + "88" }} />
-                    <span style={{ color: "hsl(210 8% 55%)" }}>{g}</span>
-                  </div>
+                  <button
+                    key={g}
+                    onClick={() => toggleGrade(g)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "4px",
+                      padding: "3px 8px", borderRadius: "6px", cursor: "pointer",
+                      background: showGrades.has(g) ? `${GRADE_COLORS[g]}22` : "transparent",
+                      border: `1px solid ${showGrades.has(g) ? GRADE_COLORS[g] + "55" : "hsl(220 10% 14%)"}`,
+                      fontSize: "11px", fontWeight: 700,
+                      color: showGrades.has(g) ? GRADE_COLORS[g] : "hsl(210 8% 30%)",
+                      transition: "all 0.15s",
+                      opacity: showGrades.has(g) ? 1 : 0.4,
+                    }}
+                  >
+                    <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: GRADE_COLORS[g] }} />
+                    {g}
+                  </button>
                 ))}
+              </div>
+
+              {/* Chart */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
+                {gradeDataByYear.map(yd => {
+                  const visibleGrades = yd.grades.filter(g => showGrades.has(g.grade));
+                  const visibleTotal = visibleGrades.reduce((s, g) => s + g.cnt, 0) || 1;
+                  return (
+                    <div
+                      key={yd.year}
+                      onMouseEnter={() => setHoveredBar(`grade-${yd.year}`)}
+                      onMouseLeave={() => setHoveredBar(null)}
+                      style={{
+                        flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+                        gap: "4px", minWidth: 0, cursor: "pointer",
+                        opacity: hoveredBar && hoveredBar !== `grade-${yd.year}` ? 0.5 : 1,
+                        transition: "opacity 0.2s",
+                      }}
+                    >
+                      {/* Tooltip */}
+                      {hoveredBar === `grade-${yd.year}` && (
+                        <div style={{
+                          position: "absolute", transform: "translateY(-100%)",
+                          background: "hsl(220 14% 8%)", border: "1px solid hsl(220 10% 20%)",
+                          borderRadius: "8px", padding: "8px 12px",
+                          fontSize: "11px", whiteSpace: "nowrap", zIndex: 10,
+                          boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                        }}>
+                          <div style={{ fontWeight: 700, color: "hsl(210 10% 85%)", marginBottom: "4px" }}>{yd.year}</div>
+                          {visibleGrades.filter(g => g.cnt > 0).map(g => (
+                            <div key={g.grade} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                              <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: GRADE_COLORS[g.grade] }} />
+                              <span style={{ color: GRADE_COLORS[g.grade] }}>{g.grade}</span>
+                              <span className="tabular" style={{ color: "hsl(210 8% 65%)", marginLeft: "auto" }}>{g.cnt}</span>
+                            </div>
+                          ))}
+                          <div style={{ borderTop: "1px solid hsl(220 10% 14%)", marginTop: "4px", paddingTop: "4px", color: "hsl(210 8% 50%)", fontWeight: 600 }}>
+                            Totale: {yd.total}
+                          </div>
+                        </div>
+                      )}
+                      <div style={{
+                        display: "flex", flexDirection: "column-reverse", height: "220px",
+                        width: "100%", borderRadius: "4px 4px 0 0", overflow: "hidden",
+                      }}>
+                        {visibleGrades.map(g => g.cnt > 0 && (
+                          <div
+                            key={g.grade}
+                            style={{
+                              height: `${(g.cnt / visibleTotal) * 100}%`,
+                              background: GRADE_COLORS[g.grade] + (hoveredBar === `grade-${yd.year}` ? "cc" : "88"),
+                              borderTop: `1px solid ${GRADE_COLORS[g.grade]}`,
+                              transition: "background 0.2s",
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yd.year}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Earnings by year — bar chart */}
+          {/* Earnings by year — bar chart with hover details */}
           {view === "earnings" && (
             <div style={{
               background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
               borderRadius: "12px", padding: "24px",
             }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Guadagno medio per anno di nascita
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "240px", padding: "0 4px" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
                 {data.earningsByYear.map(yr => (
-                  <div key={yr.birth_year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", minWidth: 0 }}>
+                  <div
+                    key={yr.birth_year}
+                    onMouseEnter={() => setHoveredBar(`earn-${yr.birth_year}`)}
+                    onMouseLeave={() => setHoveredBar(null)}
+                    style={{
+                      flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+                      gap: "4px", minWidth: 0, cursor: "pointer", position: "relative",
+                      opacity: hoveredBar && hoveredBar !== `earn-${yr.birth_year}` ? 0.4 : 1,
+                      transition: "opacity 0.2s",
+                    }}
+                  >
+                    {/* Tooltip */}
+                    {hoveredBar === `earn-${yr.birth_year}` && (
+                      <div style={{
+                        position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)",
+                        background: "hsl(220 14% 8%)", border: "1px solid hsl(220 10% 20%)",
+                        borderRadius: "8px", padding: "8px 12px", fontSize: "11px", whiteSpace: "nowrap",
+                        zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                      }}>
+                        <div style={{ fontWeight: 700, color: "hsl(210 10% 85%)", marginBottom: "4px" }}>{yr.birth_year}</div>
+                        <div style={{ color: "hsl(51 70% 55%)" }}>€{fmt(yr.avg_earnings)} medi</div>
+                        <div style={{ color: "hsl(210 8% 55%)" }}>{yr.n_horses} cavalli</div>
+                        <div style={{ color: "hsl(210 8% 55%)" }}>{fmt(yr.avg_races)} gare medie</div>
+                        <div style={{ color: "hsl(100 50% 55%)" }}>{yr.avg_win_rate}% win rate</div>
+                      </div>
+                    )}
                     <span className="tabular" style={{ fontSize: "10px", color: "hsl(51 70% 55%)", fontWeight: 700 }}>
                       €{fmtK(yr.avg_earnings)}
                     </span>
                     <div style={{
                       width: "100%", height: `${(yr.avg_earnings / maxEarnings) * 200}px`,
-                      background: "linear-gradient(180deg, hsl(51 80% 55%), hsl(30 70% 45%))",
+                      background: hoveredBar === `earn-${yr.birth_year}`
+                        ? "linear-gradient(180deg, hsl(51 90% 60%), hsl(30 80% 50%))"
+                        : "linear-gradient(180deg, hsl(51 80% 55%), hsl(30 70% 45%))",
                       borderRadius: "4px 4px 0 0",
+                      transition: "background 0.2s, height 0.4s ease",
                     }} />
                     <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yr.birth_year}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: "16px", fontSize: "11px", color: "hsl(210 8% 42%)" }}>
-                Cavalli per anno: {data.earningsByYear.map(y => `${y.birth_year}: ${y.n_horses}`).join(" · ")}
-              </div>
             </div>
           )}
 
-          {/* Races per year — bar chart */}
+          {/* Races per year — bar chart with hover */}
           {view === "races" && (
             <div style={{
               background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
               borderRadius: "12px", padding: "24px",
             }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Gare e cavalli per anno
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "240px", padding: "0 4px" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
                 {data.racesPerYear.map(yr => (
-                  <div key={yr.year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", minWidth: 0 }}>
+                  <div
+                    key={yr.year}
+                    onMouseEnter={() => setHoveredBar(`race-${yr.year}`)}
+                    onMouseLeave={() => setHoveredBar(null)}
+                    style={{
+                      flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+                      gap: "4px", minWidth: 0, cursor: "pointer", position: "relative",
+                      opacity: hoveredBar && hoveredBar !== `race-${yr.year}` ? 0.4 : 1,
+                      transition: "opacity 0.2s",
+                    }}
+                  >
+                    {hoveredBar === `race-${yr.year}` && (
+                      <div style={{
+                        position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)",
+                        background: "hsl(220 14% 8%)", border: "1px solid hsl(220 10% 20%)",
+                        borderRadius: "8px", padding: "8px 12px", fontSize: "11px", whiteSpace: "nowrap",
+                        zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                      }}>
+                        <div style={{ fontWeight: 700, color: "hsl(210 10% 85%)", marginBottom: "4px" }}>{yr.year}</div>
+                        <div style={{ color: "hsl(183 80% 55%)" }}>{fmtK(yr.n_races)} gare</div>
+                        <div style={{ color: "hsl(210 8% 55%)" }}>{fmtK(yr.n_horses)} cavalli</div>
+                        <div style={{ color: "hsl(51 70% 55%)" }}>€{fmtK(yr.avg_prize)} premio medio</div>
+                        <div style={{ color: "hsl(51 70% 55%)" }}>€{fmtK(yr.total_prize)} totale</div>
+                      </div>
+                    )}
                     <span className="tabular" style={{ fontSize: "10px", color: "hsl(183 80% 55%)", fontWeight: 700 }}>
                       {fmtK(yr.n_races)}
                     </span>
                     <div style={{
                       width: "100%", height: `${(yr.n_races / maxRaces) * 200}px`,
-                      background: "linear-gradient(180deg, hsl(183 80% 50%), hsl(183 60% 35%))",
+                      background: hoveredBar === `race-${yr.year}`
+                        ? "linear-gradient(180deg, hsl(183 90% 55%), hsl(183 70% 40%))"
+                        : "linear-gradient(180deg, hsl(183 80% 50%), hsl(183 60% 35%))",
                       borderRadius: "4px 4px 0 0",
+                      transition: "background 0.2s",
                     }} />
                     <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yr.year}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: "12px", display: "flex", gap: "20px", flexWrap: "wrap", fontSize: "11px", color: "hsl(210 8% 42%)" }}>
-                {data.racesPerYear.map(yr => (
-                  <span key={yr.year}>{yr.year}: {fmtK(yr.n_horses)} cavalli · €{fmtK(yr.avg_prize)} media</span>
-                ))}
-              </div>
             </div>
           )}
 
-          {/* Top tracks */}
+          {/* Top tracks — interactive horizontal bars */}
           {view === "tracks" && (
             <div style={{
               background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
               borderRadius: "12px", padding: "24px",
             }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Top ippodromi per numero di gare
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {data.topTracks.map((t, i) => (
-                  <div key={t.track} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 35%)", minWidth: "24px" }}>{i + 1}</span>
-                    <span style={{ flex: 1, fontSize: "13px", color: "hsl(210 10% 80%)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div
+                    key={t.track}
+                    onMouseEnter={() => setHoveredTrack(i)}
+                    onMouseLeave={() => setHoveredTrack(null)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "6px 0",
+                      transition: "transform 0.15s",
+                      transform: hoveredTrack === i ? "translateX(4px)" : "translateX(0)",
+                    }}
+                  >
+                    <span className="tabular" style={{
+                      fontSize: "12px", fontWeight: 700,
+                      color: hoveredTrack === i ? "hsl(183 80% 55%)" : "hsl(210 8% 35%)",
+                      minWidth: "24px", transition: "color 0.15s",
+                    }}>{i + 1}</span>
+                    <span style={{
+                      flex: 1, fontSize: "13px", fontWeight: hoveredTrack === i ? 700 : 500,
+                      color: hoveredTrack === i ? "hsl(210 10% 90%)" : "hsl(210 10% 75%)",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      transition: "all 0.15s",
+                    }}>
                       {t.track || "—"}
                     </span>
-                    <div style={{ flex: 2, height: "18px", background: "hsl(220 10% 12%)", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ flex: 2, height: "20px", background: "hsl(220 10% 12%)", borderRadius: "4px", overflow: "hidden" }}>
                       <div style={{
                         height: "100%", width: `${(t.n_races / maxTrackRaces) * 100}%`,
-                        background: "hsl(183 80% 45%)", borderRadius: "4px",
-                        transition: "width 0.5s ease",
+                        background: hoveredTrack === i
+                          ? "linear-gradient(90deg, hsl(183 90% 55%), hsl(183 70% 45%))"
+                          : "linear-gradient(90deg, hsl(183 80% 45%), hsl(183 60% 35%))",
+                        borderRadius: "4px",
+                        transition: "all 0.3s ease",
                       }} />
                     </div>
-                    <span className="tabular" style={{ fontSize: "12px", color: "hsl(183 80% 55%)", minWidth: "60px", textAlign: "right" }}>
+                    <span className="tabular" style={{
+                      fontSize: "12px", fontWeight: 700,
+                      color: hoveredTrack === i ? "hsl(183 80% 55%)" : "hsl(210 8% 55%)",
+                      minWidth: "60px", textAlign: "right", transition: "color 0.15s",
+                    }}>
                       {fmt(t.n_races)}
                     </span>
-                    <span className="tabular" style={{ fontSize: "12px", color: "hsl(51 70% 55%)", minWidth: "70px", textAlign: "right" }}>
+                    <span className="tabular" style={{
+                      fontSize: "12px",
+                      color: hoveredTrack === i ? "hsl(51 80% 58%)" : "hsl(51 70% 50%)",
+                      minWidth: "70px", textAlign: "right", transition: "color 0.15s",
+                    }}>
                       €{fmtK(t.total_prize)}
                     </span>
                   </div>

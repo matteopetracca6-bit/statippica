@@ -827,38 +827,46 @@ export function registerRoutes(httpServer: Server, app: Express) {
         return res.status(404).json({ error: "Cavallo non trovato" });
       }
 
-      // Compute inbreeding coefficient (Wright's formula, simplified)
-      // Collect all ancestors with their paths
-      const ancestors: Map<string, number[]> = new Map();
-      function collectAncestors(node: any, path: number[]) {
-        if (!node || !node.name || node.missing) return;
-        const existing = ancestors.get(node.name.toUpperCase());
-        if (existing) {
-          existing.push(...path);
-        } else {
-          ancestors.set(node.name.toUpperCase(), [...path]);
-        }
-        collectAncestors(node.sire, [...path, 1]); // 1 = sire side
-        collectAncestors(node.dam, [...path, 2]); // 2 = dam side
-      }
-      collectAncestors(tree, []);
+      // Compute inbreeding coefficient (Wright's formula)
+      // Walk sire side and dam side separately, collecting ancestors with generation depth
+      const sireAncestors = new Map<string, number>(); // name -> min generation on sire side
+      const damAncestors = new Map<string, number>();
 
-      // Find common ancestors (appear on both sire and dam side)
-      const commonAncestors: { name: string; sirePath: number[]; damPath: number[]; contribution: number }[] = [];
-      for (const [ancestorName, paths] of ancestors) {
-        if (paths.length < 2) continue;
-        // Check if ancestor appears on both sire and dam sides
-        const sirePaths = paths.filter((_, i) => i % 2 === 0 && paths[i] === 1);
-        const damPaths = paths.filter((_, i) => i % 2 === 0 && paths[i] === 2);
-        if (sirePaths.length > 0 && damPaths.length > 0) {
-          const minSireGen = Math.min(...sirePaths.map((_, i) => Math.ceil((i + 1) / 2)));
-          const minDamGen = Math.min(...damPaths.map((_, i) => Math.ceil((i + 1) / 2)));
-          const contribution = Math.pow(0.5, minSireGen + minDamGen);
-          commonAncestors.push({ name: ancestorName, sirePath: sirePaths, damPath: damPaths, contribution });
-        }
+      function walkSire(node: any, gen: number) {
+        if (!node || !node.name || node.missing || gen > 4) return;
+        const key = node.name.toUpperCase();
+        const existing = sireAncestors.get(key);
+        if (existing === undefined || gen < existing) sireAncestors.set(key, gen);
+        if (node.sire) walkSire(node.sire, gen + 1);
+        if (node.dam) walkSire(node.dam, gen + 1);
+      }
+      function walkDam(node: any, gen: number) {
+        if (!node || !node.name || node.missing || gen > 4) return;
+        const key = node.name.toUpperCase();
+        const existing = damAncestors.get(key);
+        if (existing === undefined || gen < existing) damAncestors.set(key, gen);
+        if (node.sire) walkDam(node.sire, gen + 1);
+        if (node.dam) walkDam(node.dam, gen + 1);
       }
 
-      // Simplified inbreeding coefficient
+      // Start from the sire and dam of the subject horse
+      if (tree.sire) walkSire(tree.sire, 1);
+      if (tree.dam) walkDam(tree.dam, 1);
+
+      // Find common ancestors on both sides
+      const commonAncestors: { name: string; contribution: number; sire_gen: number; dam_gen: number }[] = [];
+      for (const [name, sireGen] of sireAncestors) {
+        const damGen = damAncestors.get(name);
+        if (damGen !== undefined) {
+          // Wright's formula: contribution = (1/2)^(sireGen + damGen - 1) * (1 + F_ancestor)
+          // Simplified: assume F_ancestor = 0 (no recursive inbreeding)
+          const contribution = Math.pow(0.5, sireGen + damGen - 1);
+          commonAncestors.push({ name, contribution, sire_gen: sireGen, dam_gen: damGen });
+        }
+      }
+      commonAncestors.sort((a, b) => b.contribution - a.contribution);
+
+      // Inbreeding coefficient = sum of contributions
       const inbreedingCoeff = commonAncestors.reduce((sum, a) => sum + a.contribution, 0);
 
       // Get rating if available
