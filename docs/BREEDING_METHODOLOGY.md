@@ -197,3 +197,31 @@ effettiva, gli altri mai corsi), contro 0 su 40 di Trottoweb. Bonus: si popolano
 
 Coda attuale: **6.642 genitori** da recuperare → a 100 per notte, copertura completa in circa
 **due mesi**, con i riproduttori più citati (più figli nel DB) serviti per primi.
+
+## 8. Sistema di voto (grading)
+
+I voti (SSS, SS, S, A, B, C, D, E, F) sono assegnati **dinamicamente** in base ai
+percentili della distribuzione degli score, non con soglie fisse. Questo vale sia
+per i cavalli in corsa (rating `performance`) sia per gli stalloni.
+
+| Voto | Percentile | Significato |
+|---|---|---|
+| SSS | top 1% | Eccellenza assoluta |
+| SS | top 5% | Eccellenza |
+| S | top 10% | Molto buono |
+| A | top 25% | Buono |
+| B | top 40% | Sopra la media |
+| C | top 60% | Nella media |
+| D | top 75% | Sotto la media |
+| E | top 80% | Debole |
+| F | bottom 20% | Scarso |
+
+Le soglie sono calcolate da `build_horse_grade_thresholds()` e
+`build_stallion_grade_thresholds()` in `nightly_update.py`, sul pool di riferimento
+(popolazione corsa storica, esclusi i genitori recuperati). I genitori recuperati
+ricevono un voto calcolato contro questo pool ma non ne modificano i percentili,
+quindi l'aggiunta di copertura non sposta i confini dei voti già pubblicati.
+
+Lo stesso sistema di soglie è salvato in `breeding_model.json` (`grade_thresholds`),
+calcolato da `compute_grade_thresholds()` in `train_breeding_model.py`, per
+mappare lo score predetto del puledro al voto corrispondente lato server.

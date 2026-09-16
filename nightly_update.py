@@ -122,36 +122,44 @@ GRADE_WEIGHTS = {
     "C": 25, "D": 15, "E": 8, "F": 2
 }
 
-# Soglie rating cavalli (performance)
-HORSE_GRADE_THRESHOLDS = [
-    (97, "SSS"), (90, "SS"), (80, "S"), (65, "A"),
-    (50, "B"),  (35, "C"),  (20, "D"), (10, "E"), (0, "F"),
-]
+# Soglie rating cavalli (performance) — calcolate dinamicamente sui percentili
+# del dataset reale (sostituite a runtime da build_horse_grade_thresholds).
+HORSE_GRADE_THRESHOLDS: list[tuple[float, str]] = []
 
-# Soglie rating stalloni
-# Soglie stalloni: calcolate dinamicamente sui percentili del dataset reale
-# (sostituite a runtime da build_stallion_grade_thresholds)
+# Soglie rating stalloni — calcolate dinamicamente sui percentili
+# del dataset reale (sostituite a runtime da build_stallion_grade_thresholds).
 STALLION_GRADE_THRESHOLDS: list[tuple[float, str]] = []
 
-def build_stallion_grade_thresholds(scores: list[float]) -> list[tuple[float, str]]:
+# Percentili comuni per cavalli e stalloni:
+#   SSS = top 1%,  SS = top 5%,  S = top 10%, A = top 25%,
+#   B   = top 40%, C  = top 60%, D = top 75%, E = top 80%, F = resto (bottom 20%)
+_GRADE_PERCENTILES = [
+    (99, "SSS"), (95, "SS"), (90, "S"), (75, "A"),
+    (60, "B"),   (40, "C"),  (25, "D"), (20, "E"),
+]
+
+def _build_percentile_thresholds(scores: list[float]) -> list[tuple[float, str]]:
     """
     Calibra le soglie sui percentili del dataset reale.
-    SSS = top 3%, SS = top 8%, S = top 18%, A = top 35%,
-    B = top 55%, C = top 72%, D = top 85%, E = top 93%, F = resto
+    SSS = top 1%, SS = top 5%, S = top 10%, A = top 25%,
+    B = top 40%, C = top 60%, D = top 75%, E = top 80%, F = resto (bottom 20%).
     """
     if not scores:
         return [(0, "F")]
     s = sorted(scores)
     n = len(s)
     def pv(p): return s[min(int(p / 100 * n), n - 1)]
-    return [
-        (pv(97), "SSS"), (pv(92), "SS"), (pv(82), "S"), (pv(65), "A"),
-        (pv(45), "B"),   (pv(28), "C"),  (pv(15), "D"), (pv(7),  "E"),
-        (0,      "F"),
-    ]
+    return [(pv(p), g) for p, g in _GRADE_PERCENTILES] + [(0, "F")]
 
-def score_to_horse_grade(score: float) -> str:
-    for threshold, grade in HORSE_GRADE_THRESHOLDS:
+def build_horse_grade_thresholds(scores: list[float]) -> list[tuple[float, str]]:
+    return _build_percentile_thresholds(scores)
+
+def build_stallion_grade_thresholds(scores: list[float]) -> list[tuple[float, str]]:
+    return _build_percentile_thresholds(scores)
+
+def score_to_horse_grade(score: float, thresholds: list[tuple[float, str]] | None = None) -> str:
+    thr = thresholds or HORSE_GRADE_THRESHOLDS
+    for threshold, grade in thr:
         if score >= threshold:
             return grade
     return "F"
@@ -1670,16 +1678,26 @@ def phase_ratings(conn: sqlite3.Connection):
         tp = time_pct(record_career or "")
         win_rate = (career_wins / career_races * 100) if career_races else 0
         score = round(min(ep * 0.50 + tp * 0.30 + win_rate * 0.20, 100.0), 2)
-        grade = score_to_horse_grade(score)
         scores[(name, birth_year)] = {
-            "score": score, "grade": grade,
+            "score": score,
             "earn_percentile": ep, "time_percentile": tp,
             "win_rate": round(win_rate, 2),
         }
 
+    # Soglie dinamiche: calcolate sui percentili del pool di riferimento
+    # (popolazione corsa storica, esclusi i genitori recuperati) — così
+    # aumentare la copertura non sposta i confini dei voti già pubblicati.
+    backfill_keys = {(r[0], r[1]) for r in horses if r[7] == "parent_backfill"}
+    pool_scores = [d["score"] for key, d in scores.items() if key not in backfill_keys]
+    horse_thresholds = build_horse_grade_thresholds(pool_scores)
+    print(f"[RATINGS] Soglie cavalli: {[(round(t,1),g) for t,g in horse_thresholds]}", file=sys.stderr)
+
+    # Assegna i voti con le soglie dinamiche
+    for key, data in scores.items():
+        data["grade"] = score_to_horse_grade(data["score"], horse_thresholds)
+
     # Percentili per sire — anche qui il gruppo di confronto resta la popolazione
     # storica: i genitori recuperati non spostano il percentile dei figli.
-    backfill_keys = {(r[0], r[1]) for r in horses if r[7] == "parent_backfill"}
     sire_groups: dict[str, list[float]] = {}
     for (name, birth_year), data in scores.items():
         if (name, birth_year) in backfill_keys:

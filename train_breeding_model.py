@@ -291,6 +291,28 @@ def grade_earnings_map(conn: sqlite3.Connection) -> dict:
     return {r[0]: {"avg_earnings": round(r[1] or 0, 2), "n": r[2]} for r in rows}
 
 
+# Percentili per le soglie di voto (identici a nightly_update.py):
+#   SSS = top 1%,  SS = top 5%,  S = top 10%, A = top 25%,
+#   B   = top 40%, C  = top 60%, D = top 75%, E = top 80%, F = resto
+_GRADE_PERCENTILES = [
+    (99, "SSS"), (95, "SS"), (90, "S"), (75, "A"),
+    (60, "B"),   (40, "C"),  (25, "D"), (20, "E"),
+]
+
+def compute_grade_thresholds(conn: sqlite3.Connection) -> list[list]:
+    """Calcola le soglie dinamiche sui percentili del dataset reale,
+    per mappare score->voto lato server (stessa logica di nightly_update.py)."""
+    scores = [r[0] for r in conn.execute(
+        "SELECT score FROM horse_ratings WHERE rating_mode='performance' AND score IS NOT NULL"
+    ).fetchall()]
+    if not scores:
+        return [[0, "F"]]
+    s = sorted(scores)
+    n = len(s)
+    def pv(p): return s[min(int(p / 100 * n), n - 1)]
+    return [[round(float(pv(p)), 2), g] for p, g in _GRADE_PERCENTILES] + [[0, "F"]]
+
+
 def export_tree(tree) -> dict:
     """Serializza un albero sklearn in un dict annidato camminabile da JS."""
     t = tree.tree_
@@ -414,9 +436,8 @@ def main():
         **status,
         "evaluation": report,
         "grade_earnings": grade_earnings_map(conn),
-        # Soglie voto (stesse di nightly_update.py) per mappare score->voto lato server
-        "grade_thresholds": [[97, "SSS"], [90, "SS"], [80, "S"], [65, "A"],
-                             [50, "B"], [35, "C"], [20, "D"], [10, "E"], [0, "F"]],
+        # Soglie voto dinamiche (percentili del dataset reale) per mappare score->voto lato server
+        "grade_thresholds": compute_grade_thresholds(conn),
     }
     conn.close()
 
