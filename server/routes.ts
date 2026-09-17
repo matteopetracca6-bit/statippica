@@ -1,4 +1,15 @@
 import type { Express } from "express";
+
+// ──────────────────────────────────────────────────────────────────────────
+// Due popolazioni distinte (vedi ATHLETE_MIN_BIRTH_YEAR in nightly_update.py):
+//  ATLETI       nati dal 2012: sono il fulcro del sito (classifiche, schede,
+//               confronti, tendenze).
+//  RIPRODUTTORI nati nel 2011 o prima e genitori recuperati da UNIRE: servono
+//               solo a genealogia e rating della progenie, e NON devono
+//               comparire nelle classifiche atleti ne' nei conteggi corse.
+// Il filtro sta su horse_ratings.horse_class, denormalizzata dalla pipeline.
+// ──────────────────────────────────────────────────────────────────────────
+const ONLY_ATHLETES = "COALESCE(hr.horse_class, 'athlete') = 'athlete'";
 import type { Server } from "http";
 import Database from "better-sqlite3";
 import path from "path";
@@ -45,12 +56,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       const rows = db.prepare(`
         SELECT h.name, h.birth_year, h.sire, h.sex, h.country,
-               hr.grade, hr.score, hr.rating_mode
+               hr.grade, hr.score, hr.rating_mode,
+               COALESCE(h.horse_class, 'athlete') AS horse_class
         FROM horses h
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
                                   AND hr.rating_mode = 'performance'
         WHERE h.name LIKE ?
-        ORDER BY h.birth_year DESC
+        ORDER BY COALESCE(h.horse_class, 'athlete') = 'breeder', h.birth_year DESC
         LIMIT 20
       `).all(`%${q}%`);
       res.json(rows);
@@ -331,19 +343,21 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const offset = (page - 1) * limit;
     const sortBy = req.query.sort as string || "score";
 
-    const conditions: string[] = ["rating_mode = ?"];
+    // hr.* qualificato: la query principale fa JOIN con horses, e un
+    // horse_class nudo sarebbe ambiguo (errore SQLite visto in test).
+    const conditions: string[] = ["hr.rating_mode = ?", ONLY_ATHLETES];
     const params: any[] = [mode];
 
-    if (year) { conditions.push("birth_year = ?"); params.push(year); }
-    if (grade) { conditions.push("grade = ?"); params.push(grade); }
-    if (sire) { conditions.push("sire LIKE ?"); params.push(`%${sire}%`); }
+    if (year) { conditions.push("hr.birth_year = ?"); params.push(year); }
+    if (grade) { conditions.push("hr.grade = ?"); params.push(grade); }
+    if (sire) { conditions.push("hr.sire LIKE ?"); params.push(`%${sire}%`); }
 
     const where = conditions.join(" AND ");
     const sortCol = sortBy === "earnings" ? "career_earnings" : "score";
 
     const db = getDb();
     try {
-      const total = (db.prepare(`SELECT COUNT(*) as cnt FROM horse_ratings WHERE ${where}`)
+      const total = (db.prepare(`SELECT COUNT(*) as cnt FROM horse_ratings hr WHERE ${where}`)
         .get(...params) as any).cnt;
 
       const rows = db.prepare(`
@@ -371,7 +385,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       const rows = db.prepare(`
         SELECT DISTINCT birth_year FROM horse_ratings
-        WHERE birth_year IS NOT NULL
+        WHERE birth_year IS NOT NULL AND COALESCE(horse_class, 'athlete') = 'athlete'
         ORDER BY birth_year DESC
       `).all() as any[];
       res.json(rows.map((r) => r.birth_year));
@@ -440,24 +454,30 @@ export function registerRoutes(httpServer: Server, app: Express) {
   app.get("/api/stats", (_req, res) => {
     const db = getDb();
     try {
-      const totalHorses = (db.prepare("SELECT COUNT(*) as c FROM horses").get() as any).c;
+      // Conta solo gli atleti: i riproduttori non sono soggetti del sito.
+      const totalHorses = (db.prepare(
+        "SELECT COUNT(*) as c FROM horses WHERE COALESCE(horse_class, 'athlete') = 'athlete'"
+      ).get() as any).c;
+      const totalBreeders = (db.prepare(
+        "SELECT COUNT(*) as c FROM horses WHERE horse_class = 'breeder'"
+      ).get() as any).c;
       const totalRaces = (db.prepare("SELECT COUNT(*) as c FROM races").get() as any).c;
       const totalStallions = (db.prepare("SELECT COUNT(DISTINCT sire) as c FROM stallion_rating_stats").get() as any).c;
       const gradeDist = db.prepare(`
         SELECT grade, COUNT(*) as cnt FROM horse_ratings
-        WHERE rating_mode = 'performance'
+        WHERE rating_mode = 'performance' AND COALESCE(horse_class, 'athlete') = 'athlete'
         GROUP BY grade ORDER BY cnt DESC
       `).all() as any[];
       const topByYear = db.prepare(`
         SELECT birth_year, name, grade, score, career_earnings
         FROM horse_ratings
-        WHERE rating_mode = 'performance'
+        WHERE rating_mode = 'performance' AND COALESCE(horse_class, 'athlete') = 'athlete'
         GROUP BY birth_year
         HAVING score = MAX(score)
         ORDER BY birth_year DESC
         LIMIT 5
       `).all() as any[];
-      res.json({ totalHorses, totalRaces, totalStallions, gradeDist, topByYear });
+      res.json({ totalHorses, totalRaces, totalStallions, totalBreeders, gradeDist, topByYear });
     } finally {
       db.close();
     }
@@ -1273,7 +1293,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const sortBy = (req.query.sort as string) || "score";
       const sortDir = (req.query.dir as string) === "asc" ? "ASC" : "DESC";
 
-      const conditions: string[] = ["hr.rating_mode = 'performance'"];
+      const conditions: string[] = ["hr.rating_mode = 'performance'", ONLY_ATHLETES];
       const params: any[] = [];
 
       if (search) {
@@ -1318,8 +1338,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
       `).all(...params, limit, offset) as any[];
 
       // Get distinct years and countries for filters
-      const years = db.prepare("SELECT DISTINCT birth_year FROM horse_ratings WHERE rating_mode = 'performance' ORDER BY birth_year DESC").all() as any[];
-      const countries = db.prepare("SELECT DISTINCT h.country FROM horses h WHERE h.country IS NOT NULL ORDER BY h.country").all() as any[];
+      const years = db.prepare("SELECT DISTINCT birth_year FROM horse_ratings WHERE rating_mode = 'performance' AND COALESCE(horse_class, 'athlete') = 'athlete' ORDER BY birth_year DESC").all() as any[];
+      const countries = db.prepare("SELECT DISTINCT h.country FROM horses h WHERE h.country IS NOT NULL AND COALESCE(h.horse_class, 'athlete') = 'athlete' ORDER BY h.country").all() as any[];
 
       res.json({ total, page, limit, rows, years: years.map(y => y.birth_year), countries: countries.map(c => c.country) });
     } catch (e: any) {

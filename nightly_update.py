@@ -74,6 +74,29 @@ REQUEST_DELAY = 0.5
 # Lavoriamo solo con gare dal 2012 in avanti (storico precedente non tracciato)
 MIN_RACE_DATE = os.environ.get("MIN_RACE_DATE", "2012-01-01")
 
+# ── Due popolazioni distinte (decisione di prodotto, 18/09/2026) ──
+# ATLETI     : nati dal 2012 in poi. Sono i soggetti di cui il sito parla:
+#              rating, leaderboard, classifiche, confronti, tendenze.
+# RIPRODUTTORI: nati nel 2011 o prima (e tutti i genitori recuperati da UNIRE).
+#              Servono SOLO per la genealogia e per il rating della progenie:
+#              non compaiono nelle classifiche atleti e non entrano nei pool
+#              di percentile, altrimenti un campione degli anni '90 sposterebbe
+#              i voti di tutta la popolazione in gara oggi.
+ATHLETE_MIN_BIRTH_YEAR = int(os.environ.get("ATHLETE_MIN_BIRTH_YEAR", "2012"))
+CLASS_ATHLETE = "athlete"
+CLASS_BREEDER = "breeder"
+
+
+def horse_class_of(birth_year, source_role: Optional[str] = None) -> str:
+    """Classifica un cavallo. Anno ignoto -> atleta: sono 67 soggetti che hanno
+    gare nel DB, escluderli nasconderebbe dati veri; il caso va semmai risolto
+    recuperando l'anno."""
+    if (source_role or "") == "parent_backfill":
+        return CLASS_BREEDER
+    if birth_year is not None and int(birth_year) < ATHLETE_MIN_BIRTH_YEAR:
+        return CLASS_BREEDER
+    return CLASS_ATHLETE
+
 # ── Copertura genitori (fattrici/stalloni citati ma assenti dal DB) ──
 # Quanti genitori mancanti recuperare per esecuzione. Il collo di bottiglia del
 # dataset breeding sono le madri: 5.808 fattrici su 7.719 non hanno una riga in
@@ -332,6 +355,8 @@ def init_db(conn: sqlite3.Connection):
         # percentile: altrimenti tutti i voti già pubblicati cambierebbero.
         ("source_role",      "TEXT"),
         ("parent_fetch_at",  "TEXT"),
+        # 'athlete' | 'breeder' — vedi horse_class_of()
+        ("horse_class",      "TEXT"),
     ]:
         try:
             conn.execute(f"ALTER TABLE horses ADD COLUMN {col} {typ}")
@@ -340,6 +365,37 @@ def init_db(conn: sqlite3.Connection):
 
     # Cavalli inseriti prima di questa modifica non hanno backfill_status -> pending
     conn.execute("UPDATE horses SET backfill_status='pending' WHERE backfill_status IS NULL")
+
+    # Riparazione una tantum (bug FASE QA del 17/09/2026): la FASE QA ricalcolava
+    # career_stats dalla tabella `races` anche per i genitori presi da UNIRE, che
+    # in quella tabella non hanno righe, azzerando i 300 gia' recuperati. Avendo
+    # parent_fetch_at valorizzato non sarebbero mai stati ritentati, restando a
+    # zero per sempre: lo azzeriamo per rimetterli in coda.
+    # La condizione si auto-esaurisce, perche' al nuovo tentativo la fase
+    # riscrive parent_fetch_at.
+    conn.execute("""
+        UPDATE horses SET parent_fetch_at = NULL
+        WHERE COALESCE(source_role, '') = 'parent_backfill'
+          AND COALESCE(career_races, 0) = 0
+          AND parent_fetch_at IS NOT NULL
+          AND parent_fetch_at < '2026-09-18'
+    """)
+
+    # Classificazione atleti / riproduttori: ricalcolata a ogni avvio, cosi'
+    # un cavallo che acquisisce l'anno di nascita finisce subito nel gruppo
+    # giusto. E' un UPDATE su due colonne indicizzabili, costa millisecondi.
+    conn.execute(f"""
+        UPDATE horses SET horse_class = CASE
+            WHEN COALESCE(source_role, '') = 'parent_backfill' THEN '{CLASS_BREEDER}'
+            WHEN birth_year IS NOT NULL AND birth_year < {ATHLETE_MIN_BIRTH_YEAR} THEN '{CLASS_BREEDER}'
+            ELSE '{CLASS_ATHLETE}'
+        END
+        WHERE horse_class IS NULL OR horse_class <> CASE
+            WHEN COALESCE(source_role, '') = 'parent_backfill' THEN '{CLASS_BREEDER}'
+            WHEN birth_year IS NOT NULL AND birth_year < {ATHLETE_MIN_BIRTH_YEAR} THEN '{CLASS_BREEDER}'
+            ELSE '{CLASS_ATHLETE}'
+        END
+    """)
 
     # Stessa migrazione difensiva anche per horse_ratings e stallion_rating_stats:
     # il data.db di produzione può avere uno schema più vecchio anche qui.
@@ -356,12 +412,27 @@ def init_db(conn: sqlite3.Connection):
         ("record_career",    "TEXT"),
         ("win_rate",         "REAL"),
         ("rating_mode",      "TEXT DEFAULT 'performance'"),
+        # 'athlete' | 'breeder': il sito filtra le classifiche su questa colonna
+        ("horse_class",      "TEXT"),
         ("last_updated",     "TEXT"),
     ]:
         try:
             conn.execute(f"ALTER TABLE horse_ratings ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
             pass
+
+    # Allinea la classe sulle righe di rating gia' presenti: senza questo le
+    # classifiche mostrerebbero ancora i riproduttori valutati nelle notti
+    # precedenti (215 righe al 18/09/2026), perche' con carriera azzerata non
+    # vengono piu' ricalcolati e resterebbero con horse_class NULL.
+    conn.execute("""
+        UPDATE horse_ratings SET horse_class = COALESCE((
+            SELECT h.horse_class FROM horses h
+            WHERE h.name = horse_ratings.name
+              AND (h.birth_year IS horse_ratings.birth_year OR h.birth_year = horse_ratings.birth_year)
+        ), 'athlete')
+        WHERE horse_class IS NULL
+    """)
 
     for col, typ in [
         ("n_figli_totali",  "INTEGER"),
@@ -1345,7 +1416,7 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
     conn.execute("""
         UPDATE horses SET backfill_status='pending'
         WHERE backfill_status='done' AND (last_backfill_at IS NULL OR last_backfill_at < ?)
-          AND COALESCE(source_role, '') <> 'parent_backfill'
+          AND COALESCE(horse_class, 'athlete') <> 'breeder'
     """, (rebackfill_cutoff,))
     conn.commit()
 
@@ -1356,7 +1427,7 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
     pending = conn.execute("""
         SELECT name, birth_year FROM horses
         WHERE (backfill_status IS NULL OR backfill_status = 'pending')
-          AND COALESCE(source_role, '') <> 'parent_backfill'
+          AND COALESCE(horse_class, 'athlete') <> 'breeder'
         ORDER BY last_backfill_at IS NOT NULL, last_backfill_at ASC, name ASC
         LIMIT ?
     """, (batch_size,)).fetchall()
@@ -1400,11 +1471,12 @@ def phase_historical_backfill(conn: sqlite3.Connection) -> tuple[int, int]:
                (SELECT COUNT(*) FROM races r WHERE r.horse_name = h.name AND r.race_date < ?) as old_races
         FROM horses h
         WHERE h.birth_year IS NOT NULL AND h.birth_year <= ?
-          AND COALESCE(h.source_role, '') <> 'parent_backfill'
+          AND h.birth_year >= ?
+          AND COALESCE(h.horse_class, 'athlete') <> 'breeder'
           AND (h.backfill_status IS NULL OR h.backfill_status = 'pending')
         ORDER BY old_races ASC, h.name ASC
         LIMIT ?
-    """, (cutoff_date, HISTORICAL_CUTOFF_YEAR, HISTORICAL_BATCH_SIZE)).fetchall()
+    """, (cutoff_date, HISTORICAL_CUTOFF_YEAR, ATHLETE_MIN_BIRTH_YEAR, HISTORICAL_BATCH_SIZE)).fetchall()
 
     print(f"[HISTORICAL] Cavalli da controllare: {len(horses)} (batch: {HISTORICAL_BATCH_SIZE})", file=sys.stderr)
 
@@ -1540,6 +1612,7 @@ def _upsert_unire_parent(conn: sqlite3.Connection, data: dict) -> bool:
                 career_earnings = ?,
                 record_career   = COALESCE(?, record_career),
                 source_role     = COALESCE(source_role, 'parent_backfill'),
+                horse_class     = 'breeder',
                 backfill_status = 'done',
                 last_updated    = ?
             WHERE name = ?
@@ -1553,8 +1626,8 @@ def _upsert_unire_parent(conn: sqlite3.Connection, data: dict) -> bool:
             INSERT INTO horses
                 (name, birth_year, sex, country, sire, dam,
                  career_races, career_wins, career_places, career_earnings,
-                 record_career, source_role, backfill_status, last_updated)
-            VALUES (?,?,?,?,?,?, ?,?,?,?, ?, 'parent_backfill', 'done', ?)
+                 record_career, source_role, horse_class, backfill_status, last_updated)
+            VALUES (?,?,?,?,?,?, ?,?,?,?, ?, 'parent_backfill', 'breeder', 'done', ?)
         """, (name, data.get("birth_year"), data.get("sex"), data.get("country"),
               _normalize_name(data.get("sire")), _normalize_name(data.get("dam")),
               data.get("career_races", 0), data.get("career_wins", 0),
@@ -1697,20 +1770,21 @@ def phase_ratings(conn: sqlite3.Connection):
     horses = conn.execute("""
         SELECT h.name, h.birth_year, h.sire,
                h.career_races, h.career_wins, h.career_earnings, h.record_career,
-               COALESCE(h.source_role, '') AS source_role
+               COALESCE(h.horse_class, '') AS horse_class
         FROM horses h
         WHERE h.career_races > 0
     """).fetchall()
 
-    # POOL DI RIFERIMENTO: solo la popolazione "corsa" originale. I genitori
-    # recuperati dalla fase di copertura ricevono un punteggio calcolato CONTRO
-    # questo pool, ma non lo modificano: così aumentare la copertura non
-    # cambia i voti già pubblicati degli altri cavalli.
-    pool = [r for r in horses if r[7] != "parent_backfill"]
-    n_backfill = len(horses) - len(pool)
-    if n_backfill:
-        print(f"[RATINGS] {n_backfill} genitori recuperati: valutati contro il pool "
-              f"storico di {len(pool)} cavalli, esclusi dal calcolo dei percentili.",
+    # POOL DI RIFERIMENTO: solo gli ATLETI (nati dal 2012). I riproduttori
+    # ricevono un punteggio calcolato CONTRO questo pool, ma non lo modificano:
+    # servono per valutare la progenie, non per competere in classifica. Senza
+    # questa separazione un campione degli anni '90 alzerebbe l'asticella a
+    # tutta la popolazione in gara oggi.
+    pool = [r for r in horses if r[7] != CLASS_BREEDER]
+    n_breeder = len(horses) - len(pool)
+    if n_breeder:
+        print(f"[RATINGS] {n_breeder} riproduttori: valutati contro il pool atleti "
+              f"di {len(pool)} cavalli, esclusi dal calcolo dei percentili.",
               file=sys.stderr)
 
     # Percentili earnings
@@ -1752,7 +1826,7 @@ def phase_ratings(conn: sqlite3.Connection):
     # Soglie dinamiche: calcolate sui percentili del pool di riferimento
     # (popolazione corsa storica, esclusi i genitori recuperati) — così
     # aumentare la copertura non sposta i confini dei voti già pubblicati.
-    backfill_keys = {(r[0], r[1]) for r in horses if r[7] == "parent_backfill"}
+    backfill_keys = {(r[0], r[1]) for r in horses if r[7] == CLASS_BREEDER}
     pool_scores = [d["score"] for key, d in scores.items() if key not in backfill_keys]
     horse_thresholds = build_horse_grade_thresholds(pool_scores)
     print(f"[RATINGS] Soglie cavalli: {[(round(t,1),g) for t,g in horse_thresholds]}", file=sys.stderr)
@@ -1794,14 +1868,18 @@ def phase_ratings(conn: sqlite3.Connection):
                 (name, birth_year, sire, grade, score,
                  earn_percentile, time_percentile, sire_percentile,
                  career_races, career_wins, career_earnings, record_career,
-                 win_rate, rating_mode, last_updated)
-            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?,?)
+                 win_rate, rating_mode, horse_class, last_updated)
+            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?,?,?)
         """, (
             name, birth_year, sire_name or None,
             data["grade"], data["score"],
             data["earn_percentile"], data["time_percentile"], sp,
             horse_row[0], horse_row[1], horse_row[2], horse_row[3],
-            data["win_rate"], "performance", now_iso
+            data["win_rate"], "performance",
+            # Denormalizzata qui perche' il sito filtra le classifiche su questa
+            # tabella: senza, ogni endpoint dovrebbe fare una JOIN su horses.
+            CLASS_BREEDER if (name, birth_year) in backfill_keys else CLASS_ATHLETE,
+            now_iso
         ))
 
     conn.commit()
@@ -2343,11 +2421,18 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     report = {"stats_fixed": 0, "orphans": 0, "duplicates": 0, "no_rating": 0, "tracks_fixed": 0, "times_normalized": 0}
 
     # 1) Ricalcola career_stats per i cavalli dove non combaciano
+    # ATTENZIONE: i RIPRODUTTORI (horse_class='breeder': nati <2012 o recuperati
+    # da UNIRE) vanno esclusi da tutto il blocco. Per loro la fonte fornisce i TOTALI di
+    # carriera gia' aggregati e non le singole corse, quindi la tabella `races` e'
+    # vuota: ricalcolare da li' azzera i dati appena scaricati. E' esattamente
+    # quello che e' successo il 17/09/2026 (300 genitori recuperati, tutti con
+    # career_races=0 e nessun rating).
     mismatch = conn.execute("""
         SELECT COUNT(*) FROM (
             SELECT h.name, h.career_races, COUNT(r.id) as actual
             FROM horses h
             LEFT JOIN races r ON r.horse_name = h.name
+            WHERE COALESCE(h.horse_class, 'athlete') <> 'breeder'
             GROUP BY h.name, h.birth_year
             HAVING COALESCE(h.career_races, 0) != COUNT(r.id)
         )
@@ -2373,12 +2458,14 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
             ) sub
             WHERE horses.name = sub.horse_name
               AND COALESCE(horses.career_races, 0) != sub.actual_races
+              AND COALESCE(horses.horse_class, 'athlete') <> 'breeder'
         """)
         # Also reset horses that had stats but have 0 races in the table
         conn.execute("""
             UPDATE horses SET career_races = 0, career_wins = 0, career_places = 0, career_earnings = 0
             WHERE name NOT IN (SELECT DISTINCT horse_name FROM races)
               AND COALESCE(career_races, 0) > 0
+              AND COALESCE(horse_class, 'athlete') <> 'breeder'
         """)
         conn.commit()
         report["stats_fixed"] = mismatch
