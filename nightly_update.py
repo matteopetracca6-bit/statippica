@@ -140,6 +140,23 @@ def volume_multiplier(n: int) -> float:
     if n <= 49:  return 0.97
     return 1.00
 
+def dam_volume_multiplier(n: int) -> float:
+    """Come volume_multiplier ma tarato sulle fattrici.
+
+    Curva diversa per un motivo biologico, non estetico: uno stallone puo'
+    avere centinaia di figli, quindi un solo figlio non e' evidenza e va
+    penalizzato pesantemente (0.40). Una fattrice fa circa un puledro l'anno e
+    nel nostro DB il massimo osservato e' 12: penalizzarla come uno stallone
+    significherebbe dire che nessuna fattrice potra' mai superare 40 punti.
+    """
+    if n == 1:  return 0.70
+    if n == 2:  return 0.78
+    if n == 3:  return 0.84
+    if n == 4:  return 0.88
+    if n <= 6:  return 0.92
+    if n <= 9:  return 0.96
+    return 1.00
+
 # ─────────────────────────────────────────────
 # GRADE MAP
 # ─────────────────────────────────────────────
@@ -269,6 +286,31 @@ def init_db(conn: sqlite3.Connection):
         pct_top_S        REAL,
         avg_earnings     REAL,
         vp_boost         REAL DEFAULT 0,
+        final_score      REAL,
+        last_updated     TEXT
+    );
+
+    -- Rating FATTRICI: stesso impianto degli stalloni, tabella separata perche'
+    -- la chiave e' la madre e le fonti sono diverse (nessun dato VendoPuledri).
+    CREATE TABLE IF NOT EXISTS dam_rating_stats (
+        dam              TEXT PRIMARY KEY,
+        n_figli_totali   INTEGER,   -- figli citati nel DB
+        n_valutati       INTEGER,   -- figli con un rating performance
+        n_in_corsa       INTEGER,   -- figli con almeno una gara negli ultimi mesi
+        avg_score        REAL,      -- media pesata dei voti dei figli, x volume
+        grade            TEXT,
+        n_SSS            INTEGER DEFAULT 0,
+        n_SS             INTEGER DEFAULT 0,
+        n_S              INTEGER DEFAULT 0,
+        pct_top_S        REAL,
+        avg_earnings     REAL,
+        -- carriera PROPRIA della fattrice (totali da UNIRE, non gara per gara):
+        -- serve a leggere la progenie alla luce di quanto valeva la madre
+        own_races        INTEGER,
+        own_wins         INTEGER,
+        own_earnings     REAL,
+        own_record       TEXT,
+        own_grade        TEXT,
         final_score      REAL,
         last_updated     TEXT
     );
@@ -2411,6 +2453,126 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     return new_horses, inserted_races
 
 
+def phase_dam_ratings(conn: sqlite3.Connection):
+    """FASE 3c — rating FATTRICI, valutate sulla progenie.
+
+    Specchio di phase_stallion_ratings, con tre differenze volute:
+      * nessun boost VendoPuledri: quella fonte copre solo gli stalloni;
+      * curva di volume dedicata (vedi dam_volume_multiplier);
+      * accanto alla progenie salviamo la carriera PROPRIA della fattrice, cioe'
+        i totali recuperati da UNIRE, per poter leggere i figli alla luce di
+        quanto valeva la madre.
+
+    Tutto il raggruppamento avviene in Python con dizionari: in questo DB i nomi
+    hanno spaziature e maiuscole incoerenti e una JOIN su UPPER(TRIM(...)) non
+    usa gli indici, rendendo la query inutilizzabile su 23.000 cavalli.
+    """
+    print("[RATINGS] Calcolo rating fattrici...", file=sys.stderr)
+
+    # Derivato al 100%: svuotato qui, nella sola funzione che lo ripopola
+    # subito dopo (stessa ragione documentata per stallion_rating_stats).
+    conn.execute("DELETE FROM dam_rating_stats")
+
+    # Figli: solo ATLETI. Un riproduttore non e' progenie da valutare.
+    children = conn.execute("""
+        SELECT name, birth_year, dam FROM horses
+        WHERE dam IS NOT NULL AND TRIM(dam) <> ''
+          AND COALESCE(horse_class, 'athlete') = 'athlete'
+    """).fetchall()
+
+    ratings: dict[tuple, tuple] = {}
+    for name, birth_year, grade, score, earn in conn.execute("""
+        SELECT name, birth_year, grade, score, career_earnings
+        FROM horse_ratings
+        WHERE rating_mode = 'performance'
+          AND COALESCE(horse_class, 'athlete') = 'athlete'
+    """):
+        ratings[(name, birth_year)] = (grade, score or 0.0, earn or 0.0)
+
+    cutoff = (datetime.utcnow() - timedelta(days=ACTIVE_MONTHS * 30)).strftime("%Y-%m-%d")
+    active_names = {r[0] for r in conn.execute(
+        "SELECT DISTINCT horse_name FROM races WHERE race_date >= ?", (cutoff,))}
+
+    # Carriera propria delle madri, per nome normalizzato
+    own: dict[str, tuple] = {}
+    for name, races, wins, earn, rec in conn.execute(
+        "SELECT name, career_races, career_wins, career_earnings, record_career FROM horses"
+    ):
+        if name:
+            own[name.strip().upper()] = (races or 0, wins or 0, earn or 0.0, rec)
+    own_grades: dict[str, str] = {}
+    for name, grade in conn.execute(
+        "SELECT name, grade FROM horse_ratings WHERE rating_mode = 'performance'"
+    ):
+        if name:
+            own_grades.setdefault(name.strip().upper(), grade)
+
+    groups: dict[str, list] = {}
+    display: dict[str, str] = {}
+    for name, birth_year, dam in children:
+        key = dam.strip().upper()
+        groups.setdefault(key, []).append((name, birth_year))
+        display.setdefault(key, dam.strip())
+
+    now_iso = datetime.utcnow().isoformat()
+    buffer: list[tuple] = []
+    all_scores: list[float] = []
+
+    for key, kids in groups.items():
+        rated = [ratings[k] for k in kids if k in ratings]
+        n_tot = len(kids)
+        n_val = len(rated)
+        if not n_val:
+            # Nessun figlio valutato: la riga esisterebbe senza informazione.
+            continue
+
+        counts = {g: 0 for g in GRADE_WEIGHTS}
+        for grade, _score, _earn in rated:
+            if grade in counts:
+                counts[grade] += 1
+
+        n_SSS, n_SS, n_S = counts["SSS"], counts["SS"], counts["S"]
+        pct_top_S = round((n_SSS + n_SS + n_S) / n_val * 100, 2)
+        base = sum(GRADE_WEIGHTS[g] * c for g, c in counts.items()) / n_val
+        # Il volume guarda i figli VALUTATI, non quelli citati: un figlio senza
+        # rating non e' evidenza di nulla.
+        score = round(min(base * dam_volume_multiplier(n_val), 100.0), 2)
+        avg_earn = round(sum(e for _g, _s, e in rated) / n_val, 2)
+        n_in_corsa = sum(1 for (nm, _by) in kids if nm in active_names)
+
+        o_races, o_wins, o_earn, o_rec = own.get(key, (0, 0, 0.0, None))
+        buffer.append((
+            display[key], n_tot, n_val, n_in_corsa, score,
+            n_SSS, n_SS, n_S, pct_top_S, avg_earn,
+            o_races, o_wins, o_earn, o_rec, own_grades.get(key),
+            now_iso,
+        ))
+        all_scores.append(score)
+
+    thresholds = build_stallion_grade_thresholds(all_scores)
+    print(f"[RATINGS] Soglie fattrici: {[(round(t, 1), g) for t, g in thresholds]}",
+          file=sys.stderr)
+
+    for row in buffer:
+        grade = score_to_stallion_grade(row[4], thresholds) if row[4] > 0 else "N/A"
+        conn.execute("""
+            INSERT OR REPLACE INTO dam_rating_stats
+                (dam, n_figli_totali, n_valutati, n_in_corsa, avg_score, grade,
+                 n_SSS, n_SS, n_S, pct_top_S, avg_earnings,
+                 own_races, own_wins, own_earnings, own_record, own_grade,
+                 final_score, last_updated)
+            VALUES (?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?)
+        """, (
+            row[0], row[1], row[2], row[3], row[4], grade,
+            row[5], row[6], row[7], row[8], row[9],
+            row[10], row[11], row[12], row[13], row[14],
+            row[4], row[15],
+        ))
+    conn.commit()
+    print(f"[RATINGS] Rating fattrici: {len(buffer)}", file=sys.stderr)
+    return len(buffer)
+
+
 def phase_data_quality(conn: sqlite3.Connection) -> dict:
     """
     FASE QA: Controlla e corregge la qualita dei dati ad ogni esecuzione notturna.
@@ -2647,6 +2809,7 @@ def main():
         # cambiato dati che influenzano i punteggi.
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
+        phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
     finally:
         conn.close()

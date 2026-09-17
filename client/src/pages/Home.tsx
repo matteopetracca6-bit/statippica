@@ -8,8 +8,7 @@ import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
-  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar
-} from "lucide-react";
+  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart } from "lucide-react";
 
 interface Stats {
   totalHorses: number;
@@ -179,6 +178,7 @@ export default function Home() {
               <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
               <NavCard href="/cavalli" icon={Users} title="Cavalli" desc="Database sfogliabile di tutti i cavalli con filtri per anno, grade e guadagni" color="hsl(183 80% 55%)" />
               <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stallioni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(120 60% 50%)" />
+              <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
               <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(280 60% 60%)" />
               <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
               <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />

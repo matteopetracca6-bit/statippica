@@ -430,6 +430,124 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // ── SEZIONE FATTRICI ────────────────────────────────────────────────────
+  // Le fattrici sono valutate sulla PROGENIE (dam_rating_stats, FASE 3c della
+  // pipeline), non sulla loro carriera: molte non corrono da vent'anni. Della
+  // loro carriera teniamo i totali (own_*) come contesto di lettura.
+  app.get("/api/mares", (req, res) => {
+    const db = getDb();
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(10, parseInt(req.query.limit as string) || 30));
+      const offset = (page - 1) * limit;
+      const search = (req.query.search as string || "").trim();
+      const grade = (req.query.grade as string) || "";
+      const sortBy = (req.query.sort as string) || "final_score";
+      const sortDir = (req.query.dir as string) === "asc" ? "ASC" : "DESC";
+      const minKids = parseInt(req.query.min_kids as string) || 0;
+
+      const allowedSort: Record<string, string> = {
+        final_score: "final_score",
+        n_figli: "n_valutati",
+        n_in_corsa: "n_in_corsa",
+        pct_top_S: "pct_top_S",
+        avg_earnings: "avg_earnings",
+        dam: "dam",
+      };
+      const sortCol = allowedSort[sortBy] || "final_score";
+
+      const conditions: string[] = [];
+      const params: any[] = [];
+      if (search) {
+        conditions.push("UPPER(dam) LIKE UPPER(?)");
+        params.push("%" + search.toUpperCase() + "%");
+      }
+      if (grade && grade !== "all") {
+        conditions.push("grade = ?");
+        params.push(grade);
+      }
+      if (minKids > 0) {
+        conditions.push("n_valutati >= ?");
+        params.push(minKids);
+      }
+      const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+
+      const total = (db.prepare(`SELECT COUNT(*) as c FROM dam_rating_stats ${where}`)
+        .get(...params) as any).c;
+      const rows = db.prepare(`
+        SELECT dam, n_figli_totali, n_valutati, n_in_corsa, final_score, grade,
+               n_SSS, n_SS, n_S, pct_top_S, avg_earnings,
+               own_races, own_wins, own_earnings, own_record, own_grade
+        FROM dam_rating_stats
+        ${where}
+        ORDER BY ${sortCol} ${sortDir}
+        LIMIT ? OFFSET ?
+      `).all(...params, limit, offset) as any[];
+
+      const grades = db.prepare(
+        "SELECT grade, COUNT(*) as cnt FROM dam_rating_stats GROUP BY grade"
+      ).all() as any[];
+
+      res.json({ total, page, limit, rows, grades });
+    } finally {
+      db.close();
+    }
+  });
+
+  app.get("/api/mare/:name", (req, res) => {
+    const name = decodeURIComponent(req.params.name).trim().toUpperCase();
+    const db = getDb();
+    try {
+      const stats = db.prepare(`
+        SELECT * FROM dam_rating_stats WHERE UPPER(TRIM(dam)) = ?
+      `).get(name) as any;
+
+      // I figli si leggono comunque, anche senza riga di rating: una fattrice
+      // appena citata deve avere una scheda, non un 404.
+      const offspring = db.prepare(`
+        SELECT h.name, h.birth_year, h.sex, h.sire,
+               hr.grade, hr.score, hr.career_races, hr.career_wins,
+               hr.career_earnings, hr.record_career
+        FROM horses h
+        LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
+                                   AND hr.rating_mode = 'performance'
+        WHERE UPPER(TRIM(h.dam)) = ?
+        ORDER BY hr.score IS NULL, hr.score DESC, h.birth_year DESC
+      `).all(name) as any[];
+
+      if (!stats && offspring.length === 0) {
+        return res.status(404).json({ message: "Fattrice non trovata" });
+      }
+
+      const own = db.prepare(`
+        SELECT name, birth_year, sire, dam, country,
+               career_races, career_wins, career_earnings, record_career,
+               COALESCE(horse_class, 'athlete') AS horse_class
+        FROM horses WHERE UPPER(TRIM(name)) = ? LIMIT 1
+      `).get(name) as any;
+
+      res.json({ dam: stats?.dam || name, stats: stats || null, own: own || null, offspring });
+    } finally {
+      db.close();
+    }
+  });
+
+  app.get("/api/search/mare", (req, res) => {
+    const q = (req.query.q as string || "").trim().toUpperCase();
+    if (q.length < 2) return res.json([]);
+    const db = getDb();
+    try {
+      const rows = db.prepare(`
+        SELECT dam, grade, final_score, n_valutati
+        FROM dam_rating_stats WHERE UPPER(dam) LIKE ?
+        ORDER BY final_score DESC LIMIT 20
+      `).all(`%${q}%`);
+      res.json(rows);
+    } finally {
+      db.close();
+    }
+  });
+
   // ── Lista stalloni per dropdown ──────────────────────────────────────────
   app.get("/api/stallions", (_req, res) => {
     const db = getDb();

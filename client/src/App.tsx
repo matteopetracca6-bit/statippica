@@ -16,6 +16,8 @@ import TopRacesPage from "./pages/TopRacesPage";
 import StallionDirectoryPage from "./pages/StallionDirectoryPage";
 import PedigreePage from "./pages/PedigreePage";
 import HorsesPage from "./pages/HorsesPage";
+import MaresPage from "./pages/MaresPage";
+import MarePage from "./pages/MarePage";
 import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/not-found";
 
@@ -38,6 +40,8 @@ export default function App() {
               <Route path="/top" component={TopRacesPage} />
               <Route path="/pedigree" component={PedigreePage} />
               <Route path="/cavalli" component={HorsesPage} />
+              <Route path="/fattrici" component={MaresPage} />
+              <Route path="/fattrice/:name" component={MarePage} />
               <Route path="/calendario" component={CalendarPage} />
               <Route component={NotFound} />
             </Switch>
