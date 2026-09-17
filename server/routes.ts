@@ -710,7 +710,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         ORDER BY year ASC
       `).all() as any[];
 
-      // Top tracks by race count
+      // Top tracks by race count — esclude codici brevi (NA, BO, ecc.)
       const topTracks = db.prepare(`
         SELECT track,
                COUNT(*) as n_races,
@@ -718,6 +718,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                SUM(prize_net) as total_prize
         FROM races
         WHERE track IS NOT NULL AND track != ''
+          AND length(track) > 3
           AND race_date IS NOT NULL
         GROUP BY track
         ORDER BY n_races DESC
