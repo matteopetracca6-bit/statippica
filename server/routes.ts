@@ -218,7 +218,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         FROM horses h
         LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != ''
         LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam)) AND h.dam IS NOT NULL AND h.dam != ''
-        WHERE UPPER(TRIM(h.name)) = UPPER(TRIM(?))
+        WHERE h.name = ?
         LIMIT 1
       `).get(name) as any;
 
@@ -248,7 +248,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const natFromHorses = db.prepare(`
         SELECT h.country
         FROM horses h
-        WHERE UPPER(TRIM(h.name)) = UPPER(TRIM(?))
+        WHERE h.name = ?
         LIMIT 1
       `).get(name) as any;
 
@@ -351,7 +351,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.sire_percentile, hr.career_races, hr.career_wins, hr.career_earnings, hr.record_career, hr.win_rate,
                h.country
         FROM horse_ratings hr
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(hr.name)) AND h.birth_year = hr.birth_year
+        LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year
         WHERE ${where}
         ORDER BY ${sortCol} DESC
         LIMIT ? OFFSET ?
@@ -392,8 +392,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       const getHorse = (name: string, year?: string) => {
         const row = year
-          ? (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(hr.name)) AND h.birth_year = hr.birth_year WHERE UPPER(TRIM(hr.name)) = UPPER(TRIM(?)) AND hr.birth_year = ? LIMIT 1`).get(name, parseInt(year)) as any)
-          : (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(hr.name)) AND h.birth_year = hr.birth_year WHERE UPPER(TRIM(hr.name)) = UPPER(TRIM(?)) ORDER BY hr.birth_year DESC LIMIT 1`).get(name) as any);
+          ? (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year WHERE hr.name = ? AND hr.birth_year = ? LIMIT 1`).get(name, parseInt(year)) as any)
+          : (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year WHERE hr.name = ? ORDER BY hr.birth_year DESC LIMIT 1`).get(name) as any);
         if (!row) return null;
         const ped = db.prepare(`
           SELECT h.sire, h.dam,
@@ -402,7 +402,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           FROM horses h
           LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire))
           LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam))
-          LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(h.name))
+          LEFT JOIN stallion_pedigree sp ON sp.name = h.name
           WHERE UPPER(TRIM(h.name)) = ? AND h.birth_year = ?
           LIMIT 1
         `).get(row.name, row.birth_year) as any;
@@ -742,7 +742,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                r.prize_net, r.prize_gross, r.total_starters, r.start_pos,
                h.country
         FROM races r
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        LEFT JOIN horses h ON h.name = r.horse_name
         WHERE r.prize_net > 0
         ORDER BY r.prize_net DESC
         LIMIT ?
@@ -753,7 +753,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT r.horse_name, r.race_date, r.track, r.time_km, r.distance, r.placement,
                r.prize_net, r.driver, h.country
         FROM races r
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        LEFT JOIN horses h ON h.name = r.horse_name
         WHERE r.time_km IS NOT NULL AND r.time_km > 0
           AND r.distance IN (1600, 2100)
           AND r.placement = 1
@@ -766,7 +766,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT r.horse_name, r.race_date, r.track, r.placement, r.start_pos,
                r.total_starters, r.prize_net, r.driver, r.time_km, h.country
         FROM races r
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        LEFT JOIN horses h ON h.name = r.horse_name
         WHERE r.placement = 1
           AND r.start_pos >= 10
           AND r.total_starters >= 12
@@ -785,7 +785,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                MAX(r.prize_net) as biggest_prize,
                h.country
         FROM races r
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        LEFT JOIN horses h ON h.name = r.horse_name
         WHERE r.prize_net > 0
         GROUP BY r.horse_name
         ORDER BY total_earnings DESC
