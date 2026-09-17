@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """
-fetch_upcoming_races.py — Recupera i partenti delle prossime gare da Trottoweb
-e li inserisce nella tabella upcoming_races del database StatIppica.
+fetch_upcoming_races.py — Recupera i partenti di tutte le prossime gare da Trottoweb.
 
-Fonte: https://www.trottoweb.it/TrottoWeb/php_resp/hPart.php
-Struttura HTML:
-  - <div class="ippodromo_part"><span>Bologna</span>, Giovedí <span>17 Settembre</span></div>
-  - <div id="corsa_1"> con <div class="ora_corsa">15:15</div>
-  - <table id="tabella_partenti"> con <td class="num_part">1</td> <td class="nome_cav">NOME</td> <td class="driver">DRIVER</td>
+1. Legge hNum.php per ottenere il calendario di tutti i meeting futuri
+2. Per ogni meeting, recupera i partenti da hPart.php?data=...&ippodromo=...
+3. Inserisce tutto nella tabella upcoming_races
 
 Uso:
   python3 fetch_upcoming_races.py            # fetch + insert
@@ -21,8 +18,9 @@ import sys
 from datetime import datetime, date
 from pathlib import Path
 
-URL = "https://www.trottoweb.it/TrottoWeb/php_resp/hPart.php"
 DB_PATH = Path(__file__).parent.parent / "data.db"
+HNUM_URL = "https://www.trottoweb.it/TrottoWeb/php_resp/hNum.php"
+HPART_URL = "https://www.trottoweb.it/TrottoWeb/php_resp/hPart.php"
 
 MONTHS_IT = {
     "Gennaio": 1, "Febbraio": 2, "Marzo": 3, "Aprile": 4,
@@ -30,7 +28,6 @@ MONTHS_IT = {
     "Settembre": 9, "Ottobre": 10, "Novembre": 11, "Dicembre": 12,
 }
 
-# Ippodromo -> codice breve (come races.track)
 TRACK_CODES = {
     "BOLOGNA": "BO", "MILANO": "MI", "ROMA": "RM", "TORINO": "TO",
     "NAPOLI": "NA", "CESENA": "CE", "SIRACUSA": "SR", "TREVISO": "TV",
@@ -42,8 +39,8 @@ TRACK_CODES = {
 }
 
 
-def fetch_page() -> str:
-    req = urllib.request.Request(URL, headers={
+def fetch_url(url: str) -> str:
+    req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
     })
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -60,8 +57,7 @@ def parse_date(text: str) -> str:
         day = int(parts[0])
     except ValueError:
         return ""
-    month_name = parts[1]
-    month = MONTHS_IT.get(month_name, 0)
+    month = MONTHS_IT.get(parts[1], 0)
     if month == 0:
         return ""
     year = datetime.now().year
@@ -77,93 +73,143 @@ def track_code(name: str) -> str:
 
 
 def strip_tags(html: str) -> str:
-    """Remove HTML tags and decode entities."""
     html = html.replace("&iacute;", "ì").replace("&euro;", "€")
     html = html.replace("&nbsp;", " ").replace("&amp;", "&")
-    html = re.sub(r"<[^>]+>", "", html)
-    return html.strip()
+    return re.sub(r"<[^>]+>", "", html).strip()
 
 
-def parse_entries(html: str) -> list:
-    """Parse hPart.php HTML and return list of entry dicts."""
+def fetch_meetings() -> list:
+    """Fetch hNum.php and return list of (date, track_name) tuples."""
+    html = fetch_url(HNUM_URL)
+    # Links: hNum.php?data=2026-09-20&ippodromo=BOLOGNA&note_giorno=...
+    pattern = re.compile(r'href="hNum\.php\?data=([^&]+)&ippodromo=([^"&]+)')
+    meetings = []
+    for m in pattern.finditer(html):
+        date_str = m.group(1).strip()
+        track_name = m.group(2).strip()
+        # Only future dates
+        if date_str >= date.today().isoformat():
+            meetings.append((date_str, track_name))
+    # Deduplicate
+    seen = set()
+    unique = []
+    for d, t in meetings:
+        key = f"{d}_{t}"
+        if key not in seen:
+            seen.add(key)
+            unique.append((d, t))
+    return unique
+
+
+def parse_hpart_main(html: str) -> list:
+    """Parse the main hPart.php page (no params). Returns list of entries."""
     entries = []
 
-    # Split by ippodromo_part sections
-    # Pattern: <div class="ippodromo_part"><span>TrackName</span>, DayName <span>DD Month</span></div>
+    # Find all ippodromo_part sections
     track_pattern = re.compile(
         r'<div class="ippodromo_part">\s*<span>([^<]+)</span>\s*,\s*[^<]+\s*<span>([^<]+)</span>',
         re.IGNORECASE
     )
 
-    # Find all track+date sections and their positions
     sections = []
     for m in track_pattern.finditer(html):
         track_name = m.group(1).strip()
         date_str = m.group(2).strip()
         parsed_date = parse_date(date_str)
         code = track_code(track_name)
-        sections.append({
-            "track": code,
-            "date": parsed_date,
-            "start": m.end(),
-        })
+        sections.append({"track": code, "date": parsed_date, "start": m.end()})
 
-    # For each section, find the end (next section or end of page)
     for i, section in enumerate(sections):
         end = sections[i + 1]["start"] if i + 1 < len(sections) else len(html)
         section_html = html[section["start"]:end]
 
-        # Find all race blocks: <div id="corsa_N"> ... </div id="dati_corsa">
-        # Each has <div class="ora_corsa">HH:MM</div> and <table id="tabella_partenti">
-        race_pattern = re.compile(
+        race_time_pattern = re.compile(
             r'<div class="(?:ora_corsa|ora_corsa_beige)">([^<]+)</div>',
             re.IGNORECASE
         )
-
-        # Find all race times in this section
-        race_times = race_pattern.findall(section_html)
-
-        # Find all tables with partenti
         table_pattern = re.compile(
             r'<table id="tabella_partenti">(.*?)</table>',
             re.DOTALL | re.IGNORECASE
         )
+
+        race_times = race_time_pattern.findall(section_html)
         tables = table_pattern.findall(section_html)
 
-        # Match race times with tables
         for j, table_html in enumerate(tables):
             race_time = race_times[j].strip() if j < len(race_times) else ""
 
-            # Parse rows: <td class="num_part">N</td> ... <td class="nome_cav"><a>NOME</a></td> ... <td class="driver">...<span>DRIVER</span>...
             row_pattern = re.compile(
-                r'<td class="num_part">(\d+)</td>.*?<td class="nome_cav"><a[^>]*>([^<]+)</a></td>.*?<td class="driver">.*?<span>([^<]+)</span>',
+                r'<td class="num_part">(\d+)</td>.*?<td class="nome_cav"><a[^>]*>([^<]+)</a>',
                 re.DOTALL | re.IGNORECASE
             )
-            # Also try simpler pattern for nome_cav without <a> tag
-            row_pattern2 = re.compile(
-                r'<td class="num_part">(\d+)</td>.*?<td class="nome_cav[^"]*">[^<]*<a[^>]*>([^<]+)</a>',
-                re.DOTALL | re.IGNORECASE
-            )
-
             rows = row_pattern.findall(table_html)
-            if not rows:
-                rows = row_pattern2.findall(table_html)
 
             for row in rows:
                 start_pos = int(row[0])
                 horse_name = strip_tags(row[1]).upper().strip()
-                driver = strip_tags(row[2]).strip() if len(row) > 2 else None
 
-                if horse_name and section["date"] and section["track"]:
+                if horse_name and horse_name != "NON PARTENTE" and section["date"] and section["track"]:
                     entries.append({
                         "track": section["track"],
                         "race_date": section["date"],
                         "race_time": race_time,
                         "horse_name": horse_name,
-                        "driver": driver,
+                        "driver": None,
                         "start_pos": start_pos,
                         "distance": None,
                     })
+
+    return entries
+
+
+def parse_hpart(html: str, track: str, race_date: str) -> list:
+    """Parse hPart.php HTML for a specific track+date. Returns list of entries."""
+    entries = []
+
+    # Find all race sections
+    race_time_pattern = re.compile(
+        r'<div class="(?:ora_corsa|ora_corsa_beige)">([^<]+)</div>',
+        re.IGNORECASE
+    )
+    table_pattern = re.compile(
+        r'<table id="tabella_partenti">(.*?)</table>',
+        re.DOTALL | re.IGNORECASE
+    )
+
+    race_times = race_time_pattern.findall(html)
+    tables = table_pattern.findall(html)
+
+    for j, table_html in enumerate(tables):
+        race_time = race_times[j].strip() if j < len(race_times) else ""
+
+        # Parse rows: num_part, nome_cav (with <a>), driver (with <span>)
+        row_pattern = re.compile(
+            r'<td class="num_part">(\d+)</td>.*?<td class="nome_cav"><a[^>]*>([^<]+)</a>',
+            re.DOTALL | re.IGNORECASE
+        )
+        rows = row_pattern.findall(table_html)
+
+        for row in rows:
+            start_pos = int(row[0])
+            horse_name = strip_tags(row[1]).upper().strip()
+
+            # Try to get driver
+            driver = None
+            driver_match = re.search(
+                r'<td class="driver">.*?<span>([^<]+)</span>',
+                table_html, re.DOTALL | re.IGNORECASE
+            )
+
+            if horse_name and horse_name != "NON PARTENTE":
+                entries.append({
+                    "track": track,
+                    "race_date": race_date,
+                    "race_time": race_time,
+                    "horse_name": horse_name,
+                    "driver": driver,
+                    "start_pos": start_pos,
+                    "distance": None,
+                })
 
     return entries
 
@@ -193,7 +239,7 @@ def insert_entries(conn, entries, dry_run=False):
 
     for e in entries:
         if dry_run:
-            print(f"  {e['track']} {e['race_date']} {e['race_time']} | #{e['start_pos']} {e['horse_name']} ({e['driver']})")
+            print(f"  {e['track']} {e['race_date']} {e['race_time']} | #{e['start_pos']} {e['horse_name']}")
             continue
 
         cur = conn.execute(
@@ -216,42 +262,62 @@ def insert_entries(conn, entries, dry_run=False):
 
 
 def cleanup_old(conn):
-    conn.execute("DELETE FROM upcoming_races WHERE race_date < date('now', '-1 day')")
+    conn.execute("DELETE FROM upcoming_races WHERE race_date < date('now')")
     conn.commit()
 
 
 def main():
     dry_run = "--dry-run" in sys.argv
 
-    print("Fetching upcoming races from Trottoweb...")
-    html = fetch_page()
-    print(f"  Page size: {len(html)} bytes")
+    print("Step 1: Fetching current entries from hPart.php (main page)...")
+    main_html = fetch_url(HPART_URL)
 
-    entries = parse_entries(html)
-    print(f"  Parsed {len(entries)} entries")
+    # Parse the main page - it has all currently published entries
+    main_entries = parse_hpart_main(main_html)
+    print(f"  Found {len(main_entries)} entries on main page")
+    all_entries = list(main_entries)
 
-    if not entries:
-        print("  WARNING: No entries parsed. Check page structure.")
-        return
+    print("\nStep 2: Fetching meeting calendar from hNum.php...")
+    meetings = fetch_meetings()
+    print(f"  Found {len(meetings)} upcoming meetings")
+
+    print("\nStep 3: Fetching entries for each future meeting...")
+    for date_str, track_name in meetings:
+        track = track_code(track_name)
+        # Skip if we already have entries for this track+date from the main page
+        already = any(e['track'] == track and e['race_date'] == date_str for e in all_entries)
+        if already:
+            continue
+        url = f"{HPART_URL}?data={date_str}&ippodromo={track_name}"
+        try:
+            html = fetch_url(url)
+            entries = parse_hpart(html, track, date_str)
+            if entries:
+                print(f"  {date_str} {track_name} ({track}): {len(entries)} entries")
+                all_entries.extend(entries)
+            else:
+                print(f"  {date_str} {track_name} ({track}): no entries yet")
+        except Exception as e:
+            print(f"  {date_str} {track_name}: ERROR - {e}")
+
+    print(f"\nTotal entries: {len(all_entries)}")
 
     if dry_run:
         print("\n--- DRY RUN (no write) ---")
-        for e in entries[:20]:
-            print(f"  {e['track']} {e['race_date']} {e['race_time']} | #{e['start_pos']} {e['horse_name']} ({e['driver']})")
-        if len(entries) > 20:
-            print(f"  ... and {len(entries) - 20} more")
-        print(f"\nTotal: {len(entries)} entries")
+        for e in all_entries[:20]:
+            print(f"  {e['track']} {e['race_date']} {e['race_time']} | #{e['start_pos']} {e['horse_name']}")
+        if len(all_entries) > 20:
+            print(f"  ... and {len(all_entries) - 20} more")
         return
 
     conn = sqlite3.connect(str(DB_PATH))
     create_table(conn)
     cleanup_old(conn)
 
-    inserted, updated = insert_entries(conn, entries)
-    print(f"  Inserted: {inserted}")
-    print(f"  Updated: {updated}")
+    inserted, updated = insert_entries(conn, all_entries)
+    print(f"\nInserted: {inserted}")
+    print(f"Updated: {updated}")
 
-    # Stats
     try:
         rated = conn.execute("""
             SELECT COUNT(*) FROM upcoming_races ur
@@ -260,13 +326,13 @@ def main():
     except Exception:
         rated = 0
     total = conn.execute("SELECT COUNT(*) FROM upcoming_races").fetchone()[0]
-    print(f"  Rated horses: {rated}/{total}")
+    print(f"Rated horses: {rated}/{total}")
 
     events = conn.execute("SELECT COUNT(DISTINCT track || race_date || race_time) FROM upcoming_races").fetchone()[0]
-    print(f"  Race events: {events}")
+    print(f"Race events: {events}")
 
     conn.close()
-    print("Done.")
+    print("\nDone.")
 
 
 if __name__ == "__main__":

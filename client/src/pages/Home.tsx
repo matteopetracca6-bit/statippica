@@ -148,19 +148,21 @@ export default function Home() {
 
         <div style={{ position: "relative", maxWidth: "1200px", margin: "0 auto" }}>
           {/* Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
-            <img
-              src="./statippica-logo.png"
-              alt="StatIppica"
-              style={{ width: 64, height: 64, borderRadius: "14px", objectFit: "cover", boxShadow: "0 4px 24px hsl(183 80% 40% / 0.35)" }}
-            />
-            <h1 style={{
-              fontSize: "42px", fontWeight: 700, color: "hsl(210 20% 96%)",
-              letterSpacing: "-0.03em", margin: 0, lineHeight: 1,
-              fontFamily: "'Space Grotesk', 'Satoshi', sans-serif",
-            }}>
-              StatIppica
-            </h1>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+              <img
+                src="./statippica-logo.png"
+                alt="StatIppica"
+                style={{ width: 72, height: 72, borderRadius: "16px", objectFit: "cover", boxShadow: "0 4px 24px hsl(183 80% 40% / 0.35)" }}
+              />
+              <h1 style={{
+                fontSize: "56px", fontWeight: 700, color: "hsl(210 20% 96%)",
+                letterSpacing: "-0.03em", margin: 0, lineHeight: 1,
+                fontFamily: "'Space Grotesk', 'Satoshi', sans-serif",
+              }}>
+                <span style={{ color: "hsl(120 60% 50%)" }}>S</span>tat<span style={{ color: "hsl(0 70% 55%)" }}>I</span>ppica
+              </h1>
+            </div>
           </div>
 
           {/* Search bar */}

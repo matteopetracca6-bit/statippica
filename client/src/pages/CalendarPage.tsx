@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import { getFlag } from "@/lib/flags";
-import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle } from "lucide-react";
+import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle, Medal } from "lucide-react";
 
 interface CalendarEntry {
   horse_name: string;
@@ -49,6 +49,15 @@ function formatTime(time: string): string {
   return time.substring(0, 5);
 }
 
+const TRACK_NAMES: Record<string, string> = {
+  BO: "Bologna", MI: "Milano", RM: "Roma", TO: "Torino",
+  NA: "Napoli", CE: "Cesena", SR: "Siracusa", TV: "Treviso",
+  MT: "Montecatini", CS: "Casarano", PA: "Palermo", MO: "Modena",
+  FI: "Firenze", BA: "Bari", VA: "Varese", GA: "Garigliano",
+  PD: "Padova", VI: "Villanova", CT: "Castelluccio", AN: "Ancona",
+  TS: "Trieste", FR: "Frosinone", SS: "San Severo",
+};
+
 export default function CalendarPage() {
   const [data, setData] = useState<CalendarResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +66,14 @@ export default function CalendarPage() {
   useState(() => {
     apiRequest("GET", "/api/calendar?limit=100")
       .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
+      .then(d => {
+        setData(d);
+        setLoading(false);
+        // Auto-expand the first race
+        if (d.races && d.races.length > 0) {
+          setExpandedRace(`${d.races[0].track}-${d.races[0].race_date}-${d.races[0].race_time}`);
+        }
+      })
       .catch(() => setLoading(false));
   });
 
@@ -72,7 +88,7 @@ export default function CalendarPage() {
         </h1>
         {data && data.total > 0 && (
           <span className="tabular" style={{ fontSize: "13px", color: "hsl(210 8% 50%)", marginLeft: "8px" }}>
-            {data.total} eventi
+            {data.total} eventi · {data.races.reduce((s, r) => s + r.n_runners, 0)} partenti
           </span>
         )}
       </div>
@@ -80,7 +96,7 @@ export default function CalendarPage() {
       {loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {[1, 2, 3].map(i => (
-            <div key={i} className="skeleton" style={{ height: "60px", borderRadius: "12px" }} />
+            <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "12px" }} />
           ))}
         </div>
       ) : !data || data.races.length === 0 ? (
@@ -101,7 +117,8 @@ export default function CalendarPage() {
           {data.races.map((race, i) => {
             const key = raceKey(race);
             const expanded = expandedRace === key;
-            const topPick = race.entries[0];
+            const top3 = race.entries.slice(0, 3);
+            const trackName = TRACK_NAMES[race.track] || race.track;
             return (
               <div key={key} style={{
                 background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
@@ -120,13 +137,13 @@ export default function CalendarPage() {
                 >
                   {/* Date badge */}
                   <div style={{
-                    minWidth: "60px", textAlign: "center",
+                    minWidth: "64px", textAlign: "center",
                     background: "hsl(220 12% 8%)", borderRadius: "10px", padding: "8px 10px",
                   }}>
                     <div style={{ fontSize: "11px", color: "hsl(210 8% 50%)", textTransform: "uppercase" }}>
                       {formatDate(race.race_date).split(" ")[0]}
                     </div>
-                    <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>
+                    <div className="tabular" style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>
                       {formatDate(race.race_date).split(" ")[1]}
                     </div>
                     <div style={{ fontSize: "10px", color: "hsl(210 8% 45%)", textTransform: "uppercase" }}>
@@ -139,7 +156,7 @@ export default function CalendarPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <MapPin size={14} style={{ color: "hsl(183 60% 55%)" }} />
                       <span style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>
-                        {race.track}
+                        {trackName}
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
@@ -153,22 +170,26 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
-                  {/* Top pick preview */}
-                  {topPick && topPick.win_estimate > 0 && (
-                    <div style={{
-                      display: "flex", alignItems: "center", gap: "8px",
-                      background: "hsl(183 80% 40% / 0.1)", borderRadius: "8px",
-                      padding: "6px 12px",
-                    }}>
-                      <Trophy size={14} style={{ color: "hsl(51 80% 55%)" }} />
-                      <div>
-                        <div style={{ fontSize: "12px", color: "hsl(210 10% 85%)", fontWeight: 600 }}>
-                          {getFlag(topPick.country, topPick.horse_name)} {topPick.horse_name}
+                  {/* Podium preview */}
+                  {top3.length >= 3 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {top3.map((e, idx) => (
+                        <div key={idx} style={{
+                          display: "flex", alignItems: "center", gap: "4px",
+                          padding: "4px 8px", borderRadius: "6px",
+                          background: idx === 0 ? "hsl(51 80% 50% / 0.1)" : idx === 1 ? "hsl(0 0% 70% / 0.08)" : "hsl(30 70% 50% / 0.08)",
+                        }}>
+                          <Medal size={12} style={{ color: idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : "hsl(30 70% 50%)" }} />
+                          <Link href={`/horse/${encodeURIComponent(e.horse_name)}/${e.birth_year || 0}`}>
+                            <a style={{ fontSize: "11px", color: "hsl(210 10% 80%)", textDecoration: "none", fontWeight: 600 }} onClick={ev => ev.stopPropagation()}>
+                              {e.horse_name}
+                            </a>
+                          </Link>
+                          <span className="tabular" style={{ fontSize: "10px", color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 50%)", fontWeight: 700 }}>
+                            {e.win_estimate.toFixed(0)}%
+                          </span>
                         </div>
-                        <div className="tabular" style={{ fontSize: "11px", color: "hsl(183 80% 55%)", fontWeight: 700 }}>
-                          {topPick.win_estimate.toFixed(1)}% stimato
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   )}
 
@@ -184,80 +205,100 @@ export default function CalendarPage() {
 
                 {/* Expanded entries */}
                 {expanded && (
-                  <div style={{ borderTop: "1px solid hsl(220 10% 16%)", padding: "8px" }}>
-                    {race.entries.map((entry, idx) => (
-                      <Link key={`${entry.horse_name}-${idx}`} href={`/horse/${encodeURIComponent(entry.horse_name)}/${entry.birth_year || 0}`}>
-                        <a style={{
-                          display: "grid",
-                          gridTemplateColumns: "32px 1fr auto auto auto auto",
-                          alignItems: "center", gap: "12px",
-                          padding: "10px 16px", borderRadius: "8px", textDecoration: "none",
-                          transition: "background 0.1s",
-                          background: idx === 0 ? "hsl(51 80% 50% / 0.05)" : "transparent",
-                        }}
-                          onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 14%)"}
-                          onMouseLeave={e => e.currentTarget.style.background = idx === 0 ? "hsl(51 80% 50% / 0.05)" : "transparent"}
-                        >
-                          {/* Position */}
-                          <span className="tabular" style={{
-                            fontSize: "13px", fontWeight: 700,
-                            color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(210 8% 40%)",
-                          }}>
-                            {idx + 1}
-                          </span>
+                  <div style={{ borderTop: "1px solid hsl(220 10% 16%)" }}>
+                    {/* Podium header */}
+                    <div style={{ padding: "12px 20px 8px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Trophy size={14} style={{ color: "hsl(51 80% 55%)" }} />
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        Podio stimato
+                      </span>
+                    </div>
 
-                          {/* Name + info */}
-                          <div>
-                            <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 88%)" }}>
-                              {getFlag(entry.country, entry.horse_name)} {entry.horse_name}
-                            </div>
-                            <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "2px" }}>
-                              {entry.driver && <span>{entry.driver}</span>}
-                              {entry.sire && <span> · {entry.sire}</span>}
-                              {entry.birth_year && <span> · {entry.birth_year}</span>}
-                            </div>
-                          </div>
-
-                          {/* Grade */}
-                          <div>
-                            {entry.grade ? <GradeBadge grade={entry.grade} size="sm" /> : <span style={{ fontSize: "11px", color: "hsl(210 8% 40%)" }}>—</span>}
-                          </div>
-
-                          {/* Score */}
-                          <div className="tabular" style={{
-                            fontSize: "13px", fontWeight: 700, minWidth: "36px", textAlign: "right",
-                            color: entry.score != null ? "hsl(183 60% 55%)" : "hsl(210 8% 40%)",
-                          }}>
-                            {entry.score != null ? entry.score.toFixed(1) : "—"}
-                          </div>
-
-                          {/* Career earnings */}
-                          <div className="tabular" style={{
-                            fontSize: "12px", minWidth: "60px", textAlign: "right",
-                            color: "hsl(51 70% 55%)",
-                          }}>
-                            {entry.career_earnings ? `€${(entry.career_earnings / 1000).toFixed(0)}k` : "—"}
-                          </div>
-
-                          {/* Win estimate bar */}
-                          <div style={{ minWidth: "80px", display: "flex", alignItems: "center", gap: "8px" }}>
-                            <div style={{ flex: 1, height: "6px", background: "hsl(220 12% 8%)", borderRadius: "3px", overflow: "hidden" }}>
-                              <div style={{
-                                height: "100%", width: `${Math.min(entry.win_estimate * 2, 100)}%`,
-                                background: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 50%)",
-                                borderRadius: "3px", transition: "width 0.5s",
-                              }} />
-                            </div>
+                    {/* Entries table */}
+                    <div style={{ padding: "0 8px 8px" }}>
+                      {race.entries.map((entry, idx) => {
+                        const podiumColor = idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : idx === 2 ? "hsl(30 70% 50%)" : "hsl(210 8% 40%)";
+                        const podiumBg = idx === 0 ? "hsl(51 80% 50% / 0.06)" : idx === 1 ? "hsl(0 0% 70% / 0.04)" : idx === 2 ? "hsl(30 70% 50% / 0.04)" : "transparent";
+                        return (
+                          <div key={`${entry.horse_name}-${idx}`} style={{
+                            display: "grid",
+                            gridTemplateColumns: "28px 24px 1fr auto auto auto",
+                            alignItems: "center", gap: "12px",
+                            padding: "10px 16px", borderRadius: "8px",
+                            background: podiumBg,
+                            transition: "background 0.1s",
+                          }}
+                            onMouseEnter={e => e.currentTarget.style.background = idx < 3 ? podiumBg : "hsl(220 10% 14%)"}
+                            onMouseLeave={e => e.currentTarget.style.background = podiumBg}
+                          >
+                            {/* Position */}
                             <span className="tabular" style={{
-                              fontSize: "12px", fontWeight: 700, minWidth: "36px",
-                              color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 55%)",
+                              fontSize: "13px", fontWeight: 700,
+                              color: podiumColor,
+                              textAlign: "center",
                             }}>
-                              {entry.win_estimate.toFixed(1)}%
+                              {idx < 3 ? ["1°", "2°", "3°"][idx] : idx + 1}
                             </span>
+
+                            {/* Medal */}
+                            {idx < 3 ? (
+                              <Medal size={14} style={{ color: podiumColor }} />
+                            ) : (
+                              <span style={{ width: 14 }} />
+                            )}
+
+                            {/* Name + info */}
+                            <div>
+                              <Link href={`/horse/${encodeURIComponent(entry.horse_name)}/${entry.birth_year || 0}`}>
+                                <a style={{
+                                  fontSize: "13px", fontWeight: 600,
+                                  color: idx < 3 ? podiumColor : "hsl(210 10% 85%)",
+                                  textDecoration: "none",
+                                }}>
+                                  {getFlag(entry.country, entry.horse_name)} {entry.horse_name}
+                                </a>
+                              </Link>
+                              <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "2px" }}>
+                                {entry.sire && <span>{entry.sire}</span>}
+                                {entry.birth_year && <span> · {entry.birth_year}</span>}
+                                {entry.career_races != null && <span> · {entry.career_races} gare</span>}
+                                {entry.win_rate != null && entry.win_rate > 0 && <span> · {entry.win_rate.toFixed(0)}% win</span>}
+                              </div>
+                            </div>
+
+                            {/* Grade */}
+                            <div>
+                              {entry.grade ? <GradeBadge grade={entry.grade} size="sm" /> : <span style={{ fontSize: "11px", color: "hsl(210 8% 40%)" }}>—</span>}
+                            </div>
+
+                            {/* Score */}
+                            <div className="tabular" style={{
+                              fontSize: "13px", fontWeight: 700, minWidth: "36px", textAlign: "right",
+                              color: entry.score != null ? "hsl(183 60% 55%)" : "hsl(210 8% 40%)",
+                            }}>
+                              {entry.score != null ? entry.score.toFixed(1) : "—"}
+                            </div>
+
+                            {/* Win estimate bar */}
+                            <div style={{ minWidth: "100px", display: "flex", alignItems: "center", gap: "8px" }}>
+                              <div style={{ flex: 1, height: "8px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden" }}>
+                                <div style={{
+                                  height: "100%", width: `${Math.min(entry.win_estimate * 2, 100)}%`,
+                                  background: idx < 3 ? podiumColor : "hsl(183 60% 50%)",
+                                  borderRadius: "4px", transition: "width 0.5s",
+                                }} />
+                              </div>
+                              <span className="tabular" style={{
+                                fontSize: "13px", fontWeight: 700, minWidth: "40px",
+                                color: idx < 3 ? podiumColor : "hsl(183 60% 55%)",
+                              }}>
+                                {entry.win_estimate.toFixed(1)}%
+                              </span>
+                            </div>
                           </div>
-                        </a>
-                      </Link>
-                    ))}
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
