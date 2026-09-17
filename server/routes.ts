@@ -1254,4 +1254,144 @@ export function registerRoutes(httpServer: Server, app: Express) {
       res.status(500).json({ available: false, error: e?.message });
     }
   });
+
+  // ──────────────────────────────────────────────
+  // GET /api/horses — paginated, filterable horse database
+  // ──────────────────────────────────────────────
+  app.get("/api/horses", (req, res) => {
+    const db = getDb();
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(10, parseInt(req.query.limit as string) || 30));
+      const offset = (page - 1) * limit;
+      const search = (req.query.search as string || "").trim();
+      const year = req.query.year as string || "";
+      const grade = req.query.grade as string || "";
+      const sex = req.query.sex as string || "";
+      const country = req.query.country as string || "";
+      const sortBy = (req.query.sort as string) || "score";
+      const sortDir = (req.query.dir as string) === "asc" ? "ASC" : "DESC";
+
+      const conditions: string[] = ["hr.rating_mode = 'performance'"];
+      const params: any[] = [];
+
+      if (search) {
+        conditions.push("UPPER(hr.name) LIKE UPPER(?)");
+        params.push("%" + search.toUpperCase() + "%");
+      }
+      if (year && year !== "all") {
+        conditions.push("hr.birth_year = ?");
+        params.push(parseInt(year));
+      }
+      if (grade && grade !== "all") {
+        conditions.push("hr.grade = ?");
+        params.push(grade);
+      }
+      if (sex && sex !== "all") {
+        conditions.push("h.sex = ?");
+        params.push(sex);
+      }
+      if (country && country !== "all") {
+        conditions.push("h.country = ?");
+        params.push(country);
+      }
+
+      const where = conditions.join(" AND ");
+      const sortCol = sortBy === "earnings" ? "hr.career_earnings"
+        : sortBy === "wins" ? "hr.career_wins"
+        : sortBy === "races" ? "hr.career_races"
+        : sortBy === "name" ? "hr.name"
+        : "hr.score";
+      const sortExpr = sortBy === "name" ? `UPPER(${sortCol}) ${sortDir}` : `${sortCol} ${sortDir}`;
+
+      const total = (db.prepare(`SELECT COUNT(*) as c FROM horse_ratings hr LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year WHERE ${where}`).get(...params) as any).c;
+
+      const rows = db.prepare(`
+        SELECT hr.name, hr.birth_year, hr.sire, hr.grade, hr.score, hr.career_races, hr.career_wins,
+               hr.career_earnings, hr.win_rate, hr.record_career, h.country, h.sex, h.dam
+        FROM horse_ratings hr
+        LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year
+        WHERE ${where}
+        ORDER BY ${sortExpr}
+        LIMIT ? OFFSET ?
+      `).all(...params, limit, offset) as any[];
+
+      // Get distinct years and countries for filters
+      const years = db.prepare("SELECT DISTINCT birth_year FROM horse_ratings WHERE rating_mode = 'performance' ORDER BY birth_year DESC").all() as any[];
+      const countries = db.prepare("SELECT DISTINCT h.country FROM horses h WHERE h.country IS NOT NULL ORDER BY h.country").all() as any[];
+
+      res.json({ total, page, limit, rows, years: years.map(y => y.birth_year), countries: countries.map(c => c.country) });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally {
+      db.close();
+    }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/calendar — upcoming races with ratings and win estimates
+  // ──────────────────────────────────────────────
+  app.get("/api/calendar", (req, res) => {
+    const db = getDb();
+    try {
+      const limit = Math.min(200, parseInt(req.query.limit as string) || 50);
+
+      // Check if upcoming_races table exists
+      const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='upcoming_races'").get();
+      if (!tableExists) {
+        return res.json({ races: [], note: "Nessuna gara in calendario. Lo script di aggiornamento non ha ancora girato." });
+      }
+
+      // Fetch upcoming race events (grouped by track + date)
+      const events = db.prepare(`
+        SELECT DISTINCT track, race_date, race_time
+        FROM upcoming_races
+        WHERE race_date >= date('now', '-1 day')
+        ORDER BY race_date ASC, race_time ASC
+        LIMIT ?
+      `).all(limit) as any[];
+
+      // For each event, fetch the horses with their ratings and win estimate
+      const result = events.map(ev => {
+        const entries = db.prepare(`
+          SELECT ur.horse_name, ur.driver, ur.start_pos, ur.distance,
+                 hr.grade, hr.score, hr.career_earnings, hr.win_rate, hr.career_races, hr.career_wins,
+                 h.country, h.birth_year, h.sire, h.dam
+          FROM upcoming_races ur
+          LEFT JOIN horse_ratings hr ON hr.name = ur.horse_name AND hr.rating_mode = 'performance'
+          LEFT JOIN horses h ON h.name = ur.horse_name
+          WHERE ur.track = ? AND ur.race_date = ? AND ur.race_time = ?
+          ORDER BY ur.start_pos ASC
+        `).all(ev.track, ev.race_date, ev.race_time) as any[];
+
+        // Simple win probability estimate based on score (softmax-like)
+        const scored = entries.filter(e => e.score != null);
+        const totalScore = scored.reduce((s, e) => s + Math.exp(e.score / 20), 0);
+        scored.forEach(e => {
+          e.win_estimate = totalScore > 0 ? Math.round((Math.exp(e.score / 20) / totalScore) * 1000) / 10 : 0;
+        });
+        // Horses without score get 0 estimate
+        entries.forEach(e => {
+          if (e.score == null) e.win_estimate = 0;
+        });
+
+        // Sort by win estimate descending
+        entries.sort((a, b) => (b.win_estimate || 0) - (a.win_estimate || 0));
+
+        return {
+          track: ev.track,
+          race_date: ev.race_date,
+          race_time: ev.race_time,
+          n_runners: entries.length,
+          entries,
+        };
+      }).filter(ev => ev.n_runners > 0);
+
+      res.json({ races: result, total: result.length });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally {
+      db.close();
+    }
+  });
 }

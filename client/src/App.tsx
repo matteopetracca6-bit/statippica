@@ -15,6 +15,8 @@ import TrendsPage from "./pages/TrendsPage";
 import TopRacesPage from "./pages/TopRacesPage";
 import StallionDirectoryPage from "./pages/StallionDirectoryPage";
 import PedigreePage from "./pages/PedigreePage";
+import HorsesPage from "./pages/HorsesPage";
+import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/not-found";
 
 export default function App() {
@@ -35,6 +37,8 @@ export default function App() {
               <Route path="/trend" component={TrendsPage} />
               <Route path="/top" component={TopRacesPage} />
               <Route path="/pedigree" component={PedigreePage} />
+              <Route path="/cavalli" component={HorsesPage} />
+              <Route path="/calendario" component={CalendarPage} />
               <Route component={NotFound} />
             </Switch>
           </Layout>

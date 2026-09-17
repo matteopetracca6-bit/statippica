@@ -8,7 +8,7 @@ import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
-  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin
+  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar
 } from "lucide-react";
 
 interface Stats {
@@ -148,20 +148,19 @@ export default function Home() {
 
         <div style={{ position: "relative", maxWidth: "1200px", margin: "0 auto" }}>
           {/* Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
             <img
               src="./statippica-logo.png"
               alt="StatIppica"
-              style={{ width: 56, height: 56, borderRadius: "12px", objectFit: "cover", boxShadow: "0 4px 20px hsl(183 80% 40% / 0.3)" }}
+              style={{ width: 64, height: 64, borderRadius: "14px", objectFit: "cover", boxShadow: "0 4px 24px hsl(183 80% 40% / 0.35)" }}
             />
-            <div>
-              <h1 style={{ fontSize: "32px", fontWeight: 800, color: "hsl(210 20% 96%)", letterSpacing: "-0.02em", margin: 0, lineHeight: 1.1 }}>
-                StatIppica
-              </h1>
-              <p style={{ fontSize: "14px", color: "hsl(183 60% 55%)", margin: "2px 0 0", letterSpacing: "0.04em", fontWeight: 500 }}>
-                Dati all'ippica
-              </p>
-            </div>
+            <h1 style={{
+              fontSize: "42px", fontWeight: 700, color: "hsl(210 20% 96%)",
+              letterSpacing: "-0.03em", margin: 0, lineHeight: 1,
+              fontFamily: "'Space Grotesk', 'Satoshi', sans-serif",
+            }}>
+              StatIppica
+            </h1>
           </div>
 
           {/* Search bar */}
@@ -176,13 +175,15 @@ export default function Home() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
               <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
-              <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stallioni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(183 80% 55%)" />
-              <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(120 60% 50%)" />
+              <NavCard href="/cavalli" icon={Users} title="Cavalli" desc="Database sfogliabile di tutti i cavalli con filtri per anno, grade e guadagni" color="hsl(183 80% 55%)" />
+              <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stallioni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(120 60% 50%)" />
+              <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(280 60% 60%)" />
               <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
               <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />
-              <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(280 60% 60%)" />
-              <NavCard href="/top" icon={Award} title="Top Gare" desc="Le gare piu ricche, i tempi piu veloci, le sorprese e i dominatori" color="hsl(0 60% 55%)" />
-              <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(160 60% 50%)" />
+              <NavCard href="/calendario" icon={Calendar} title="Calendario" desc="Prossime gare in programma con iscritti, voti e stima probabilita di vittoria" color="hsl(0 60% 55%)" />
+              <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(160 60% 50%)" />
+              <NavCard href="/top" icon={Award} title="Top Gare" desc="Le gare piu ricche, i tempi piu veloci, le sorprese e i dominatori" color="hsl(40 80% 55%)" />
+              <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(220 60% 60%)" />
             </div>
           </div>
         </div>
