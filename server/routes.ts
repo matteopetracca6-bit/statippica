@@ -420,6 +420,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       const rows = db.prepare(`
         SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
+               s.country, s.season, s.fee_source,
                sr.avg_score, sr.final_score, sr.grade,
                sr.n_figli_totali, sr.n_in_corsa, sr.pct_top_S, sr.vp_boost,
                COALESCE(s.country, sp.nationality) AS nationality

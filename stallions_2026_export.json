@@ -1,0 +1,1194 @@
+[
+  {
+    "name": "FACE TIME BOURBON",
+    "country": "FRA",
+    "stud_fee_eur": 35000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MAHARAJAH",
+    "country": "SWE",
+    "stud_fee_eur": 11500.0,
+    "stud_farm": "Allevamenti Toniatti, S. Michele al Tagliamento (VE)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "READLY EXPRESS",
+    "country": "SWE",
+    "stud_fee_eur": 11500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ECURIE D",
+    "country": "DEN",
+    "stud_fee_eur": 10500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "FRANCESCO ZET",
+    "country": "SWE",
+    "stud_fee_eur": 10500.0,
+    "stud_farm": "Allevamento Folli, Mordano (BO)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CALGARY GAMES",
+    "country": "SWE",
+    "stud_fee_eur": 9000.0,
+    "stud_farm": "Allevamenti Toniatti, S. Michele al Tagliamento (VE)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CHARLY DU NOYER",
+    "country": "FRA",
+    "stud_fee_eur": 9000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VARENNE",
+    "country": "ITA",
+    "stud_fee_eur": 8500.0,
+    "stud_farm": "Varenne Futurity Srl, Eboli (SA)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "NUNCIO",
+    "country": "USA",
+    "stud_fee_eur": 8500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BOLD EAGLE",
+    "country": "FRA",
+    "stud_fee_eur": 8000.0,
+    "stud_farm": "Allevamento Folli, Mordano (BO)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VIVID WISE AS",
+    "country": "ITA",
+    "stud_fee_eur": 7500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "FATHER PATRICK",
+    "country": "USA",
+    "stud_fee_eur": 7500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VOLSTEAD",
+    "country": "USA",
+    "stud_fee_eur": 7500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BACK OF THE NECK",
+    "country": null,
+    "stud_fee_eur": 7500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "IDEAL DE POMMEAU",
+    "country": "FRA",
+    "stud_fee_eur": 7500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MUSCLE MASS",
+    "country": "USA",
+    "stud_fee_eur": 7360.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BIRD PARKER",
+    "country": "FRA",
+    "stud_fee_eur": 7000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "PROPULSION",
+    "country": "USA",
+    "stud_fee_eur": 7000.0,
+    "stud_farm": "Allevamento Folli, Mordano (BO)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ALRAJAH ONE",
+    "country": "ITA",
+    "stud_fee_eur": 6500.0,
+    "stud_farm": "Allevamenti Toniatti, S. Michele al Tagliamento (VE)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "SOUTHWIND FRANK",
+    "country": "USA",
+    "stud_fee_eur": 6500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "DON FANUCCI ZET",
+    "country": "SWE",
+    "stud_fee_eur": 6500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "EL IDEAL",
+    "country": "USA",
+    "stud_fee_eur": 6000.0,
+    "stud_farm": "Allevamento della Serenissima",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "FABULOUS WOOD",
+    "country": "FRA",
+    "stud_fee_eur": 6000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "RESOLVE",
+    "country": "USA",
+    "stud_fee_eur": 6000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BRILLANTISSIME",
+    "country": "FRA",
+    "stud_fee_eur": 6000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BARACK FACE",
+    "country": "SWE",
+    "stud_fee_eur": 6000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "IDAO DE TILLARD",
+    "country": "FRA",
+    "stud_fee_eur": 6000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TETRICK WANIA",
+    "country": "USA",
+    "stud_fee_eur": 6000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VICTOR GIO",
+    "country": "ITA",
+    "stud_fee_eur": 5300.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "DONATO HANOVER",
+    "country": "USA",
+    "stud_fee_eur": 5000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "HELPISONTHEWAY",
+    "country": "USA",
+    "stud_fee_eur": 5000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "GOOGOO GAAGAA",
+    "country": "USA",
+    "stud_fee_eur": 5000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BOCCADOR DE SIMM",
+    "country": "FRA",
+    "stud_fee_eur": 5000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "GO ON BOY",
+    "country": "FRA",
+    "stud_fee_eur": 5000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "REAL ITALIAN",
+    "country": "FRA",
+    "stud_fee_eur": 5000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "LONG TOM",
+    "country": "USA",
+    "stud_fee_eur": 4600.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "THE BANK",
+    "country": "USA",
+    "stud_fee_eur": 4500.0,
+    "stud_farm": "Allevamento Folli, Mordano (BO)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BENGURION JET",
+    "country": "ITA",
+    "stud_fee_eur": 4500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "RAJA MIRCHI",
+    "country": "SWE",
+    "stud_fee_eur": 4500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TWISTER BI",
+    "country": "ITA",
+    "stud_fee_eur": 4000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "COKSTILE",
+    "country": "NOR",
+    "stud_fee_eur": 4000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "GELATI CUT",
+    "country": "FRA",
+    "stud_fee_eur": 4000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "AMBASSADOR HANOVER",
+    "country": "USA",
+    "stud_fee_eur": 4000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CUATRO DE JULIO",
+    "country": "FRA",
+    "stud_fee_eur": 4000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "GOTLAND",
+    "country": "FRA",
+    "stud_fee_eur": 4000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "HELGAFELL",
+    "country": null,
+    "stud_fee_eur": 4000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CRAZY WOW",
+    "country": "USA",
+    "stud_fee_eur": 3680.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TONY GIO",
+    "country": "ITA",
+    "stud_fee_eur": 3500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VITRUVIO",
+    "country": "ITA",
+    "stud_fee_eur": 3500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "DONTYOUFORGETIT",
+    "country": "USA",
+    "stud_fee_eur": 3500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "PASTOR STEPHEN",
+    "country": "USA",
+    "stud_fee_eur": 3500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CAPITAL MAIL",
+    "country": "ITA",
+    "stud_fee_eur": 3500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MISSLE HILL",
+    "country": "USA",
+    "stud_fee_eur": 3500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MISTER HERCULES",
+    "country": "USA",
+    "stud_fee_eur": 3500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MET'S HALL",
+    "country": "USA",
+    "stud_fee_eur": 3200.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "AXL ROSE",
+    "country": "ITA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": "Allevamenti Toniatti, S. Michele al Tagliamento (VE)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "GIVEITGASANDGO",
+    "country": "USA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ROBERT BI",
+    "country": "ITA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "OASIS BI",
+    "country": "ITA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TOBIN KRONOS",
+    "country": "ITA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ZACON GIO",
+    "country": "ITA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MONI VIKING",
+    "country": "FRA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ROYAL DREAM",
+    "country": "FRA",
+    "stud_fee_eur": 3000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "DEVIOUS MAN",
+    "country": "USA",
+    "stud_fee_eur": 2700.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "NESTA EFFE",
+    "country": "ITA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ZARENNE FAS",
+    "country": "ITA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ADRIAN CHIP",
+    "country": "USA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "LOVE MATTERS",
+    "country": "USA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "BEPI BI",
+    "country": "ITA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CLASSIC CONNECTION",
+    "country": "GER",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "FAST AS THE WIND",
+    "country": "USA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": "Allevamento Folli, Mordano (BO)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MISTER F DAAG",
+    "country": "USA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "MISTER JP",
+    "country": "SWE",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "REAL DE LOU",
+    "country": "FRA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "SPARTAN KRONOS",
+    "country": "ITA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VOLTIGEUR DE MYRT",
+    "country": "FRA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "JOHN PALEMA",
+    "country": "USA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ZACHARIAS BAR",
+    "country": "ITA",
+    "stud_fee_eur": 2500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "OROPURO BAR",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VICTOR FERM",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TROLLEY",
+    "country": "USA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": "Allevamento Il Canf, Santi Cosma e Damiano (LT)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TOBIAS DEL RONCO",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "EVERY TIME BOURBON",
+    "country": "FRA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TIMONE EK",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "IGOR FONT",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "AMON YOU SM",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CARAT WILLIAMS",
+    "country": "FRA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ERIDAN",
+    "country": "FRA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "FEELING CASH",
+    "country": "FRA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "FELICIANO",
+    "country": "FRA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "PASCIA LEST",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TIMOKO",
+    "country": "FRA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "UP AND QUICK",
+    "country": "FRA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ZE MARIA",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "IDEAL LUIS",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TREASURE OF THE GODS",
+    "country": "ITA",
+    "stud_fee_eur": 2000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ZEROZEROSETTE GAR",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "LIBECCIO GRIF",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ROD STEWART",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ALADIN EFFE",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VILLIAM",
+    "country": "SWE",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TANGO NEGRO",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "DIJON",
+    "country": "FRA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "GLOBAL TRUSTWORTHY",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "OFFSHORE DREAM",
+    "country": "FRA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "RENOIR DANY",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "VAPRIO",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "SHEIKH",
+    "country": "ITA",
+    "stud_fee_eur": 1500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ROMANESQUE",
+    "country": "ITA",
+    "stud_fee_eur": 1400.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "PICK KRONOS",
+    "country": "ITA",
+    "stud_fee_eur": 1200.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "UNICORN SLM",
+    "country": "ITA",
+    "stud_fee_eur": 1200.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TUONOBLU REX",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TEDO FKS",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "PERKINS GRIF",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "NAGLO",
+    "country": "SWE",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "LOUVRE",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "CHIEF ORLANDO",
+    "country": "NOR",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "DIABOLIK GIO",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ZILATH",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ZODIAC DANY GRIF",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "POGGIO WALTZ",
+    "country": "ITA",
+    "stud_fee_eur": 1000.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "SANSONE BAR",
+    "country": "ITA",
+    "stud_fee_eur": 600.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TINAMO JET",
+    "country": "ITA",
+    "stud_fee_eur": 500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "ENERGY KING GAR",
+    "country": "ITA",
+    "stud_fee_eur": 500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "GREAT KING WINE",
+    "country": "ITA",
+    "stud_fee_eur": 500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "TRILLO PARK",
+    "country": "ITA",
+    "stud_fee_eur": 500.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "UCONWAY",
+    "country": "ITA",
+    "stud_fee_eur": 0.0,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "RINGOSTARR TREB",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "NAPOLEON BAR",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "MANOFMANYMISSIONS",
+    "country": "USA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "SIX PACK",
+    "country": "USA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "LANGDON GRIF",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "LOVE YOU",
+    "country": "FRA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "ORLANDO VICI",
+    "country": "FRA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "UZO JOSSELYN",
+    "country": "FRA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "TRIXTON",
+    "country": "USA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "QUITE EASY",
+    "country": "USA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "OWEN CR",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "SING HALLELUJAH",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "DUBBIO AMLETICO",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "FOLLOW YOU",
+    "country": "FRA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "HOHNECK",
+    "country": "FRA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "IZOARD VEDAQUAIS",
+    "country": "FRA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "ROYALTY FOR LIFE",
+    "country": "USA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "HAMLETIAN DOUBT",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "MAGICIAN OF LOVE",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "PEACE OF THE RIO",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "da_concordare",
+    "season": "2026"
+  },
+  {
+    "name": "CUT ICE CREAMS",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": "Allevamento Folli, Mordano (BO)",
+    "stud_status": "active",
+    "season": "2026"
+  },
+  {
+    "name": "LUIS VARIETY",
+    "country": "ITA",
+    "stud_fee_eur": null,
+    "stud_farm": null,
+    "stud_status": "active",
+    "season": "2026"
+  }
+]
