@@ -381,8 +381,8 @@ export default function HorsePage() {
                     <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>{y.wins}</td>
                     <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.places}</td>
                     <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
-                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 70% 55%)" }}>{y.best_time ? `1.${(y.best_time / 10).toFixed(1)}` : "—"}</td>
-                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.avg_time ? `1.${(y.avg_time / 10).toFixed(1)}` : "—"}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 70% 55%)" }}>{y.best_time ? `1.${y.best_time.toFixed(1)}` : "—"}</td>
+                    <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.avg_time ? `1.${y.avg_time.toFixed(1)}` : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -424,7 +424,7 @@ export default function HorsePage() {
                   </div>
                   {r.time_km != null && (
                     <div className="tabular" style={{ fontSize: "11px", color: "hsl(183 70% 55%)", flexShrink: 0 }}>
-                      {(r.time_km / 10).toFixed(1)}s
+                      1'{Math.floor(r.time_km)}"{(r.time_km * 10 % 10).toFixed(0)}
                     </div>
                   )}
                   {r.prize_net != null && r.prize_net > 0 && (

@@ -30,7 +30,7 @@ export default function TopRacesPage() {
     try { return new Date(d).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" }); }
     catch { return d; }
   };
-  const fmtTime = (t: number) => t ? `1:${(t / 10).toFixed(1)}` : "—";
+  const fmtTime = (t: number) => t ? `1'${Math.floor(t)}"${(t * 10 % 10).toFixed(0)}` : "—";
 
   const views: { key: View; label: string; icon: string }[] = [
     { key: "topPrize", label: "Montepremi top", icon: "💰" },

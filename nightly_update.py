@@ -911,9 +911,21 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
 
         time_raw = tds[4].get_text(strip=True) if len(tds) > 4 else ""
         time_km = None
+        # Formato Trottoweb: M.SS.T (es. 1.14.8) -> decimale 14.8 (minuto implicito)
         m_time = re.match(r"(\d+)\.(\d+)\.(\d+)", time_raw)
         if m_time:
-            time_km = f"{m_time.group(1)}'{m_time.group(2)}\"{m_time.group(3)}"
+            minutes = int(m_time.group(1))
+            seconds = int(m_time.group(2))
+            tenths = int(m_time.group(3))
+            if minutes == 1:
+                time_km = seconds + tenths / 10.0
+            else:
+                time_km = (minutes * 60 + seconds + tenths / 10.0) - 60.0
+        else:
+            # Formato SS.T (es. 15.7) -> decimale diretto
+            m_time2 = re.match(r"^(\d+\.\d+)$", time_raw)
+            if m_time2:
+                time_km = float(time_raw)
 
         prize_raw = tds[6].get_text(strip=True) if len(tds) > 6 else "0"
         prize = _parse_float(prize_raw) if prize_raw not in ("---", "") else 0.0
@@ -2281,7 +2293,7 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     - Conta e logga le anomalie (orphan races, mismatch, duplicati)
     """
     print("\n[FASE QA] Controllo qualita dati...", file=sys.stderr)
-    report = {"stats_fixed": 0, "orphans": 0, "duplicates": 0, "no_rating": 0, "tracks_fixed": 0}
+    report = {"stats_fixed": 0, "orphans": 0, "duplicates": 0, "no_rating": 0, "tracks_fixed": 0, "times_normalized": 0}
 
     # 1) Ricalcola career_stats per i cavalli dove non combaciano
     mismatch = conn.execute("""
@@ -2416,6 +2428,41 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
                 print(f"    race_code non mappato: {u[0]!r} ({u[1]} gare)", file=sys.stderr)
     else:
         print("  [QA] Tutti i track sono nomi completi", file=sys.stderr)
+
+    # 7) Normalizza time_km: converte formato stringa (1'14"8) in decimale (14.8)
+    # Tutti i valori diventano REAL con formato SS.T (minuto implicito = 1')
+    string_times = conn.execute("""
+        SELECT COUNT(*) FROM races 
+        WHERE time_km LIKE "%'%"
+    """).fetchone()[0]
+    if string_times > 0:
+        print(f"  [QA] Normalizzazione time_km: {string_times} tempi in formato stringa", file=sys.stderr)
+        # Converte 1'14"8 -> 14.8 (secondi.tenthi con minuto implicito)
+        import re as _re
+        rows = conn.execute("SELECT rowid, time_km FROM races WHERE time_km LIKE \"%'%\"").fetchall()
+        fixed = 0
+        for rowid, t in rows:
+            t = str(t)
+            m = _re.match(r"(\d+)'(\d+)\"(\d+)", t)
+            if m:
+                # M'SS"T -> SS.T (minuto sempre 1, ignora M se > 1)
+                minutes = int(m.group(1))
+                seconds = int(m.group(2))
+                tenths = int(m.group(3))
+                if minutes == 1:
+                    decimal_val = seconds + tenths / 10.0
+                else:
+                    # Per minuti > 1, converti in secondi totali - 60 (formato SS.T)
+                    total_sec = minutes * 60 + seconds + tenths / 10.0
+                    decimal_val = total_sec - 60.0
+                conn.execute("UPDATE races SET time_km = ? WHERE rowid = ?", (decimal_val, rowid))
+                fixed += 1
+        conn.commit()
+        report["times_normalized"] = fixed
+        print(f"  [QA] {fixed} tempi normalizzati da stringa a decimale", file=sys.stderr)
+    else:
+        print("  [QA] Tutti i time_km sono in formato decimale", file=sys.stderr)
+        report["times_normalized"] = 0
 
     print(f"  [QA] Report: {report}", file=sys.stderr)
     return report
