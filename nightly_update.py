@@ -2039,6 +2039,235 @@ def phase_seed_vp(conn: sqlite3.Connection):
         print(f"[SEED_VP] WARN: seed fallito: {e}", file=sys.stderr)
 
 
+# ─────────────────────────────────────────────
+# FASE 0b: GARE FUTURE (hPart.php) — partenti + recupero cavalli nuovi
+# ─────────────────────────────────────────────
+HPART_URL = "https://www.trottoweb.it/TrottoWeb/php_resp/hPart.php"
+HNUM_URL  = "https://www.trottoweb.it/TrottoWeb/php_resp/hNum.php"
+
+_MONTHS_IT = {
+    "Gennaio": 1, "Febbraio": 2, "Marzo": 3, "Aprile": 4,
+    "Maggio": 5, "Giugno": 6, "Luglio": 7, "Agosto": 8,
+    "Settembre": 9, "Ottobre": 10, "Novembre": 11, "Dicembre": 12,
+}
+_TRACK_CODES = {
+    "BOLOGNA": "BO", "MILANO": "MI", "ROMA": "RM", "TORINO": "TO",
+    "NAPOLI": "NA", "CESENA": "CE", "SIRACUSA": "SR", "TREVISO": "TV",
+    "MONTECATINI": "MT", "CASARANO": "CS", "PALERMO": "PA", "MODENA": "MO",
+    "FIRENZE": "FI", "BARI": "BA", "VARESE": "VA", "GARIGLIANO": "GA",
+    "PONTECAGNANO": "PA", "PADOVA": "PD", "VILLANOVA": "VI",
+    "CASTELLUCCIO": "CT", "ANCONA": "AN", "TRIESTE": "TS",
+    "FROSINONE": "FR", "SAN SEVERO": "SS",
+}
+
+
+def _parse_date_it(text: str) -> str:
+    text = text.strip()
+    parts = text.split()
+    if len(parts) < 2:
+        return ""
+    try:
+        day = int(parts[0])
+    except ValueError:
+        return ""
+    month = _MONTHS_IT.get(parts[1], 0)
+    if month == 0:
+        return ""
+    year = datetime.now().year
+    from datetime import date as _date
+    rd = _date(year, month, day)
+    if rd < _date.today():
+        rd = _date(year + 1, month, day)
+    return rd.isoformat()
+
+
+def _track_code(name: str) -> str:
+    name = name.upper().strip()
+    return _TRACK_CODES.get(name, name[:3] if name else "???")
+
+
+def _fetch_meetings_list() -> list:
+    """Legge hNum.php e restituisce [(date, track_name), ...] per i meeting futuri."""
+    soup = fetch_url(HNUM_URL)
+    if not soup:
+        return []
+    meetings = []
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        m = re.search(r"data=(\d{4}-\d{2}-\d{2})&ippodromo=([^&\"]+)", href)
+        if m:
+            date_str = m.group(1).strip()
+            track_name = m.group(2).strip()
+            if date_str >= datetime.now().strftime("%Y-%m-%d"):
+                meetings.append((date_str, track_name))
+    seen = set()
+    unique = []
+    for d, t in meetings:
+        key = f"{d}_{t}"
+        if key not in seen:
+            seen.add(key)
+            unique.append((d, t))
+    return unique
+
+
+def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
+    """Parse hPart.php per un ippodromo+data. Restituisce lista di entry dict."""
+    entries = []
+
+    # Se track/race_date non sono passati, proviamo a recuperarli dalla pagina
+    if not track or not race_date:
+        for div in soup.find_all("div", class_="ippodromo_part"):
+            spans = div.find_all("span")
+            if len(spans) >= 2:
+                track = _track_code(spans[0].get_text(strip=True))
+                race_date = _parse_date_it(spans[1].get_text(strip=True))
+                break
+
+    if not track or not race_date:
+        return []
+
+    for table in soup.find_all("table", id="tabella_partenti"):
+        # Trova l'ora della gara: cercha il div ora_corsa piu vicino
+        race_time = ""
+        parent = table.find_parent("div", id=True)
+        if parent:
+            ora_div = parent.find("div", class_=["ora_corsa", "ora_corsa_beige"])
+            if ora_div:
+                race_time = ora_div.get_text(strip=True)
+
+        for tr in table.find_all("tr"):
+            td_num = tr.find("td", class_="num_part")
+            td_name = tr.find("td", class_="nome_cav")
+            if not td_num or not td_name:
+                continue
+            a = td_name.find("a")
+            if not a:
+                continue
+            horse_name = _normalize_name(a.get_text(strip=True))
+            start_pos = None
+            try:
+                start_pos = int(td_num.get_text(strip=True))
+            except ValueError:
+                pass
+            if not horse_name or horse_name == "NON PARTENTE":
+                continue
+            entries.append({
+                "track": track,
+                "race_date": race_date,
+                "race_time": race_time,
+                "horse_name": horse_name,
+                "start_pos": start_pos,
+            })
+    return entries
+
+
+def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
+    """
+    FASE 0b: Recupera i partenti delle prossime gare da Trottoweb (hPart.php).
+    Per ogni cavallo non presente nel DB, recupera carriera + genealogia da cavAn.php.
+    Popola la tabella upcoming_races.
+    """
+    print("\n[FASE 0b] Recupero partenti gare future...", file=sys.stderr)
+
+    # Crea la tabella se non esiste
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS upcoming_races (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            track TEXT NOT NULL,
+            race_date TEXT NOT NULL,
+            race_time TEXT NOT NULL,
+            horse_name TEXT NOT NULL,
+            driver TEXT,
+            start_pos INTEGER,
+            distance INTEGER,
+            fetched_at TEXT NOT NULL,
+            UNIQUE(track, race_date, race_time, horse_name)
+        )
+    """)
+    conn.commit()
+
+    # Pulisci gare passate
+    conn.execute("DELETE FROM upcoming_races WHERE race_date < date('now')")
+    conn.commit()
+
+    all_entries = []
+
+    # 1) Pagina principale di hPart.php (gare piu vicine, gia pubblicate)
+    print("  [hPart] Recupero pagina principale...", file=sys.stderr)
+    soup = fetch_url(HPART_URL)
+    if soup:
+        main_entries = _parse_hpart_soup(soup, "", "")
+        print(f"  [hPart] {len(main_entries)} partenti dalla pagina principale", file=sys.stderr)
+        all_entries.extend(main_entries)
+
+    # 2) Meeting futuri da hNum.php
+    meetings = _fetch_meetings_list()
+    print(f"  [hNum] {len(meetings)} meeting futuri trovati", file=sys.stderr)
+    for date_str, track_name in meetings:
+        track = _track_code(track_name)
+        # Salta se abbiamo gia gli entry per questo track+date dalla pagina principale
+        already = any(e["track"] == track and e["race_date"] == date_str for e in all_entries)
+        if already:
+            continue
+        soup = fetch_url(HPART_URL, params={"data": date_str, "ippodromo": track_name})
+        if soup:
+            entries = _parse_hpart_soup(soup, track, date_str)
+            if entries:
+                print(f"  [hPart] {date_str} {track_name}: {len(entries)} partenti", file=sys.stderr)
+                all_entries.extend(entries)
+            else:
+                print(f"  [hPart] {date_str} {track_name}: partenti non ancora pubblicati", file=sys.stderr)
+
+    if not all_entries:
+        print("  [FASE 0b] Nessun partente trovato.", file=sys.stderr)
+        return 0, 0
+
+    # 3) Controlla quali cavalli non sono nel DB e recuperane carriera + genealogia
+    unknown = set()
+    for e in all_entries:
+        exists = conn.execute(
+            "SELECT 1 FROM horses WHERE name = ? LIMIT 1", (e["horse_name"],)
+        ).fetchone()
+        if not exists:
+            unknown.add(e["horse_name"])
+
+    print(f"  [FASE 0b] {len(unknown)} cavalli nuovi da recuperare su {len(all_entries)} partenti", file=sys.stderr)
+
+    new_horses = 0
+    for name in unknown:
+        print(f"    [cavAn] Recupero carriera: {name}", file=sys.stderr)
+        inserted = _fetch_and_insert_full_career(conn, name)
+        if inserted > 0:
+            new_horses += 1
+            print(f"    [cavAn] {name}: {inserted} gare inserite", file=sys.stderr)
+        time.sleep(0.5)  # rispetto per la fonte
+
+    # 4) Inserisci i partenti in upcoming_races
+    now = datetime.utcnow().isoformat()
+    inserted_races = 0
+    for e in all_entries:
+        cur = conn.execute(
+            """INSERT INTO upcoming_races (track, race_date, race_time, horse_name, start_pos, fetched_at)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(track, race_date, race_time, horse_name) DO UPDATE SET
+                 start_pos=excluded.start_pos, fetched_at=excluded.fetched_at""",
+            (e["track"], e["race_date"], e["race_time"], e["horse_name"],
+             e.get("start_pos"), now)
+        )
+        if cur.rowcount == 1:
+            inserted_races += 1
+    conn.commit()
+
+    total = conn.execute("SELECT COUNT(*) FROM upcoming_races").fetchone()[0]
+    events = conn.execute(
+        "SELECT COUNT(DISTINCT track || race_date || race_time) FROM upcoming_races"
+    ).fetchone()[0]
+    print(f"  [FASE 0b] {inserted_races} partenti inseriti, {new_horses} cavalli nuovi recuperati", file=sys.stderr)
+    print(f"  [FASE 0b] Totale DB: {total} partenti, {events} eventi gara", file=sys.stderr)
+
+    return new_horses, inserted_races
+
+
 def main():
     # NIGHTLY_MODE: "results" (gare mancanti + cavalli nuovi trovati lì),
     #               "maintenance" (aggiorna/backfilla cavalli già esistenti),
@@ -2058,6 +2287,11 @@ def main():
 
     try:
         phase_seed_vp(conn)  # seed VP hardcoded se tabella vuota
+
+        # FASE 0b: partenti gare future + recupero cavalli nuovi (sempre)
+        up_horses, up_races = phase_fetch_upcoming_races(conn)
+        new_horses += up_horses
+        new_races  += up_races
 
         if mode in ("results", "full"):
             r_horses, r_races = phase_results(conn)   # FASE 0: risultati hRis.php (+ catch-up cavalli nuovi)
