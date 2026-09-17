@@ -892,6 +892,12 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
 
         race_date = m_date.group(1)
         track     = (m_ippod.group(1) if m_ippod else "").upper()
+        # Preferisci il codice track dal testo display (es. "3^ RO") invece del
+        # parametro ippod= (che a volte e' un codice provincia diverso, es. RM invece di RO)
+        track_text = tds[1].get_text(strip=True) if len(tds) > 1 else ""
+        m_track = re.search(r"\^\s*([A-Z]{2,3})\s*$", track_text)
+        if m_track:
+            track = m_track.group(1)
         codice    = m_cod.group(1) if m_cod else ""
         n_corsa   = m_nc.group(1) if m_nc else ""
 
@@ -2275,7 +2281,7 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     - Conta e logga le anomalie (orphan races, mismatch, duplicati)
     """
     print("\n[FASE QA] Controllo qualita dati...", file=sys.stderr)
-    report = {"stats_fixed": 0, "orphans": 0, "duplicates": 0, "no_rating": 0}
+    report = {"stats_fixed": 0, "orphans": 0, "duplicates": 0, "no_rating": 0, "tracks_fixed": 0}
 
     # 1) Ricalcola career_stats per i cavalli dove non combaciano
     mismatch = conn.execute("""
@@ -2354,6 +2360,62 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     impossible = conn.execute("SELECT COUNT(*) FROM horses WHERE career_wins > career_races").fetchone()[0]
     if impossible > 0:
         print(f"  [QA] ATTENZIONE: {impossible} cavalli con wins > races", file=sys.stderr)
+
+    # 6) Normalizza i track: converte codici 2-lettere in nomi completi
+    # e riempie track vuoti dal race_code
+    _TRACK_CODE_MAP = {
+        # Codici display -> nome completo
+        'NA': 'NAPOLI', 'BO': 'BOLOGNA', 'RO': 'ROMA', 'PA': 'PALERMO',
+        'AV': 'AVERSA', 'TA': 'TARANTO', 'MG': 'MONTEGIORGIO', 'TO': 'TORINO',
+        'CS': 'CASTELLUCCIO', 'MI': 'MILANO', 'FI': 'FIRENZE', 'SI': 'SIRACUSA',
+        'MO': 'MODENA', 'PD': 'PADOVA', 'CE': 'CESENA', 'GA': 'GARIGLIANO',
+        'TV': 'TREVISO', 'MC': 'MONTECATINI', 'FO': 'FOLLONICA', 'VI': 'VILLANOVA',
+        'TS': 'TRIESTE', 'PC': 'PONTECAGNANO', 'CA': 'CASARANO', 'CV': 'CIVITANOVA',
+        'FE': 'FERRARA', 'PS': 'PRATO',
+        # Codici ippod (cavAn.php) che differiscono dai display
+        'RM': 'ROMA', 'SC': 'SIRACUSA', 'PV': 'PADOVA', 'FG': 'CASTELLUCCIO',
+        'FA': 'GARIGLIANO', 'MR': 'MONTEGIORGIO', 'AL': 'VILLANOVA',
+        'SG': 'PRATO', 'CN': 'CASARANO',
+        'ES': 'ESTERO',
+    }
+
+    # Conta track da normalizzare
+    short_tracks = conn.execute("""
+        SELECT COUNT(*) FROM races 
+        WHERE length(track) <= 3 AND track != ''
+    """).fetchone()[0]
+    empty_tracks = conn.execute("""
+        SELECT COUNT(*) FROM races WHERE track = '' OR track IS NULL
+    """).fetchone()[0]
+    print(f"  [QA] Track da normalizzare: {short_tracks} codici brevi, {empty_tracks} vuoti", file=sys.stderr)
+
+    if short_tracks > 0 or empty_tracks > 0:
+        # 1. Converte codici 2-lettere in nomi completi
+        for code, full_name in _TRACK_CODE_MAP.items():
+            conn.execute("UPDATE races SET track = ? WHERE track = ?", (full_name, code))
+        
+        # 2. Riempie track vuoti dal race_code (che contiene il codice ippod)
+        for code, full_name in _TRACK_CODE_MAP.items():
+            conn.execute("UPDATE races SET track = ? WHERE (track = '' OR track IS NULL) AND race_code = ?", (full_name, code))
+        
+        conn.commit()
+        
+        # Verifica residui
+        still_empty = conn.execute("SELECT COUNT(*) FROM races WHERE track = '' OR track IS NULL").fetchone()[0]
+        still_short = conn.execute("SELECT COUNT(*) FROM races WHERE length(track) <= 3 AND track != ''").fetchone()[0]
+        report["tracks_fixed"] = short_tracks + empty_tracks - still_empty - still_short
+        print(f"  [QA] Track normalizzati. Residui: {still_empty} vuoti, {still_short} codici brevi", file=sys.stderr)
+        if still_empty > 0:
+            # Mostra quali race_code non sono mappati
+            unknown = conn.execute("""
+                SELECT race_code, COUNT(*) as cnt FROM races 
+                WHERE track = '' OR track IS NULL
+                GROUP BY race_code ORDER BY cnt DESC LIMIT 10
+            """).fetchall()
+            for u in unknown:
+                print(f"    race_code non mappato: {u[0]!r} ({u[1]} gare)", file=sys.stderr)
+    else:
+        print("  [QA] Tutti i track sono nomi completi", file=sys.stderr)
 
     print(f"  [QA] Report: {report}", file=sys.stderr)
     return report
