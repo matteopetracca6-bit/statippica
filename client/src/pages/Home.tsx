@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import HorseSearchBar from "../components/HorseSearchBar";
@@ -7,7 +7,7 @@ import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { getFlag } from "@/lib/flags";
 import {
-  Users, Flag, TrendingUp, Search, ChevronRight, Trophy, Dna, GitCompare,
+  Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
   BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin
 } from "lucide-react";
 
@@ -149,20 +149,17 @@ export default function Home() {
         <div style={{ position: "relative", maxWidth: "1200px", margin: "0 auto" }}>
           {/* Title */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px" }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: "12px",
-              background: "linear-gradient(135deg, hsl(183 80% 45%), hsl(200 80% 35%))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 4px 20px hsl(183 80% 40% / 0.3)",
-            }}>
-              <TrendingUp size={26} style={{ color: "hsl(220 20% 98%)" }} />
-            </div>
+            <img
+              src="./statippica-logo.png"
+              alt="StatIppica"
+              style={{ width: 56, height: 56, borderRadius: "12px", objectFit: "cover", boxShadow: "0 4px 20px hsl(183 80% 40% / 0.3)" }}
+            />
             <div>
               <h1 style={{ fontSize: "32px", fontWeight: 800, color: "hsl(210 20% 96%)", letterSpacing: "-0.02em", margin: 0, lineHeight: 1.1 }}>
                 StatIppica
               </h1>
-              <p style={{ fontSize: "13px", color: "hsl(210 10% 55%)", margin: "2px 0 0", letterSpacing: "0.04em" }}>
-                Il trotto italiano analizzato con l'intelligenza artificiale
+              <p style={{ fontSize: "14px", color: "hsl(183 60% 55%)", margin: "2px 0 0", letterSpacing: "0.04em", fontWeight: 500 }}>
+                Dati all'ippica
               </p>
             </div>
           </div>
@@ -172,30 +169,21 @@ export default function Home() {
             <HorseSearchBar placeholder="Cerca un cavallo per nome..." />
           </div>
 
-          {/* Quick links */}
-          <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            {[
-              { href: "/leaderboard", icon: Trophy, label: "Leaderboard", color: "hsl(51 80% 55%)" },
-              { href: "/stallioni", icon: BookOpen, label: "Catalogo Stalloni", color: "hsl(183 80% 55%)" },
-              { href: "/advisor", icon: Dna, label: "Advisor", color: "hsl(120 60% 50%)" },
-              { href: "/compare", icon: GitCompare, label: "Comparazione", color: "hsl(30 80% 55%)" },
-            ].map(({ href, icon: Icon, label, color }) => (
-              <Link key={href} href={href}>
-                <a style={{
-                  display: "inline-flex", alignItems: "center", gap: "6px",
-                  background: "hsl(220 12% 12%)", border: "1px solid hsl(220 10% 18%)",
-                  borderRadius: "8px", padding: "8px 14px", textDecoration: "none",
-                  fontSize: "12px", fontWeight: 600, color: "hsl(210 10% 70%)",
-                  transition: "all 0.15s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "hsl(220 12% 16%)"; e.currentTarget.style.color = color; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "hsl(220 12% 12%)"; e.currentTarget.style.color = "hsl(210 10% 70%)"; }}
-                >
-                  <Icon size={14} style={{ color }} />
-                  {label}
-                </a>
-              </Link>
-            ))}
+          {/* Esplora — navigation cards */}
+          <div style={{ marginTop: "28px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
+              Esplora
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
+              <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
+              <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stallioni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(183 80% 55%)" />
+              <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(120 60% 50%)" />
+              <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
+              <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />
+              <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(280 60% 60%)" />
+              <NavCard href="/top" icon={Award} title="Top Gare" desc="Le gare piu ricche, i tempi piu veloci, le sorprese e i dominatori" color="hsl(0 60% 55%)" />
+              <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(160 60% 50%)" />
+            </div>
           </div>
         </div>
       </div>
@@ -336,23 +324,6 @@ export default function Home() {
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* ─── NAVIGATION CARDS ─── */}
-      <div style={{ padding: "20px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
-        <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-          Esplora
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
-          <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
-          <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stallioni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(183 80% 55%)" />
-          <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(120 60% 50%)" />
-          <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
-          <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />
-          <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(280 60% 60%)" />
-          <NavCard href="/top" icon={Award} title="Top Gare" desc="Le gare piu ricche, i tempi piu veloci, le sorprese e i dominatori" color="hsl(0 60% 55%)" />
-          <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(160 60% 50%)" />
         </div>
       </div>
 
