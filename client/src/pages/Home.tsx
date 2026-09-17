@@ -118,33 +118,9 @@ export default function Home() {
   const orderedGrades = GRADE_ORDER.map(g => ({ grade: g, cnt: stats?.gradeDist.find(d => d.grade === g)?.cnt ?? 0 }));
 
   // Top stallions by final_score (take top 6 with offspring data)
-  const topStallions = useMemo(() => {
-    if (!stallions) return [];
-    return stallions
-      .filter(s => s.final_score != null && s.n_figli_totali && s.n_figli_totali > 0)
-      .slice(0, 6);
-  }, [stallions]);
-
-  // Recent years for earnings chart (last 10)
-  const earningsChart = useMemo(() => {
-    if (!trends?.earningsByYear) return [];
-    return trends.earningsByYear
-      .filter(e => e.birth_year >= 2014)
-      .sort((a, b) => a.birth_year - b.birth_year)
-      .slice(-10);
-  }, [trends]);
-
-  // Race counts by year
-  const racesChart = useMemo(() => {
-    if (!trends?.racesByYear) return [];
-    return trends.racesByYear
-      .filter(r => r.race_year >= 2015)
-      .sort((a, b) => a.race_year - b.race_year)
-      .slice(-8);
-  }, [trends]);
-
-  const maxEarning = earningsChart.length > 0 ? Math.max(...earningsChart.map(e => e.avg_earn)) : 1;
-  const maxRaces = racesChart.length > 0 ? Math.max(...racesChart.map(r => r.n_races)) : 1;
+  const topStallions = stallions
+    ? stallions.filter(s => s.final_score != null && s.n_figli_totali && s.n_figli_totali > 0).slice(0, 6)
+    : [];
 
   return (
     <div style={{ minHeight: "100%", paddingBottom: "40px" }}>
@@ -288,12 +264,13 @@ export default function Home() {
                       <div style={{ flex: 1, height: "22px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden", position: "relative" }}>
                         <div style={{
                           height: "100%", width: `${Math.max(pct, 1)}%`,
-                          background: `linear-gradient(90deg, ${GRADE_COLORS[grade]}88, ${GRADE_COLORS[grade]})`,
+                          background: GRADE_COLORS[grade],
                           borderRadius: "4px", transition: "width 0.8s cubic-bezier(0.16,1,0.3,1)",
                         }} />
                         <span className="tabular" style={{
                           position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)",
-                          fontSize: "11px", fontWeight: 600, color: "hsl(210 10% 70%)",
+                          fontSize: "11px", fontWeight: 700, color: "#fff",
+                          textShadow: "0 1px 3px rgba(0,0,0,0.6)",
                         }}>
                           {cnt.toLocaleString("it-IT")} ({pct.toFixed(1)}%)
                         </span>
@@ -362,93 +339,20 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── CHARTS ROW: Earnings over time + Races per year ─── */}
-      <div style={{ padding: "16px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-
-          {/* Earnings by year chart */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "14px", padding: "22px 24px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-              <Coins size={16} style={{ color: "hsl(51 80% 55%)" }} />
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Guadagni medi per generazione
-              </span>
-            </div>
-            {!trends ? (
-              <div className="skeleton" style={{ height: "140px", borderRadius: "8px" }} />
-            ) : earningsChart.length === 0 ? (
-              <div style={{ height: "140px", display: "flex", alignItems: "center", justifyContent: "center", color: "hsl(210 8% 40%)", fontSize: "13px" }}>Nessun dato</div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "140px" }}>
-                {earningsChart.map((e, i) => {
-                  const h = (e.avg_earn / maxEarning) * 100;
-                  return (
-                    <div key={e.birth_year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", width: "100%" }}>
-                        <div
-                          title={`${e.birth_year}: €${Math.round(e.avg_earn).toLocaleString("it-IT")} (${e.cnt} cavalli)`}
-                          style={{
-                            width: "100%", height: `${Math.max(h, 3)}%`,
-                            background: `linear-gradient(180deg, hsl(51 80% 55%), hsl(40 70% 45%))`,
-                            borderRadius: "4px 4px 0 0", transition: "height 0.8s cubic-bezier(0.16,1,0.3,1)",
-                            cursor: "pointer", opacity: 0.85,
-                          }}
-                          onMouseEnter={ev => ev.currentTarget.style.opacity = "1"}
-                          onMouseLeave={ev => ev.currentTarget.style.opacity = "0.85"}
-                        />
-                      </div>
-                      <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{e.birth_year}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Races per year chart */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "14px", padding: "22px 24px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-              <Flag size={16} style={{ color: "hsl(183 60% 55%)" }} />
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Gare per anno
-              </span>
-            </div>
-            {!trends ? (
-              <div className="skeleton" style={{ height: "140px", borderRadius: "8px" }} />
-            ) : racesChart.length === 0 ? (
-              <div style={{ height: "140px", display: "flex", alignItems: "center", justifyContent: "center", color: "hsl(210 8% 40%)", fontSize: "13px" }}>Nessun dato</div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "140px" }}>
-                {racesChart.map((r, i) => {
-                  const h = (r.n_races / maxRaces) * 100;
-                  return (
-                    <div key={r.race_year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", width: "100%" }}>
-                        <div
-                          title={`${r.race_year}: ${r.n_races.toLocaleString("it-IT")} gare (premio medio €${Math.round(r.avg_prize).toLocaleString("it-IT")})`}
-                          style={{
-                            width: "100%", height: `${Math.max(h, 3)}%`,
-                            background: `linear-gradient(180deg, hsl(183 70% 50%), hsl(200 60% 40%))`,
-                            borderRadius: "4px 4px 0 0", transition: "height 0.8s cubic-bezier(0.16,1,0.3,1)",
-                            cursor: "pointer", opacity: 0.85,
-                          }}
-                          onMouseEnter={ev => ev.currentTarget.style.opacity = "1"}
-                          onMouseLeave={ev => ev.currentTarget.style.opacity = "0.85"}
-                        />
-                      </div>
-                      <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{r.race_year}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+      {/* ─── NAVIGATION CARDS ─── */}
+      <div style={{ padding: "20px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
+          Esplora
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
+          <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
+          <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stallioni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(183 80% 55%)" />
+          <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(120 60% 50%)" />
+          <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
+          <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />
+          <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(280 60% 60%)" />
+          <NavCard href="/top" icon={Award} title="Top Gare" desc="Le gare piu ricche, i tempi piu veloci, le sorprese e i dominatori" color="hsl(0 60% 55%)" />
+          <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(160 60% 50%)" />
         </div>
       </div>
 
@@ -554,22 +458,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── NAVIGATION CARDS ─── */}
-      <div style={{ padding: "20px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
-        <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-          Esplora
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
-          <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
-          <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stalloni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(183 80% 55%)" />
-          <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(120 60% 50%)" />
-          <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
-          <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />
-          <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(280 60% 60%)" />
-          <NavCard href="/top" icon={Award} title="Top Gare" desc="Le gare piu ricche, i tempi piu veloci, le sorprese e i dominatori" color="hsl(0 60% 55%)" />
-          <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(160 60% 50%)" />
-        </div>
-      </div>
 
       {/* ─── TOP PRIZE RACES ─── */}
       <div style={{ padding: "20px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
