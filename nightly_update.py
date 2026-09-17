@@ -95,6 +95,9 @@ PARENT_MIN_RACE_DATE = os.environ.get("PARENT_MIN_RACE_DATE", "2000-01-01")
 BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_BATCH_SIZE", "250"))
 # Dopo quanti giorni un cavallo già "done" viene ricontrollato (Trottoweb può correggere dati vecchi)
 REBACKFILL_DAYS = int(os.environ.get("REBACKFILL_DAYS", "180"))
+# Backfill storico: fase dedicata al recupero gare pre-2019 per cavalli con buchi
+HISTORICAL_BATCH_SIZE = int(os.environ.get("HISTORICAL_BATCH_SIZE", "400"))
+HISTORICAL_CUTOFF_YEAR = int(os.environ.get("HISTORICAL_CUTOFF_YEAR", "2018"))
 
 SESSION = requests.Session()
 SESSION.headers.update({
@@ -1378,6 +1381,50 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
     return horses_backfilled, new_races_found
 
 # ─────────────────────────────────────────────
+# FASE 2b2 — BACKFILL STORICO (gare pre-2019)
+# ─────────────────────────────────────────────
+def phase_historical_backfill(conn: sqlite3.Connection) -> tuple[int, int]:
+    """
+    Recupera le gare storiche (pre-2019) mancanti per cavalli nati prima del 2018.
+    cavAn.php restituisce fino a ~200 gare per cavallo, quindi per i cavalli
+    attivi con carriere lunghe, le gare piu' vecchie potrebbero non essere mai
+    state scaricate. Questa fase priorizza proprio quei cavalli.
+    """
+    print("[HISTORICAL] Ricerca cavalli con buchi pre-2019...", file=sys.stderr)
+
+    # Trova cavalli nati prima del 2018 con poche gare pre-2019
+    # che non sono gia' stati controllati di recente
+    cutoff_date = f"{HISTORICAL_CUTOFF_YEAR + 1}-01-01"  # es. 2019-01-01
+    horses = conn.execute("""
+        SELECT h.name, h.birth_year,
+               (SELECT COUNT(*) FROM races r WHERE r.horse_name = h.name AND r.race_date < ?) as old_races
+        FROM horses h
+        WHERE h.birth_year IS NOT NULL AND h.birth_year <= ?
+          AND COALESCE(h.source_role, '') <> 'parent_backfill'
+          AND (h.backfill_status IS NULL OR h.backfill_status = 'pending')
+        ORDER BY old_races ASC, h.name ASC
+        LIMIT ?
+    """, (cutoff_date, HISTORICAL_CUTOFF_YEAR, HISTORICAL_BATCH_SIZE)).fetchall()
+
+    print(f"[HISTORICAL] Cavalli da controllare: {len(horses)} (batch: {HISTORICAL_BATCH_SIZE})", file=sys.stderr)
+
+    total_new = 0
+    horses_updated = 0
+
+    for i, (name, birth_year, old_count) in enumerate(horses, 1):
+        inserted = _fetch_and_insert_full_career(conn, name, birth_year)
+        _mark_backfilled(conn, name)
+        if inserted > 0:
+            total_new += inserted
+            horses_updated += 1
+            print(f"  [HIST] {name} (nato {birth_year}): +{inserted} gare (aveva {old_count} pre-{HISTORICAL_CUTOFF_YEAR+1})", file=sys.stderr)
+        if i % 50 == 0:
+            print(f"  ... {i}/{len(horses)} cavalli controllati ({total_new} gare recuperate)", file=sys.stderr)
+
+    print(f"[HISTORICAL] Cavalli aggiornati: {horses_updated}, gare recuperate: {total_new}", file=sys.stderr)
+    return horses_updated, total_new
+
+# ─────────────────────────────────────────────
 # FASE 2c — COPERTURA GENITORI
 # Fattrici e stalloni citati come padre/madre di cavalli presenti nel DB, ma
 # senza una propria riga in `horses` (o senza carriera): finché mancano, non
@@ -2502,8 +2549,9 @@ def main():
         if mode in ("maintenance", "full"):
             u_updated, u_races = phase_update(conn)         # FASE 2: aggiorna cavalli attivi
             b_horses, b_races  = phase_backfill_gaps(conn)  # FASE 2b: colma buchi storici cavalli esistenti
+            h_horses, h_races  = phase_historical_backfill(conn)  # FASE 2b2: recupera gare pre-2019
             p_parents, p_races = phase_parents_coverage(conn)  # FASE 2c: fattrici/stalloni mancanti
-            new_races          += u_races + b_races + p_races
+            new_races          += u_races + b_races + h_races + p_races
             new_horses         += p_parents
             horses_updated      = u_updated
             horses_backfilled   = b_horses
