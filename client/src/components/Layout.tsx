@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Home as HomeIcon } from "lucide-react";
 import logoHorse from "@assets/statippica-logo.png";
+import Wordmark from "./Wordmark";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,21 +30,7 @@ export default function Layout({ children }: LayoutProps) {
       }}>
         <Link href="/">
           <a style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
-            <img
-              src={logoHorse}
-              width={30}
-              height={30}
-              alt="StatIppica"
-              style={{ objectFit: "contain", borderRadius: "50%" }}
-            />
-            <span style={{
-              fontWeight: 800,
-              fontSize: "15px",
-              color: "hsl(210 10% 94%)",
-              letterSpacing: "0.01em",
-            }}>
-              StatIppica
-            </span>
+            <Wordmark size={17} withLogo logoSrc={logoHorse} logoSize={30} />
           </a>
         </Link>
         <Link href="/">

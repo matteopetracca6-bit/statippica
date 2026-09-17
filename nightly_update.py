@@ -143,6 +143,8 @@ HISTORICAL_BATCH_SIZE = int(os.environ.get("HISTORICAL_BATCH_SIZE", "400"))
 UNDATED_BATCH_SIZE = int(os.environ.get("UNDATED_BATCH_SIZE", "500"))
 # Per quanti giorni non riprovare un cavallo gia' tentato senza successo
 UNDATED_RETRY_DAYS = int(os.environ.get("UNDATED_RETRY_DAYS", "45"))
+# Quante giornate future sondare per i partenti (la fonte pubblica 2-3 giorni prima)
+UPCOMING_DAYS = int(os.environ.get("UPCOMING_DAYS", "7"))
 HISTORICAL_CUTOFF_YEAR = int(os.environ.get("HISTORICAL_CUTOFF_YEAR", "2018"))
 
 SESSION = requests.Session()
@@ -2513,6 +2515,38 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
                 all_entries.extend(entries)
             else:
                 print(f"  [hPart] {date_str} {track_name}: partenti non ancora pubblicati", file=sys.stderr)
+
+    # 2b) Giornate imminenti: hNum.php elenca i convegni da qualche giorno in
+    # avanti, ma non le giornate piu' vicine, e la pagina principale di
+    # hPart.php ne mostra una sola. Risultato: con i partenti gia' pubblicati
+    # per tre giornate, ne vedevamo una. Qui chiediamo esplicitamente giorno per
+    # giorno e ippodromo per ippodromo, perche' hPart.php senza ippodromo non
+    # risponde nulla.
+    today = datetime.now().date()
+    known_tracks = sorted(set(TRACK_CODE_MAP.values()) - {"ESTERO"})
+    covered = {(e["race_date"], e["track"]) for e in all_entries}
+    probed = found_days = 0
+    for day_offset in range(0, UPCOMING_DAYS):
+        date_str = (today + timedelta(days=day_offset)).strftime("%Y-%m-%d")
+        day_entries = 0
+        for track_name in known_tracks:
+            code = _track_code(track_name)
+            if (date_str, code) in covered:
+                continue
+            soup = fetch_url(HPART_URL, params={"data": date_str, "ippodromo": track_name})
+            probed += 1
+            if not soup:
+                continue
+            entries = _parse_hpart_soup(soup, code, date_str)
+            if entries:
+                all_entries.extend(entries)
+                covered.add((date_str, code))
+                day_entries += len(entries)
+                print(f"  [hPart] {date_str} {track_name}: {len(entries)} partenti", file=sys.stderr)
+        if day_entries:
+            found_days += 1
+    print(f"  [hPart] Giornate imminenti controllate: {UPCOMING_DAYS} "
+          f"({probed} richieste, {found_days} con partenti pubblicati)", file=sys.stderr)
 
     if not all_entries:
         print("  [FASE 0b] Nessun partente trovato.", file=sys.stderr)

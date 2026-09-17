@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
@@ -63,7 +63,10 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [expandedRace, setExpandedRace] = useState<string | null>(null);
 
-  useState(() => {
+  // Era `useState(() => ...)`: funzionava per caso, perche' React esegue quella
+  // funzione una volta sola per calcolare il valore iniziale. Il posto giusto
+  // per una chiamata di rete e' useEffect.
+  useEffect(() => {
     apiRequest("GET", "/api/calendar?limit=100")
       .then(r => r.json())
       .then(d => {
@@ -75,7 +78,7 @@ export default function CalendarPage() {
         }
       })
       .catch(() => setLoading(false));
-  });
+  }, []);
 
   const raceKey = (r: RaceEvent) => `${r.track}-${r.race_date}-${r.race_time}`;
 

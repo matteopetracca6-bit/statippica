@@ -552,16 +552,42 @@ export function registerRoutes(httpServer: Server, app: Express) {
   app.get("/api/stallions", (_req, res) => {
     const db = getDb();
     try {
+      // Partiamo dagli stalloni VALUTATI (stallion_rating_stats), non dal
+      // catalogo commerciale: il catalogo contiene solo chi e' in monta nella
+      // stagione corrente, mentre il sito deve poter mostrare ogni stallone di
+      // cui conosciamo la produzione. Prima la pagina ne vedeva 153 su 545.
+      // Il catalogo resta agganciato per tassa di monta, allevamento e stato.
       const rows = db.prepare(`
-        SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
-               s.country, s.season, s.fee_source,
-               sr.avg_score, sr.final_score, sr.grade,
-               sr.n_figli_totali, sr.n_in_corsa, sr.pct_top_S, sr.vp_boost,
-               COALESCE(s.country, sp.nationality) AS nationality
+        SELECT * FROM (
+        SELECT
+          COALESCE(s.name, sr.sire)                         AS name,
+          s.stud_fee_eur, s.stud_farm, s.stud_status,
+          s.country, s.season, s.fee_source,
+          sr.avg_score, sr.final_score, sr.grade,
+          sr.n_figli_totali, sr.n_in_corsa, sr.pct_top_S, sr.vp_boost,
+          COALESCE(s.country, sp.nationality)               AS nationality,
+          CASE WHEN s.name IS NOT NULL THEN 1 ELSE 0 END    AS in_catalog
+        FROM stallion_rating_stats sr
+        LEFT JOIN stallions s          ON UPPER(TRIM(s.name))  = UPPER(TRIM(sr.sire))
+        LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(sr.sire))
+
+        UNION ALL
+
+        -- Stalloni presenti a catalogo ma senza figli ancora valutati:
+        -- vanno mostrati lo stesso, con la tassa di monta e senza voto.
+        SELECT
+          s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
+          s.country, s.season, s.fee_source,
+          NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+          COALESCE(s.country, sp.nationality), 1
         FROM stallions s
-        LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
         LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
-        ORDER BY COALESCE(sr.final_score, sr.avg_score, 0) DESC
+        WHERE UPPER(TRIM(s.name)) NOT IN (
+          SELECT UPPER(TRIM(sire)) FROM stallion_rating_stats
+        )
+
+        )
+        ORDER BY COALESCE(final_score, avg_score, -1) DESC, name ASC
       `).all() as any[];
       res.json(rows);
     } finally {

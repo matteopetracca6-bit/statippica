@@ -11,6 +11,7 @@ interface StallionEntry {
   stud_fee_eur: number | null;
   stud_farm: string | null;
   stud_status: string | null;
+  in_catalog?: number;
   country: string | null;
   nationality: string | null;
   season: string | null;
@@ -51,6 +52,7 @@ export default function StallionDirectoryPage() {
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [onlyCatalog, setOnlyCatalog] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>("fee_desc");
 
   const { data: stallions = [], isLoading } = useQuery<StallionEntry[]>({
@@ -62,7 +64,14 @@ export default function StallionDirectoryPage() {
   });
 
   const filtered = useMemo(() => {
-    let list = stallions.filter(s => s.season === "2026" || s.stud_status === "active" || s.stud_status === "da_concordare");
+    // Prima qui c'era un filtro fisso sulla stagione 2026, che riduceva la
+    // pagina ai 153 stalloni in monta quest'anno e nascondeva gli altri 392
+    // di cui conosciamo la produzione. Ora si vedono tutti e la monta 2026
+    // diventa una scelta dell'utente.
+    let list = stallions;
+    if (onlyCatalog) {
+      list = list.filter(s => s.season === "2026" || s.stud_status === "active" || s.stud_status === "da_concordare");
+    }
 
     if (search.trim()) {
       const q = search.trim().toUpperCase();
@@ -102,7 +111,7 @@ export default function StallionDirectoryPage() {
         break;
     }
     return sorted;
-  }, [stallions, search, countryFilter, statusFilter, sortBy]);
+  }, [stallions, search, countryFilter, statusFilter, sortBy, onlyCatalog]);
 
   const countries = useMemo(() => {
     const set = new Set<string>();
@@ -129,18 +138,18 @@ export default function StallionDirectoryPage() {
       {/* Header */}
       <div style={{ marginBottom: "20px" }}>
         <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.03em", margin: "0 0 6px" }}>
-          Catalogo Stalloni 2026
+          Stalloni
         </h1>
         <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)", margin: 0 }}>
-          {stats.total} stalloni trottatori disponibili in Italia per la stagione di monta 2026.
-          Fonte: Trot Stallions Directory e ANACT.
+          {stats.total} stalloni con produzione valutata. Spunta "Solo monta 2026" per vedere
+          soltanto quelli disponibili in Italia questa stagione. Fonti: Trot Stallions Directory e ANACT.
         </p>
       </div>
 
       {/* Summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "10px", marginBottom: "20px" }}>
         {[
-          { label: "Stallioni totali", value: stats.total, color: "hsl(210 10% 90%)" },
+          { label: "Stalloni in elenco", value: stats.total, color: "hsl(210 10% 90%)" },
           { label: "Disponibili", value: stats.active, color: "hsl(120 50% 55%)" },
           { label: "Con prezzo", value: stats.withFee, color: "hsl(183 60% 55%)" },
           { label: "Monta media", value: `€${stats.avgFee.toLocaleString("it-IT")}`, color: "hsl(51 80% 60%)" },
@@ -213,6 +222,23 @@ export default function StallionDirectoryPage() {
             <option value="da_concordare">Da concordare</option>
           </select>
         </div>
+
+        {/* Solo monta 2026 */}
+        <label style={{
+          display: "flex", alignItems: "center", gap: "8px", cursor: "pointer",
+          background: onlyCatalog ? "hsl(120 40% 16%)" : "hsl(220 12% 12%)",
+          border: `1px solid ${onlyCatalog ? "hsl(120 45% 32%)" : "hsl(220 10% 20%)"}`,
+          borderRadius: "10px", padding: "10px 14px",
+          color: onlyCatalog ? "hsl(120 55% 70%)" : "hsl(210 10% 80%)", fontSize: "13px",
+        }}>
+          <input
+            type="checkbox"
+            checked={onlyCatalog}
+            onChange={e => setOnlyCatalog(e.target.checked)}
+            style={{ accentColor: "hsl(120 55% 45%)", cursor: "pointer" }}
+          />
+          Solo monta 2026
+        </label>
 
         {/* Sort */}
         <div style={{
@@ -360,7 +386,7 @@ export default function StallionDirectoryPage() {
         fontSize: "11px", color: "hsl(210 8% 38%)", marginTop: "24px", padding: "12px 16px",
         background: "hsl(220 12% 9%)", borderRadius: "8px", border: "1px solid hsl(220 10% 14%)",
       }}>
-        Dati raccolti da Trot Stallions Directory (152 stallioni, stagione 2026), ANACT Libro Stalloni,
+        Dati raccolti da Trot Stallions Directory (stagione 2026), ANACT Libro Stalloni,
         e schede individuali degli allevamenti. I prezzi si intendono + IVA salvo dove diversamente indicato.
         Alcuni stalloni hanno tariffe in USD convertite a un cambio approssimato.
       </div>

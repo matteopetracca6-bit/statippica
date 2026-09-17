@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import HorseSearchBar from "../components/HorseSearchBar";
+import Wordmark from "../components/Wordmark";
+import logoHorse from "@assets/statippica-logo.png";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { getFlag } from "@/lib/flags";
@@ -149,17 +151,8 @@ export default function Home() {
           {/* Title */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-              <img
-                src="./statippica-logo.png"
-                alt="StatIppica"
-                style={{ width: 72, height: 72, borderRadius: "16px", objectFit: "cover", boxShadow: "0 4px 24px hsl(183 80% 40% / 0.35)" }}
-              />
-              <h1 style={{
-                fontSize: "56px", fontWeight: 700, color: "hsl(210 20% 96%)",
-                letterSpacing: "-0.03em", margin: 0, lineHeight: 1,
-                fontFamily: "'Space Grotesk', 'Satoshi', sans-serif",
-              }}>
-                <span style={{ color: "hsl(120 60% 50%)" }}>S</span>tat<span style={{ color: "hsl(0 70% 55%)" }}>I</span>ppica
+              <h1 style={{ margin: 0, lineHeight: 1 }}>
+                <Wordmark size={56} weight={700} withLogo logoSrc={logoHorse} logoSize={72} />
               </h1>
             </div>
           </div>
@@ -177,15 +170,14 @@ export default function Home() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
               <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
               <NavCard href="/cavalli" icon={Users} title="Cavalli" desc="Database sfogliabile di tutti i cavalli con filtri per anno, grade e guadagni" color="hsl(183 80% 55%)" />
-              <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="149 stallioni trottatori con tasse di monta, allevamenti e provenienza" color="hsl(120 60% 50%)" />
-              <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
+              <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="Tutti gli stalloni valutati, con tasse di monta, allevamenti e provenienza" color="hsl(120 60% 50%)" />
               <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(280 60% 60%)" />
               <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
               <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />
               <NavCard href="/calendario" icon={Calendar} title="Calendario" desc="Prossime gare in programma con iscritti, voti e stima probabilita di vittoria" color="hsl(0 60% 55%)" />
               <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(160 60% 50%)" />
-              <NavCard href="/top" icon={Award} title="Top Gare" desc="Le gare piu ricche, i tempi piu veloci, le sorprese e i dominatori" color="hsl(40 80% 55%)" />
               <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(220 60% 60%)" />
+              <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
             </div>
           </div>
         </div>
@@ -391,11 +383,7 @@ export default function Home() {
                   Top vincitori
                 </span>
               </div>
-              <Link href="/top">
-                <a style={{ fontSize: "11px", color: "hsl(183 80% 55%)", textDecoration: "none", display: "flex", alignItems: "center", gap: "3px" }}>
-                  Tutte <ChevronRight size={12} />
-                </a>
-              </Link>
+              
             </div>
             {!topRaces ? (
               <div className="skeleton" style={{ height: "160px", borderRadius: "8px" }} />
@@ -446,11 +434,7 @@ export default function Home() {
                 Gare con montepremi piu alto
               </span>
             </div>
-            <Link href="/top">
-              <a style={{ fontSize: "11px", color: "hsl(183 80% 55%)", textDecoration: "none", display: "flex", alignItems: "center", gap: "3px" }}>
-                Vedi tutte <ChevronRight size={12} />
-              </a>
-            </Link>
+            
           </div>
           {!topRaces ? (
             <div className="skeleton" style={{ height: "120px", borderRadius: "8px" }} />
