@@ -2268,6 +2268,97 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     return new_horses, inserted_races
 
 
+def phase_data_quality(conn: sqlite3.Connection) -> dict:
+    """
+    FASE QA: Controlla e corregge la qualita dei dati ad ogni esecuzione notturna.
+    - Ricalcola career_stats (races, wins, places, earnings) dalla tabella races
+    - Conta e logga le anomalie (orphan races, mismatch, duplicati)
+    """
+    print("\n[FASE QA] Controllo qualita dati...", file=sys.stderr)
+    report = {"stats_fixed": 0, "orphans": 0, "duplicates": 0, "no_rating": 0}
+
+    # 1) Ricalcola career_stats per i cavalli dove non combaciano
+    mismatch = conn.execute("""
+        SELECT COUNT(*) FROM (
+            SELECT h.name, h.career_races, COUNT(r.id) as actual
+            FROM horses h
+            LEFT JOIN races r ON r.horse_name = h.name
+            GROUP BY h.name, h.birth_year
+            HAVING COALESCE(h.career_races, 0) != COUNT(r.id)
+        )
+    """).fetchone()[0]
+
+    if mismatch > 0:
+        print(f"  [QA] {mismatch} cavalli con career_stats non allineate, ricalcolo...", file=sys.stderr)
+        conn.execute("""
+            UPDATE horses SET
+                career_races   = sub.actual_races,
+                career_wins    = sub.actual_wins,
+                career_places   = sub.actual_places,
+                career_earnings = sub.actual_earnings
+            FROM (
+                SELECT
+                    r.horse_name,
+                    COUNT(*) as actual_races,
+                    SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) as actual_wins,
+                    SUM(CASE WHEN r.placement IN (2,3) THEN 1 ELSE 0 END) as actual_places,
+                    SUM(COALESCE(r.prize_net, 0)) as actual_earnings
+                FROM races r
+                GROUP BY r.horse_name
+            ) sub
+            WHERE horses.name = sub.horse_name
+              AND COALESCE(horses.career_races, 0) != sub.actual_races
+        """)
+        # Also reset horses that had stats but have 0 races in the table
+        conn.execute("""
+            UPDATE horses SET career_races = 0, career_wins = 0, career_places = 0, career_earnings = 0
+            WHERE name NOT IN (SELECT DISTINCT horse_name FROM races)
+              AND COALESCE(career_races, 0) > 0
+        """)
+        conn.commit()
+        report["stats_fixed"] = mismatch
+        print(f"  [QA] Career stats ricalcolate per {mismatch} cavalli", file=sys.stderr)
+    else:
+        print("  [QA] Career_stats allineate, nessuna correzione necessaria", file=sys.stderr)
+
+    # 2) Conta gare orfane (cavallo non in tabella horses)
+    orphans = conn.execute("""
+        SELECT COUNT(*) FROM races r
+        WHERE NOT EXISTS (SELECT 1 FROM horses h WHERE h.name = r.horse_name)
+    """).fetchone()[0]
+    report["orphans"] = orphans
+    if orphans > 0:
+        print(f"  [QA] ATTENZIONE: {orphans} gare orfane (cavallo non in DB)", file=sys.stderr)
+
+    # 3) Conta cavalli con gare ma senza rating
+    no_rating = conn.execute("""
+        SELECT COUNT(*) FROM horses h
+        WHERE h.career_races > 0
+        AND NOT EXISTS (SELECT 1 FROM horse_ratings hr WHERE hr.name = h.name AND hr.rating_mode='performance')
+    """).fetchone()[0]
+    report["no_rating"] = no_rating
+    if no_rating > 0:
+        print(f"  [QA] {no_rating} cavalli con gare ma senza rating (birth_year mancante?)", file=sys.stderr)
+
+    # 4) Verifica duplicati
+    dups = conn.execute("""
+        SELECT COUNT(*) FROM (
+            SELECT name, COUNT(*) as cnt FROM horses GROUP BY name HAVING cnt > 1
+        )
+    """).fetchone()[0]
+    report["duplicates"] = dups
+    if dups > 0:
+        print(f"  [QA] ATTENZIONE: {dups} nomi cavallo duplicati", file=sys.stderr)
+
+    # 5) Verifica wins > races (impossibile)
+    impossible = conn.execute("SELECT COUNT(*) FROM horses WHERE career_wins > career_races").fetchone()[0]
+    if impossible > 0:
+        print(f"  [QA] ATTENZIONE: {impossible} cavalli con wins > races", file=sys.stderr)
+
+    print(f"  [QA] Report: {report}", file=sys.stderr)
+    return report
+
+
 def main():
     # NIGHTLY_MODE: "results" (gare mancanti + cavalli nuovi trovati lì),
     #               "maintenance" (aggiorna/backfilla cavalli già esistenti),
@@ -2312,6 +2403,7 @@ def main():
         # cambiato dati che influenzano i punteggi.
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
+        phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
     finally:
         conn.close()
 
