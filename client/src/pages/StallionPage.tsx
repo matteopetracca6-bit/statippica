@@ -326,8 +326,8 @@ export default function StallionPage() {
         <>
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "6px", flexWrap: "wrap" }}>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.04em", margin: 0 }}>
-              {stallion.sire}
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.04em", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+              {getFlag(stallion.nationality, stallion.sire)} {stallion.sire}
             </h1>
             {stallion.grade && (
               <GradeBadge grade={stallion.grade} size="lg" />

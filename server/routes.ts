@@ -44,7 +44,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const db = getDb();
     try {
       const rows = db.prepare(`
-        SELECT h.name, h.birth_year, h.sire, h.sex,
+        SELECT h.name, h.birth_year, h.sire, h.sex, h.country,
                hr.grade, hr.score, hr.rating_mode
         FROM horses h
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
@@ -347,9 +347,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
         .get(...params) as any).cnt;
 
       const rows = db.prepare(`
-        SELECT name, birth_year, sire, grade, score, earn_percentile, time_percentile,
-               sire_percentile, career_races, career_wins, career_earnings, record_career, win_rate
-        FROM horse_ratings
+        SELECT hr.name, hr.birth_year, hr.sire, hr.grade, hr.score, hr.earn_percentile, hr.time_percentile,
+               hr.sire_percentile, hr.career_races, hr.career_wins, hr.career_earnings, hr.record_career, hr.win_rate,
+               h.country
+        FROM horse_ratings hr
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(hr.name)) AND h.birth_year = hr.birth_year
         WHERE ${where}
         ORDER BY ${sortCol} DESC
         LIMIT ? OFFSET ?
@@ -390,8 +392,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       const getHorse = (name: string, year?: string) => {
         const row = year
-          ? (db.prepare(`SELECT * FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) AND birth_year = ? LIMIT 1`).get(name, parseInt(year)) as any)
-          : (db.prepare(`SELECT * FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) ORDER BY birth_year DESC LIMIT 1`).get(name) as any);
+          ? (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(hr.name)) AND h.birth_year = hr.birth_year WHERE UPPER(TRIM(hr.name)) = UPPER(TRIM(?)) AND hr.birth_year = ? LIMIT 1`).get(name, parseInt(year)) as any)
+          : (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(hr.name)) AND h.birth_year = hr.birth_year WHERE UPPER(TRIM(hr.name)) = UPPER(TRIM(?)) ORDER BY hr.birth_year DESC LIMIT 1`).get(name) as any);
         if (!row) return null;
         const ped = db.prepare(`
           SELECT h.sire, h.dam,
@@ -647,9 +649,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const result = farms.map(f => {
         const bestStallion = db.prepare(`
           SELECT s.name, sr.final_score, sr.grade, sr.n_figli_totali, sr.pct_top_S,
-                 s.stud_fee_eur
+                 s.stud_fee_eur, COALESCE(s.country, sp.nationality) AS nationality
           FROM stallions s
           LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
+          LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
           WHERE s.stud_farm = ? AND sr.final_score IS NOT NULL
           ORDER BY sr.final_score DESC LIMIT 1
         `).get(f.stud_farm) as any;
@@ -734,51 +737,57 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       // Top races by prize
       const topPrize = db.prepare(`
-        SELECT horse_name, race_date, track, race_code, race_number,
-               placement, placement_raw, time_km, distance, driver,
-               prize_net, prize_gross, total_starters, start_pos
-        FROM races
-        WHERE prize_net > 0
-        ORDER BY prize_net DESC
+        SELECT r.horse_name, r.race_date, r.track, r.race_code, r.race_number,
+               r.placement, r.placement_raw, r.time_km, r.distance, r.driver,
+               r.prize_net, r.prize_gross, r.total_starters, r.start_pos,
+               h.country
+        FROM races r
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        WHERE r.prize_net > 0
+        ORDER BY r.prize_net DESC
         LIMIT ?
       `).all(limit) as any[];
 
       // Fastest times (filter by distance to compare fairly — 1600m and 2100m most common)
       const fastestTimes = db.prepare(`
-        SELECT horse_name, race_date, track, time_km, distance, placement,
-               prize_net, driver
-        FROM races
-        WHERE time_km IS NOT NULL AND time_km > 0
-          AND distance IN (1600, 2100)
-          AND placement = 1
-        ORDER BY time_km ASC
+        SELECT r.horse_name, r.race_date, r.track, r.time_km, r.distance, r.placement,
+               r.prize_net, r.driver, h.country
+        FROM races r
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        WHERE r.time_km IS NOT NULL AND r.time_km > 0
+          AND r.distance IN (1600, 2100)
+          AND r.placement = 1
+        ORDER BY r.time_km ASC
         LIMIT 20
       `).all() as any[];
 
       // Biggest upsets (high start_pos with win + good prize)
       const upsets = db.prepare(`
-        SELECT horse_name, race_date, track, placement, start_pos,
-               total_starters, prize_net, driver, time_km
-        FROM races
-        WHERE placement = 1
-          AND start_pos >= 10
-          AND total_starters >= 12
-          AND prize_net >= 5000
-        ORDER BY prize_net DESC
+        SELECT r.horse_name, r.race_date, r.track, r.placement, r.start_pos,
+               r.total_starters, r.prize_net, r.driver, r.time_km, h.country
+        FROM races r
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        WHERE r.placement = 1
+          AND r.start_pos >= 10
+          AND r.total_starters >= 12
+          AND r.prize_net >= 5000
+        ORDER BY r.prize_net DESC
         LIMIT 15
       `).all() as any[];
 
       // Most dominant horses (by total prize won)
       const dominantHorses = db.prepare(`
-        SELECT horse_name,
+        SELECT r.horse_name,
                COUNT(*) as n_races,
-               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) as n_wins,
-               ROUND(100.0 * SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) / COUNT(*), 1) as win_rate,
-               SUM(prize_net) as total_earnings,
-               MAX(prize_net) as biggest_prize
-        FROM races
-        WHERE prize_net > 0
-        GROUP BY horse_name
+               SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) as n_wins,
+               ROUND(100.0 * SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) / COUNT(*), 1) as win_rate,
+               SUM(r.prize_net) as total_earnings,
+               MAX(r.prize_net) as biggest_prize,
+               h.country
+        FROM races r
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = UPPER(TRIM(r.horse_name))
+        WHERE r.prize_net > 0
+        GROUP BY r.horse_name
         ORDER BY total_earnings DESC
         LIMIT 20
       `).all() as any[];

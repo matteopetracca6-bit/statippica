@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { getFlag } from "@/lib/flags";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 
 const GRADE_ORDER = ["SSS","SS","S","A","B","C","D","E","F"] as const;
@@ -264,7 +265,7 @@ export default function ComparePage() {
                     onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
                     onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
                   >
-                    {h.name}
+                    {getFlag(h.country, h.name)} {h.name}
                   </a>
                 </Link>
                 <div style={{ fontSize: "12px", color: "hsl(210 8% 48%)", marginBottom: "10px" }}>

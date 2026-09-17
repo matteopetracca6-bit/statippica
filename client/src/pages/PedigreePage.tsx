@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { Dna, Search } from "lucide-react";
@@ -233,7 +234,8 @@ export default function PedigreePage() {
               <div style={{ fontSize: "11px", color: "hsl(183 60% 45%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
                 Soggetto
               </div>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "hsl(210 10% 90%)" }}>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "hsl(210 10% 90%)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "20px" }}>{getFlag(data.horse.country, data.horse.name)}</span>
                 {data.horse.name}
               </div>
               <div style={{ fontSize: "12px", color: "hsl(210 8% 52%)", marginTop: "3px" }}>

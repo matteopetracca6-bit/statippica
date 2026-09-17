@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { getFlag } from "@/lib/flags";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { useState } from "react";
 
@@ -118,7 +119,8 @@ export default function TopRacesPage() {
                       >
                         <td style={{ ...rowStyle(i) }}>
                           <Link href={`/horse/${encodeURIComponent(r.horse_name)}/0`}>
-                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none" }}>
+                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                              <span style={{ fontSize: "15px" }}>{getFlag(r.country, r.horse_name)}</span>
                               {r.horse_name}
                             </a>
                           </Link>
@@ -175,7 +177,8 @@ export default function TopRacesPage() {
                         </td>
                         <td style={{ padding: "8px 12px" }}>
                           <Link href={`/horse/${encodeURIComponent(r.horse_name)}/0`}>
-                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none" }}>
+                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                              <span style={{ fontSize: "15px" }}>{getFlag(r.country, r.horse_name)}</span>
                               {r.horse_name}
                             </a>
                           </Link>
@@ -226,7 +229,8 @@ export default function TopRacesPage() {
                       >
                         <td style={{ padding: "8px 12px" }}>
                           <Link href={`/horse/${encodeURIComponent(r.horse_name)}/0`}>
-                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none" }}>
+                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                              <span style={{ fontSize: "15px" }}>{getFlag(r.country, r.horse_name)}</span>
                               {r.horse_name}
                             </a>
                           </Link>
@@ -285,7 +289,8 @@ export default function TopRacesPage() {
                         </td>
                         <td style={{ padding: "8px 12px" }}>
                           <Link href={`/horse/${encodeURIComponent(h.horse_name)}/0`}>
-                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none" }}>
+                            <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(183 80% 58%)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                              <span style={{ fontSize: "15px" }}>{getFlag(h.country, h.horse_name)}</span>
                               {h.horse_name}
                             </a>
                           </Link>

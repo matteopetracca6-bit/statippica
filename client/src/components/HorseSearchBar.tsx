@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { Search, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { getFlag } from "@/lib/flags";
 import GradeBadge from "./GradeBadge";
 
 interface SearchResult {
@@ -9,6 +10,7 @@ interface SearchResult {
   birth_year: number;
   sire: string;
   sex: string;
+  country: string;
   grade: string;
   score: number;
   rating_mode: string;
@@ -132,7 +134,8 @@ export default function HorseSearchBar({ placeholder = "Cerca cavallo...", onSel
             >
               <GradeBadge grade={h.grade || "N/A"} size="sm" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 88%)", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 88%)", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                  <span style={{ fontSize: "15px" }}>{getFlag(h.country, h.name)}</span>
                   {h.name}
                 </div>
                 <div style={{ fontSize: "11px", color: "hsl(210 8% 50%)" }}>

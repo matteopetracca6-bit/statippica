@@ -212,7 +212,9 @@ function StallionCardSection({ stats, isLoading }: { stats: Stats | undefined; i
                     fontSize: "13px", fontWeight: 600,
                     color: "hsl(183 80% 62%)",
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    display: "inline-flex", alignItems: "center", gap: "5px",
                   }}>
+                    <span style={{ fontSize: "15px" }}>{getFlag(s.nationality, s.name)}</span>
                     {s.name}
                   </span>
                   <span style={{ textAlign: "center" }}>
@@ -383,7 +385,7 @@ export default function Home() {
                 >
                   <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 45%)", minWidth: "34px" }}>{h.birth_year}</span>
                   <GradeBadge grade={h.grade} size="sm" />
-                  <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 85%)", letterSpacing: "0.02em" }}>{h.name}</span>
+                  <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 85%)", letterSpacing: "0.02em", display: "inline-flex", alignItems: "center", gap: "5px" }}><span style={{ fontSize: "15px" }}>{getFlag(h.country, h.name)}</span>{h.name}</span>
                   <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 50%)" }}>
                     €{h.career_earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}
                   </span>

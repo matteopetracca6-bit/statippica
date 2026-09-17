@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { useState, useMemo } from "react";
@@ -15,7 +16,7 @@ interface Farm {
   pct_top_S: number;
   n_SSS: number; n_SS: number; n_S: number;
   total_earnings: number;
-  best_stallion: { name: string; final_score: number; grade: string; n_figli_totali: number; pct_top_S: number; stud_fee_eur: number } | null;
+  best_stallion: { name: string; final_score: number; grade: string; n_figli_totali: number; pct_top_S: number; stud_fee_eur: number; nationality: string } | null;
 }
 
 type SortKey = "final_score" | "earnings" | "top_S" | "stallions" | "figli";
@@ -262,7 +263,8 @@ export default function StudFarmsPage() {
                               onMouseEnter={e => e.currentTarget.style.background = "hsl(183 100% 38% / 0.2)"}
                               onMouseLeave={e => e.currentTarget.style.background = "hsl(183 100% 38% / 0.1)"}
                             >
-                              <span style={{ fontSize: "14px", fontWeight: 700, color: "hsl(183 80% 62%)" }}>
+                              <span style={{ fontSize: "14px", fontWeight: 700, color: "hsl(183 80% 62%)", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                                <span style={{ fontSize: "16px" }}>{getFlag(farm.best_stallion.nationality, farm.best_stallion.name)}</span>
                                 {farm.best_stallion.name}
                               </span>
                               {farm.best_stallion.grade && <GradeBadge grade={farm.best_stallion.grade} size="sm" />}

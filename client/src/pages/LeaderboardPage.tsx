@@ -181,7 +181,8 @@ export default function LeaderboardPage() {
                       </td>
                       <td style={{ padding: "10px 12px", minWidth: "160px" }}>
                         <Link href={`/horse/${encodeURIComponent(row.name)}/${row.birth_year}`}>
-                          <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none", letterSpacing: "0.03em" }}>
+                          <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none", letterSpacing: "0.03em", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                            <span style={{ fontSize: "15px" }}>{getFlag(row.country, row.name)}</span>
                             {row.name}
                           </a>
                         </Link>
