@@ -74,6 +74,25 @@ REQUEST_DELAY = 0.5
 # Lavoriamo solo con gare dal 2012 in avanti (storico precedente non tracciato)
 MIN_RACE_DATE = os.environ.get("MIN_RACE_DATE", "2012-01-01")
 
+# Mappa codice ippodromo -> nome completo. Condivisa tra la FASE QA (che normalizza
+# la colonna track) e la riparazione date (che confronta gare fra loro).
+TRACK_CODE_MAP = {
+    # Codici display -> nome completo
+    'NA': 'NAPOLI', 'BO': 'BOLOGNA', 'RO': 'ROMA', 'PA': 'PALERMO',
+    'AV': 'AVERSA', 'TA': 'TARANTO', 'MG': 'MONTEGIORGIO', 'TO': 'TORINO',
+    'CS': 'CASTELLUCCIO', 'MI': 'MILANO', 'FI': 'FIRENZE', 'SI': 'SIRACUSA',
+    'MO': 'MODENA', 'PD': 'PADOVA', 'CE': 'CESENA', 'GA': 'GARIGLIANO',
+    'TV': 'TREVISO', 'MC': 'MONTECATINI', 'FO': 'FOLLONICA', 'VI': 'VILLANOVA',
+    'TS': 'TRIESTE', 'PC': 'PONTECAGNANO', 'CA': 'CASARANO', 'CV': 'CIVITANOVA',
+    'FE': 'FERRARA', 'PS': 'PRATO',
+    # Codici ippod (cavAn.php) che differiscono dai display
+    'RM': 'ROMA', 'SC': 'SIRACUSA', 'PV': 'PADOVA', 'FG': 'CASTELLUCCIO',
+    'FA': 'GARIGLIANO', 'MR': 'MONTEGIORGIO', 'AL': 'VILLANOVA',
+    'SG': 'PRATO', 'CN': 'CASARANO',
+    'ES': 'ESTERO',
+}
+
+
 # ── Due popolazioni distinte (decisione di prodotto, 18/09/2026) ──
 # ATLETI     : nati dal 2012 in poi. Sono i soggetti di cui il sito parla:
 #              rating, leaderboard, classifiche, confronti, tendenze.
@@ -120,6 +139,10 @@ BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_BATCH_SIZE", "250"))
 REBACKFILL_DAYS = int(os.environ.get("REBACKFILL_DAYS", "180"))
 # Backfill storico: fase dedicata al recupero gare pre-2019 per cavalli con buchi
 HISTORICAL_BATCH_SIZE = int(os.environ.get("HISTORICAL_BATCH_SIZE", "400"))
+# Quanti cavalli con gare senza data ripescare ogni notte dalla pagina di carriera
+UNDATED_BATCH_SIZE = int(os.environ.get("UNDATED_BATCH_SIZE", "500"))
+# Per quanti giorni non riprovare un cavallo gia' tentato senza successo
+UNDATED_RETRY_DAYS = int(os.environ.get("UNDATED_RETRY_DAYS", "45"))
 HISTORICAL_CUTOFF_YEAR = int(os.environ.get("HISTORICAL_CUTOFF_YEAR", "2018"))
 
 SESSION = requests.Session()
@@ -2058,6 +2081,66 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
     print(f"[RATINGS] Rating stalloni: {len(row_buffer)} (VP data: {len(vp_data)} stalloni)", file=sys.stderr)
 
 
+# ---------------------------------------------------------------------------
+# Riparazione date gare
+#
+# Storia del problema: la tabella races e' stata riempita da due fonti diverse.
+# La fonte "risultati di giornata" (hRis.php) da' driver, numero di corsa,
+# ferratura e posizione al via, ma nelle righe piu' vecchie la data non e' mai
+# finita in colonna. La fonte "carriera del cavallo" (cavAn.php) da' sempre la
+# data, perche' la legge dal link della corsa, ma non ha driver ne' ferratura.
+# Risultato: la stessa gara puo' esistere due volte, una volta datata e povera,
+# una volta ricca e senza data. Il vincolo UNIQUE(horse_name, race_date,
+# race_code) non se ne accorge perche' in SQL NULL non e' uguale a NULL, quindi
+# ogni riga senza data passa come nuova.
+#
+# La chiave di confronto qui sotto identifica una gara senza usare la data:
+# lo stesso cavallo, nello stesso ippodromo, sulla stessa distanza, con lo
+# stesso tempo al chilometro, lo stesso piazzamento e lo stesso premio non e'
+# una seconda gara, e' la stessa gara vista da due fonti.
+# ---------------------------------------------------------------------------
+
+def _norm_track(track: str) -> str:
+    """Nome ippodromo confrontabile: i codici brevi diventano nomi completi."""
+    t = (track or "").strip().upper()
+    return TRACK_CODE_MAP.get(t, t)
+
+
+def _norm_placement(raw: str) -> str:
+    """Piazzamento confrontabile. Le due fonti usano due caratteri diversi per
+    l'ordinale ('3º' contro '3°'), che a occhio sono identici."""
+    return re.sub(r"[\u00ba\u00b0]", "", str(raw or "")).strip().lower()
+
+
+def _race_identity(track, distance, time_km, prize_net, placement_raw, with_prize: bool = True) -> tuple:
+    """Chiave che identifica una gara senza usare la data.
+
+    Con `with_prize=False` il premio viene ignorato. Serve perche' la pagina di
+    carriera spesso lascia la colonna montepremi vuota anche per gare pagate:
+    la stessa gara risulta da 2.431 euro nei risultati di giornata e da zero
+    nella carriera. Pretendere che coincidano fa scartare abbinamenti giusti.
+    Il confronto senza premio resta prudente perche' viene accettato solo
+    quando l'abbinamento e' univoco.
+    """
+    try:
+        prize = round(float(prize_net or 0), 2)
+    except (TypeError, ValueError):
+        prize = 0.0
+    try:
+        tkm = round(float(time_km), 1) if time_km not in (None, "") else None
+    except (TypeError, ValueError):
+        tkm = None
+    base = (_norm_track(track), distance, tkm, _norm_placement(placement_raw))
+    return base + (prize,) if with_prize else base
+
+
+def _richness(row: dict) -> int:
+    """Quanti campi di dettaglio porta una riga. A parita' di gara teniamo la
+    riga piu' ricca e le regaliamo la data dell'altra."""
+    return sum(1 for k in ("driver", "race_number", "shoes", "start_pos", "total_starters")
+               if row.get(k) not in (None, "", 0))
+
+
 def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
     inserted = 0
     for r in races:
@@ -2070,6 +2153,34 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
                 (r.get("horse_name"), r.get("race_date"))
             ).fetchone()
             if already:
+                continue
+
+            # Stessa gara gia' presente ma senza data, arrivata dai risultati di
+            # giornata? Allora non e' una gara nuova: le diamo la data che ci
+            # mancava invece di creare un doppione. E' cosi' che sono nate le
+            # 325.731 righe senza data, e il controllo qui sopra non poteva
+            # vederle perche' cerca per data.
+            cands = conn.execute(
+                """SELECT id, track, distance, time_km, prize_net, placement_raw
+                   FROM races WHERE horse_name=? AND (race_date IS NULL OR TRIM(race_date)='')""",
+                (r.get("horse_name"),)
+            ).fetchall()
+            merged = False
+            for with_prize in (True, False):
+                ident = _race_identity(r.get("track"), r.get("distance"), r.get("time_km"),
+                                       r.get("prize_net", 0), r.get("placement_raw"),
+                                       with_prize=with_prize)
+                hits = [c for c in cands
+                        if _race_identity(c[1], c[2], c[3], c[4], c[5],
+                                          with_prize=with_prize) == ident]
+                # Solo se l'abbinamento e' univoco: con due candidati non
+                # sapremmo a quale delle due gare appartiene questa data.
+                if len(hits) == 1:
+                    conn.execute("UPDATE races SET race_date=? WHERE id=?",
+                                 (r.get("race_date"), hits[0][0]))
+                    merged = True
+                    break
+            if merged:
                 continue
 
             cursor = conn.execute("""
@@ -2573,6 +2684,214 @@ def phase_dam_ratings(conn: sqlite3.Connection):
     return len(buffer)
 
 
+def phase_recover_undated(conn: sqlite3.Connection, batch_size: int = UNDATED_BATCH_SIZE) -> tuple:
+    """FASE 2e - Ripesca dalla fonte le date che ci mancano ancora.
+
+    La FASE 2d recupera una data solo quando la stessa gara esiste gia' due
+    volte nel database. Per le gare rimaste, la data esiste comunque: sta sulla
+    pagina di carriera del cavallo, che la porta nel link di ogni corsa. Qui
+    scarichiamo quelle pagine per i cavalli che hanno ancora gare senza data,
+    partendo da chi ne ha di piu'. L'inserimento riconosce la gara gia'
+    presente e le scrive la data invece di creare un doppione.
+
+    Va a lotti: sono migliaia di cavalli e non ha senso occupare una notte
+    intera. Chi viene tentato senza risultato non viene riprovato per settimane.
+    """
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS undated_repair_log (
+            horse_name    TEXT PRIMARY KEY,
+            tried_at      TEXT,
+            attempts      INTEGER DEFAULT 0,
+            last_remaining INTEGER
+        )
+    """)
+    conn.commit()
+
+    cutoff = (datetime.utcnow() - timedelta(days=UNDATED_RETRY_DAYS)).strftime("%Y-%m-%d")
+    pending = conn.execute("""
+        SELECT r.horse_name, COUNT(*) n
+        FROM races r
+        LEFT JOIN undated_repair_log l ON l.horse_name = r.horse_name
+        WHERE (r.race_date IS NULL OR TRIM(r.race_date)='')
+          AND (l.tried_at IS NULL OR l.tried_at < ?)
+        GROUP BY r.horse_name
+        ORDER BY n DESC
+        LIMIT ?
+    """, (cutoff, batch_size)).fetchall()
+
+    print(f"\n[UNDATED] FASE 2e: {len(pending)} cavalli da ripescare "
+          f"(lotto max {batch_size})", file=sys.stderr)
+
+    horses_done = dates_filled = 0
+    for i, (name, n_before) in enumerate(pending, 1):
+        try:
+            _fetch_and_insert_full_career(conn, name)
+        except Exception as e:  # una pagina rotta non deve fermare la notte
+            print(f"  [UNDATED] {name}: {e}", file=sys.stderr)
+        n_after = conn.execute(
+            "SELECT COUNT(*) FROM races WHERE horse_name=? AND (race_date IS NULL OR TRIM(race_date)='')",
+            (name,)
+        ).fetchone()[0]
+        filled = max(0, n_before - n_after)
+        dates_filled += filled
+        horses_done += 1
+        conn.execute("""
+            INSERT INTO undated_repair_log (horse_name, tried_at, attempts, last_remaining)
+            VALUES (?, ?, 1, ?)
+            ON CONFLICT(horse_name) DO UPDATE SET
+                tried_at = excluded.tried_at,
+                attempts = undated_repair_log.attempts + 1,
+                last_remaining = excluded.last_remaining
+        """, (name, datetime.utcnow().strftime("%Y-%m-%d"), n_after))
+        if filled:
+            _update_horse_career_stats(conn, name)
+        if i % 50 == 0:
+            conn.commit()
+            print(f"  ... {i}/{len(pending)} cavalli ({dates_filled} date recuperate)", file=sys.stderr)
+    conn.commit()
+
+    residue = conn.execute(
+        "SELECT COUNT(*) FROM races WHERE race_date IS NULL OR TRIM(race_date)=''"
+    ).fetchone()[0]
+    print(f"[UNDATED] Cavalli trattati: {horses_done}, date recuperate: {dates_filled}, "
+          f"restano senza data: {residue}", file=sys.stderr)
+    return horses_done, dates_filled
+
+
+def phase_repair_race_dates(conn: sqlite3.Connection) -> dict:
+    """FASE 2d - Ripara le gare senza data e rimuove i doppioni che ne derivano.
+
+    Tre passaggi, dal piu' sicuro al piu' cauto:
+      1. date scritte in formato italiano (31/12/2025) convertite in ISO;
+      2. gare senza data abbinate a una gemella datata dello stesso cavallo:
+         la data passa alla riga piu' ricca e la gemella povera viene eliminata;
+      3. conteggio di cio' che resta, che sara' riparato nelle notti successive
+         man mano che il recupero storico copre altri cavalli.
+
+    L'abbinamento avviene solo quando e' univoco: se nel gruppo ci sono piu'
+    righe senza data, oppure piu' date candidate diverse, la riga viene lasciata
+    com'e'. Meglio una data mancante che una data sbagliata.
+    """
+    print("\n[REPAIR] FASE 2d: riparazione date gare", file=sys.stderr)
+    report = {"iso_fixed": 0, "dates_recovered": 0, "duplicates_removed": 0, "still_undated": 0}
+
+    # 1) formato italiano -> ISO
+    it_rows = conn.execute(
+        "SELECT id, race_date FROM races WHERE race_date LIKE '__/__/____'"
+    ).fetchall()
+    for rid, val in it_rows:
+        iso = _parse_date_it(val) if "_parse_date_it" in globals() else None
+        if not iso:
+            try:
+                d, m, y = str(val).split("/")
+                iso = f"{y}-{m}-{d}"
+            except ValueError:
+                iso = None
+        if iso:
+            conn.execute("UPDATE races SET race_date=? WHERE id=?", (iso, rid))
+            report["iso_fixed"] += 1
+    if report["iso_fixed"]:
+        conn.commit()
+    print(f"  [REPAIR] Date in formato italiano convertite: {report['iso_fixed']}", file=sys.stderr)
+
+    # 2) abbinamento gare senza data <-> gemella datata
+    # Caricamento in Python: in questo DB i confronti vanno fatti su valori
+    # normalizzati, e una JOIN su UPPER(TRIM(...)) non userebbe gli indici.
+    cols = "id, horse_name, race_date, track, distance, time_km, prize_net, placement_raw, driver, race_number, shoes, start_pos, total_starters"
+    undated: dict = {}
+    dated: dict = {}
+    for row in conn.execute(f"SELECT {cols} FROM races"):
+        r = dict(zip([c.strip() for c in cols.split(",")], row))
+        key = (str(r["horse_name"] or "").strip().upper(),) + _race_identity(
+            r["track"], r["distance"], r["time_km"], r["prize_net"], r["placement_raw"])
+        (undated if not r["race_date"] else dated).setdefault(key, []).append(r)
+
+    to_update: list = []   # (id, data)
+    to_delete: list = []   # id
+    ambiguous = 0
+    touched_horses: set = set()
+    resolved_ids: set = set()
+
+    def _pair_up(undated_map: dict, dated_map: dict) -> int:
+        nonlocal ambiguous
+        done = 0
+        for key, u_rows in undated_map.items():
+            u_rows = [r for r in u_rows if r["id"] not in resolved_ids]
+            if not u_rows:
+                continue
+            d_rows = [r for r in dated_map.get(key, []) if r["id"] not in resolved_ids]
+            if not d_rows:
+                continue
+            candidate_dates = {r["race_date"] for r in d_rows}
+            if len(u_rows) != 1 or len(candidate_dates) != 1:
+                ambiguous += len(u_rows)
+                continue
+            u = u_rows[0]
+            the_date = candidate_dates.pop()
+        # La riga senza data e' quasi sempre la piu' ricca (viene dai risultati
+        # di giornata). Se per una volta non lo fosse, teniamo comunque quella
+        # ricca e buttiamo l'altra.
+            best_dated = max(d_rows, key=_richness)
+            if _richness(u) >= _richness(best_dated):
+                to_update.append((u["id"], the_date))
+                to_delete.extend(r["id"] for r in d_rows)
+            else:
+                to_delete.append(u["id"])
+            resolved_ids.add(u["id"])
+            resolved_ids.update(r["id"] for r in d_rows)
+            touched_horses.add(u["horse_name"])
+            done += 1
+        return done
+
+    # Primo passaggio: chiave completa, premio incluso. Secondo passaggio, solo
+    # su cio' che e' avanzato: stessa chiave senza il premio.
+    strict_pairs = _pair_up(undated, dated)
+    undated_np: dict = {}
+    dated_np: dict = {}
+    for src_map, dst_map in ((undated, undated_np), (dated, dated_np)):
+        for rows in src_map.values():
+            for r in rows:
+                if r["id"] in resolved_ids:
+                    continue
+                k = (str(r["horse_name"] or "").strip().upper(),) + _race_identity(
+                    r["track"], r["distance"], r["time_km"], r["prize_net"],
+                    r["placement_raw"], with_prize=False)
+                dst_map.setdefault(k, []).append(r)
+    loose_pairs = _pair_up(undated_np, dated_np)
+    print(f"  [REPAIR] Abbinamenti: {strict_pairs} con premio identico, "
+          f"{loose_pairs} ignorando il premio", file=sys.stderr)
+
+    for rid, the_date in to_update:
+        conn.execute("UPDATE races SET race_date=? WHERE id=?", (the_date, rid))
+    for chunk_start in range(0, len(to_delete), 500):
+        chunk = to_delete[chunk_start:chunk_start + 500]
+        conn.execute(f"DELETE FROM races WHERE id IN ({','.join('?' * len(chunk))})", chunk)
+    conn.commit()
+    report["dates_recovered"] = len(to_update)
+    report["duplicates_removed"] = len(to_delete)
+    print(f"  [REPAIR] Date recuperate da gara gemella: {report['dates_recovered']}", file=sys.stderr)
+    print(f"  [REPAIR] Doppioni rimossi: {report['duplicates_removed']}", file=sys.stderr)
+    print(f"  [REPAIR] Lasciate stare perche' ambigue: {ambiguous}", file=sys.stderr)
+
+    # 3) le carriere dei cavalli toccati vanno ricalcolate: finora contavano
+    # la stessa gara due volte, quindi anche i guadagni erano doppi
+    for name in touched_horses:
+        try:
+            _update_horse_career_stats(conn, name)
+        except sqlite3.Error:
+            pass
+    conn.commit()
+    print(f"  [REPAIR] Carriere ricalcolate: {len(touched_horses)} cavalli", file=sys.stderr)
+
+    report["still_undated"] = conn.execute(
+        "SELECT COUNT(*) FROM races WHERE race_date IS NULL OR TRIM(race_date)=''"
+    ).fetchone()[0]
+    total = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
+    pct = (report["still_undated"] / total * 100) if total else 0
+    print(f"  [REPAIR] Restano senza data: {report['still_undated']} su {total} ({pct:.1f}%)", file=sys.stderr)
+    return report
+
+
 def phase_data_quality(conn: sqlite3.Connection) -> dict:
     """
     FASE QA: Controlla e corregge la qualita dei dati ad ogni esecuzione notturna.
@@ -2669,23 +2988,9 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     if impossible > 0:
         print(f"  [QA] ATTENZIONE: {impossible} cavalli con wins > races", file=sys.stderr)
 
-    # 6) Normalizza i track: converte codici 2-lettere in nomi completi
-    # e riempie track vuoti dal race_code
-    _TRACK_CODE_MAP = {
-        # Codici display -> nome completo
-        'NA': 'NAPOLI', 'BO': 'BOLOGNA', 'RO': 'ROMA', 'PA': 'PALERMO',
-        'AV': 'AVERSA', 'TA': 'TARANTO', 'MG': 'MONTEGIORGIO', 'TO': 'TORINO',
-        'CS': 'CASTELLUCCIO', 'MI': 'MILANO', 'FI': 'FIRENZE', 'SI': 'SIRACUSA',
-        'MO': 'MODENA', 'PD': 'PADOVA', 'CE': 'CESENA', 'GA': 'GARIGLIANO',
-        'TV': 'TREVISO', 'MC': 'MONTECATINI', 'FO': 'FOLLONICA', 'VI': 'VILLANOVA',
-        'TS': 'TRIESTE', 'PC': 'PONTECAGNANO', 'CA': 'CASARANO', 'CV': 'CIVITANOVA',
-        'FE': 'FERRARA', 'PS': 'PRATO',
-        # Codici ippod (cavAn.php) che differiscono dai display
-        'RM': 'ROMA', 'SC': 'SIRACUSA', 'PV': 'PADOVA', 'FG': 'CASTELLUCCIO',
-        'FA': 'GARIGLIANO', 'MR': 'MONTEGIORGIO', 'AL': 'VILLANOVA',
-        'SG': 'PRATO', 'CN': 'CASARANO',
-        'ES': 'ESTERO',
-    }
+    # 6) Normalizza i track (mappa condivisa a livello modulo)
+    _TRACK_CODE_MAP = TRACK_CODE_MAP
+
 
     # Conta track da normalizzare
     short_tracks = conn.execute("""
@@ -2807,6 +3112,8 @@ def main():
 
         # Il rating va ricalcolato in ogni caso: qualunque modalità può aver
         # cambiato dati che influenzano i punteggi.
+        phase_repair_race_dates(conn)   # FASE 2d: ripara date mancanti e doppioni
+        phase_recover_undated(conn)     # FASE 2e: ripesca le date residue dalla fonte
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
         phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
