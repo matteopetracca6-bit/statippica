@@ -22,7 +22,7 @@ from datetime import datetime, date
 from pathlib import Path
 
 URL = "https://www.trottoweb.it/TrottoWeb/php_resp/hPart.php"
-DB_PATH = Path(__file__).parent / "data.db"
+DB_PATH = Path(__file__).parent.parent / "data.db"
 
 MONTHS_IT = {
     "Gennaio": 1, "Febbraio": 2, "Marzo": 3, "Aprile": 4,
