@@ -38,6 +38,9 @@ jobs:
           # FASE 2c (copertura genitori): UNIRE ora attivo (unire_source.py).
           # 300 genitori/notte a 2 richieste per genitore con 1s pausa ≈ 12 min.
           PARENT_COVERAGE_BATCH_SIZE: "300"
+          # Recupero date mancanti: col lettore nuovo ogni cavallo raggiungibile
+          # rende, quindi vale la pena smaltire in fretta gli 8.714 arretrati.
+          UNDATED_BATCH_SIZE: "2000"
         run: python nightly_update.py
       - name: Trigger deploy Render dopo aggiornamento DB
         if: success()

@@ -143,6 +143,12 @@ HISTORICAL_BATCH_SIZE = int(os.environ.get("HISTORICAL_BATCH_SIZE", "400"))
 UNDATED_BATCH_SIZE = int(os.environ.get("UNDATED_BATCH_SIZE", "500"))
 # Per quanti giorni non riprovare un cavallo gia' tentato senza successo
 UNDATED_RETRY_DAYS = int(os.environ.get("UNDATED_RETRY_DAYS", "45"))
+# Versione del lettore di date sulla pagina di carriera. Va alzata ogni volta
+# che quel lettore impara a leggere date che prima perdeva: serve a rimettere
+# in coda i cavalli gia' tentati con la versione precedente.
+#   v1 = data letta solo dal link al risultato
+#   v2 = data letta anche dal testo della cella ("sab 5 set 2026")
+DATE_READER_VERSION = "2"
 # Quante giornate future sondare per i partenti (la fonte pubblica 2-3 giorni prima)
 UPCOMING_DAYS = int(os.environ.get("UPCOMING_DAYS", "7"))
 HISTORICAL_CUTOFF_YEAR = int(os.environ.get("HISTORICAL_CUTOFF_YEAR", "2018"))
@@ -974,6 +980,33 @@ def _merge_duplicate_horses(conn: sqlite3.Connection):
         conn.commit()
         print(f"[INIT] Uniti {merged_count} cavalli duplicati (varianti di nome).", file=sys.stderr)
 
+# Mesi abbreviati come li scrive Trottoweb nella colonna data ("sab 5 set 2026").
+_MESI_IT = {
+    "gen": "01", "feb": "02", "mar": "03", "apr": "04", "mag": "05", "giu": "06",
+    "lug": "07", "ago": "08", "set": "09", "sett": "09", "ott": "10",
+    "nov": "11", "dic": "12",
+}
+
+
+def _parse_date_it_text(val: str) -> Optional[str]:
+    """Legge la data scritta a parole nella cella, es. "sab 5 set 2026" -> "2026-09-05".
+
+    Serve perche' sulla pagina di carriera il link al risultato c'e' solo per una
+    parte delle corse (quelle con la scheda ancora pubblicata): per tutte le altre
+    la data e' comunque scritta nella cella, in chiaro. Leggendola solo dal link
+    perdevamo la data di 197.079 corse.
+    """
+    if not val:
+        return None
+    m = re.search(r"\b(\d{1,2})\s+([A-Za-z\u00e0-\u00fc]{3,5})\.?\s+(\d{4})\b", val.strip())
+    if not m:
+        return None
+    mese = _MESI_IT.get(m.group(2).lower().rstrip("."))
+    if not mese:
+        return None
+    return f"{m.group(3)}-{mese}-{m.group(1).zfill(2)}"
+
+
 def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
     """
     Parsa cavAn.php (trottoweb.com) — contiene sia il profilo del cavallo
@@ -1028,10 +1061,13 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
         m_ippod = re.search(r"ippod=([A-Za-z]{2,4})", href)
         m_cod   = re.search(r"codice=(\d+)", href)
         m_nc    = re.search(r"n_corsa=(\d+)", href)
-        if not m_date:
+        # La data sta nel link solo quando la scheda del risultato e' ancora
+        # pubblicata; altrimenti e' scritta in chiaro nella cella. Prima il link
+        # (formato ISO, nessuna ambiguita'), poi il testo.
+        race_date = m_date.group(1) if m_date else _parse_date_it_text(tds[0].get_text(" ", strip=True))
+        if not race_date:
             continue  # riga non è una gara (es. header, paginazione)
 
-        race_date = m_date.group(1)
         track     = (m_ippod.group(1) if m_ippod else "").upper()
         # Preferisci il codice track dal testo display (es. "3^ RO") invece del
         # parametro ippod= (che a volte e' un codice provincia diverso, es. RM invece di RO)
@@ -1041,6 +1077,11 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
             track = m_track.group(1)
         codice    = m_cod.group(1) if m_cod else ""
         n_corsa   = m_nc.group(1) if m_nc else ""
+        if not n_corsa:
+            # Senza link il numero di corsa si legge dalla colonna accanto ("3^ RO").
+            m_nc_txt = re.match(r"\s*(\d{1,2})\s*\^", track_text)
+            if m_nc_txt:
+                n_corsa = m_nc_txt.group(1)
 
         placement_raw = tds[2].get_text(strip=True) if len(tds) > 2 else ""
         m_pos = re.match(r"(\d+)", placement_raw)
@@ -2739,7 +2780,21 @@ def phase_recover_undated(conn: sqlite3.Connection, batch_size: int = UNDATED_BA
             last_remaining INTEGER
         )
     """)
+    conn.execute("CREATE TABLE IF NOT EXISTS repair_meta (key TEXT PRIMARY KEY, value TEXT)")
     conn.commit()
+
+    # Quando il modo di leggere la data cambia, i cavalli gia' tentati vanno
+    # riprovati subito: col lettore vecchio era normale tornare a mani vuote,
+    # con quello nuovo non lo e' piu'. Senza questo azzeramento resterebbero
+    # in attesa per UNDATED_RETRY_DAYS giorni.
+    row = conn.execute("SELECT value FROM repair_meta WHERE key='date_reader_version'").fetchone()
+    if (row[0] if row else None) != DATE_READER_VERSION:
+        n_reset = conn.execute("SELECT COUNT(*) FROM undated_repair_log").fetchone()[0]
+        conn.execute("DELETE FROM undated_repair_log")
+        conn.execute("INSERT OR REPLACE INTO repair_meta (key, value) VALUES ('date_reader_version', ?)",
+                     (DATE_READER_VERSION,))
+        conn.commit()
+        print(f"[UNDATED] Lettore date aggiornato: {n_reset} cavalli rimessi in coda", file=sys.stderr)
 
     cutoff = (datetime.utcnow() - timedelta(days=UNDATED_RETRY_DAYS)).strftime("%Y-%m-%d")
     pending = conn.execute("""
