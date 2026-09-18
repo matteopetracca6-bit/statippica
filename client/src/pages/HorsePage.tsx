@@ -5,6 +5,7 @@ import { getFlag, KNOWN_STALLION_NATIONALITY, COUNTRY_FLAG } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin } from "lucide-react";
+import { formatRecord } from "@/lib/record";
 
 interface HorseData {
   name: string;
@@ -345,7 +346,7 @@ export default function HorsePage() {
         <Stat label="Vittorie" value={horse.career_wins ?? "—"} sub={horse.win_rate != null ? `${horse.win_rate.toFixed(1)}% win rate` : undefined} />
         <Stat label="Piazzamenti" value={horse.career_places ?? "—"} />
         <Stat label="Guadagni" value={horse.career_earnings != null ? `€${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
-        {horse.record_career && <Stat label="Record km" value={`1.${horse.record_career}`} />}
+        {horse.record_career && <Stat label="Record km" value={formatRecord(horse.record_career)} />}
       </div>
 
       {/* Percentile bars */}

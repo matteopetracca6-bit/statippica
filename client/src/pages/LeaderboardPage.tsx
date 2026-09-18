@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import { ChevronLeft, ChevronRight, SortAsc } from "lucide-react";
+import { formatRecord } from "@/lib/record";
 
 interface LeaderboardRow {
   name: string;
@@ -40,15 +41,19 @@ export default function LeaderboardPage() {
   const [sireFilter, setSireFilter] = useState<string>("");
   const [mode, setMode] = useState<string>("performance");
   const [sort, setSort] = useState<string>("score");
+  // Un cavallo con una o due corse puo' avere un voto altissimo per caso:
+  // questo interruttore tiene in classifica solo chi ha una carriera vera.
+  const [solidOnly, setSolidOnly] = useState(false);
   const [page, setPage] = useState(1);
   const LIMIT = 25;
+  const MIN_RACES_SOLID = 4;
 
   const { data: years } = useQuery<number[]>({
     queryKey: ["/api/leaderboard/years"],
     queryFn: async () => { const r = await apiRequest("GET", "/api/leaderboard/years"); return r.json(); },
   });
 
-  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort]);
+  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly]);
 
   const params = new URLSearchParams();
   if (year) params.set("year", year);
@@ -58,9 +63,10 @@ export default function LeaderboardPage() {
   params.set("sort", sort);
   params.set("page", String(page));
   params.set("limit", String(LIMIT));
+  if (solidOnly) params.set("min_races", String(MIN_RACES_SOLID));
 
   const { data, isLoading } = useQuery<LeaderboardData>({
-    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page],
+    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly],
     queryFn: async () => {
       const r = await apiRequest("GET", `/api/leaderboard?${params}`);
       return r.json();
@@ -130,8 +136,22 @@ export default function LeaderboardPage() {
           style={{ ...filterStyle, minWidth: "180px" }}
         />
 
-        {(year || grade || sireFilter) && (
-          <button onClick={() => { setYear(""); setGrade(""); setSireFilter(""); }} style={{
+        {/* Solo carriere con abbastanza corse */}
+        <label style={{
+          display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "12px",
+          color: solidOnly ? "hsl(183 70% 60%)" : "hsl(210 8% 55%)", cursor: "pointer", userSelect: "none",
+        }} data-testid="toggle-solid-only">
+          <input
+            type="checkbox"
+            checked={solidOnly}
+            onChange={e => setSolidOnly(e.target.checked)}
+            style={{ accentColor: "hsl(183 70% 50%)", width: "14px", height: "14px", cursor: "pointer" }}
+          />
+          Almeno {MIN_RACES_SOLID} corse
+        </label>
+
+        {(year || grade || sireFilter || solidOnly) && (
+          <button onClick={() => { setYear(""); setGrade(""); setSireFilter(""); setSolidOnly(false); }} style={{
             fontSize: "12px", color: "hsl(0 62% 55%)", background: "none", border: "none", cursor: "pointer",
           }}>
             Reset filtri
@@ -195,13 +215,28 @@ export default function LeaderboardPage() {
                           </Link>
                         ) : "—"}
                       </td>
-                      <td style={{ padding: "10px 12px" }}><GradeBadge grade={row.grade ?? "N/A"} size="sm" /></td>
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                        <GradeBadge grade={row.grade ?? "N/A"} size="sm" />
+                        {(row.career_races ?? 0) < MIN_RACES_SOLID && (
+                          <span
+                            title={`Voto calcolato su ${row.career_races ?? 0} corse: poco affidabile`}
+                            style={{
+                              marginLeft: "6px", fontSize: "10px", fontWeight: 600, letterSpacing: "0.03em",
+                              color: "hsl(38 85% 62%)", background: "hsl(38 60% 18%)",
+                              border: "1px solid hsl(38 50% 28%)", borderRadius: "5px", padding: "2px 5px",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            {row.career_races ?? 0} corse
+                          </span>
+                        )}
+                      </td>
                       <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(210 8% 58%)" }}>{row.score?.toFixed(1) ?? "—"}</td>
                       <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(51 80% 58%)", minWidth: "90px" }}>
                         {row.career_earnings != null ? `€${row.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"}
                       </td>
                       <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(183 60% 55%)" }}>
-                        {row.record_career ? `1.${row.record_career}` : "—"}
+                        {formatRecord(row.record_career)}
                       </td>
                       <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(210 8% 48%)" }}>
                         {row.win_rate != null ? `${row.win_rate.toFixed(1)}%` : "—"}

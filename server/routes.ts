@@ -352,6 +352,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
     if (grade) { conditions.push("hr.grade = ?"); params.push(grade); }
     if (sire) { conditions.push("hr.sire LIKE ?"); params.push(`%${sire}%`); }
 
+    // Un voto costruito su una o due corse non e' confrontabile con uno
+    // costruito su cinquanta: chi vuole una classifica solida filtra qui.
+    const minRaces = parseInt(req.query.min_races as string) || 0;
+    if (minRaces > 0) { conditions.push("COALESCE(hr.career_races,0) >= ?"); params.push(minRaces); }
+
     const where = conditions.join(" AND ");
     const sortCol = sortBy === "earnings" ? "career_earnings" : "score";
 

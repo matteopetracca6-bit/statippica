@@ -1,0 +1,40 @@
+name: StatIppica — Deploy al push su main
+
+# Render non ricostruisce da solo quando arriva codice nuovo: fino a oggi il
+# sito si aggiornava soltanto in coda ai lavori notturni, quindi una modifica
+# fatta di sera si vedeva online il mattino dopo. Questo workflow chiama la
+# stessa API di deploy subito dopo ogni push su main.
+#
+# I commit automatici delle notti ("nightly update ...") sono esclusi: quei
+# workflow il deploy lo lanciano gia' per conto loro e un secondo deploy
+# sarebbe solo tempo di build sprecato.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Se arrivano due push ravvicinati, ricostruire una volta sola: vince l'ultimo.
+  group: render-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Chiedi a Render di ricostruire il sito
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'nightly update')"
+    steps:
+      - name: Avvia il deploy
+        run: |
+          RESP=$(curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" || true)
+          DEPLOY_ID=$(echo "$RESP" | sed -n 's/.*"id"[: ]*"\([^"]*\)".*/\1/p' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            echo "Deploy Render avviato: $DEPLOY_ID"
+          else
+            echo "::warning::Render non ha confermato il deploy. Risposta: $(echo "$RESP" | head -c 200)"
+          fi

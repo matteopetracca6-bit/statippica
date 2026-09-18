@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import { ArrowLeft, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatRecord } from "@/lib/record";
 
 interface Pedigree {
   sire: string | null;
@@ -521,7 +522,7 @@ export default function StallionPage() {
                     <td style={{ padding: "9px 10px" }}><GradeBadge grade={c.grade} size="sm" /></td>
                     <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>{c.score?.toFixed(1)}</td>
                     <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(51 80% 60%)" }}>€{c.career_earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(183 70% 55%)" }}>{c.record_career ? `1.${c.record_career}` : "—"}</td>
+                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(183 70% 55%)" }}>{formatRecord(c.record_career)}</td>
                     <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.win_rate != null ? `${c.win_rate.toFixed(1)}%` : "—"}</td>
                     <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.sire_percentile != null ? `${c.sire_percentile.toFixed(0)}°` : "—"}</td>
                   </tr>
