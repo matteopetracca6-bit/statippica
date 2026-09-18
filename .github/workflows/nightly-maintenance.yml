@@ -41,6 +41,11 @@ jobs:
           # Recupero date mancanti: col lettore nuovo ogni cavallo raggiungibile
           # rende, quindi vale la pena smaltire in fretta gli 8.714 arretrati.
           UNDATED_BATCH_SIZE: "2000"
+          # Seconda fonte (VendoPuledri): genealogia a 5 generazioni e incroci.
+          # ~1,3 s a cavallo, quindi 1200 sono circa 25 minuti; restano
+          # ~5.600 cavalli arretrati, smaltiti in meno di una settimana.
+          VP_PEDIGREE_BATCH_SIZE: "1200"
+          VP_SIRES_PER_NIGHT: "10"
         run: python nightly_update.py
       - name: Trigger deploy Render dopo aggiornamento DB
         if: success()

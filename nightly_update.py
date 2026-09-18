@@ -3158,6 +3158,104 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     return report
 
 
+# ── FASE 2f/2g: seconda fonte VendoPuledri ─────────────────────────────────
+# Trottoweb da' le corse ma si ferma a padre e madre, e non vede i cavalli
+# fuori dalla finestra d'eta'. VendoPuledri copre cio' che manca: genealogia
+# su cinque generazioni con gli incroci (la consanguineita'), le prove di
+# qualifica dei giovani e l'allevamento di ogni cavallo.
+
+VP_PEDIGREE_BATCH_SIZE = int(os.environ.get("VP_PEDIGREE_BATCH_SIZE", "400"))
+VP_SIRES_PER_NIGHT = int(os.environ.get("VP_SIRES_PER_NIGHT", "10"))
+
+
+def phase_vp_qualifiche(conn: sqlite3.Connection) -> dict:
+    """Qualifiche dei cavalli giovani e rubrica allevatori.
+
+    Sono due sole richieste e coprono tutto l'archivio, quindi girano ogni
+    notte per intero: le qualifiche nuove arrivano poche per volta.
+    """
+    import vendopuledri_source as vp
+    vp.init_vp_schema(conn)
+    seen, new = vp.import_qualifiche(conn)
+    breeders = vp.import_breeders_directory(conn)
+    print(f"[VP] Qualifiche: {seen} righe viste, {new} nuove; allevatori in rubrica: {breeders}",
+          file=sys.stderr)
+    return {"qualifiche_seen": seen, "qualifiche_new": new, "breeders": breeders}
+
+
+def phase_vp_pedigree(conn: sqlite3.Connection,
+                      batch_size: int = VP_PEDIGREE_BATCH_SIZE) -> dict:
+    """Genealogia a cinque generazioni e consanguineita', a lotti.
+
+    Prima si allarga la rubrica nome->codice (la ricerca per nome della fonte
+    e' rotta: i codici si raccolgono dagli elenchi dei figli degli stalloni),
+    poi si scaricano le genealogie dei cavalli che ancora non ce l'hanno,
+    dando la precedenza a quelli con un voto costruito sulle corse, perche'
+    sono quelli che finiscono nel modello.
+    """
+    import vendopuledri_source as vp
+    vp.init_vp_schema(conn)
+    conn.execute("CREATE TABLE IF NOT EXISTS repair_meta (key TEXT PRIMARY KEY, value TEXT)")
+
+    harvested = vp.harvest_codes_from_stallions(conn, limit=VP_SIRES_PER_NIGHT)
+
+    pending = conn.execute("""
+        SELECT c.horse_name, c.vp_code
+        FROM vp_horse_codes c
+        JOIN horses h ON UPPER(TRIM(h.name)) = c.horse_name
+        LEFT JOIN vp_horse_profile p ON p.horse_name = c.horse_name
+        LEFT JOIN horse_ratings r ON UPPER(TRIM(r.name)) = c.horse_name
+                                 AND r.rating_mode = 'performance'
+        WHERE p.horse_name IS NULL
+        ORDER BY (r.name IS NULL), COALESCE(h.career_races, 0) DESC
+        LIMIT ?
+    """, (batch_size,)).fetchall()
+
+    ok = 0
+    for i, (name, code) in enumerate(pending, 1):
+        try:
+            if vp.import_genealogy(conn, name, code):
+                ok += 1
+        except Exception as e:
+            print(f"  [VP] {name}: {e}", file=sys.stderr)
+        if i % 50 == 0:
+            conn.commit()
+            print(f"  ... {i}/{len(pending)} genealogie", file=sys.stderr)
+    conn.commit()
+
+    tot = conn.execute("SELECT COUNT(*) FROM vp_horse_profile").fetchone()[0]
+    inb = conn.execute("SELECT COUNT(*) FROM vp_inbreeding").fetchone()[0]
+    print(f"[VP] Codici raccolti: {harvested}; genealogie scaricate: {ok}/{len(pending)}; "
+          f"totale cavalli con genealogia: {tot}, incroci registrati: {inb}", file=sys.stderr)
+    return {"codes": harvested, "pedigrees": ok, "total_profiles": tot, "inbreeding": inb}
+
+
+# GitHub rifiuta qualsiasi file oltre i 100 MB, e il database viaggia dentro
+# il repository: se cresce troppo il push notturno fallisce e il sito resta
+# fermo. Compattare ogni notte recupera lo spazio lasciato libero dalle
+# cancellazioni e tiene il file il piu' piccolo possibile.
+DB_SIZE_WARN_MB = 92
+
+
+def phase_compact(conn: sqlite3.Connection) -> None:
+    print("[FASE FINALE] compattazione database", file=sys.stderr)
+    try:
+        conn.commit()
+        conn.execute("VACUUM")
+    except Exception as e:
+        print(f"  [WARN] compattazione fallita: {e}", file=sys.stderr)
+        return
+    try:
+        mb = os.path.getsize(DB_PATH) / (1024 * 1024)
+    except OSError:
+        return
+    print(f"  dimensione database: {mb:.1f} MB", file=sys.stderr)
+    if mb >= DB_SIZE_WARN_MB:
+        print(f"  [WARN] il database si avvicina al limite di 100 MB di GitHub "
+              f"({mb:.1f} MB): serve alleggerirlo o spostarlo fuori dal repository.",
+              file=sys.stderr)
+
+
 def main():
     # NIGHTLY_MODE: "results" (gare mancanti + cavalli nuovi trovati lì),
     #               "maintenance" (aggiorna/backfilla cavalli già esistenti),
@@ -3203,10 +3301,13 @@ def main():
         # cambiato dati che influenzano i punteggi.
         phase_repair_race_dates(conn)   # FASE 2d: ripara date mancanti e doppioni
         phase_recover_undated(conn)     # FASE 2e: ripesca le date residue dalla fonte
+        phase_vp_qualifiche(conn)       # FASE 2f: qualifiche giovani + allevatori
+        phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
         phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
+        phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:
         conn.close()
 

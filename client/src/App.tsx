@@ -17,6 +17,8 @@ import PedigreePage from "./pages/PedigreePage";
 import HorsesPage from "./pages/HorsesPage";
 import MaresPage from "./pages/MaresPage";
 import MarePage from "./pages/MarePage";
+import QualifichePage from "./pages/QualifichePage";
+import BreedersPage from "./pages/BreedersPage";
 import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/not-found";
 
@@ -41,6 +43,8 @@ export default function App() {
               <Route path="/fattrici" component={MaresPage} />
               <Route path="/fattrice/:name" component={MarePage} />
               <Route path="/calendario" component={CalendarPage} />
+              <Route path="/qualifiche" component={QualifichePage} />
+              <Route path="/allevatori" component={BreedersPage} />
               <Route component={NotFound} />
             </Switch>
           </Layout>

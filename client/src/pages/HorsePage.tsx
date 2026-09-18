@@ -6,6 +6,7 @@ import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin } from "lucide-react";
 import { formatRecord } from "@/lib/record";
+import InbreedingPanel from "../components/InbreedingPanel";
 
 interface HorseData {
   name: string;
@@ -339,6 +340,9 @@ export default function HorsePage() {
           </div>
         </div>
       )}
+
+      {/* Consanguineita' dalla seconda fonte: compare solo se l'abbiamo */}
+      <InbreedingPanel horseName={horse.name} />
 
       {/* Stats grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", marginBottom: "22px" }}>

@@ -1564,4 +1564,229 @@ export function registerRoutes(httpServer: Server, app: Express) {
       db.close();
     }
   });
+
+  // ──────────────────────────────────────────────
+  // SECONDA FONTE — VendoPuledri
+  // Qualifiche dei giovani, consanguineita' e allevatori. Le tabelle vp_*
+  // sono popolate dalle fasi 2f/2g della pipeline notturna; se la pipeline
+  // non e' ancora girata le rotte rispondono vuote invece di rompersi.
+  // ──────────────────────────────────────────────
+
+  function vpTableExists(db: any, name: string): boolean {
+    return !!db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?"
+    ).get(name);
+  }
+
+  // GET /api/qualifiche — prove di qualifica, il primo tempo ufficiale di un
+  // cavallo giovane, prima ancora che debutti in corsa.
+  app.get("/api/qualifiche", (req, res) => {
+    const db = getDb();
+    try {
+      if (!vpTableExists(db, "vp_qualifiche")) {
+        return res.json({ rows: [], total: 0, years: [], tracks: [] });
+      }
+      const q = ((req.query.q as string) || "").trim().toUpperCase();
+      const year = ((req.query.year as string) || "").trim();
+      const track = ((req.query.track as string) || "").trim().toUpperCase();
+      const sire = ((req.query.sire as string) || "").trim().toUpperCase();
+      const onlyNew = req.query.only_new === "1";
+      const sort = (req.query.sort as string) === "date" ? "date" : "time";
+      const limit = Math.min(500, parseInt(req.query.limit as string) || 100);
+      const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
+      const where: string[] = ["1=1"];
+      const params: any[] = [];
+      if (q) { where.push("q.horse_name LIKE ?"); params.push(`%${q}%`); }
+      if (year) { where.push("substr(q.qual_date,1,4) = ?"); params.push(year); }
+      if (track) { where.push("q.track = ?"); params.push(track); }
+      if (sire) { where.push("q.sire = ?"); params.push(sire); }
+      // "solo nuovi" = cavalli che nel nostro archivio corse non esistono
+      if (onlyNew) where.push("h.name IS NULL");
+
+      const base = `
+        FROM vp_qualifiche q
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = q.horse_name
+        LEFT JOIN horse_ratings hr ON UPPER(TRIM(hr.name)) = q.horse_name
+                                   AND hr.rating_mode = 'performance'
+        WHERE ${where.join(" AND ")}
+      `;
+      const total = (db.prepare(`SELECT COUNT(*) AS n ${base}`).get(...params) as any).n;
+
+      const order = sort === "date"
+        ? "q.qual_date DESC, q.time_km ASC"
+        : "(q.time_km IS NULL), q.time_km ASC, q.qual_date DESC";
+
+      const rows = db.prepare(`
+        SELECT q.horse_name, q.qual_date, q.track, q.time_raw, q.time_km,
+               q.sire, q.dam, q.maternal_gsire, q.trainer, q.owner, q.breeder,
+               h.name AS known_name, h.birth_year,
+               hr.score, hr.grade
+        ${base}
+        ORDER BY ${order}
+        LIMIT ? OFFSET ?
+      `).all(...params, limit, offset) as any[];
+
+      const years = db.prepare(
+        "SELECT DISTINCT substr(qual_date,1,4) AS y FROM vp_qualifiche ORDER BY y DESC"
+      ).all().map((r: any) => r.y);
+      const tracks = db.prepare(
+        "SELECT track, COUNT(*) AS n FROM vp_qualifiche WHERE track != '' GROUP BY track ORDER BY n DESC"
+      ).all();
+
+      res.json({
+        rows: rows.map(r => ({ ...r, grade_color: r.grade ? gradeColor(r.grade) : null })),
+        total, limit, offset, years, tracks,
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // GET /api/qualifiche/stats — riepilogo per l'intestazione della pagina
+  app.get("/api/qualifiche/stats", (_req, res) => {
+    const db = getDb();
+    try {
+      if (!vpTableExists(db, "vp_qualifiche")) return res.json(null);
+      const s = db.prepare(`
+        SELECT COUNT(*) AS n_prove,
+               COUNT(DISTINCT horse_name) AS n_cavalli,
+               COUNT(DISTINCT sire) AS n_stalloni,
+               MIN(qual_date) AS dal, MAX(qual_date) AS al,
+               ROUND(AVG(time_km), 1) AS tempo_medio,
+               MIN(time_km) AS tempo_migliore
+        FROM vp_qualifiche
+      `).get() as any;
+      const nuovi = (db.prepare(`
+        SELECT COUNT(DISTINCT q.horse_name) AS n FROM vp_qualifiche q
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = q.horse_name
+        WHERE h.name IS NULL
+      `).get() as any).n;
+      const topSires = db.prepare(`
+        SELECT sire, COUNT(*) AS n_figli, ROUND(AVG(time_km), 1) AS tempo_medio
+        FROM vp_qualifiche
+        WHERE sire IS NOT NULL AND time_km IS NOT NULL
+        GROUP BY sire HAVING COUNT(*) >= 5
+        ORDER BY tempo_medio ASC LIMIT 15
+      `).all();
+      res.json({ ...s, n_nuovi: nuovi, top_sires: topSires });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // GET /api/consanguineita/:name — genealogia a cinque generazioni e incroci.
+  // "Incrocio" = un antenato che ricorre sia dalla parte del padre sia da
+  // quella della madre; le sigle tipo "4+5" dicono a quali generazioni.
+  app.get("/api/consanguineita/:name", (req, res) => {
+    const db = getDb();
+    try {
+      if (!vpTableExists(db, "vp_horse_profile")) return res.json(null);
+      const name = decodeURIComponent(req.params.name).trim().toUpperCase();
+      const profile = db.prepare(
+        "SELECT * FROM vp_horse_profile WHERE horse_name = ?"
+      ).get(name) as any;
+      if (!profile) return res.json(null);
+      // I nomi stanno nel dizionario vp_names: nelle tabelle grandi sono
+      // memorizzati come numero, altrimenti il file supera i 100 MB ammessi.
+      const crossings = db.prepare(`
+        SELECT n.name AS ancestor_name, i.sire_line, i.dam_line, i.closest_gen
+        FROM vp_inbreeding i
+        JOIN vp_names n ON n.id = i.ancestor_id
+        WHERE i.horse_id = ?
+        ORDER BY i.closest_gen ASC, n.name
+      `).all(profile.horse_id);
+      const ancestors = db.prepare(`
+        SELECT p.path, LENGTH(p.path) AS generation, n.name AS ancestor_name
+        FROM vp_pedigree p
+        JOIN vp_names n ON n.id = p.ancestor_id
+        WHERE p.horse_id = ?
+        ORDER BY LENGTH(p.path), p.path
+      `).all(profile.horse_id);
+      const breeders = db.prepare(
+        "SELECT breeder_name FROM vp_horse_breeder WHERE horse_name = ?"
+      ).all(name).map((r: any) => r.breeder_name);
+      res.json({ profile, crossings, ancestors, breeders });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // GET /api/allevatori — chi ha allevato i cavalli, con la qualita' media
+  // dei soggetti prodotti. Diverso da /api/stud-farms, che elenca le stazioni
+  // di monta dove stanno gli stalloni.
+  app.get("/api/allevatori", (req, res) => {
+    const db = getDb();
+    try {
+      if (!vpTableExists(db, "vp_horse_breeder")) return res.json({ rows: [], total: 0 });
+      const q = ((req.query.q as string) || "").trim().toUpperCase();
+      const minHorses = Math.max(1, parseInt(req.query.min_horses as string) || 1);
+      const limit = Math.min(500, parseInt(req.query.limit as string) || 100);
+      const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
+      const where: string[] = ["b.breeder_name != ''"];
+      const params: any[] = [];
+      if (q) { where.push("UPPER(b.breeder_name) LIKE ?"); params.push(`%${q}%`); }
+
+      const base = `
+        FROM vp_horse_breeder b
+        LEFT JOIN horse_ratings hr ON UPPER(TRIM(hr.name)) = b.horse_name
+                                   AND hr.rating_mode = 'performance'
+        WHERE ${where.join(" AND ")}
+        GROUP BY b.breeder_name
+        HAVING COUNT(DISTINCT b.horse_name) >= ?
+      `;
+      const total = (db.prepare(
+        `SELECT COUNT(*) AS n FROM (SELECT b.breeder_name ${base})`
+      ).get(...params, minHorses) as any).n;
+
+      const rows = db.prepare(`
+        SELECT b.breeder_name,
+               COUNT(DISTINCT b.horse_name) AS n_cavalli,
+               COUNT(DISTINCT hr.name) AS n_valutati,
+               ROUND(AVG(hr.score), 1) AS score_medio,
+               MAX(hr.score) AS score_migliore,
+               SUM(CASE WHEN hr.grade IN ('SSS','SS','S') THEN 1 ELSE 0 END) AS n_top
+        ${base}
+        ORDER BY (score_medio IS NULL), score_medio DESC, n_cavalli DESC
+        LIMIT ? OFFSET ?
+      `).all(...params, minHorses, limit, offset) as any[];
+
+      res.json({ rows, total, limit, offset });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // GET /api/allevatore/:name — scheda di un allevatore
+  app.get("/api/allevatore/:name", (req, res) => {
+    const db = getDb();
+    try {
+      if (!vpTableExists(db, "vp_horse_breeder")) return res.json(null);
+      const name = decodeURIComponent(req.params.name).trim();
+      const horses = db.prepare(`
+        SELECT b.horse_name, h.birth_year, h.sex, hr.score, hr.grade,
+               h.career_races, h.career_earnings
+        FROM vp_horse_breeder b
+        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = b.horse_name
+        LEFT JOIN horse_ratings hr ON UPPER(TRIM(hr.name)) = b.horse_name
+                                   AND hr.rating_mode = 'performance'
+        WHERE b.breeder_name = ?
+        ORDER BY (hr.score IS NULL), hr.score DESC
+        LIMIT 300
+      `).all(name) as any[];
+      if (!horses.length) return res.json(null);
+      const contact = vpTableExists(db, "vp_breeders")
+        ? db.prepare("SELECT * FROM vp_breeders WHERE UPPER(name) = UPPER(?)").get(name)
+        : null;
+      res.json({
+        name,
+        contact: contact || null,
+        n_cavalli: horses.length,
+        horses: horses.map(h => ({ ...h, grade_color: h.grade ? gradeColor(h.grade) : null })),
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
 }
