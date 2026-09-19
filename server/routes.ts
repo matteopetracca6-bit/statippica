@@ -1606,8 +1606,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
       const base = `
         FROM vp_qualifiche q
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = q.horse_name
-        LEFT JOIN horse_ratings hr ON UPPER(TRIM(hr.name)) = q.horse_name
+        LEFT JOIN horses h ON h.name = q.horse_name
+        LEFT JOIN horse_ratings hr ON hr.name = q.horse_name
                                    AND hr.rating_mode = 'performance'
         WHERE ${where.join(" AND ")}
       `;
@@ -1659,7 +1659,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       `).get() as any;
       const nuovi = (db.prepare(`
         SELECT COUNT(DISTINCT q.horse_name) AS n FROM vp_qualifiche q
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = q.horse_name
+        LEFT JOIN horses h ON h.name = q.horse_name
         WHERE h.name IS NULL
       `).get() as any).n;
       const topSires = db.prepare(`
@@ -1730,7 +1730,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
       const base = `
         FROM vp_horse_breeder b
-        LEFT JOIN horse_ratings hr ON UPPER(TRIM(hr.name)) = b.horse_name
+        LEFT JOIN horse_ratings hr ON hr.name = b.horse_name
                                    AND hr.rating_mode = 'performance'
         WHERE ${where.join(" AND ")}
         GROUP BY b.breeder_name
@@ -1768,8 +1768,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT b.horse_name, h.birth_year, h.sex, hr.score, hr.grade,
                h.career_races, h.career_earnings
         FROM vp_horse_breeder b
-        LEFT JOIN horses h ON UPPER(TRIM(h.name)) = b.horse_name
-        LEFT JOIN horse_ratings hr ON UPPER(TRIM(hr.name)) = b.horse_name
+        LEFT JOIN horses h ON h.name = b.horse_name
+        LEFT JOIN horse_ratings hr ON hr.name = b.horse_name
                                    AND hr.rating_mode = 'performance'
         WHERE b.breeder_name = ?
         ORDER BY (hr.score IS NULL), hr.score DESC
