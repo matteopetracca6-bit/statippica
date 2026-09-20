@@ -38,6 +38,17 @@ interface StallionData {
     progeny_earnings_2024: number;
     media_in_corsa: number;
     tot_prod: number;
+    stud_farm_address?: string | null;
+    record_1600?: string | null;
+    record_2000?: string | null;
+    catalog_earnings_eur?: number | null;
+    catalog_birth_year?: number | null;
+    catalog_sire?: string | null;
+    catalog_dam?: string | null;
+    catalog_dam_sire?: string | null;
+    catalog_notes?: string | null;
+    catalog_url?: string | null;
+    catalog_synced_at?: string | null;
   };
   children: Child[];
   gradeDist: { grade: string; cnt: number }[];
@@ -248,6 +259,17 @@ function StallionNavArrow({ direction, neighbor, onClick }: {
   );
 }
 
+function Fact({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
+  return (
+    <div style={{ minWidth: wide ? "260px" : "120px", flex: wide ? "1 1 320px" : "0 0 auto" }}>
+      <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "hsl(210 8% 45%)", marginBottom: "4px" }}>
+        {label.toUpperCase()}
+      </div>
+      <div style={{ fontSize: "13px", color: "hsl(210 10% 88%)", lineHeight: 1.45 }}>{value}</div>
+    </div>
+  );
+}
+
 export default function StallionPage() {
   const [match, params] = useRoute("/stallion/:name");
   const [, navigate] = useLocation();
@@ -354,6 +376,41 @@ export default function StallionPage() {
               <span style={{ color: "hsl(40 60% 55%)" }}>· Dati prodotti non ancora disponibili</span>
             )}
           </div>
+
+          {/* Scheda monta: dati del catalogo stalloni della stagione */}
+          {stallion.stud && (stallion.stud.stud_farm_address || stallion.stud.record_1600
+            || stallion.stud.record_2000 || stallion.stud.catalog_sire || stallion.stud.catalog_notes) && (
+            <div style={{
+              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
+              borderRadius: "12px", padding: "18px 22px", marginBottom: "18px",
+            }}>
+              <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "hsl(183 60% 55%)", marginBottom: "12px" }}>
+                STAGIONE DI MONTA
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "22px 34px" }}>
+                {stallion.stud.stud_farm_address && (
+                  <Fact label="Funziona presso" value={stallion.stud.stud_farm_address} wide />
+                )}
+                {stallion.stud.catalog_sire && (
+                  <Fact
+                    label="Genealogia da catalogo"
+                    value={`${stallion.stud.catalog_sire}${stallion.stud.catalog_dam ? " x " + stallion.stud.catalog_dam : ""}${stallion.stud.catalog_dam_sire ? " (" + stallion.stud.catalog_dam_sire + ")" : ""}`}
+                    wide
+                  />
+                )}
+                {stallion.stud.record_1600 && <Fact label="Record 1600 m" value={stallion.stud.record_1600} />}
+                {stallion.stud.record_2000 && <Fact label="Record 2000 m" value={stallion.stud.record_2000} />}
+                {stallion.stud.catalog_earnings_eur != null && stallion.stud.catalog_earnings_eur > 0 && (
+                  <Fact label="Vincite in carriera" value={"\u20ac" + Math.round(stallion.stud.catalog_earnings_eur).toLocaleString("it-IT")} />
+                )}
+                {stallion.stud.catalog_birth_year && <Fact label="Anno di nascita" value={String(stallion.stud.catalog_birth_year)} />}
+                {stallion.stud.catalog_notes && <Fact label="Seme e spedizioni" value={stallion.stud.catalog_notes} wide />}
+              </div>
+              <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "14px" }}>
+                Per prenotare la monta contatta direttamente l'allevamento indicato sopra.
+              </div>
+            </div>
+          )}
 
           {/* Rating card */}
           {!stallion.no_offspring_data && stallion.final_score != null && (

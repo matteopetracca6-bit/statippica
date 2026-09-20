@@ -205,7 +205,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const stud = db.prepare(`
         SELECT name, stud_fee_eur, stud_farm, stud_status, progeny_earnings_2024,
                media_in_corsa, tot_prod, tot_in_corsa, perc_in_corsa,
-               tot_vitt, perc_vitt, country
+               tot_vitt, perc_vitt, country,
+               stud_farm_address, record_1600, record_2000, catalog_earnings_eur,
+               catalog_birth_year, catalog_sire, catalog_dam, catalog_dam_sire,
+               catalog_notes, catalog_url, catalog_synced_at
         FROM stallions
         WHERE UPPER(TRIM(name)) = UPPER(TRIM(?))
         ORDER BY stud_fee_eur DESC
@@ -266,6 +269,29 @@ export function registerRoutes(httpServer: Server, app: Express) {
         dam_dam: spRow.dam_dam || null,
       } : null;
 
+      // Il catalogo monte indica padre, madre e nonno materno: usiamoli per
+      // riempire le caselle vuote, senza mai sovrascrivere i dati ufficiali.
+      const catalogPedigree = (stud && (stud.catalog_sire || stud.catalog_dam))
+        ? {
+            sire: stud.catalog_sire || null,
+            dam: stud.catalog_dam || null,
+            sire_sire: null,
+            sire_dam: null,
+            dam_sire: stud.catalog_dam_sire || null,
+            dam_dam: null,
+          }
+        : null;
+      const mergedPedigree = (pedigree || catalogPedigree)
+        ? {
+            sire: pedigree?.sire || catalogPedigree?.sire || null,
+            dam: pedigree?.dam || catalogPedigree?.dam || null,
+            sire_sire: pedigree?.sire_sire || null,
+            sire_dam: pedigree?.sire_dam || null,
+            dam_sire: pedigree?.dam_sire || catalogPedigree?.dam_sire || null,
+            dam_dam: pedigree?.dam_dam || null,
+          }
+        : null;
+
       // Nationality: prefer stallion_pedigree, fallback to stallions.country, then horses.country
       const natFromHorses = db.prepare(`
         SELECT h.country
@@ -323,11 +349,24 @@ export function registerRoutes(httpServer: Server, app: Express) {
           progeny_earnings_2024: stud.progeny_earnings_2024,
           media_in_corsa:        stud.media_in_corsa,
           tot_prod:              stud.tot_prod,
+          // Dati del catalogo monte 2026. I recapiti telefonici restano
+          // volutamente nel database e non vengono mai esposti qui.
+          stud_farm_address:     stud.stud_farm_address,
+          record_1600:           stud.record_1600,
+          record_2000:           stud.record_2000,
+          catalog_earnings_eur:  stud.catalog_earnings_eur,
+          catalog_birth_year:    stud.catalog_birth_year,
+          catalog_sire:          stud.catalog_sire,
+          catalog_dam:           stud.catalog_dam,
+          catalog_dam_sire:      stud.catalog_dam_sire,
+          catalog_notes:         stud.catalog_notes,
+          catalog_url:           stud.catalog_url,
+          catalog_synced_at:     stud.catalog_synced_at,
         } : null,
         // Children, distribution, pedigree
         children,
         gradeDist,
-        pedigree,
+        pedigree: mergedPedigree,
         nationality,
         // Flag utili
         no_offspring_data,

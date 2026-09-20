@@ -1,0 +1,47 @@
+name: StatIppica — Weekly Stallion Catalog (tasse di monta e allevamenti)
+on:
+  # Ogni lunedi' alle 03:10 UTC. Settimanale e non notturno: il catalogo monte
+  # cambia poche volte a stagione, e le 152 schede si leggono in pochi minuti.
+  schedule:
+    - cron: "10 3 * * 1"
+  workflow_dispatch: {}
+jobs:
+  sync:
+    name: Aggiorna i dati del catalogo monte
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Leggi il catalogo e aggiorna il database
+        run: python scripts/sync_stallion_catalog.py --db data.db
+      - name: Commit e push del database
+        run: |
+          git config user.email "nightly@statippica.bot"
+          git config user.name "StatIppica Catalog Sync"
+          git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
+          git pull --rebase origin main || git rebase --abort || true
+          git add data.db
+          git commit -m "catalogo monte aggiornato $(date -u '+%Y-%m-%d')" || echo "nessuna modifica"
+          git push origin main || echo "push saltato"
+      - name: Trigger deploy Render
+        if: success()
+        run: |
+          sleep 15
+          RESP=$(curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" || true)
+          DEPLOY_ID=$(echo "$RESP" | sed -n 's/.*"id"[: ]*"\([^"]*\)".*/\1/p' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            echo "Deploy Render avviato: $DEPLOY_ID"
+          else
+            echo "::warning::Render non ha confermato il deploy. Risposta: $(echo "$RESP" | head -c 200)"
+          fi
