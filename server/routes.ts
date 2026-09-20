@@ -20,6 +20,7 @@ import {
   predictPair, inbreeding, explain,
 } from "./advisorEngine";
 import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
+import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -1297,6 +1298,47 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const roi = costoAtteso > 0 ? (ricavoAtteso - costoAtteso) / costoAtteso : 0;
       const probRecupero = distribution.filter((d: any) => d.avg_earnings >= costoAtteso).reduce((s: number, d: any) => s + d.probability / 100, 0);
 
+      // ── Ritorno economico come FASCIA ────────────────────────────────
+      // Il ROI singolo sopra e' calcolato sulle medie dei guadagni, e le
+      // medie sono gonfiate da pochi campioni (nel grado SSS media
+      // 371.747 contro mediana 230.061). Qui si simulano 20.000 puledri
+      // pescando guadagni realmente osservati, e si attenua il profilo
+      // dello stallone verso la media generale quando i figli valutati
+      // sono pochi: cosi' uno stallone con pochi figli fortunati non
+      // scala la classifica per effetto del caso.
+      // Anche i gradi vanno presi sulle sole generazioni mature: i figli
+      // nati di recente hanno voti bassi solo perche' non hanno corso, e
+      // includerli penalizzerebbe gli stalloni giovani.
+      const annoMax = annoMaturita();
+      const offspringGradesMaturi = db.prepare(`
+        SELECT grade, COUNT(*) as cnt FROM horse_ratings
+        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
+          AND grade IS NOT NULL AND birth_year IS NOT NULL AND birth_year <= ?
+        GROUP BY grade
+      `).all(stallion, annoMax) as any[];
+      const popRowsMaturi = db.prepare(`
+        SELECT grade, COUNT(*) as cnt FROM horse_ratings
+        WHERE rating_mode = 'performance' AND grade IS NOT NULL
+          AND birth_year IS NOT NULL AND birth_year <= ?
+        GROUP BY grade
+      `).all(annoMax) as any[];
+      // Gli stalloni giovani non hanno ancora nessun figlio maturo: il
+      // filtro da solo li ridurrebbe alla media generale, buttando via
+      // un segnale reale. In quel caso si ripiega sui figli ancora in
+      // attivita', dichiarandolo.
+      const nMaturi = offspringGradesMaturi.reduce((a: number, r: any) => a + r.cnt, 0);
+      const usaMaturi = nMaturi >= 10;
+      const baseFigli: "maturi" | "tutti" | "nessuna" =
+        usaMaturi ? "maturi" : totalOffspring > 0 ? "tutti" : "nessuna";
+      const stallionCounts = new Map<string, number>();
+      for (const r of (usaMaturi ? offspringGradesMaturi : offspringGrades)) stallionCounts.set(r.grade, r.cnt);
+      const popCounts = new Map<string, number>();
+      for (const r of (usaMaturi ? popRowsMaturi : popRows)) popCounts.set(r.grade, r.cnt);
+      const roiRange = simulateRoi(
+        stallionCounts, popCounts, earningsByGrade(db, annoMax),
+        costoBase, costoSeMorte, baseFigli,
+      );
+
       // Inbreeding check
       let inbreedingRisk = false;
       let inbreedingAncestor: string | null = null;
@@ -1370,6 +1412,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           roi_pct: Math.round(roi * 1000) / 10,
           prob_recupero_costi: Math.round(probRecupero * 1000) / 10,
         },
+        roi_range: roiRange,
         inbreeding: {
           // Campi storici mantenuti per compatibilita'; il calcolo completo
           // su piu' generazioni sta in inbreeding_detail.
@@ -1507,7 +1550,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Get all stallions with stats + stud fee
       const allStallions = db.prepare(`
         SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
-               srs.avg_score, srs.n_in_corsa, srs.n_SSS, srs.n_SS, srs.n_S,
+               srs.avg_score, srs.n_in_corsa, srs.n_figli_totali, srs.n_SSS, srs.n_SS, srs.n_S,
                srs.pct_top_S, srs.avg_earnings, s.media_in_corsa, s.progeny_earnings_2024
         FROM stallions s
         JOIN stallion_rating_stats srs ON s.name = srs.sire

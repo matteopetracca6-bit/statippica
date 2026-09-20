@@ -5,8 +5,8 @@ import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import NameSelect from "../components/NameSelect";
-import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel } from "../components/AdvisorInsights";
-import type { Prediction, InbreedingDetail, Eligibility } from "../components/AdvisorInsights";
+import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel, RoiRangePanel } from "../components/AdvisorInsights";
+import type { Prediction, InbreedingDetail, Eligibility, RoiRange } from "../components/AdvisorInsights";
 import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
@@ -45,6 +45,8 @@ interface Candidate {
   stud_farm: string;
   avg_score: number;
   n_in_corsa: number;
+  /** Figli con un voto in archivio: e' il campione su cui poggia tutto il resto. */
+  n_figli_totali: number;
   n_SSS: number; n_SS: number; n_S: number;
   pct_top_S: number;
   avg_earnings: number;
@@ -72,6 +74,7 @@ interface Simulation {
   source: string;
   costs: { stud_fee: number; riproduzione: number; puledro_anno1: number; yearling: number; training: number; agone: number; costo_base: number; costo_se_morte: number; costo_atteso: number };
   roi: { costo_atteso: number; ricavo_atteso: number; utile_atteso: number; roi_pct: number; prob_recupero_costi: number };
+  roi_range?: RoiRange;
   inbreeding: { risk: boolean; ancestor: string | null };
   prediction?: Prediction;
   inbreeding_detail?: InbreedingDetail;
@@ -100,6 +103,7 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
       {sim.reasons && <ReasonsList reasons={sim.reasons} />}
       {sim.inbreeding_detail && <InbreedingPanel inb={sim.inbreeding_detail} />}
       {sim.eligibility && <RulesPanel el={sim.eligibility} />}
+      {sim.roi_range && <RoiRangePanel r={sim.roi_range} />}
 
       {/* Grade probability distribution */}
       <div style={{ marginBottom: "18px" }}>
@@ -188,7 +192,7 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
       }}>
         <div>
           <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
-            ROI atteso
+            ROI sulla media
           </div>
           <div style={{
             fontSize: "22px", fontWeight: 800,
@@ -197,7 +201,7 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
             {sim.roi.roi_pct > 0 ? "+" : ""}{sim.roi.roi_pct.toFixed(1)}%
           </div>
           <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "2px" }}>
-            Ricavo atteso: €{sim.roi.ricavo_atteso.toLocaleString("it-IT")} · Utile: €{sim.roi.utile_atteso.toLocaleString("it-IT")}
+            Ricavo medio €{sim.roi.ricavo_atteso.toLocaleString("it-IT")} · calcolato sulle medie, vedi sopra la fascia reale
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -607,7 +611,7 @@ export default function AdvisorPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                         <Users size={11} style={{ color: "hsl(210 8% 50%)" }} />
                         <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 55%)" }}>
-                          {c.n_in_corsa ?? "—"} in gara
+                          {c.n_figli_totali ?? "—"} figli valutati
                         </span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>

@@ -279,3 +279,125 @@ export function RulesPanel({ el }: { el: Eligibility }) {
 }
 
 export { PANEL, BORDER, MUTED, DIM, CYAN };
+
+// ────────────────────────────────────────────────────────────────
+// Fascia di ritorno economico
+// ────────────────────────────────────────────────────────────────
+
+export interface RoiRange {
+  roi_mediano_pct: number;
+  roi_medio_pct: number;
+  roi_p10_pct: number;
+  roi_p25_pct: number;
+  roi_p75_pct: number;
+  roi_p90_pct: number;
+  prob_pareggio_pct: number;
+  prob_perdita_grave_pct: number;
+  guadagno_mediano: number;
+  guadagno_medio: number;
+  guadagno_p90: number;
+  costo_atteso: number;
+  n_simulazioni: number;
+  peso_dati_stallone: number;
+  n_figli_valutati: number;
+  anno_maturita: number;
+  base_figli: "maturi" | "tutti" | "nessuna";
+  nota: string;
+  avvertenza: string;
+}
+
+function euro(n: number) {
+  return "\u20ac" + Math.round(n).toLocaleString("it-IT");
+}
+
+function segno(n: number) {
+  return (n > 0 ? "+" : "") + n.toFixed(0) + "%";
+}
+
+/**
+ * Mostra il ritorno come fascia. La barra va da -100% (perdita totale)
+ * al massimo fra +100% e il novantesimo percentile, cosi' i casi molto
+ * fortunati non schiacciano visivamente tutto il resto.
+ */
+export function RoiRangePanel({ r }: { r: RoiRange }) {
+  const min = -100;
+  const max = Math.max(100, r.roi_p90_pct);
+  const pos = (v: number) => ((Math.min(max, Math.max(min, v)) - min) / (max - min)) * 100;
+
+  const left25 = pos(r.roi_p25_pct);
+  const width50 = Math.max(1, pos(r.roi_p75_pct) - left25);
+  const leftWhisk = pos(r.roi_p10_pct);
+  const widthWhisk = Math.max(1, pos(r.roi_p90_pct) - leftWhisk);
+  const zero = pos(0);
+
+  const colMediano = r.roi_mediano_pct >= 0 ? "hsl(100 60% 55%)" : "hsl(0 60% 58%)";
+
+  return (
+    <div style={{ marginBottom: "18px" }}>
+      <SectionTitle icon={<Scale size={12} />}>Quanto si rischia davvero</SectionTitle>
+      <div style={{ background: "hsl(220 10% 11%)", border: BORDER, borderRadius: "8px", padding: "14px 16px" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
+          <div style={{ fontSize: "26px", fontWeight: 800, color: colMediano }}>
+            {segno(r.roi_mediano_pct)}
+          </div>
+          <div style={{ fontSize: "12px", color: MUTED }}>
+            ritorno del puledro tipico &middot; meta&#39; dei casi fra{" "}
+            <strong style={{ color: "hsl(210 8% 75%)" }}>{segno(r.roi_p25_pct)}</strong> e{" "}
+            <strong style={{ color: "hsl(210 8% 75%)" }}>{segno(r.roi_p75_pct)}</strong>
+          </div>
+        </div>
+
+        {/* barra: baffi 10-90, scatola 25-75, tacca sulla mediana */}
+        <div style={{ position: "relative", height: "34px", marginBottom: "6px" }}>
+          <div style={{ position: "absolute", top: "15px", left: 0, right: 0, height: "3px", background: "hsl(220 8% 18%)", borderRadius: "2px" }} />
+          <div style={{ position: "absolute", top: "15px", left: leftWhisk + "%", width: widthWhisk + "%", height: "3px", background: "hsl(183 30% 32%)", borderRadius: "2px" }} />
+          <div style={{ position: "absolute", top: "8px", left: left25 + "%", width: width50 + "%", height: "17px", background: "hsl(183 45% 30%)", border: "1px solid hsl(183 55% 42%)", borderRadius: "4px" }} />
+          <div style={{ position: "absolute", top: "4px", left: pos(r.roi_mediano_pct) + "%", width: "3px", height: "25px", background: colMediano, borderRadius: "2px" }} />
+          <div style={{ position: "absolute", top: "2px", left: zero + "%", width: 0, height: "30px", borderLeft: "1px dashed hsl(45 60% 55%)" }} />
+        </div>
+        <div style={{ position: "relative", height: "14px", marginBottom: "12px" }}>
+          <span style={{ position: "absolute", left: 0, fontSize: "10px", color: "hsl(210 8% 42%)" }}>perdita totale</span>
+          <span style={{
+            position: "absolute", left: zero + "%", transform: "translateX(-50%)",
+            fontSize: "10px", color: "hsl(45 60% 58%)", whiteSpace: "nowrap",
+          }}>
+            pari spesa
+          </span>
+          <span style={{ position: "absolute", right: 0, fontSize: "10px", color: "hsl(210 8% 42%)" }}>
+            {segno(r.roi_p90_pct)} nel 10% piu&#39; fortunato
+          </span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", marginBottom: "12px" }}>
+          <Stat label="Ripaga i costi" value={r.prob_pareggio_pct.toFixed(0) + "%"} color="hsl(100 55% 55%)" sub="dei puledri simulati" />
+          <Stat label="Perde meta' o piu'" value={r.prob_perdita_grave_pct.toFixed(0) + "%"} color="hsl(0 60% 58%)" sub="dell'investimento" />
+          <Stat label="Guadagno tipico" value={euro(r.guadagno_mediano)} color="hsl(51 70% 58%)" sub={"costo " + euro(r.costo_atteso)} />
+          <Stat label="Guadagno medio" value={euro(r.guadagno_medio)} color="hsl(210 8% 62%)" sub="gonfiato dai campioni" />
+        </div>
+
+        <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.55, borderTop: BORDER, paddingTop: "10px" }}>
+          <div style={{ marginBottom: "5px" }}>
+            Il <strong style={{ color: "hsl(210 8% 72%)" }}>guadagno medio</strong> ({euro(r.guadagno_medio)}) e&#39; molto piu&#39; alto
+            di quello <strong style={{ color: "hsl(210 8% 72%)" }}>tipico</strong> ({euro(r.guadagno_mediano)}): pochi cavalli
+            eccezionali alzano la media, ma la maggior parte dei puledri sta molto sotto. Per decidere se pagare una monta conta
+            il valore tipico, non la media.
+          </div>
+          <div>{r.nota}</div>
+          <div style={{ marginTop: "5px", color: "hsl(210 8% 42%)" }}>{r.avvertenza}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, color, sub }: { label: string; value: string; color: string; sub: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: "9.5px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "3px" }}>
+        {label}
+      </div>
+      <div className="tabular" style={{ fontSize: "17px", fontWeight: 800, color }}>{value}</div>
+      <div style={{ fontSize: "10px", color: "hsl(210 8% 40%)" }}>{sub}</div>
+    </div>
+  );
+}
