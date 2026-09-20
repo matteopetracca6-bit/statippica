@@ -33,18 +33,31 @@ const COUNTRY_LABELS: Record<string, string> = {
   NOR: "Norvegia",
   GER: "Germania",
   DEN: "Danimarca",
+  FIN: "Finlandia",
+  NED: "Olanda",
+  ESP: "Spagna",
+  GBR: "Regno Unito",
+  CAN: "Canada",
+  AUT: "Austria",
+  BEL: "Belgio",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Disponibile",
   da_concordare: "Da concordare",
+  free: "Monta gratuita",
   ritirato: "Ritirato",
+  deceased: "Deceduto",
+  non_in_catalogo: "Non in monta 2026",
 };
 
 const STATUS_COLORS: Record<string, string> = {
   active: "hsl(120 50% 45%)",
   da_concordare: "hsl(40 70% 50%)",
+  free: "hsl(150 45% 50%)",
   ritirato: "hsl(0 60% 50%)",
+  deceased: "hsl(0 40% 45%)",
+  non_in_catalogo: "hsl(210 8% 45%)",
 };
 
 export default function StallionDirectoryPage() {
@@ -70,7 +83,12 @@ export default function StallionDirectoryPage() {
     // diventa una scelta dell'utente.
     let list = stallions;
     if (onlyCatalog) {
-      list = list.filter(s => s.season === "2026" || s.stud_status === "active" || s.stud_status === "da_concordare");
+      // Solo chi e' davvero nel catalogo 2026. Prima bastava season === "2026",
+      // che lasciava dentro anche gli stalloni usciti dal catalogo con la
+      // stagione vecchia ancora scritta in archivio.
+      list = list.filter(s =>
+        s.stud_status === "active" || s.stud_status === "da_concordare" || s.stud_status === "free"
+      );
     }
 
     if (search.trim()) {
@@ -220,6 +238,8 @@ export default function StallionDirectoryPage() {
             <option value="all">Tutti gli stati</option>
             <option value="active">Disponibili</option>
             <option value="da_concordare">Da concordare</option>
+            <option value="free">Monta gratuita</option>
+            <option value="non_in_catalogo">Non in monta 2026</option>
           </select>
         </div>
 
@@ -272,7 +292,10 @@ export default function StallionDirectoryPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "12px" }}>
           {filtered.map(s => {
             const country = s.country || s.nationality;
-            const status = s.stud_status || "active";
+            // Senza stato non si puo' dire che sia in monta: prima ogni
+            // stallone fuori catalogo veniva mostrato come "Disponibile".
+            const status = s.stud_status || null;
+            const inSeason = status === "active" || status === "da_concordare" || status === "free";
             const fee = s.stud_fee_eur;
             return (
               <button
@@ -320,7 +343,11 @@ export default function StallionDirectoryPage() {
 
                 {/* Fee + status */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  {fee != null && fee > 0 ? (
+                  {!inSeason ? (
+                    <span style={{ fontSize: "12px", color: "hsl(210 8% 45%)" }}>
+                      {status ? STATUS_LABELS[status] || status : "Non in monta 2026"}
+                    </span>
+                  ) : fee != null && fee > 0 ? (
                     <div style={{
                       display: "flex", alignItems: "center", gap: "4px",
                       background: "hsl(51 80% 50% / 0.12)", borderRadius: "6px", padding: "3px 8px",
@@ -335,12 +362,14 @@ export default function StallionDirectoryPage() {
                   ) : (
                     <span style={{ fontSize: "12px", color: "hsl(40 60% 50%)" }}>Da concordare</span>
                   )}
-                  <span style={{
-                    fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em",
-                    color: STATUS_COLORS[status] || "hsl(210 8% 50%)",
-                  }}>
-                    {STATUS_LABELS[status] || status}
-                  </span>
+                  {inSeason && status && (
+                    <span style={{
+                      fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em",
+                      color: STATUS_COLORS[status] || "hsl(210 8% 50%)",
+                    }}>
+                      {STATUS_LABELS[status] || status}
+                    </span>
+                  )}
                 </div>
 
                 {/* Farm */}

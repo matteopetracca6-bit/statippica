@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
-import { Search, X, Filter, ChevronLeft, ChevronRight, ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
+import { Search, X, Filter, ChevronLeft, ChevronRight, ArrowLeft, MapPin } from "lucide-react";
 
 /**
  * SEZIONE ALLEVATORI.
@@ -37,8 +37,7 @@ interface BreederDetail {
   contact: {
     city: string | null;
     province: string | null;
-    phone: string | null;
-    email: string | null;
+    // I recapiti restano nell'archivio: il sito non li mostra.
   } | null;
   horses: {
     horse_name: string;
@@ -122,24 +121,12 @@ export default function BreedersPage({ embedded = false }: { embedded?: boolean 
           {selected}
         </h1>
 
-        {detail?.contact && (detail.contact.city || detail.contact.phone || detail.contact.email) && (
+        {detail?.contact && detail.contact.city && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "13px", color: "hsl(210 8% 65%)", marginBottom: "16px" }}>
-            {detail.contact.city && (
-              <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <MapPin size={13} /> {detail.contact.city}
-                {detail.contact.province ? ` (${detail.contact.province})` : ""}
-              </span>
-            )}
-            {detail.contact.phone && (
-              <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <Phone size={13} /> {detail.contact.phone}
-              </span>
-            )}
-            {detail.contact.email && (
-              <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <Mail size={13} /> {detail.contact.email}
-              </span>
-            )}
+            <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+              <MapPin size={13} /> {detail.contact.city}
+              {detail.contact.province ? ` (${detail.contact.province})` : ""}
+            </span>
           </div>
         )}
 

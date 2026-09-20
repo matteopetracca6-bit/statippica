@@ -1960,7 +1960,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
       `).all(name) as any[];
       if (!horses.length) return res.json(null);
       const contact = vpTableExists(db, "vp_breeders")
-        ? db.prepare("SELECT * FROM vp_breeders WHERE UPPER(name) = UPPER(?)").get(name)
+        // Telefono ed email NON vengono selezionati: i recapiti restano
+        // nell'archivio e non devono comparire sul sito.
+        ? db.prepare(
+            "SELECT vp_id, name, suffix, city, province, last_seen FROM vp_breeders WHERE UPPER(name) = UPPER(?)"
+          ).get(name)
         : null;
       res.json({
         name,

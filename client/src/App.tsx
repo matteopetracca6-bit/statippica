@@ -37,6 +37,9 @@ export default function App() {
               <Route path="/advisor" component={AdvisorPage} />
               <Route path="/compare" component={ComparePage} />
               <Route path="/stallioni" component={StallionDirectoryPage} />
+              {/* "stalloni" e' la parola giusta: l'indirizzo con la doppia i
+                  resta valido per non rompere i link gia' salvati. */}
+              <Route path="/stalloni" component={StallionDirectoryPage} />
               <Route path="/allevamento" component={AllevamentoHubPage} />
               <Route path="/allevamenti" component={AllevamentoHubPage} />
               <Route path="/trend" component={TrendsPage} />

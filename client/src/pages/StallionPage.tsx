@@ -360,12 +360,22 @@ export default function StallionPage() {
             <span>{stallion.n_figli_totali} prodotti totali</span>
             <span>·</span>
             <span>{stallion.n_in_corsa} in corsa</span>
-            {stallion.stud?.stud_fee_eur && (
+            {stallion.stud?.stud_fee_eur ? (
               <>
                 <span>·</span>
                 <span style={{ color: "hsl(51 80% 60%)" }}>Monta €{stallion.stud.stud_fee_eur.toLocaleString("it-IT")}</span>
               </>
-            )}
+            ) : stallion.stud?.stud_status === "free" ? (
+              <>
+                <span>·</span>
+                <span style={{ color: "hsl(150 45% 55%)" }}>Monta gratuita</span>
+              </>
+            ) : stallion.stud?.stud_status === "da_concordare" ? (
+              <>
+                <span>·</span>
+                <span style={{ color: "hsl(40 70% 55%)" }}>Monta da concordare</span>
+              </>
+            ) : null}
             {stallion.stud?.stud_farm && (
               <>
                 <span>·</span>
@@ -385,7 +395,9 @@ export default function StallionPage() {
               borderRadius: "12px", padding: "18px 22px", marginBottom: "18px",
             }}>
               <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "hsl(183 60% 55%)", marginBottom: "12px" }}>
-                STAGIONE DI MONTA
+                {["active", "da_concordare", "free"].includes(stallion.stud.stud_status || "")
+                  ? "STAGIONE DI MONTA"
+                  : "DATI DI MONTA — NON IN CATALOGO 2026"}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "22px 34px" }}>
                 {stallion.stud.stud_farm_address && (
@@ -407,7 +419,9 @@ export default function StallionPage() {
                 {stallion.stud.catalog_notes && <Fact label="Seme e spedizioni" value={stallion.stud.catalog_notes} wide />}
               </div>
               <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "14px" }}>
-                Per prenotare la monta contatta direttamente l'allevamento indicato sopra.
+                {["active", "da_concordare", "free"].includes(stallion.stud.stud_status || "")
+                  ? "Per prenotare la monta contatta direttamente l'allevamento indicato sopra."
+                  : "Questo stallone non risulta nel catalogo monte della stagione 2026: i dati qui sopra sono quelli dell'ultima stagione rilevata."}
               </div>
             </div>
           )}

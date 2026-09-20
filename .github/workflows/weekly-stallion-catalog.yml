@@ -21,6 +21,8 @@ jobs:
           python-version: "3.11"
       - name: Leggi il catalogo e aggiorna il database
         run: python scripts/sync_stallion_catalog.py --db data.db
+      - name: Ripulisci i nomi degli allevamenti
+        run: python scripts/clean_stud_farm.py --db data.db
       - name: Commit e push del database
         run: |
           git config user.email "nightly@statippica.bot"

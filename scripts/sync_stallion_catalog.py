@@ -38,7 +38,10 @@ CATALOG_URL = f"{BASE}/catalogo"
 SEASON = "2026"
 FEE_SOURCE = "Trot Stallions Directory 2026"
 USD_TO_EUR = 0.92
+# La fonte usa sigle italiane: le riportiamo ai codici usati dal sito.
+COUNTRY_FIX = {"SVE": "SWE", "DAN": "DEN", "OLA": "NED", "SPA": "ESP", "GB": "GBR"}
 SLUG_MAP_FILE = "scripts/catalog_slugs.json"
+NAMES_FILE = "scripts/catalog_names.json"
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; StatIppica/1.0)"}
 PAUSE_S = 0.6
 
@@ -101,11 +104,20 @@ def parse_fee(line: str) -> tuple[float | None, str]:
         return 0.0, "free"
     if "concordare" in low:
         return None, "da_concordare"
+    # Tre forme viste sul catalogo: "2.000 euro", "€ 8.500", "3.000 + iva"
+    # (senza valuta, che sul catalogo italiano significa comunque euro).
     m = re.search(r"([\d][\d\.\s]*)\s*(euro|dollari|\$|€)", line, re.I)
+    unit = (m.group(2).lower() if m else "euro")
     if not m:
-        return None, "active"
+        m = re.search(r"(?:euro|€|\$)\s*([\d][\d\.\s]*)", line, re.I)
+        if m:
+            unit = "$" if "$" in line else "euro"
+    if not m:
+        after = re.search(r"tasso di monta\s*:\s*(?:da\s+)?([\d][\d\.\s]*)", line, re.I)
+        if not after:
+            return None, "active"
+        m, unit = after, "euro"
     value = float(re.sub(r"[^\d]", "", m.group(1)) or 0)
-    unit = m.group(2).lower()
     if unit in ("dollari", "$"):
         value = round(value * USD_TO_EUR, 2)
     return (value or None), "active"
@@ -149,7 +161,8 @@ def parse_detail(text: str, name: str) -> dict:
     if gen_line:
         m = re.match(r"^(\d{4})\s*-\s*\(([A-Z]{3})\)\s*-\s*da\s+(.+)$", gen_line)
         out["catalog_birth_year"] = int(m.group(1))
-        out.setdefault("country", m.group(2))
+        code = m.group(2)
+        out.setdefault("country", COUNTRY_FIX.get(code, code))
         parents = m.group(3)
         if " e " in parents:
             sire, dam_part = parents.split(" e ", 1)
@@ -200,9 +213,20 @@ def parse_detail(text: str, name: str) -> dict:
     return out
 
 
+def official_names() -> set[str]:
+    """Elenco ufficiale dei nomi del catalogo, aggiornato a mano quando cambia
+    la stagione. Serve per capire chi e' USCITO dal catalogo: la pagina letta
+    senza browser mostra solo una parte dei nomi e da sola non basta."""
+    try:
+        with open(NAMES_FILE, encoding="utf-8") as fh:
+            return {str(n).strip().upper() for n in json.load(fh) if str(n).strip()}
+    except (OSError, ValueError):
+        return set()
+
+
 def catalog_names(known: list[str]) -> list[str]:
     """Nomi del catalogo: quelli già in archivio più quelli nuovi visibili nella pagina."""
-    names = {n.upper() for n in known}
+    names = {n.upper() for n in known} | official_names()
     page = get_page(CATALOG_URL)
     if page:
         text = to_text(page)
@@ -284,11 +308,38 @@ def main() -> int:
             conn.commit()
             print(f"  ... {pos}/{len(names)}")
 
+    retired = 0
     if not args.dry_run:
-        # Nota: lo script NON ritira nessuno stallone. La pagina del catalogo,
-        # letta senza browser, mostra solo una parte dei nomi: dedurre le
-        # assenze da quella lista parziale cancellerebbe stalloni validi.
+        # Ritiro solo sulla base dell'elenco ufficiale completo: chi risulta in
+        # archivio con una tassa di questa fonte ma non e' piu' nel catalogo
+        # tiene un prezzo vecchio, quindi va marcato e la tassa azzerata.
+        # Senza elenco ufficiale non si ritira nulla: la pagina letta senza
+        # browser mostra solo una parte dei nomi.
+        official = official_names()
+        if official:
+            for row in conn.execute(
+                "SELECT name FROM stallions "
+                "WHERE stud_fee_eur > 0 OR stud_status IN ('active','da_concordare','free')"
+            ).fetchall():
+                if row["name"].strip().upper() not in official:
+                    conn.execute(
+                        "UPDATE stallions SET stud_status = 'non_in_catalogo', "
+                        "stud_fee_eur = NULL WHERE name = ?",
+                        (row["name"],),
+                    )
+                    retired += 1
+            # Chi e' nel catalogo con una tassa ma senza stato resta invisibile
+            # ai filtri della pagina: lo stato va allineato alla tassa.
+            conn.execute(
+                "UPDATE stallions SET stud_status = 'active' "
+                "WHERE stud_status IS NULL AND stud_fee_eur > 0"
+            )
+            for wrong, right in COUNTRY_FIX.items():
+                conn.execute(
+                    "UPDATE stallions SET country = ? WHERE country = ?", (right, wrong)
+                )
         conn.commit()
+    print(f"Usciti dal catalogo: {retired}")
     print(f"Aggiornati: {updated} | nuovi: {inserted} | schede non lette: {skipped}")
     conn.close()
     return 0
