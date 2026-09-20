@@ -5,6 +5,8 @@ import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import NameSelect from "../components/NameSelect";
+import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel } from "../components/AdvisorInsights";
+import type { Prediction, InbreedingDetail, Eligibility } from "../components/AdvisorInsights";
 import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
@@ -48,6 +50,17 @@ interface Candidate {
   avg_earnings: number;
   media_in_corsa: number;
   progeny_earnings_2024: number;
+  // Campi prodotti dal motore di previsione padre+madre: dipendono dalla
+  // fattrice scelta, quindi cambiano da ricerca a ricerca.
+  expected_score?: number;
+  expected_grade?: string;
+  typical_low?: number;
+  typical_high?: number;
+  prob_top?: number;
+  confidence_label?: string;
+  value_index?: number;
+  inbreeding_pct?: number;
+  inbreeding_level?: string;
 }
 
 interface Simulation {
@@ -60,6 +73,10 @@ interface Simulation {
   costs: { stud_fee: number; riproduzione: number; puledro_anno1: number; yearling: number; training: number; agone: number; costo_base: number; costo_se_morte: number; costo_atteso: number };
   roi: { costo_atteso: number; ricavo_atteso: number; utile_atteso: number; roi_pct: number; prob_recupero_costi: number };
   inbreeding: { risk: boolean; ancestor: string | null };
+  prediction?: Prediction;
+  inbreeding_detail?: InbreedingDetail;
+  reasons?: string[];
+  eligibility?: Eligibility;
 }
 
 function SimulationPanel({ stallion, mare }: { stallion: string; mare: string }) {
@@ -78,6 +95,12 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
 
   return (
     <div style={{ marginTop: "12px", padding: "16px 18px", background: "hsl(220 12% 8%)", borderRadius: "10px", border: "1px solid hsl(220 10% 14%)" }}>
+      {/* Voto atteso con fascia di incertezza */}
+      {sim.prediction && <PredictionCard p={sim.prediction} />}
+      {sim.reasons && <ReasonsList reasons={sim.reasons} />}
+      {sim.inbreeding_detail && <InbreedingPanel inb={sim.inbreeding_detail} />}
+      {sim.eligibility && <RulesPanel el={sim.eligibility} />}
+
       {/* Grade probability distribution */}
       <div style={{ marginBottom: "18px" }}>
         <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
@@ -114,8 +137,9 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
         </div>
       </div>
 
-      {/* Inbreeding warning */}
-      {sim.inbreeding?.risk && (
+      {/* Il vecchio avviso di inbreeding resta solo se manca il calcolo nuovo,
+          che e' piu' preciso (coefficiente di Wright sul pedigree completo). */}
+      {!sim.inbreeding_detail && sim.inbreeding?.risk && (
         <div style={{
           background: "hsl(0 50% 20% / 0.3)", border: "1px solid hsl(0 50% 35%)",
           borderRadius: "8px", padding: "10px 14px", marginBottom: "14px",
@@ -192,10 +216,143 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
   );
 }
 
+interface CompareRow {
+  stallion: string;
+  stud_fee: number | null;
+  stud_farm: string | null;
+  expected_score: number;
+  expected_grade: string;
+  typical_low: number;
+  typical_high: number;
+  prob_top: number;
+  prob_poor: number;
+  confidence_label: string;
+  n_offspring_sire: number;
+  inbreeding_pct: number;
+  inbreeding_level: string;
+  value_index: number | null;
+}
+
+/**
+ * Confronto affiancato di piu' stalloni sulla stessa fattrice.
+ *
+ * Serve perche' leggere le schede una per una non aiuta a scegliere: qui le
+ * righe sono tutte calcolate sulla stessa madre, quindi i voti attesi sono
+ * confrontabili fra loro.
+ */
+function ComparePanel({ mare, stallions, onClear }: { mare: string; stallions: string[]; onClear: () => void }) {
+  const key = stallions.slice().sort().join(",");
+  const { data, isLoading } = useQuery<{ candidates: CompareRow[] }>({
+    queryKey: ["/api/advisor/compare", mare, key],
+    queryFn: () => apiRequest("GET", `/api/advisor/compare?mare=${encodeURIComponent(mare)}&stallions=${encodeURIComponent(stallions.join(","))}`).then(r => r.json()),
+    staleTime: 120000,
+  });
+
+  const rows = data?.candidates ?? [];
+  const bestScore = Math.max.apply(null, rows.map(r => r.expected_score).concat([0]));
+  const bestValue = Math.max.apply(null, rows.map(r => r.value_index ?? 0).concat([0]));
+
+  const th: React.CSSProperties = {
+    fontSize: "10px", color: "hsl(210 8% 40%)", textTransform: "uppercase",
+    letterSpacing: "0.05em", fontWeight: 700, textAlign: "right",
+    padding: "0 0 8px", whiteSpace: "nowrap",
+  };
+  const td: React.CSSProperties = {
+    fontSize: "12.5px", textAlign: "right", padding: "8px 0",
+    borderTop: "1px solid hsl(220 10% 14%)", whiteSpace: "nowrap",
+  };
+
+  return (
+    <div style={{
+      background: "hsl(220 12% 10%)", border: "1px solid hsl(183 100% 38% / 0.28)",
+      borderRadius: "12px", padding: "16px 18px", marginBottom: "16px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+        <div style={{ fontSize: "12px", fontWeight: 800, color: "hsl(183 80% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          Confronto su {mare}
+        </div>
+        <button onClick={onClear} style={{
+          marginLeft: "auto", background: "none", border: "1px solid hsl(220 10% 22%)",
+          borderRadius: "6px", color: "hsl(210 8% 55%)", fontSize: "11px",
+          padding: "4px 10px", cursor: "pointer",
+        }}>Azzera</button>
+      </div>
+
+      {isLoading ? <TrottingHorseLoader label="Calcolo il confronto..." /> : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "620px" }}>
+            <thead>
+              <tr>
+                <th style={{ ...th, textAlign: "left" }}>Stallone</th>
+                <th style={th}>Voto atteso</th>
+                <th style={th}>Fascia tipica</th>
+                <th style={th}>Alto livello</th>
+                <th style={th}>Deludente</th>
+                <th style={th}>Consang.</th>
+                <th style={th}>Monta</th>
+                <th style={th}>Qualita' per euro</th>
+                <th style={th}>Attendib.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(r => {
+                const isBest = r.expected_score === bestScore;
+                const isValue = (r.value_index ?? 0) === bestValue && bestValue > 0;
+                return (
+                  <tr key={r.stallion}>
+                    <td style={{ ...td, textAlign: "left" }}>
+                      <Link href={`/stallion/${encodeURIComponent(r.stallion)}`}>
+                        <a style={{ color: "hsl(210 10% 85%)", textDecoration: "none", fontWeight: 700, letterSpacing: "0.03em" }}>
+                          {r.stallion}
+                        </a>
+                      </Link>
+                      <div style={{ fontSize: "10.5px", color: "hsl(210 8% 40%)" }}>
+                        {r.n_offspring_sire} figli valutati
+                      </div>
+                    </td>
+                    <td style={td}>
+                      <span className="tabular" style={{ fontWeight: 800, color: isBest ? "hsl(100 60% 55%)" : "hsl(183 80% 60%)" }}>
+                        {r.expected_score.toFixed(1)}
+                      </span>{" "}
+                      <span style={{ fontSize: "10.5px", color: "hsl(210 8% 45%)" }}>{r.expected_grade}</span>
+                    </td>
+                    <td style={{ ...td, color: "hsl(210 8% 58%)" }} className="tabular">
+                      {r.typical_low.toFixed(0)}–{r.typical_high.toFixed(0)}
+                    </td>
+                    <td style={{ ...td, color: "hsl(100 55% 52%)" }} className="tabular">{r.prob_top.toFixed(0)}%</td>
+                    <td style={{ ...td, color: "hsl(0 60% 58%)" }} className="tabular">{r.prob_poor.toFixed(0)}%</td>
+                    <td style={{ ...td, color: r.inbreeding_level === "nessuna" ? "hsl(210 8% 45%)" : "hsl(35 85% 58%)" }} className="tabular">
+                      {r.inbreeding_pct > 0 ? `${r.inbreeding_pct.toFixed(2)}%` : "—"}
+                    </td>
+                    <td style={{ ...td, color: "hsl(51 75% 58%)" }} className="tabular">
+                      {r.stud_fee ? `€${r.stud_fee.toLocaleString("it-IT")}` : "—"}
+                    </td>
+                    <td style={{ ...td, color: isValue ? "hsl(100 60% 55%)" : "hsl(210 8% 58%)", fontWeight: isValue ? 800 : 400 }} className="tabular">
+                      {r.value_index != null ? r.value_index.toFixed(2) : "—"}
+                    </td>
+                    <td style={{ ...td, color: "hsl(210 8% 55%)", fontSize: "11.5px" }}>{r.confidence_label}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ fontSize: "10.5px", color: "hsl(210 8% 35%)", marginTop: "10px", lineHeight: 1.5 }}>
+            In verde il voto atteso piu' alto e la miglior qualita' per euro speso. La fascia
+            tipica contiene meta' dei puledri attesi: quando due fasce si sovrappongono quasi
+            del tutto, la differenza fra i due stalloni non e' dimostrabile con questi dati.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdvisorPage() {
   const [fattrice, setFattrice] = useState("");
   const [budget, setBudget] = useState("");
   const [expandedStallion, setExpandedStallion] = useState<string | null>(null);
+  // Stalloni spuntati per il confronto affiancato
+  const [selected, setSelected] = useState<string[]>([]);
   const [, navigate] = useLocation();
 
   const { mutate, data, isPending, error } = useMutation<AdvisorResult, Error, { fattrice: string; budget_max?: number }>({
@@ -209,6 +366,7 @@ export default function AdvisorPage() {
     e.preventDefault();
     if (!fattrice.trim()) return;
     setExpandedStallion(null);
+    setSelected([]);
     mutate({ fattrice: fattrice.trim(), budget_max: budget ? parseInt(budget) : undefined });
   }
 
@@ -366,6 +524,15 @@ export default function AdvisorPage() {
             {data.budget_max && ` (budget ≤ €${data.budget_max.toLocaleString("it-IT")})`}
           </div>
 
+          {selected.length >= 2 && (
+            <ComparePanel mare={mareName} stallions={selected} onClear={() => setSelected([])} />
+          )}
+          {selected.length === 1 && (
+            <div style={{ fontSize: "11.5px", color: "hsl(210 8% 45%)", marginBottom: "10px" }}>
+              Spunta almeno un altro stallone per vedere il confronto affiancato.
+            </div>
+          )}
+
           {/* Candidate cards with expandable simulation */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {data.candidates?.map((c, i) => {
@@ -389,6 +556,16 @@ export default function AdvisorPage() {
                     onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 13%)"}
                     onMouseLeave={e => e.currentTarget.style.background = "none"}
                   >
+                    <input
+                      type="checkbox"
+                      title="Aggiungi al confronto"
+                      checked={selected.indexOf(c.name) >= 0}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => setSelected(prev =>
+                        e.target.checked ? prev.concat([c.name]).slice(0, 6)
+                                         : prev.filter(n => n !== c.name))}
+                      style={{ accentColor: "hsl(183 100% 38%)", cursor: "pointer", flexShrink: 0 }}
+                    />
                     <Link href={`/stallion/${encodeURIComponent(c.name)}`} onClick={e => e.stopPropagation()}>
                       <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none", letterSpacing: "0.04em" }}
                         onMouseEnter={e => e.currentTarget.style.color = "hsl(183 80% 62%)"}
@@ -406,6 +583,21 @@ export default function AdvisorPage() {
                           {c.stud_fee_eur ? `€${c.stud_fee_eur.toLocaleString("it-IT")}` : "—"}
                         </span>
                       </div>
+                      {c.expected_score !== undefined && (
+                        <div title="Voto atteso del puledro da questa fattrice" style={{
+                          display: "flex", alignItems: "center", gap: "5px",
+                          padding: "2px 8px", borderRadius: "5px",
+                          background: "hsl(183 60% 30% / 0.18)", border: "1px solid hsl(183 60% 35% / 0.35)",
+                        }}>
+                          <span className="tabular" style={{ fontSize: "13px", fontWeight: 800, color: "hsl(183 80% 62%)" }}>
+                            {c.expected_score.toFixed(1)}
+                          </span>
+                          <GradeBadge grade={c.expected_grade || "—"} size="sm" />
+                          <span style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>
+                            atteso {c.typical_low?.toFixed(0)}–{c.typical_high?.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                         <TrendingUp size={11} style={{ color: "hsl(183 80% 55%)" }} />
                         <span className="tabular" style={{ fontSize: "12px", color: "hsl(183 80% 58%)", fontWeight: 700 }}>

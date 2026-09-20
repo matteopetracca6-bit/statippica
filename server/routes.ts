@@ -15,6 +15,11 @@ import Database from "better-sqlite3";
 import path from "path";
 import { predictBreeding, loadBreedingModel, getValidationInfo } from "./breeding";
 import { ensureGenealogy } from "./vpFetch";
+import {
+  loadAdvisorModel, getAdvisorModel, getAdvisorBacktest,
+  predictPair, inbreeding, explain,
+} from "./advisorEngine";
+import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -1325,11 +1330,25 @@ export function registerRoutes(httpServer: Server, app: Express) {
         }
       }
 
+      // ── Previsione della COPPIA (non del solo padre) ──────────────
+      // Prima questa risposta dipendeva soltanto dallo stallone: con
+      // qualsiasi fattrice il risultato era identico. Ora entra anche la
+      // produzione della fattrice, con fascia di incertezza.
+      const prediction = predictPair(db, stallion, mare);
+      const inb = inbreeding(db, stallion, mare);
+      const reasons = explain(prediction, inb, studFee || null);
+      // Controllo rispetto al disciplinare del Libro genealogico (UNIRE/ANACT)
+      const eligibility = checkEligibility(db, stallion, mare);
+
       res.json({
         stallion,
         mare,
         mareData: mareData || null,
         stud_fee: studFee,
+        prediction,
+        inbreeding_detail: inb,
+        reasons,
+        eligibility,
         distribution,
         total_offspring: totalOffspring,
         source: totalOffspring >= 10 ? "stallion_offspring" : "population_fallback",
@@ -1352,10 +1371,91 @@ export function registerRoutes(httpServer: Server, app: Express) {
           prob_recupero_costi: Math.round(probRecupero * 1000) / 10,
         },
         inbreeding: {
-          risk: inbreedingRisk,
-          ancestor: inbreedingAncestor,
+          // Campi storici mantenuti per compatibilita'; il calcolo completo
+          // su piu' generazioni sta in inbreeding_detail.
+          risk: inb.available ? inb.level !== "nessuna" : inbreedingRisk,
+          ancestor: inb.common_ancestors[0]?.name ?? inbreedingAncestor,
         },
       });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/advisor/validation
+  // La prova del nove: quanto ci prende il modello su cavalli
+  // che non ha mai visto in addestramento.
+  // ──────────────────────────────────────────────
+  app.get("/api/advisor/validation", (_req, res) => {
+    const bt = getAdvisorBacktest();
+    if (!bt) {
+      return res.status(503).json({
+        error: "Verifica non disponibile: advisor_backtest.json non generato",
+      });
+    }
+    res.json({ ...bt, model: getAdvisorModel(), science: BASI_SCIENTIFICHE });
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/advisor/rules — testo della normativa e basi scientifiche
+  // ──────────────────────────────────────────────
+  app.get("/api/advisor/rules", (req, res) => {
+    const stallion = ((req.query.stallion as string) || "").trim();
+    const mare = ((req.query.mare as string) || "").trim();
+    if (!stallion || !mare) {
+      return res.json({ fonte: FONTE_NORMATIVA, soglie: SOGLIE, science: BASI_SCIENTIFICHE });
+    }
+    const db = getDb();
+    try {
+      res.json({
+        fonte: FONTE_NORMATIVA, soglie: SOGLIE, science: BASI_SCIENTIFICHE,
+        eligibility: checkEligibility(db, stallion.toUpperCase(), mare.toUpperCase()),
+      });
+    } finally { db.close(); }
+  });
+
+  // ──────────────────────────────────────────────
+  // GET /api/advisor/compare?mare=NOME&stallions=A,B,C
+  // Piu' stalloni messi in fila sulla STESSA fattrice.
+  // ──────────────────────────────────────────────
+  app.get("/api/advisor/compare", (req, res) => {
+    const mare = ((req.query.mare as string) || "").trim().toUpperCase();
+    const list = ((req.query.stallions as string) || "")
+      .split(",").map(x => x.trim().toUpperCase()).filter(Boolean).slice(0, 8);
+    if (!mare || list.length === 0) {
+      return res.status(400).json({ error: "Parametri richiesti: mare, stallions" });
+    }
+    const db = getDb();
+    try {
+      const feeStmt = db.prepare(
+        "SELECT stud_fee_eur, stud_farm FROM stallions WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) LIMIT 1");
+      const rows = list.map(name => {
+        const info = feeStmt.get(name) as any;
+        const p = predictPair(db, name, mare);
+        const inb = inbreeding(db, name, mare);
+        const fee = info?.stud_fee_eur ?? null;
+        return {
+          stallion: name,
+          stud_fee: fee,
+          stud_farm: info?.stud_farm ?? null,
+          expected_score: p.expected_score,
+          expected_grade: p.expected_grade,
+          typical_low: p.typical_low,
+          typical_high: p.typical_high,
+          prob_top: p.prob_top,
+          prob_poor: p.prob_poor,
+          confidence: p.confidence,
+          confidence_label: p.confidence_label,
+          n_offspring_sire: p.sire.n_offspring,
+          inbreeding_pct: inb.coefficient_pct,
+          inbreeding_level: inb.level,
+          // punti di voto atteso sopra la media per ogni mille euro di monta
+          value_index: fee && fee > 0
+            ? Math.round(((p.expected_score - p.population_mean) / (fee / 1000)) * 100) / 100
+            : null,
+          reasons: explain(p, inb, fee),
+        };
+      });
+      res.json({ mare, n: rows.length, candidates: rows });
     } finally { db.close(); }
   });
 
@@ -1424,12 +1524,33 @@ export function registerRoutes(httpServer: Server, app: Express) {
           if (budget_max && s.stud_fee_eur > budget_max) return false;
           return true;
         })
-        .map((s: any) => ({
-          ...s,
-          inbreeding_risk: false,
-          score_rank: s.avg_score,
-        }))
-        .slice(0, 15);
+        .slice(0, 15)
+        .map((s: any) => {
+          // Ogni candidato viene ora valutato SULLA FATTRICE scelta:
+          // stesso stallone + fattrice diversa = risultato diverso.
+          const p = predictPair(db, s.name, fattriceUpper);
+          const inb = inbreeding(db, s.name, fattriceUpper);
+          const fee = s.stud_fee_eur ?? null;
+          return {
+            ...s,
+            inbreeding_risk: inb.level === "alta",
+            inbreeding_pct: inb.coefficient_pct,
+            inbreeding_level: inb.level,
+            expected_score: p.expected_score,
+            expected_grade: p.expected_grade,
+            typical_low: p.typical_low,
+            typical_high: p.typical_high,
+            prob_top: p.prob_top,
+            confidence: p.confidence,
+            confidence_label: p.confidence_label,
+            value_index: fee && fee > 0
+              ? Math.round(((p.expected_score - p.population_mean) / (fee / 1000)) * 100) / 100
+              : null,
+            reasons: explain(p, inb, fee),
+            score_rank: p.expected_score,
+          };
+        })
+        .sort((a: any, b: any) => b.expected_score - a.expected_score);
 
       res.json({
         found: true,
@@ -1505,6 +1626,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // Il modello (breeding_model.json) è addestrato offline da
   // train_breeding_model.py via GitHub Actions; qui si fa solo inferenza.
   // ──────────────────────────────────────────────
+  const advisorModelLoaded = loadAdvisorModel(process.cwd());
+  if (!advisorModelLoaded) {
+    console.warn("[ADVISOR] advisor_model.json non trovato: l'Advisor usera' pesi prudenti " +
+                 "finche' non viene generato da scripts/advisor_model.py");
+  }
+
   const breedingModelLoaded = loadBreedingModel(
     path.resolve(process.cwd(), "breeding_model.json")
   );

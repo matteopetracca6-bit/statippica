@@ -9,6 +9,7 @@ import HorsePage from "./pages/HorsePage";
 import StallionPage from "./pages/StallionPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import AdvisorPage from "./pages/AdvisorPage";
+import ValidazionePage from "./pages/ValidazionePage";
 import ComparePage from "./pages/ComparePage";
 import StudFarmsPage from "./pages/StudFarmsPage";
 import AllevamentoHubPage from "./pages/AllevamentoHubPage";
@@ -22,6 +23,7 @@ import QualifichePage from "./pages/QualifichePage";
 import BreedersPage from "./pages/BreedersPage";
 import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/not-found";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function App() {
   return (
@@ -29,12 +31,17 @@ export default function App() {
       <div className="dark">
         <Router hook={useHashLocation}>
           <Layout>
+            {/* Se una pagina va in errore, si vede un messaggio al posto suo:
+                prima l'intero sito diventava una schermata bianca. */}
+            <ErrorBoundary>
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/horse/:name/:year" component={HorsePage} />
               <Route path="/stallion/:name" component={StallionPage} />
               <Route path="/leaderboard" component={LeaderboardPage} />
               <Route path="/advisor" component={AdvisorPage} />
+              <Route path="/validazione" component={ValidazionePage} />
+              <Route path="/validazione-advisor" component={ValidazionePage} />
               <Route path="/compare" component={ComparePage} />
               <Route path="/stallioni" component={StallionDirectoryPage} />
               {/* "stalloni" e' la parola giusta: l'indirizzo con la doppia i
@@ -52,6 +59,7 @@ export default function App() {
               <Route path="/allevatori" component={AllevamentoHubPage} />
               <Route component={NotFound} />
             </Switch>
+            </ErrorBoundary>
           </Layout>
         </Router>
         <Toaster />

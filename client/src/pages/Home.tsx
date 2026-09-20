@@ -10,7 +10,7 @@ import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
-  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse } from "lucide-react";
+  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical } from "lucide-react";
 
 interface Stats {
   totalHorses: number;
@@ -178,6 +178,7 @@ export default function Home() {
               <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico completo fino a 5 generazioni, con consanguineita e incroci ripetuti" color="hsl(220 60% 60%)" />
               <NavCard href="/qualifiche" icon={Sparkles} title="Qualifiche" desc="Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" color="hsl(280 60% 62%)" />
               <NavCard href="/allevamento" icon={Warehouse} title="Allevamento" desc="Allevatori e stazioni di monta in un'unica scheda, con la qualita media della produzione" color="hsl(20 70% 58%)" />
+              <NavCard href="/validazione" icon={FlaskConical} title="Verifica Advisor" desc="La prova che il consiglio di accoppiamento funziona: test su puledri mai visti e fonti scientifiche" color="hsl(183 70% 52%)" />
               <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
             </div>
           </div>
