@@ -14,6 +14,7 @@ import type { Server } from "http";
 import Database from "better-sqlite3";
 import path from "path";
 import { predictBreeding, loadBreedingModel, getValidationInfo } from "./breeding";
+import { ensureGenealogy } from "./vpFetch";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -51,9 +52,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   app.get("/api/search/horse", (req, res) => {
     const q = (req.query.q as string || "").trim().toUpperCase();
-    if (q.length < 2) return res.json([]);
     const db = getDb();
     try {
+      // Con ricerca vuota rispondiamo con i cavalli piu' quotati: serve alla
+      // tendina di scelta, che deve mostrare qualcosa anche prima che
+      // l'utente scriva.
       const rows = db.prepare(`
         SELECT h.name, h.birth_year, h.sire, h.sex, h.country,
                hr.grade, hr.score, hr.rating_mode,
@@ -61,10 +64,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
         FROM horses h
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
                                   AND hr.rating_mode = 'performance'
-        WHERE h.name LIKE ?
-        ORDER BY COALESCE(h.horse_class, 'athlete') = 'breeder', h.birth_year DESC
+        WHERE (? = '' OR h.name LIKE ?)
+        ORDER BY CASE WHEN ? = '' THEN -COALESCE(hr.score, -1) ELSE 0 END,
+                 COALESCE(h.horse_class, 'athlete') = 'breeder', h.birth_year DESC
         LIMIT 20
-      `).all(`%${q}%`);
+      `).all(q, `%${q}%`, q);
       res.json(rows);
     } finally {
       db.close();
@@ -138,13 +142,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
         ? db.prepare(`SELECT * FROM stallion_pedigree WHERE UPPER(TRIM(name)) = ?`).get(damName) as any
         : null;
 
+      // Ultima rete di sicurezza: la genealogia della seconda fonte, che
+      // arriva a cinque generazioni anche per i cavalli esteri. Senza questa
+      // i nonni materni restavano quasi sempre vuoti, perche' le fattrici
+      // anziane non compaiono nell'archivio corse.
+      const vp = vpAncestorMap(db, name);
+
       const pedigree = {
-        sire:      horse.sire || null,
-        dam:       horse.dam  || null,
-        sire_sire: pedigreeRow?.sire_sire || pedigreeRow?.sire_unire_sire || spSire?.sire || null,
-        sire_dam:  pedigreeRow?.sire_dam  || pedigreeRow?.sire_unire_dam  || spSire?.dam  || null,
-        dam_sire:  pedigreeRow?.dam_sire  || pedigreeRow?.dam_unire_sire  || spDam?.sire  || null,
-        dam_dam:   pedigreeRow?.dam_dam   || pedigreeRow?.dam_unire_dam   || spDam?.dam   || null,
+        sire:      horse.sire || vp.get("p") || null,
+        dam:       horse.dam  || vp.get("m") || null,
+        sire_sire: pedigreeRow?.sire_sire || pedigreeRow?.sire_unire_sire || spSire?.sire || vp.get("pp") || null,
+        sire_dam:  pedigreeRow?.sire_dam  || pedigreeRow?.sire_unire_dam  || spSire?.dam  || vp.get("mp") || null,
+        dam_sire:  pedigreeRow?.dam_sire  || pedigreeRow?.dam_unire_sire  || spDam?.sire  || vp.get("pm") || null,
+        dam_dam:   pedigreeRow?.dam_dam   || pedigreeRow?.dam_unire_dam   || spDam?.dam   || vp.get("mm") || null,
       };
 
       res.json({ ...horse, races, siblings, pedigree });
@@ -551,6 +561,33 @@ export function registerRoutes(httpServer: Server, app: Express) {
     } finally {
       db.close();
     }
+  });
+
+  /**
+   * Elenco fattrici per la tendina dell'Advisor.
+   *
+   * L'Advisor cerca la fattrice nell'archivio cavalli fra i soggetti di sesso
+   * femminile, quindi la tendina deve pescare dalla stessa lista: proporre
+   * nomi presi altrove significherebbe far scegliere una fattrice che poi
+   * la simulazione non trova.
+   */
+  app.get("/api/search/fattrice", (req, res) => {
+    const q = (req.query.q as string || "").trim().toUpperCase();
+    const db = getDb();
+    try {
+      const like = `%${q}%`;
+      const rows = db.prepare(`
+        SELECT h.name, h.birth_year, h.sire, h.dam,
+               hr.grade, hr.score
+        FROM horses h
+        LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
+                                  AND hr.rating_mode = 'performance'
+        WHERE h.sex = 'F' AND (? = '' OR h.name LIKE ?)
+        ORDER BY (h.dam IS NULL), COALESCE(hr.score, -1) DESC, h.birth_year DESC
+        LIMIT 25
+      `).all(q, like);
+      res.json(rows);
+    } finally { db.close(); }
   });
 
   // ── Lista stalloni per dropdown ──────────────────────────────────────────
@@ -969,43 +1006,104 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/pedigree/:name — albero genealogico 4 generazioni + inbreeding
   // ──────────────────────────────────────────────
-  app.get("/api/pedigree/:name", (req, res) => {
+  app.get("/api/pedigree/:name", async (req, res) => {
     const name = decodeURIComponent(req.params.name).toUpperCase().trim();
     const db = getDb();
     try {
+      // Se di questo cavallo non abbiamo ancora l'albero della seconda fonte,
+      // proviamo a chiederlo adesso: e' l'unico modo per avere il pedigree
+      // completo di un soggetto prima che ci arrivi la pipeline notturna.
+      try {
+        await ensureGenealogy(DB_PATH, name);
+        // Se del soggetto la fonte non sa nulla, proviamo con i suoi genitori:
+        // basta l'albero del padre o della madre per completare mezzo pedigree.
+        const parents = db.prepare(
+          "SELECT sire, dam FROM horses WHERE name = ? ORDER BY birth_year DESC LIMIT 1"
+        ).get(name) as any;
+        for (const parent of [parents?.sire, parents?.dam]) {
+          if (parent) { try { await ensureGenealogy(DB_PATH, parent); } catch { /* si prosegue */ } }
+        }
+      } catch { /* si prosegue lo stesso */ }
+
       // Build pedigree tree recursively (4 generations)
+      // I nomi nell'archivio sono gia' maiuscoli e senza spazi ai bordi, quindi
+      // il confronto diretto usa l'indice: ripulirli con UPPER/TRIM obbligava
+      // a leggere tutti i 23.000 cavalli per ogni casella dell'albero.
+      const horseStmt = db.prepare(`
+        SELECT name, birth_year, sire, dam, sex, country, career_earnings, career_wins, career_races
+        FROM horses WHERE name = ? ORDER BY birth_year DESC LIMIT 1
+      `);
+      const horseCache = new Map<string, any>();
+
       function getHorse(n: string): any {
         if (!n) return null;
-        const h = db.prepare(`
-          SELECT name, birth_year, sire, dam, sex, country, career_earnings, career_wins, career_races
-          FROM horses WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) LIMIT 1
-        `).get(n) as any;
-        if (!h) return { name: n, birth_year: null, sire: null, dam: null, missing: true };
+        const key = n.trim().toUpperCase();
+        if (horseCache.has(key)) return horseCache.get(key);
+        const h = (horseStmt.get(key) as any)
+          || { name: key, birth_year: null, sire: null, dam: null, missing: true };
+        horseCache.set(key, h);
         return h;
       }
 
-      function buildTree(n: string, depth: number): any {
-        if (depth > 4 || !n) return null;
+      // La seconda fonte conosce cinque generazioni per ogni cavallo, anche
+      // estero: la usiamo per riempire i rami che l'archivio corse non ha.
+      // Il percorso si legge da destra a sinistra (vedi vpAncestorMap), quindi
+      // la catena di passi va rovesciata prima di cercarla.
+      const vp = vpAncestorMap(db, name);
+      const MAX_GEN = 5;
+
+      // Se del soggetto non abbiamo l'albero della fonte, spesso ce l'abbiamo
+      // di un suo antenato: in quel caso da li' in poi il ramo si ricostruisce
+      // lo stesso, chiedendo a ogni casella chi sono i suoi genitori.
+      const mapCache = new Map<string, Map<string, string>>();
+      function mapOf(n: string): Map<string, string> {
+        const key = n.trim().toUpperCase();
+        let m = mapCache.get(key);
+        if (!m) { m = vpAncestorMap(db, key); mapCache.set(key, m); }
+        return m;
+      }
+      mapCache.set(name, vp);
+
+      /**
+       * `srcName` e' il cavallo la cui genealogia stiamo usando per riempire
+       * i buchi, `srcChain` il percorso da lui fino a questa casella. Se per
+       * la casella corrente la fonte ha una sua genealogia, da li' in poi si
+       * usa quella: cosi' l'albero si completa anche quando del soggetto di
+       * partenza non sappiamo nulla ma di suo nonno si'.
+       */
+      function buildTree(n: string, depth: number, chain: string, srcName: string, srcChain: string): any {
+        if (depth > MAX_GEN || !n) return null;
         const h = getHorse(n);
         if (!h) return null;
+
+        const own = mapOf(h.name || n);
+        let useName = srcName, useChain = srcChain;
+        if (own.size > 0) { useName = (h.name || n); useChain = ""; }
+        const srcMap = useName === name ? vp : mapOf(useName);
+
+        const sireName = h.sire || srcMap.get(vpPath(useChain + "p")) || null;
+        const damName  = h.dam  || srcMap.get(vpPath(useChain + "m")) || null;
         return {
           name: h.name,
           birth_year: h.birth_year,
-          sex: h.sex,
+          sex: h.sex ?? (depth > 0 ? (chain.slice(-1) === "p" ? "M" : "F") : null),
           country: h.country,
           career_earnings: h.career_earnings,
           career_wins: h.career_wins,
           career_races: h.career_races,
-          sire: h.sire ? buildTree(h.sire, depth + 1) : null,
-          dam: h.dam ? buildTree(h.dam, depth + 1) : null,
+          sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p") : null,
+          dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m") : null,
           missing: h.missing || false,
+          from_source: !!h.missing,
         };
       }
 
-      const tree = buildTree(name, 0);
+      const tree = buildTree(name, 0, "", name, "");
       if (!tree) {
         return res.status(404).json({ error: "Cavallo non trovato" });
       }
+      if (!tree.sire && vp.get("p")) tree.sire = buildTree(vp.get("p")!, 1, "p", name, "p");
+      if (!tree.dam && vp.get("m")) tree.dam = buildTree(vp.get("m")!, 1, "m", name, "m");
 
       // Compute inbreeding coefficient (Wright's formula)
       // Walk sire side and dam side separately, collecting ancestors with generation depth
@@ -1013,7 +1111,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const damAncestors = new Map<string, number>();
 
       function walkSire(node: any, gen: number) {
-        if (!node || !node.name || node.missing || gen > 4) return;
+        if (!node || !node.name || gen > MAX_GEN) return;
         const key = node.name.toUpperCase();
         const existing = sireAncestors.get(key);
         if (existing === undefined || gen < existing) sireAncestors.set(key, gen);
@@ -1021,7 +1119,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         if (node.dam) walkSire(node.dam, gen + 1);
       }
       function walkDam(node: any, gen: number) {
-        if (!node || !node.name || node.missing || gen > 4) return;
+        if (!node || !node.name || gen > MAX_GEN) return;
         const key = node.name.toUpperCase();
         const existing = damAncestors.get(key);
         if (existing === undefined || gen < existing) damAncestors.set(key, gen);
@@ -1052,7 +1150,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Get rating if available
       const rating = db.prepare(`
         SELECT grade, score, career_earnings, career_races, career_wins, win_rate
-        FROM horse_ratings WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) AND rating_mode = 'performance' LIMIT 1
+        FROM horse_ratings WHERE name = ? AND rating_mode = 'performance' LIMIT 1
       `).get(name) as any;
 
       res.json({
@@ -1060,6 +1158,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         rating: rating || null,
         inbreeding_coefficient: Math.round(inbreedingCoeff * 1000) / 10,
         common_ancestors: commonAncestors.slice(0, 10),
+        max_generations: MAX_GEN,
+        has_source_pedigree: vp.size > 0,
       });
     } finally { db.close(); }
   });
@@ -1578,6 +1678,42 @@ export function registerRoutes(httpServer: Server, app: Express) {
     ).get(name);
   }
 
+  /**
+   * Genealogia estesa di un cavallo secondo la seconda fonte (VendoPuledri):
+   * restituisce una mappa percorso -> nome dell'antenato.
+   *
+   * ATTENZIONE al verso del percorso: si legge da destra a sinistra, cioe'
+   * l'ultima lettera e' il primo passo a partire dal cavallo. Quindi "pm" e'
+   * il padre della madre (nonno materno) e "mp" e' la madre del padre
+   * (nonna paterna). Verificato sui dati: per AKELA PAL FERM "pm" da'
+   * S J'S PHOTO, che la fonte indica come nonno materno.
+   *
+   * Serve a completare l'albero dove l'archivio corse si ferma: quello copre
+   * solo i cavalli che hanno corso in Italia in anni recenti, quindi i nonni
+   * materni e gli antenati esteri mancano quasi sempre.
+   */
+  function vpAncestorMap(db: any, horseName: string): Map<string, string> {
+    const out = new Map<string, string>();
+    if (!vpTableExists(db, "vp_pedigree")) return out;
+    const rows = db.prepare(`
+      SELECT p.path AS path, n.name AS name
+      FROM vp_names hn
+      JOIN vp_pedigree p ON p.horse_id = hn.id
+      JOIN vp_names n ON n.id = p.ancestor_id
+      WHERE hn.name = ?
+    `).all(horseName.trim().toUpperCase()) as any[];
+    for (const r of rows) {
+      const path = String(r.path || "").trim().toLowerCase();
+      if (path && r.name) out.set(path, r.name);
+    }
+    return out;
+  }
+
+  /** Percorso della fonte per una catena di passi a partire dal cavallo. */
+  function vpPath(chain: string): string {
+    return chain.split("").reverse().join("");
+  }
+
   // GET /api/qualifiche — prove di qualifica, il primo tempo ufficiale di un
   // cavallo giovane, prima ancora che debutti in corsa.
   app.get("/api/qualifiche", (req, res) => {
@@ -1678,14 +1814,22 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // GET /api/consanguineita/:name — genealogia a cinque generazioni e incroci.
   // "Incrocio" = un antenato che ricorre sia dalla parte del padre sia da
   // quella della madre; le sigle tipo "4+5" dicono a quali generazioni.
-  app.get("/api/consanguineita/:name", (req, res) => {
+  app.get("/api/consanguineita/:name", async (req, res) => {
     const db = getDb();
     try {
       if (!vpTableExists(db, "vp_horse_profile")) return res.json(null);
       const name = decodeURIComponent(req.params.name).trim().toUpperCase();
-      const profile = db.prepare(
+      let profile = db.prepare(
         "SELECT * FROM vp_horse_profile WHERE horse_name = ?"
       ).get(name) as any;
+      if (!profile) {
+        // Scheda mai scaricata: la chiediamo alla fonte adesso.
+        try {
+          if (await ensureGenealogy(DB_PATH, name)) {
+            profile = db.prepare("SELECT * FROM vp_horse_profile WHERE horse_name = ?").get(name) as any;
+          }
+        } catch { /* si prosegue senza */ }
+      }
       if (!profile) return res.json(null);
       // I nomi stanno nel dizionario vp_names: nelle tabelle grandi sono
       // memorizzati come numero, altrimenti il file supera i 100 MB ammessi.

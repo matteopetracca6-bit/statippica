@@ -4,6 +4,7 @@ import { useLocation, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import NameSelect from "../components/NameSelect";
 import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
@@ -12,6 +13,20 @@ const GRADE_COLORS: Record<string, string> = {
   A: "hsl(60 80% 55%)", B: "hsl(30 80% 58%)", C: "hsl(15 70% 55%)",
   D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(0 60% 45%)",
 };
+
+/**
+ * Colore di un voto, eventualmente trasparente.
+ *
+ * Le barre della distribuzione erano grigie perche' al colore veniva
+ * appiccicato "88" in fondo (`hsl(...)88`): e' una scrittura valida solo per
+ * i colori esadecimali, quindi il browser buttava via tutta la regola. Qui la
+ * trasparenza viene messa dentro la parentesi, come vuole la notazione hsl.
+ */
+function gradeColor(grade: string, alpha = 1): string {
+  const base = GRADE_COLORS[grade] || "hsl(210 8% 45%)";
+  if (alpha >= 1) return base;
+  return base.replace(/^hsl\((.*)\)$/, `hsl($1 / ${alpha})`);
+}
 
 interface AdvisorResult {
   found: boolean;
@@ -76,12 +91,14 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
               </div>
               <div style={{ flex: 1, height: "22px", background: "hsl(220 10% 12%)", borderRadius: "4px", overflow: "hidden" }}>
                 <div style={{
-                  height: "100%", width: `${(d.probability / maxProb) * 100}%`,
-                  background: `${GRADE_COLORS[d.grade]}88`, borderRadius: "4px",
+                  height: "100%",
+                  width: `${Math.max(d.probability > 0 ? 2 : 0, (d.probability / maxProb) * 100)}%`,
+                  background: `linear-gradient(90deg, ${gradeColor(d.grade, 0.55)}, ${gradeColor(d.grade)})`,
+                  borderRadius: "4px",
                   transition: "width 0.5s ease",
                 }} />
               </div>
-              <div style={{ width: "50px", textAlign: "right", fontSize: "12px", fontWeight: 700, color: GRADE_COLORS[d.grade] }}>
+              <div style={{ width: "50px", textAlign: "right", fontSize: "12px", fontWeight: 700, color: gradeColor(d.grade) }}>
                 {d.probability.toFixed(1)}%
               </div>
               <div style={{ width: "70px", textAlign: "right", fontSize: "11px", color: "hsl(210 8% 45%)" }}>
@@ -215,25 +232,15 @@ export default function AdvisorPage() {
         borderRadius: "12px", padding: "22px", marginBottom: "24px",
         display: "flex", gap: "14px", flexWrap: "wrap", alignItems: "flex-end",
       }}>
-        <div style={{ flex: "1 1 280px" }}>
-          <label style={{ fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 48%)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "8px" }}>
-            Nome fattrice
-          </label>
-          <div style={{
-            display: "flex", alignItems: "center", gap: "10px",
-            background: "hsl(220 12% 14%)", border: "1px solid hsl(220 10% 22%)",
-            borderRadius: "8px", padding: "10px 14px",
-          }}>
-            <Dna size={15} style={{ color: "hsl(210 8% 48%)", flexShrink: 0 }} />
-            <input
-              value={fattrice}
-              onChange={e => setFattrice(e.target.value.toUpperCase())}
-              placeholder="Es. BELLISSIMA GRIF"
-              data-testid="input-fattrice"
-              required
-              style={{ flex: 1, background: "none", border: "none", outline: "none", color: "hsl(210 10% 88%)", fontSize: "14px", letterSpacing: "0.04em" }}
-            />
-          </div>
+        <div style={{ flex: "1 1 300px" }}>
+          {/* Tendina di scelta: prima bisognava sapere a memoria il nome esatto */}
+          <NameSelect
+            label="Fattrice"
+            value={fattrice}
+            onChange={n => setFattrice(n.toUpperCase())}
+            endpoint="/api/search/fattrice"
+            placeholder="Scegli una fattrice dall'elenco"
+          />
         </div>
 
         <div style={{ flex: "0 1 180px" }}>

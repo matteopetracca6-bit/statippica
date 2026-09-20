@@ -173,12 +173,11 @@ export default function Home() {
               <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="Tutti gli stalloni valutati, con tasse di monta, allevamenti e provenienza" color="hsl(120 60% 50%)" />
               <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(280 60% 60%)" />
               <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
-              <NavCard href="/allevamenti" icon={MapPin} title="Allevamenti" desc="Ranking degli allevamenti per qualita della produzione" color="hsl(200 70% 55%)" />
               <NavCard href="/calendario" icon={Calendar} title="Calendario" desc="Prossime gare in programma con iscritti, voti e stima probabilita di vittoria" color="hsl(0 60% 55%)" />
               <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(160 60% 50%)" />
-              <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico a 4 generazioni con coefficiente di inbreeding" color="hsl(220 60% 60%)" />
+              <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico completo fino a 5 generazioni, con consanguineita e incroci ripetuti" color="hsl(220 60% 60%)" />
               <NavCard href="/qualifiche" icon={Sparkles} title="Qualifiche" desc="Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" color="hsl(280 60% 62%)" />
-              <NavCard href="/allevatori" icon={Warehouse} title="Allevatori" desc="Chi ha allevato i cavalli e con quale qualita media della produzione" color="hsl(20 70% 58%)" />
+              <NavCard href="/allevamento" icon={Warehouse} title="Allevamento" desc="Allevatori e stazioni di monta in un'unica scheda, con la qualita media della produzione" color="hsl(20 70% 58%)" />
               <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
             </div>
           </div>

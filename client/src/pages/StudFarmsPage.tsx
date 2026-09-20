@@ -21,7 +21,7 @@ interface Farm {
 
 type SortKey = "final_score" | "earnings" | "top_S" | "stallions" | "figli";
 
-export default function StudFarmsPage() {
+export default function StudFarmsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [sortBy, setSortBy] = useState<SortKey>("final_score");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -51,15 +51,17 @@ export default function StudFarmsPage() {
   const fmtK = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : fmt(v);
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1000px" }}>
-      <div style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>
-          Allevamenti
-        </h1>
-        <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
-          Classifica degli allevamenti per qualita' della produzione.
-        </p>
-      </div>
+    <div style={{ padding: embedded ? "0" : "28px 32px", maxWidth: "1000px" }}>
+      {!embedded && (
+        <div style={{ marginBottom: "20px" }}>
+          <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>
+            Allevamenti
+          </h1>
+          <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
+            Classifica degli allevamenti per qualita' della produzione.
+          </p>
+        </div>
+      )}
 
       {/* Search + sort */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center" }}>

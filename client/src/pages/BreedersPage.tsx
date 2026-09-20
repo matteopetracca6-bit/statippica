@@ -58,7 +58,7 @@ function eur(v: number | null | undefined): string {
   return "€ " + Math.round(v).toLocaleString("it-IT");
 }
 
-export default function BreedersPage() {
+export default function BreedersPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [, navigate] = useLocation();
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
@@ -196,15 +196,19 @@ export default function BreedersPage() {
 
   // ── Elenco ──
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "24px 20px 48px" }}>
-      <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
-        Allevatori
-      </h1>
-      <p style={{ fontSize: "13px", color: "hsl(210 8% 60%)", margin: "0 0 20px", maxWidth: "820px", lineHeight: 1.55 }}>
-        Chi ha materialmente allevato i cavalli, con la qualità media dei soggetti prodotti. È cosa
-        diversa dalla sezione Allevamenti, che raccoglie le stazioni dove stanno gli stalloni. Il
-        voto medio considera solo i cavalli che hanno già corso abbastanza da essere valutati.
-      </p>
+    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: embedded ? "0" : "24px 20px 48px" }}>
+      {!embedded && (
+        <>
+          <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
+            Allevatori
+          </h1>
+          <p style={{ fontSize: "13px", color: "hsl(210 8% 60%)", margin: "0 0 20px", maxWidth: "820px", lineHeight: 1.55 }}>
+            Chi ha materialmente allevato i cavalli, con la qualità media dei soggetti prodotti. È cosa
+            diversa dalla sezione Allevamenti, che raccoglie le stazioni dove stanno gli stalloni. Il
+            voto medio considera solo i cavalli che hanno già corso abbastanza da essere valutati.
+          </p>
+        </>
+      )}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "18px" }}>
         <div style={{ position: "relative", flex: "1 1 240px", maxWidth: "340px" }}>

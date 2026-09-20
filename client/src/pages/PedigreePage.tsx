@@ -5,7 +5,9 @@ import { Link } from "wouter";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
-import { Dna, Search } from "lucide-react";
+import { Dna } from "lucide-react";
+import NameSelect from "../components/NameSelect";
+import InbreedingPanel from "../components/InbreedingPanel";
 
 interface PedigreeNode {
   name: string;
@@ -18,6 +20,7 @@ interface PedigreeNode {
   sire: PedigreeNode | null;
   dam: PedigreeNode | null;
   missing?: boolean;
+  from_source?: boolean;
 }
 
 interface PedigreeData {
@@ -25,12 +28,21 @@ interface PedigreeData {
   rating: { grade: string; score: number; career_earnings: number; career_races: number; career_wins: number; win_rate: number } | null;
   inbreeding_coefficient: number;
   common_ancestors: { name: string; contribution: number }[];
+  max_generations?: number;
+  has_source_pedigree?: boolean;
 }
 
 // Render a pedigree node as a small card
 function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode | null; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void }) {
+  // Piu' si va indietro nelle generazioni, piu' le caselle sono strette:
+  // nella quinta ce ne sono trentadue in colonna.
+  const compact = gen >= 4;
+  const nameSize = gen >= 4 ? "10px" : gen === 3 ? "11px" : "12px";
+
   if (!node || gen > maxGen) {
-    return gen <= maxGen ? <div style={{ minWidth: "110px", padding: "8px", textAlign: "center", fontSize: "11px", color: "hsl(210 8% 25%)" }}>—</div> : null;
+    return gen <= maxGen
+      ? <div style={{ flex: 1, minHeight: compact ? "22px" : "34px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "hsl(210 8% 24%)" }}>—</div>
+      : null;
   }
 
   const isStallion = node.sex === "M";
@@ -41,9 +53,8 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
       onMouseEnter={() => node.name && onHover(node.name)}
       onMouseLeave={() => onHover(null)}
       style={{
-        minWidth: "110px",
-        maxWidth: "130px",
-        padding: "8px 10px",
+        width: "100%",
+        padding: compact ? "3px 6px" : "7px 9px",
         borderRadius: "8px",
         background: node.missing ? "hsl(220 10% 8%)" : isHighlighted ? "hsl(183 60% 15%)" : "hsl(220 12% 12%)",
         border: `1.5px solid ${
@@ -53,7 +64,7 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
         }`,
         textAlign: "center",
         transition: "all 0.2s ease",
-        transform: isHighlighted ? "scale(1.1)" : "scale(1)",
+        transform: isHighlighted ? "scale(1.06)" : "scale(1)",
         boxShadow: isHighlighted ? "0 2px 12px hsl(183 100% 55% / 0.3)" : "none",
         cursor: node.missing ? "default" : "pointer",
         position: "relative",
@@ -62,7 +73,7 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
       {node.name && !node.missing ? (
         <Link href={isStallion ? `/stallion/${encodeURIComponent(node.name)}` : `/horse/${encodeURIComponent(node.name)}/0`}>
           <a style={{
-            fontSize: "12px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none",
+            fontSize: nameSize, fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none",
             display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}
             onMouseEnter={e => e.currentTarget.style.color = "hsl(183 80% 62%)"}
@@ -72,19 +83,19 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
           </a>
         </Link>
       ) : (
-        <span style={{ fontSize: "12px", color: "hsl(210 8% 30%)" }}>{node.name || "—"}</span>
+        <span style={{ fontSize: nameSize, fontWeight: 600, color: "hsl(210 8% 58%)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.name || "—"}</span>
       )}
-      {node.birth_year && (
+      {node.birth_year && !compact && (
         <div style={{ fontSize: "10px", color: "hsl(210 8% 42%)", marginTop: "2px" }}>
           {node.birth_year}{node.country ? ` · ${node.country}` : ""}
         </div>
       )}
-      {node.career_earnings != null && node.career_earnings > 0 && (
+      {node.career_earnings != null && node.career_earnings > 0 && !compact && (
         <div className="tabular" style={{ fontSize: "10px", color: "hsl(51 70% 50%)", marginTop: "2px" }}>
           €{(node.career_earnings / 1000).toFixed(0)}k
         </div>
       )}
-      {node.sex && (
+      {node.sex && !compact && (
         <div style={{
           fontSize: "9px", marginTop: "3px", fontWeight: 700,
           color: node.sex === "M" ? "hsl(183 60% 55%)" : "hsl(300 40% 60%)",
@@ -104,22 +115,32 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
   );
 }
 
-// Render a generation row
-function GenRow({ nodes, gen, maxGen, hovered, onHover }: { nodes: (PedigreeNode | null)[]; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void }) {
+/**
+ * Una generazione = una colonna. Le caselle si dividono l'altezza in parti
+ * uguali, cosi' il padre sta all'altezza dei suoi due genitori: e' il modo in
+ * cui i pedigree si leggono di solito, e regge anche le trentadue caselle
+ * della quinta generazione senza diventare una striscia illeggibile.
+ */
+function GenColumn({ nodes, gen, maxGen, hovered, onHover, title }: { nodes: (PedigreeNode | null)[]; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void; title: string }) {
   return (
-    <div style={{
-      display: "flex",
-      justifyContent: "center",
-      gap: gen === 0 ? "0" : gen === 1 ? "16px" : gen === 2 ? "6px" : "3px",
-      marginBottom: gen === 0 ? "16px" : "8px",
-      transition: "gap 0.3s ease",
-    }}>
-      {nodes.map((node, i) => (
-        <PedNode key={i} node={node} gen={gen} maxGen={maxGen} hovered={hovered} onHover={onHover} />
-      ))}
+    <div style={{ flex: gen === 0 ? "0 0 150px" : gen >= 4 ? "1 1 105px" : "1 1 125px", display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{
+        fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em",
+        color: "hsl(210 8% 38%)", textAlign: "center", marginBottom: "8px", whiteSpace: "nowrap",
+        overflow: "hidden", textOverflow: "ellipsis",
+      }}>{title}</div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: gen >= 4 ? "2px" : "4px" }}>
+        {nodes.map((node, i) => (
+          <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", minHeight: 0 }}>
+            <PedNode node={node} gen={gen} maxGen={maxGen} hovered={hovered} onHover={onHover} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+const GEN_TITLES = ["Soggetto", "Genitori", "Nonni", "Bisnonni", "Trisavoli", "5ª generazione"];
 
 // Flatten tree into generation rows
 function getGenerationRows(root: PedigreeNode, maxGen: number): (PedigreeNode | null)[][] {
@@ -141,6 +162,7 @@ function getGenerationRows(root: PedigreeNode, maxGen: number): (PedigreeNode | 
 
 export default function PedigreePage() {
   const [search, setSearch] = useState("");
+  const [gens, setGens] = useState(5);
   const [hoveredAncestor, setHoveredAncestor] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<PedigreeData>({
@@ -154,7 +176,7 @@ export default function PedigreePage() {
     staleTime: 120000,
   });
 
-  const maxGen = 4;
+  const maxGen = gens;
   const genRows = useMemo(() => data ? getGenerationRows(data.horse, maxGen) : [], [data]);
 
   // Collect all ancestor names for highlighting
@@ -185,29 +207,46 @@ export default function PedigreePage() {
           Analisi Pedigree
         </h1>
         <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
-          Albero genealogico a 4 generazioni con coefficiente di inbreeding.
+          Albero genealogico completo fino a cinque generazioni, coefficiente di
+          consanguineita' e incroci ripetuti, per qualunque cavallo in archivio.
         </p>
       </div>
 
-      {/* Search */}
-      <form onSubmit={e => { e.preventDefault(); }} style={{
+      {/* Scelta del cavallo: tendina con ricerca, non piu' solo testo libero */}
+      <div style={{
         background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
         borderRadius: "12px", padding: "16px 20px", marginBottom: "24px",
-        display: "flex", gap: "12px", alignItems: "center",
-        transition: "border-color 0.3s",
+        display: "flex", gap: "16px", alignItems: "flex-end", flexWrap: "wrap",
       }}>
-        <Dna size={16} style={{ color: "hsl(210 8% 48%)", flexShrink: 0 }} />
-        <input
+        <Dna size={16} style={{ color: "hsl(210 8% 48%)", flexShrink: 0, marginBottom: "12px" }} />
+        <NameSelect
+          label="Cavallo"
           value={search}
-          onChange={e => setSearch(e.target.value.toUpperCase())}
-          placeholder="Nome cavallo (es. VARENNE)..."
-          style={{
-            flex: 1, background: "none", border: "none", outline: "none",
-            color: "hsl(210 10% 88%)", fontSize: "14px", letterSpacing: "0.04em",
-          }}
+          onChange={n => setSearch(n.toUpperCase())}
+          endpoint="/api/search/horse"
+          placeholder="Scegli un cavallo dall'elenco o scrivi il nome"
         />
-        <Search size={15} style={{ color: "hsl(210 8% 40%)" }} />
-      </form>
+        <div>
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(210 8% 50%)", marginBottom: "6px" }}>
+            Generazioni
+          </div>
+          <div style={{ display: "flex", gap: "4px" }}>
+            {[3, 4, 5].map(g => (
+              <button
+                key={g}
+                onClick={() => setGens(g)}
+                style={{
+                  padding: "9px 14px", borderRadius: "8px", cursor: "pointer",
+                  fontSize: "13px", fontWeight: 700,
+                  background: gens === g ? "hsl(183 100% 45% / 0.16)" : "hsl(220 14% 11%)",
+                  border: `1px solid ${gens === g ? "hsl(183 100% 45%)" : "hsl(220 12% 22%)"}`,
+                  color: gens === g ? "hsl(183 80% 68%)" : "hsl(210 8% 58%)",
+                }}
+              >{g}</button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {isLoading && <TrottingHorseLoader label="Costruzione albero genealogico..." size={120} />}
 
@@ -316,18 +355,23 @@ export default function PedigreePage() {
             )}
           </div>
 
-          {/* Pedigree tree */}
+          {/* Albero genealogico */}
           <div style={{
             background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "12px", padding: "24px 16px", overflowX: "auto",
+            borderRadius: "12px", padding: "20px 16px", overflowX: "auto",
           }}>
-            <div style={{ minWidth: "900px" }}>
-              {genRows.map((row, i) => (
-                <GenRow
+            <div style={{
+              display: "flex", gap: "8px", alignItems: "stretch",
+              minWidth: gens >= 5 ? "820px" : gens === 4 ? "700px" : "560px",
+              height: `${Math.max(360, Math.pow(2, gens) * (gens >= 5 ? 26 : 34))}px`,
+            }}>
+              {genRows.map((col, i) => (
+                <GenColumn
                   key={i}
-                  nodes={row}
+                  nodes={col}
                   gen={i}
                   maxGen={maxGen}
+                  title={GEN_TITLES[i] || `${i}ª gen.`}
                   hovered={hoveredAncestor}
                   onHover={setHoveredAncestor}
                 />
@@ -350,6 +394,11 @@ export default function PedigreePage() {
               <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "hsl(25 80% 55%)" }} /> Antenato comune
             </span>
             <span>Clicca su un nome per andare alla scheda</span>
+          </div>
+
+          {/* Consanguineita' e genealogia estesa della seconda fonte */}
+          <div style={{ marginTop: "22px" }}>
+            <InbreedingPanel horseName={data.horse.name} />
           </div>
         </div>
       )}

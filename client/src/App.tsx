@@ -11,6 +11,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import AdvisorPage from "./pages/AdvisorPage";
 import ComparePage from "./pages/ComparePage";
 import StudFarmsPage from "./pages/StudFarmsPage";
+import AllevamentoHubPage from "./pages/AllevamentoHubPage";
 import TrendsPage from "./pages/TrendsPage";
 import StallionDirectoryPage from "./pages/StallionDirectoryPage";
 import PedigreePage from "./pages/PedigreePage";
@@ -36,7 +37,8 @@ export default function App() {
               <Route path="/advisor" component={AdvisorPage} />
               <Route path="/compare" component={ComparePage} />
               <Route path="/stallioni" component={StallionDirectoryPage} />
-              <Route path="/allevamenti" component={StudFarmsPage} />
+              <Route path="/allevamento" component={AllevamentoHubPage} />
+              <Route path="/allevamenti" component={AllevamentoHubPage} />
               <Route path="/trend" component={TrendsPage} />
               <Route path="/pedigree" component={PedigreePage} />
               <Route path="/cavalli" component={HorsesPage} />
@@ -44,7 +46,7 @@ export default function App() {
               <Route path="/fattrice/:name" component={MarePage} />
               <Route path="/calendario" component={CalendarPage} />
               <Route path="/qualifiche" component={QualifichePage} />
-              <Route path="/allevatori" component={BreedersPage} />
+              <Route path="/allevatori" component={AllevamentoHubPage} />
               <Route component={NotFound} />
             </Switch>
           </Layout>
