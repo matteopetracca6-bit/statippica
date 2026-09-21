@@ -148,7 +148,9 @@ UNDATED_RETRY_DAYS = int(os.environ.get("UNDATED_RETRY_DAYS", "45"))
 # in coda i cavalli gia' tentati con la versione precedente.
 #   v1 = data letta solo dal link al risultato
 #   v2 = data letta anche dal testo della cella ("sab 5 set 2026")
-DATE_READER_VERSION = "2"
+#   v3 = letta la scheda di carriera attuale, dopo che il vecchio indirizzo
+#        cavAn.php ha smesso di restituire gare
+DATE_READER_VERSION = "3"
 # Quante giornate future sondare per i partenti (la fonte pubblica 2-3 giorni prima)
 UPCOMING_DAYS = int(os.environ.get("UPCOMING_DAYS", "7"))
 HISTORICAL_CUTOFF_YEAR = int(os.environ.get("HISTORICAL_CUTOFF_YEAR", "2018"))
@@ -864,7 +866,15 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
     """
     try:
         with _hard_timeout(90):
-            data = _fetch_cavan(name)
+            # La scheda di carriera attuale e' la fonte buona. Il vecchio
+            # indirizzo cavAn.php e' stato dismesso: non risponde piu' gare e
+            # ogni tentativo costa tre richieste e attese lunghe, quindi lo
+            # interroghiamo solo se la scheda non da' nulla.
+            data = _fetch_anagrafica(name)
+            if not data or not data.get("races"):
+                vecchio = _fetch_cavan(name)
+                if vecchio and (vecchio.get("races") or not data):
+                    data = vecchio
     except _HardTimeout:
         print(f"  [TIMEOUT] {name}: operazione bloccata oltre 90s, salto e proseguo.", file=sys.stderr)
         return 0
@@ -890,6 +900,12 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
         conn.commit()
 
     races = _filter_min_date(data.get("races", []), min_race_date)
+    # Prima si datano le righe gia' presenti, poi si inserisce quel che manca.
+    # L'ordine e' quello che evita i doppioni: una riga appena datata viene
+    # riconosciuta come gia' presente e non reinserita. Il primo passaggio
+    # tratta anche le gare indistinguibili fra loro (i ritiri, che non hanno
+    # tempo), che l'abbinamento uno-a-uno non sa a quale data attribuire.
+    _assegna_date_per_gruppo(conn, name, races)
     inserted = _insert_races(conn, races)
     # Aggiorniamo last_updated sempre (anche con 0 gare nuove trovate) — serve alla
     # rotazione di phase_update, che dà priorità ai cavalli controllati meno di recente.
@@ -1127,6 +1143,142 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
         })
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Lettore della scheda di carriera (hAnagrafica.php).
+#
+# L'indirizzo storico cavAn.php non risponde piu': restituisce una pagina di
+# 1.441 byte senza nessuna gara. E' per questo che la riparazione notturna
+# delle date girava a vuoto — 142.963 gare risultavano senza data pur avendola
+# alla fonte. La scheda di carriera attuale ha le stesse informazioni, in una
+# tabella con le celle marcate per tipo, quindi la si legge per classe invece
+# che per posizione.
+# ---------------------------------------------------------------------------
+
+TROTTOWEB_ANAGRAFICA = "https://www.trottoweb.it/TrottoWeb/php_resp/hAnagrafica.php"
+
+_MESI_BREVI = {
+    "gen": 1, "feb": 2, "mar": 3, "apr": 4, "mag": 5, "giu": 6,
+    "lug": 7, "ago": 8, "set": 9, "ott": 10, "nov": 11, "dic": 12,
+}
+
+
+def _parse_date_anagrafica(cell_text: str) -> Optional[str]:
+    """Data di una riga di carriera, in formato ISO.
+
+    La cella contiene due scritture della stessa data, es.
+    "Gio 19 Mag 2022 19/05/22". Usiamo la prima, che porta l'anno a quattro
+    cifre e non lascia dubbi sul secolo.
+    """
+    t = (cell_text or "").replace("\xa0", " ")
+    m = re.search(r"(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})", t)
+    if m:
+        mese = _MESI_BREVI.get(m.group(2).lower())
+        if mese:
+            return f"{int(m.group(3)):04d}-{mese:02d}-{int(m.group(1)):02d}"
+    # Scrittura breve, solo se la lunga manca: gg/mm/aa.
+    m = re.search(r"\b(\d{2})/(\d{2})/(\d{2})\b", t)
+    if m:
+        anno = 2000 + int(m.group(3))
+        return f"{anno:04d}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
+    return None
+
+
+def _parse_anagrafica_page(soup: BeautifulSoup, horse_name: str) -> dict:
+    """Profilo e carriera completa dalla scheda del cavallo.
+
+    Ritorna le stesse chiavi del vecchio lettore, cosi' il resto della notte
+    non cambia: sex, country, birth_year, sire, dam, races.
+    """
+    result: dict = {"races": []}
+    horse_name = _normalize_name(horse_name)
+    text = soup.get_text(" ", strip=True)
+
+    m = re.search(r"\b([mf])\.([ie])\.(\d{1,2})\b", text)
+    if m:
+        result["sex"] = "M" if m.group(1) == "m" else "F"
+        result["country"] = "ITA" if m.group(2) == "i" else "EST"
+        result["birth_year"] = datetime.utcnow().year - int(m.group(3))
+        # Dopo il marcatore sesso/eta' viene "PADRE / codice / MADRE" oppure
+        # "PADRE / MADRE".
+        tail = text[m.end():m.end() + 200]
+        m2 = re.search(
+            r"^\s*\)?\s*([A-Z][A-Za-z0-9\u00c0-\u00ff'.\- ]*?)\s*/\s*(?:[a-zA-Z]\d*\s*/\s*)?"
+            r"([A-Z][A-Za-z0-9\u00c0-\u00ff'.\- ]*?)\s+(?:[a-z]|Carriera)",
+            tail,
+        )
+        if m2:
+            result["sire"] = m2.group(1).strip()
+            result["dam"] = m2.group(2).strip()
+
+    for tr in soup.find_all("tr"):
+        def cella(classe: str) -> str:
+            el = tr.find("td", class_=classe)
+            return el.get_text(" ", strip=True) if el else ""
+
+        race_date = _parse_date_anagrafica(cella("data"))
+        if not race_date:
+            continue  # intestazione o riga di servizio
+
+        # "CV\xa0(6ª)" -> ippodromo CV, sesta corsa della giornata
+        ippo_corsa = cella("ippo_corsa").replace("\xa0", " ")
+        m_ip = re.match(r"\s*([A-Z]{2,3})", ippo_corsa)
+        track = m_ip.group(1) if m_ip else ""
+        m_nc = re.search(r"\((\d{1,2})", ippo_corsa)
+        race_number = int(m_nc.group(1)) if m_nc else None
+
+        placement_raw = cella("piaz")
+        m_pos = re.match(r"(\d+)", placement_raw)
+        placement = int(m_pos.group(1)) if (m_pos and "\u00ba" in placement_raw) else None
+
+        # Tempo al chilometro gia' in secondi decimali (es. "14.9"); il minuto
+        # e' sottinteso. "---" significa che il cavallo non ha concluso.
+        time_raw = cella("tempo")
+        time_km = float(time_raw) if re.match(r"^\d+\.\d+$", time_raw) else None
+
+        m_dist = re.match(r"(\d+)", cella("distanza"))
+        distance = int(m_dist.group(1)) if m_dist else None
+
+        # "3/11" = numero di partenza su totale partenti
+        m_part = re.match(r"(\d+)\s*/\s*(\d+)", cella("num_part"))
+        start_pos = int(m_part.group(1)) if m_part else None
+        total_starters = int(m_part.group(2)) if m_part else None
+
+        premi = tr.find_all("td", class_="premio_netto")
+        def euro(i: int) -> float:
+            if len(premi) > i:
+                return _parse_float(premi[i].get_text(strip=True)) or 0.0
+            return 0.0
+        prize_net, prize_gross = euro(0), euro(1)
+
+        result["races"].append({
+            "horse_name":     horse_name,
+            "race_date":      race_date,
+            "track":          track,
+            "race_number":    race_number,
+            "placement":      placement,
+            "placement_raw":  placement_raw,
+            "time_km":        time_km,
+            "distance":       distance,
+            "start_pos":      start_pos,
+            "total_starters": total_starters,
+            "shoes":          cella("ferri"),
+            "driver":         cella("driver"),
+            "prize_net":      prize_net,
+            "prize_gross":    prize_gross or prize_net,
+            "race_code":      f"{race_date}_{track}_{race_number or ''}",
+        })
+
+    return result
+
+
+def _fetch_anagrafica(name: str) -> Optional[dict]:
+    """Scarica e legge la scheda di carriera. None se la pagina non arriva."""
+    soup = fetch_url(TROTTOWEB_ANAGRAFICA, params={"nome_cav": name})
+    if not soup:
+        return None
+    return _parse_anagrafica_page(soup, name)
 
 
 def _fetch_cavan(name: str) -> Optional[dict]:
@@ -2182,6 +2334,77 @@ def _richness(row: dict) -> int:
     riga piu' ricca e le regaliamo la data dell'altra."""
     return sum(1 for k in ("driver", "race_number", "shoes", "start_pos", "total_starters")
                if row.get(k) not in (None, "", 0))
+
+
+def _assegna_date_per_gruppo(conn: sqlite3.Connection, name: str, races: list[dict]) -> int:
+    """Da' la data alle gare che si somigliano troppo per essere distinte.
+
+    L'abbinamento uno-a-uno fallisce quando piu' gare hanno la stessa identita':
+    un cavallo ritirato quattordici volte a Montegiorgio sui 1600 lascia
+    quattordici righe senza tempo, identiche fra loro. Prese una per una non si
+    sa quale data spetti a quale, e infatti venivano scartate tutte — poi
+    reinserite come doppioni.
+
+    Ma se righe indistinguibili sono quattordici anche alla fonte, l'insieme
+    delle date e' certo: indistinguibili restano, e qualunque accoppiamento
+    interno da' lo stesso risultato per conteggi, guadagni e anni di attivita'.
+    Assegniamo dalla data piu' recente alla piu' vecchia, senza inventare nulla.
+
+    Ritorna quante date sono state scritte.
+    """
+    gia_presenti = {d for (d,) in conn.execute(
+        "SELECT DISTINCT race_date FROM races WHERE horse_name=? AND race_date IS NOT NULL",
+        (name,)) if d}
+    # Un cavallo non corre due volte lo stesso giorno: le date che il database
+    # ha gia' non vanno riassegnate.
+    da_collocare = [r for r in races
+                    if r.get("race_date") and r["race_date"] not in gia_presenti]
+    if not da_collocare:
+        return 0
+
+    senza_data = conn.execute(
+        """SELECT id, track, distance, time_km, prize_net, placement_raw
+           FROM races WHERE horse_name=? AND (race_date IS NULL OR TRIM(race_date)='')""",
+        (name,)).fetchall()
+    if not senza_data:
+        return 0
+
+    scritte = 0
+    # Prima col premio nel confronto (piu' prudente), poi senza: la scheda di
+    # carriera lascia spesso il montepremi a zero anche per gare pagate.
+    for with_prize in (True, False):
+        if not da_collocare or not senza_data:
+            break
+        gruppi_db: dict = {}
+        for riga in senza_data:
+            chiave = _race_identity(riga[1], riga[2], riga[3], riga[4], riga[5],
+                                    with_prize=with_prize)
+            gruppi_db.setdefault(chiave, []).append(riga[0])
+        gruppi_fonte: dict = {}
+        for r in da_collocare:
+            chiave = _race_identity(r.get("track"), r.get("distance"), r.get("time_km"),
+                                    r.get("prize_net", 0), r.get("placement_raw"),
+                                    with_prize=with_prize)
+            gruppi_fonte.setdefault(chiave, []).append(r)
+
+        usate: set = set()
+        assegnate: set = set()
+        for chiave, ids in gruppi_db.items():
+            candidate = gruppi_fonte.get(chiave)
+            if not candidate:
+                continue
+            # Se la fonte ne ha meno del database, diamo la data a quante ne
+            # bastano e lasciamo le altre senza: meglio incomplete che sbagliate.
+            date = sorted({r["race_date"] for r in candidate}, reverse=True)
+            for id_riga, data in zip(ids, date):
+                conn.execute("UPDATE races SET race_date=? WHERE id=?", (data, id_riga))
+                usate.add(id_riga)
+                assegnate.add(data)
+                scritte += 1
+        senza_data = [r for r in senza_data if r[0] not in usate]
+        da_collocare = [r for r in da_collocare if r["race_date"] not in assegnate]
+
+    return scritte
 
 
 def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
