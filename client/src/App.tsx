@@ -16,7 +16,10 @@ import AllevamentoHubPage from "./pages/AllevamentoHubPage";
 import TrendsPage from "./pages/TrendsPage";
 import StallionDirectoryPage from "./pages/StallionDirectoryPage";
 import PedigreePage from "./pages/PedigreePage";
-import HorsesPage from "./pages/HorsesPage";
+// La pagina Cavalli e' stata unita alla Leaderboard: mostravano la stessa
+// tabella con filtri diversi, e chi cercava un cavallo per nome doveva
+// rinunciare ai filtri della classifica, e viceversa. L'indirizzo resta
+// attivo e porta alla pagina unica, per non rompere i collegamenti salvati.
 import MaresPage from "./pages/MaresPage";
 import MarePage from "./pages/MarePage";
 import QualifichePage from "./pages/QualifichePage";
@@ -51,7 +54,7 @@ export default function App() {
               <Route path="/allevamenti" component={AllevamentoHubPage} />
               <Route path="/trend" component={TrendsPage} />
               <Route path="/pedigree" component={PedigreePage} />
-              <Route path="/cavalli" component={HorsesPage} />
+              <Route path="/cavalli" component={LeaderboardPage} />
               <Route path="/fattrici" component={MaresPage} />
               <Route path="/fattrice/:name" component={MarePage} />
               <Route path="/calendario" component={CalendarPage} />

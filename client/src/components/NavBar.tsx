@@ -14,8 +14,9 @@ import {
  * raggiungibili dalla barra in alto.
  */
 const SCHEDE: { href: string; label: string; icon: typeof HomeIcon }[] = [
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/cavalli", label: "Cavalli", icon: Users },
+  // Cavalli e Leaderboard erano la stessa tabella con filtri diversi: sono
+  // un'unica voce, con dentro tutti i filtri di entrambe.
+  { href: "/leaderboard", label: "Cavalli e classifica", icon: Trophy },
   { href: "/stalloni", label: "Stalloni", icon: BookOpen },
   { href: "/fattrici", label: "Fattrici", icon: Heart },
   { href: "/advisor", label: "Advisor", icon: Sparkles },

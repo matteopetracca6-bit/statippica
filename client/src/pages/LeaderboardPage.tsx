@@ -16,6 +16,8 @@ interface LeaderboardRow {
   grade_annata?: string | null;
   pos_annata?: number | null;
   tot_annata?: number | null;
+  country?: string | null;
+  sex?: string | null;
   score: number;
   earn_percentile: number;
   time_percentile: number;
@@ -32,9 +34,19 @@ interface LeaderboardData {
   page: number;
   limit: number;
   rows: LeaderboardRow[];
+  countries?: string[];
 }
 
 const GRADES = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+
+// Nel filtro le sigle secche dicono poco a chi non le conosce. EST resta la
+// sigla: nell'archivio non e' chiaro se indichi l'Estonia o una generica
+// provenienza estera, e inventare un nome preciso su un dato ambiguo
+// darebbe una certezza che non c'e'.
+const NOMI_PAESE: Record<string, string> = {
+  ITA: "Italia", FRA: "Francia", SWE: "Svezia", NOR: "Norvegia",
+  GER: "Germania", CAN: "Canada", USA: "Stati Uniti",
+};
 
 export default function LeaderboardPage() {
   const [location] = useLocation();
@@ -69,7 +81,21 @@ export default function LeaderboardPage() {
   // correre - fra i nati nel 2023 il 63% sale di lettera guardandoli fra pari.
   const [voto, setVoto] = useState<string>("globale");
 
-  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly, dove, voto]);
+  // Tornando alla lettura globale, l'ordinamento per posizione in annata non
+  // ha piu' senso: senza questo la lista resterebbe ordinata su un dato che
+  // non e' piu' mostrato.
+  useEffect(() => {
+    if (voto !== "annata" && sort === "annata") setSort("score");
+  }, [voto, sort]);
+
+  // Filtri assorbiti dalla pagina Cavalli, che mostrava la stessa tabella con
+  // una manciata di filtri diversi. Due pagine per la stessa cosa obbligavano
+  // a sceglierne una e rinunciare ai filtri dell'altra.
+  const [cerca, setCerca] = useState<string>("");
+  const [paese, setPaese] = useState<string>("");
+  const [sesso, setSesso] = useState<string>("");
+
+  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly, dove, voto, cerca, paese, sesso]);
 
   const params = new URLSearchParams();
   if (year) params.set("year", year);
@@ -82,9 +108,12 @@ export default function LeaderboardPage() {
   if (solidOnly) params.set("min_races", String(MIN_RACES_SOLID));
   if (dove) params.set("dove", dove);
   if (voto === "annata") params.set("voto", "annata");
+  if (cerca.trim()) params.set("q", cerca.trim());
+  if (paese) params.set("country", paese);
+  if (sesso) params.set("sex", sesso);
 
   const { data, isLoading } = useQuery<LeaderboardData>({
-    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove, voto],
+    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove, voto, cerca, paese, sesso],
     queryFn: async () => {
       const r = await apiRequest("GET", `/api/leaderboard?${params}`);
       return r.json();
@@ -108,12 +137,13 @@ export default function LeaderboardPage() {
     <div className="page-shell">
       {/* Header */}
       <div style={{ marginBottom: "22px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>Leaderboard</h1>
+        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>Cavalli e classifica</h1>
         <p style={{ fontSize: "13px", color: "hsl(210 8% 48%)" }}>
           {data?.total != null ? `${data.total.toLocaleString("it-IT")} cavalli` : "—"} · {
             mode === "performance" ? "in gara"
               : mode === "storico" ? "cavalli storici, confrontati fra loro"
-                : "solo pedigree"}
+                : "solo pedigree"}{
+            mode === "performance" && voto === "annata" ? " · voto letto nella sua annata" : ""}
         </p>
         {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
             il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
@@ -151,6 +181,40 @@ export default function LeaderboardPage() {
           ))}
         </div>
 
+        {/* Le due letture del voto, in evidenza accanto alla scelta della
+            classifica: e' una decisione su COSA si sta guardando, non un
+            filtro fra tanti. Nascosta in un menu' a tendina passava inosservata,
+            e chi guarda i giovani vedeva solo la lettura che li penalizza.
+            Non compare per gli storici (hanno una scala loro) ne' per il
+            pedigree (non ha annate da confrontare). */}
+        {mode === "performance" && (
+          <div style={{ display: "flex", background: "hsl(220 12% 12%)", border: "1px solid hsl(51 40% 28%)", borderRadius: "8px", overflow: "hidden" }}
+               data-testid="toggle-voto">
+            {[{ v: "globale", l: "Contro tutti" }, { v: "annata", l: "Nella sua annata" }].map(({ v, l }) => (
+              <button key={v} onClick={() => setVoto(v)}
+                title={v === "annata"
+                  ? "Confronta ogni cavallo solo con i nati nel suo stesso anno"
+                  : "Confronta ogni cavallo con tutte le generazioni insieme"}
+                style={{
+                  padding: "8px 14px", fontSize: "13px",
+                  background: voto === v ? "hsl(51 75% 55% / 0.18)" : "none",
+                  color: voto === v ? "hsl(51 80% 68%)" : "hsl(210 8% 55%)",
+                  border: "none", cursor: "pointer",
+                  fontWeight: voto === v ? 600 : 400, transition: "all 0.15s", whiteSpace: "nowrap",
+                }}>{l}</button>
+            ))}
+          </div>
+        )}
+
+        {/* Ricerca per nome, dalla pagina Cavalli. */}
+        <input
+          value={cerca}
+          onChange={e => setCerca(e.target.value.toUpperCase())}
+          placeholder="Cerca cavallo..."
+          data-testid="input-cerca"
+          style={{ ...filterStyle, minWidth: "190px" }}
+        />
+
         {/* Year */}
         <select value={year} onChange={e => setYear(e.target.value)} style={filterStyle} data-testid="select-year">
           <option value="">Tutti gli anni</option>
@@ -162,16 +226,6 @@ export default function LeaderboardPage() {
           <option value="">Tutti i voti</option>
           {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
-
-        {/* Le due letture del voto. Solo per i cavalli in gara: gli storici
-            non hanno un voto d'annata, e il pedigree non ha annate su cui
-            confrontare. */}
-        {mode === "performance" && (
-          <select value={voto} onChange={e => setVoto(e.target.value)} style={filterStyle} data-testid="select-voto">
-            <option value="globale">Voto: contro tutti</option>
-            <option value="annata">Voto: nella sua annata</option>
-          </select>
-        )}
 
         {/* Dove ha corso. Non compare per gli storici: di loro l'archivio ha
             solo i totali di carriera, senza le singole gare, quindi non si sa
@@ -185,10 +239,33 @@ export default function LeaderboardPage() {
           </select>
         )}
 
+        {/* Paese e sesso, dalla pagina Cavalli. */}
+        <select value={paese} onChange={e => setPaese(e.target.value)} style={filterStyle} data-testid="select-paese">
+          <option value="">Tutti i paesi</option>
+          {(data?.countries ?? []).map(c => (
+            <option key={c} value={c}>{NOMI_PAESE[c] ?? c}</option>
+          ))}
+        </select>
+
+        <select value={sesso} onChange={e => setSesso(e.target.value)} style={filterStyle} data-testid="select-sesso">
+          <option value="">Maschi e femmine</option>
+          <option value="M">Solo maschi</option>
+          <option value="F">Solo femmine</option>
+        </select>
+
         {/* Sort */}
         <select value={sort} onChange={e => setSort(e.target.value)} style={filterStyle} data-testid="select-sort">
           <option value="score">Ordina: Score</option>
           <option value="earnings">Ordina: Guadagni</option>
+          <option value="wins">Ordina: Vittorie</option>
+          <option value="races">Ordina: Gare</option>
+          <option value="name">Ordina: Nome</option>
+          {/* Solo con la lettura per annata: mette in cima il primo di ogni
+              generazione, cosi' i giovani non restano sepolti sotto i
+              cavalli maturi. */}
+          {mode === "performance" && voto === "annata" && (
+            <option value="annata">Ordina: Primi della loro annata</option>
+          )}
         </select>
 
         {/* Sire filter */}
@@ -214,8 +291,11 @@ export default function LeaderboardPage() {
           Almeno {MIN_RACES_SOLID} corse
         </label>
 
-        {(year || grade || sireFilter || solidOnly) && (
-          <button onClick={() => { setYear(""); setGrade(""); setSireFilter(""); setSolidOnly(false); }} style={{
+        {(year || grade || sireFilter || solidOnly || cerca || paese || sesso || dove) && (
+          <button onClick={() => {
+            setYear(""); setGrade(""); setSireFilter(""); setSolidOnly(false);
+            setCerca(""); setPaese(""); setSesso(""); setDove("");
+          }} style={{
             fontSize: "12px", color: "hsl(0 62% 55%)", background: "none", border: "none", cursor: "pointer",
           }}>
             Reset filtri

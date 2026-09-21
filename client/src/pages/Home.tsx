@@ -168,8 +168,9 @@ export default function Home() {
               Esplora
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
-              <NavCard href="/leaderboard" icon={Trophy} title="Leaderboard" desc="Classifica completa dei cavalli per score, guadagni e anno di nascita" color="hsl(51 80% 55%)" />
-              <NavCard href="/cavalli" icon={Users} title="Cavalli" desc="Database sfogliabile di tutti i cavalli con filtri per anno, grade e guadagni" color="hsl(183 80% 55%)" />
+              {/* Leaderboard e Cavalli erano la stessa tabella con filtri
+                  diversi: una scheda sola, con tutti i filtri. */}
+              <NavCard href="/leaderboard" icon={Trophy} title="Cavalli e classifica" desc="Tutti i cavalli valutati: cerca per nome o ordina per voto, guadagni e vittorie. Il voto si legge contro tutti o dentro la sua annata" color="hsl(51 80% 55%)" />
               <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="Tutti gli stalloni valutati, con tasse di monta, allevamenti e provenienza" color="hsl(120 60% 50%)" />
               <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(280 60% 60%)" />
               <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />

@@ -2519,6 +2519,46 @@ def phase_historic_ratings(conn: sqlite3.Connection):
 #          stallion_score = base_score × volume_multiplier
 #          + boost vendopuledri (max +5 punti, normalizzato)
 # ─────────────────────────────────────────────
+# Il campo paese e' stato riempito da fonti diverse in momenti diversi: la
+# raccolta principale scriveva le sigle di tre lettere, il recupero dei
+# riproduttori storici i nomi per esteso. Risultato: nel filtro comparivano
+# Italia e ITA come se fossero due paesi diversi, e sceglierne uno faceva
+# sparire i cavalli registrati con l'altra scrittura. Qui si riportano tutti
+# alla sigla.
+#
+# La sigla EST non viene toccata: sono 126 cavalli e non e' chiaro se indichi
+# l'Estonia o semplicemente una provenienza estera. Tirare a indovinare su un
+# dato ambiguo sarebbe peggio che lasciarlo com'e'.
+PAESI_SIGLA = {
+    "ITALIA": "ITA",
+    "FRANCIA": "FRA",
+    "SVEZIA": "SWE",
+    "NORVEGIA": "NOR",
+    "GERMANIA": "GER",
+    "CANADA": "CAN",
+    "STATI UNITI D'AMERICA": "USA",
+    "STATI UNITI": "USA",
+}
+
+
+def phase_normalize_country(conn: sqlite3.Connection) -> None:
+    """Riporta il campo paese a una scrittura sola, la sigla di tre lettere."""
+    totale = 0
+    for nome_lungo, sigla in PAESI_SIGLA.items():
+        cur = conn.execute(
+            "UPDATE horses SET country = ? WHERE UPPER(TRIM(country)) = ?",
+            (sigla, nome_lungo),
+        )
+        if cur.rowcount:
+            print(f"[PAESI] {nome_lungo} -> {sigla}: {cur.rowcount} cavalli", file=sys.stderr)
+            totale += cur.rowcount
+    # Stessa sigla scritta in minuscolo o con spazi attorno.
+    conn.execute("""UPDATE horses SET country = UPPER(TRIM(country))
+                    WHERE country IS NOT NULL AND country <> UPPER(TRIM(country))""")
+    conn.commit()
+    print(f"[PAESI] Uniformati {totale} cavalli.", file=sys.stderr)
+
+
 def phase_grade_stability(conn: sqlite3.Connection) -> None:
     """Ricalcola quanto e' affidabile il voto, a seconda dell'eta' a cui si legge.
 
@@ -3939,6 +3979,7 @@ def main():
         phase_recover_undated(conn)     # FASE 2e: ripesca le date residue dalla fonte
         phase_vp_qualifiche(conn)       # FASE 2f: qualifiche giovani + allevatori
         phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
+        phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni

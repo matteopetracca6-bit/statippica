@@ -504,12 +504,49 @@ export function registerRoutes(httpServer: Server, app: Express) {
       conditions.push("COALESCE(hr.gare_estero, 0) > 0 AND COALESCE(hr.gare_italia, 0) = 0");
     }
 
+    // ── Filtri arrivati dalla vecchia pagina Cavalli ──────────────────────
+    // Leaderboard e Cavalli mostravano la stessa tabella con filtri diversi:
+    // una aveva anno, voto e stallone, l'altra ricerca per nome, paese e
+    // sesso. Unite in una pagina sola, questi devono funzionare qui.
+    const cerca = (req.query.q as string || "").trim();
+    if (cerca) { conditions.push("hr.name LIKE ?"); params.push(`%${cerca.toUpperCase()}%`); }
+
+    const paese = req.query.country as string || null;
+    if (paese) { conditions.push("h.country = ?"); params.push(paese); }
+
+    const sesso = req.query.sex as string || null;
+    if (sesso === "M" || sesso === "F") {
+      conditions.push("h.sex = ?"); params.push(sesso);
+    }
+
     const where = conditions.join(" AND ");
-    const sortCol = sortBy === "earnings" ? "career_earnings" : "score";
+    // I filtri su paese e sesso stanno nella tabella dei cavalli, non in
+    // quella dei voti: senza la JOIN anche nel conteggio, il totale delle
+    // pagine non corrisponderebbe alle righe mostrate.
+    const fromClause = `FROM horse_ratings hr
+      LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year`;
+    const sortCol =
+      sortBy === "earnings" ? "hr.career_earnings"
+        : sortBy === "wins" ? "hr.career_wins"
+          : sortBy === "races" ? "hr.career_races"
+            : sortBy === "name" ? "hr.name"
+              // Primi della loro annata: mette in cima il migliore di ogni
+              // generazione invece dei soli cavalli maturi. Senza questo,
+              // scegliere la lettura per annata non cambiava la cima della
+              // lista, perche' l'ordine restava quello globale.
+              : sortBy === "annata" ? "hr.pos_annata"
+                : "hr.score";
+    // Il nome si ordina in avanti, e la posizione in annata pure: il primo
+    // della sua generazione va in cima, non in fondo. Tutto il resto dal piu'
+    // grande al piu' piccolo.
+    const sortDir = (sortBy === "name" || sortBy === "annata") ? "ASC" : "DESC";
+    // Fra i primi di annate diverse vince chi ha il punteggio piu' alto:
+    // senza questo l'ordine fra pari posizione sarebbe casuale.
+    const sortExtra = sortBy === "annata" ? ", hr.score DESC" : "";
 
     const db = getDb();
     try {
-      const total = (db.prepare(`SELECT COUNT(*) as cnt FROM horse_ratings hr WHERE ${where}`)
+      const total = (db.prepare(`SELECT COUNT(*) as cnt ${fromClause} WHERE ${where}`)
         .get(...params) as any).cnt;
 
       const rows = db.prepare(`
@@ -518,15 +555,22 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
                hr.guad_italia, hr.guad_estero,
                hr.grade_annata, hr.pos_annata, hr.tot_annata,
-               h.country
-        FROM horse_ratings hr
-        LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year
+               h.country, h.sex
+        ${fromClause}
         WHERE ${where}
-        ORDER BY ${sortCol} DESC
+        ORDER BY ${sortCol} ${sortDir}${sortExtra}
         LIMIT ? OFFSET ?
       `).all(...params, limit, offset) as any[];
 
-      res.json({ total, page, limit, rows });
+      // Elenco dei paesi presenti, per riempire il filtro: arrivava dalla
+      // vecchia pagina Cavalli e va servito anche qui.
+      const countries = (db.prepare(`
+        SELECT DISTINCT h.country FROM horses h
+        WHERE h.country IS NOT NULL AND TRIM(h.country) <> ''
+        ORDER BY h.country
+      `).all() as any[]).map(r => r.country);
+
+      res.json({ total, page, limit, rows, countries });
     } finally {
       db.close();
     }
