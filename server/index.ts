@@ -4,6 +4,36 @@ import type { Request } from 'express';
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "node:http";
+import { existsSync, createReadStream, createWriteStream, statSync } from "node:fs";
+import { createGunzip } from "node:zlib";
+import { pipeline } from "node:stream/promises";
+import path from "node:path";
+
+// L'archivio viaggia in git compresso, perche' da aperto supera i 100 MB che
+// GitHub accetta per un singolo file. Normalmente lo riapre il comando di
+// installazione, ma se quel passaggio manca o cambia, il sito parte senza
+// archivio e ogni pagina risponde "unable to open database file" — e' gia'
+// successo una volta. Questa e' la rete di sicurezza: se il file aperto non
+// c'e' e quello compresso si', lo apriamo qui prima di accettare richieste.
+async function assicuraArchivio(): Promise<void> {
+  const aperto = path.resolve(process.cwd(), "data.db");
+  const compresso = aperto + ".gz";
+  if (existsSync(aperto)) return;
+  if (!existsSync(compresso)) {
+    console.error(
+      "[ARCHIVIO] Manca sia data.db sia data.db.gz in " + process.cwd() +
+      ". Il sito non ha dati da mostrare.",
+    );
+    return;
+  }
+  console.log("[ARCHIVIO] data.db assente: lo riapro da data.db.gz...");
+  const inizio = Date.now();
+  await pipeline(createReadStream(compresso), createGunzip(), createWriteStream(aperto));
+  const mb = statSync(aperto).size / 1048576;
+  console.log(
+    `[ARCHIVIO] Riaperto: ${mb.toFixed(1)} MB in ${((Date.now() - inizio) / 1000).toFixed(1)}s`,
+  );
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -62,6 +92,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Prima di tutto: senza archivio il sito non ha niente da mostrare.
+  await assicuraArchivio();
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
