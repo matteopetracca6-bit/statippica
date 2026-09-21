@@ -245,3 +245,44 @@ body {
     animation: none !important;
   }
 }
+
+/* ── Spiegazioni a tendina ──────────────────────────────────────────────
+   Safari mostra un suo triangolino sulle <summary> anche con list-style:none,
+   e servirebbe questa regola apposta per toglierlo: senza, accanto al punto
+   interrogativo comparirebbe una seconda freccia. */
+.spiegazione > summary::-webkit-details-marker { display: none; }
+.spiegazione > summary::marker { content: ""; }
+.spiegazione > summary:hover { color: hsl(183 70% 62%); }
+/* La freccia ruota all'apertura: dice a colpo d'occhio se c'e' altro sotto. */
+.spiegazione > summary > span[aria-hidden]::after { content: ""; }
+.spiegazione[open] > summary { margin-bottom: 2px; }
+
+/* ── Adattamenti per telefono ───────────────────────────────────────────
+   Su 375 pixel la genealogia a tre colonne veniva tagliata sul bordo destro.
+   Stringere le colonne non bastava: i nomi dei cavalli sono lunghi e si
+   spezzavano a meta' parola ("DONA TO HANO VER"), che e' peggio del taglio.
+   Su schermo stretto l'albero diventa quindi una colonna sola, con i genitori
+   in cima e i nonni sotto, dove ogni nome ha tutta la larghezza che gli
+   serve. */
+@media (max-width: 560px) {
+  .genealogia-griglia {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .genealogia-griglia > div {
+    padding: 0 !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+  }
+  /* I genitori per primi: sono il dato che si cerca. */
+  .genealogia-griglia > div:nth-child(2) { order: 1; }
+  .genealogia-griglia > div:first-child  { order: 2; }
+  .genealogia-griglia > div:last-child   { order: 3; }
+  /* Ogni casella si spartisce la riga in parti uguali. */
+  .genealogia-griglia > div > * { flex: 1 1 0; min-width: 0; }
+
+  /* Le due schede del cavallo precedente e successivo, una sopra l'altra. */
+  .navigazione-vicini { flex-wrap: wrap; }
+  .navigazione-vicini > button { max-width: none !important; flex: 1 1 100% !important; }
+}

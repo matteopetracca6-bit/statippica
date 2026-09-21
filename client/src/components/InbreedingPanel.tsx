@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Spiegazione } from "./Spiegazione";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 
@@ -88,7 +89,15 @@ export default function InbreedingPanel({ horseName }: { horseName: string }) {
     <div style={panelStyle}>
       <div style={panelTitle}>Consanguineità e genealogia estesa</div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "22px", marginBottom: data.crossings.length ? "16px" : 0 }}>
+      {/* Griglia invece di una fila che va a capo: su telefono i quattro dati
+          finivano incolonnati uno per riga, sprecando tre quarti della
+          larghezza. Cosi' stanno due per riga anche su schermo stretto. */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))",
+        gap: "14px 18px",
+        marginBottom: data.crossings.length ? "16px" : 0,
+      }}>
         <div>
           <div style={{ fontSize: "11px", color: "hsl(210 8% 48%)", marginBottom: "3px" }}>Antenati noti</div>
           <div className="tabular" style={{ fontSize: "19px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>
@@ -103,7 +112,7 @@ export default function InbreedingPanel({ horseName }: { horseName: string }) {
         </div>
         <div>
           <div style={{ fontSize: "11px", color: "hsl(210 8% 48%)", marginBottom: "3px" }}>Incrocio più stretto</div>
-          <div style={{ fontSize: "19px", fontWeight: 700, color: closest.color }}>
+          <div style={{ fontSize: "16px", fontWeight: 700, color: closest.color, lineHeight: 1.25 }}>
             {p.closest_cross != null ? `${closest.label} (${p.closest_cross}ª gen.)` : "Nessuno"}
           </div>
         </div>
@@ -119,11 +128,14 @@ export default function InbreedingPanel({ horseName }: { horseName: string }) {
 
       {data.crossings.length > 0 ? (
         <>
-          <p style={{ fontSize: "12px", color: "hsl(210 8% 58%)", margin: "0 0 10px", lineHeight: 1.55 }}>
-            Questi antenati compaiono da entrambe le parti dell'albero. Le cifre indicano a quale
-            generazione: «4+5» vuol dire due volte su quel lato, alla quarta e alla quinta. Più il
-            numero è basso, più l'incrocio è stretto.
-          </p>
+          {/* La spiegazione della notazione serve una volta sola: chi la
+              conosce non deve rileggerla a ogni cavallo. */}
+          <Spiegazione titolo="Come si leggono queste cifre" compatta>
+            Questi antenati compaiono da entrambe le parti dell'albero. Le cifre indicano a
+            quale generazione: «4+5» vuol dire due volte su quel lato, alla quarta e alla
+            quinta. Più il numero è basso, più l'incrocio è stretto, perché l'antenato
+            comune è più vicino e pesa di più sul patrimonio genetico.
+          </Spiegazione>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>

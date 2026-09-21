@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, 
 import { formatRecord } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
+import { Spiegazione } from "../components/Spiegazione";
 
 interface HorseData {
   name: string;
@@ -289,7 +290,7 @@ export default function HorsePage() {
     <div style={{ padding: "28px 32px" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         <div className="skeleton" style={{ height: "60px", width: "300px", borderRadius: "10px" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(105px, 1fr))", gap: "12px" }}>
           {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "10px" }} />)}
         </div>
       </div>
@@ -329,7 +330,7 @@ export default function HorsePage() {
 
       {/* Prev/Next navigation */}
       {neighbors && (neighbors.prev || neighbors.next) && (
-        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+        <div className="navigazione-vicini" style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
           <NavArrow direction="prev" neighbor={neighbors.prev} onClick={navigateTo} />
           <NavArrow direction="next" neighbor={neighbors.next} onClick={navigateTo} />
         </div>
@@ -359,7 +360,7 @@ export default function HorsePage() {
       {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (
         <div style={panelStyle}>
           <div style={panelTitle}>Genealogia (clicca per navigare)</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
+          <div className="genealogia-griglia" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
               <HorsePedigreeNode label="Nonno pat." name={horse.pedigree.sire_sire} isStallion />
               <HorsePedigreeNode label="Nonna pat." name={horse.pedigree.sire_dam} isStallion={false} />
@@ -407,59 +408,88 @@ export default function HorsePage() {
         <div style={panelStyle}>
           <div style={panelTitle}>Come leggere questo voto</div>
 
-          {horse.grade_annata && (
-            <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 14 }}>
-              <div style={{ minWidth: 165 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
-                  Contro tutti i cavalli
+          {/* Tre dati su una riga sola: le due letture del voto e quanto
+              quella lettera sia definitiva. Prima erano incolonnati con la
+              prosa in mezzo, e su un telefono occupavano mezza schermata. */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+            gap: 14,
+          }}>
+            {horse.grade_annata && (
+              <>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>
+                    Contro tutti
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1 }}>{horse.grade}</div>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700 }}>{horse.grade}</div>
-              </div>
-              <div style={{ minWidth: 165 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
-                  Nella sua annata {horse.birth_year}
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>
+                    Nella sua annata
+                  </div>
+                  <div style={{
+                    fontSize: 22, fontWeight: 700, lineHeight: 1.1,
+                    color: horse.grade_annata !== horse.grade ? "hsl(51 75% 58%)" : undefined,
+                  }}>
+                    {horse.grade_annata}
+                  </div>
+                  {horse.pos_annata != null && horse.tot_annata != null && (
+                    <div className="tabular" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                      {horse.pos_annata}° su {horse.tot_annata.toLocaleString("it-IT")}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* L'affidabilita' si riduce a un'etichetta e una percentuale: il
+                dato resta in chiaro, il ragionamento dietro si apre se serve. */}
+            {horse.affidabilita_voto?.disponibile && (
+              <div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>
+                  Quanto e&apos; definitivo
                 </div>
                 <div style={{
-                  fontSize: 22, fontWeight: 700,
-                  color: horse.grade_annata !== horse.grade ? "hsl(51 75% 58%)" : undefined,
+                  fontSize: 15, fontWeight: 600, lineHeight: 1.25,
+                  color: horse.affidabilita_voto.livello === "provvisorio" ? "hsl(28 85% 62%)"
+                    : horse.affidabilita_voto.livello === "in_via_di_conferma" ? "hsl(51 75% 60%)"
+                      : "hsl(150 55% 55%)",
                 }}>
-                  {horse.grade_annata}
+                  {horse.affidabilita_voto.livello === "provvisorio" ? "Provvisorio"
+                    : horse.affidabilita_voto.livello === "in_via_di_conferma" ? "In conferma"
+                      : "Consolidato"}
                 </div>
-                {horse.pos_annata != null && horse.tot_annata != null && (
-                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {horse.pos_annata}° su {horse.tot_annata.toLocaleString("it-IT")} coetanei
-                  </div>
-                )}
+                <div className="tabular" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                  {horse.affidabilita_voto.resta?.toFixed(0)}% resta così
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {horse.grade_annata && horse.grade_annata !== horse.grade && (
-            <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6, maxWidth: "75ch", marginBottom: 12 }}>
-              Le due lettere nascono dallo stesso punteggio: cambia solo con chi viene
-              confrontato. Il voto generale mette insieme tutte le generazioni, e i cavalli
-              giovani ne escono penalizzati perche&apos; hanno avuto meno anni per correre e
-              guadagnare.
-            </div>
-          )}
-
-          {horse.affidabilita_voto?.disponibile && horse.affidabilita_voto.frase && (
-            <div style={{
-              fontSize: 12.5, lineHeight: 1.6, maxWidth: "75ch",
-              padding: "10px 12px", borderRadius: 8,
-              background: "hsl(220 12% 13%)",
-              borderLeft: `3px solid ${
-                horse.affidabilita_voto.livello === "provvisorio" ? "hsl(28 80% 55%)"
-                  : horse.affidabilita_voto.livello === "in_via_di_conferma" ? "hsl(51 70% 50%)"
-                    : "hsl(150 50% 45%)"}`,
-            }}>
-              {horse.affidabilita_voto.frase}
-              <div style={{ color: "var(--muted)", marginTop: 6 }}>
-                Misurato su {horse.affidabilita_voto.n?.toLocaleString("it-IT")} cavalli nati fra il
-                2012 e il 2016, di cui la carriera e&apos; conclusa. È una statistica di gruppo,
-                non una previsione su questo cavallo.
-              </div>
-            </div>
+          {(horse.affidabilita_voto?.disponibile || horse.grade_annata) && (
+            <Spiegazione titolo="Perche&#39; due lettere, e quanto durano">
+              {horse.grade_annata && horse.grade_annata !== horse.grade && (
+                <p style={{ margin: "0 0 8px" }}>
+                  Le due lettere nascono dallo stesso punteggio: cambia solo con chi viene
+                  confrontato. Il voto generale mette insieme tutte le generazioni, e i
+                  cavalli giovani ne escono penalizzati perche&apos; hanno avuto meno anni
+                  per correre e guadagnare.
+                </p>
+              )}
+              {horse.affidabilita_voto?.disponibile && (
+                <>
+                  <p style={{ margin: "0 0 8px" }}>{horse.affidabilita_voto.frase}</p>
+                  <p style={{ margin: 0 }}>
+                    Misurato su {horse.affidabilita_voto.n?.toLocaleString("it-IT")} cavalli
+                    nati fra il 2012 e il 2016, di cui la carriera e&apos; conclusa: per ogni
+                    eta&apos; si ricostruisce il voto che avevano allora, usando solo le gare
+                    corse entro quel momento, e si guarda dove sono finiti. È una statistica
+                    di gruppo, non una previsione su questo cavallo.
+                  </p>
+                </>
+              )}
+            </Spiegazione>
           )}
         </div>
       )}
@@ -475,28 +505,39 @@ export default function HorsePage() {
       {(horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0 && (
         <div style={panelStyle}>
           <div style={panelTitle}>Dove ha corso</div>
-          <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 12 }}>
+          {/* Aggiunto il premio medio per gara: e' il dato che spiega da solo
+              perche' la divisione conta, e prima stava solo nella prosa. */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+            gap: 14,
+          }}>
             {([
               ["In Italia", horse.gare_italia ?? 0, horse.vitt_italia ?? 0, horse.guad_italia ?? 0],
               ["All'estero", horse.gare_estero ?? 0, horse.vitt_estero ?? 0, horse.guad_estero ?? 0],
             ] as [string, number, number, number][]).map(([etichetta, gare, vitt, euro]) => (
-              <div key={etichetta} style={{ minWidth: 150 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{etichetta}</div>
-                <div className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>
+              <div key={etichetta}>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{etichetta}</div>
+                <div className="tabular" style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.1 }}>
                   €{Math.round(euro).toLocaleString("it-IT")}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                  {gare} {gare === 1 ? "gara" : "gare"} · {vitt} {vitt === 1 ? "vittoria" : "vittorie"}
+                <div className="tabular" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                  {gare} {gare === 1 ? "gara" : "gare"} · {vitt} {vitt === 1 ? "vitt." : "vitt."}
+                  {gare > 0 && ` · €${Math.round(euro / gare).toLocaleString("it-IT")}/gara`}
                 </div>
               </div>
             ))}
           </div>
           {(horse.gare_estero ?? 0) > 0 && (
-            <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.55, maxWidth: "70ch" }}>
-              Una gara all&apos;estero paga in media quasi quattro volte una italiana, quindi i
-              guadagni fuori confine pesano piu&apos; del numero di corse. L&apos;archivio registra
-              che la gara e&apos; stata all&apos;estero ma non in quale paese.
-            </div>
+            <Spiegazione titolo="Perche&#39; separare Italia ed estero">
+              Una gara all&apos;estero paga in media 1.920 euro, una italiana 518: quasi quattro
+              volte. I guadagni fuori confine pesano quindi molto piu&apos; del numero di corse,
+              e due cavalli con lo stesso totale possono avere fatto carriere diversissime.
+              La divisione non entra nel voto, serve a chi guarda.
+              <br />
+              L&apos;archivio registra che la gara e&apos; stata all&apos;estero ma non in quale
+              paese, percio&apos; si puo&apos; dividere Italia da estero e non oltre.
+            </Spiegazione>
           )}
         </div>
       )}
@@ -506,13 +547,22 @@ export default function HorsePage() {
       {eStorico && (
         <div style={{ ...panelStyle, borderLeft: "3px solid hsl(51 70% 50%)" }}>
           <div style={panelTitle}>Voto storico, non confrontabile con i cavalli in gara</div>
-          <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, maxWidth: "75ch" }}>
-            Di questo cavallo l&apos;archivio conosce i totali di carriera presi dall&apos;anagrafe
-            ufficiale, ma non le singole gare: per gli anni in cui ha corso non esistono online.
-            Viene quindi confrontato solo con gli altri cavalli storici, su guadagni, record e
-            percentuale di vittorie. La tenuta, che per i cavalli in attivita&apos; vale un quarto
-            del voto, qui non e&apos; misurabile perche&apos; servirebbero le date delle corse.
+          {/* L'avvertenza resta in chiaro: e' il punto, non un dettaglio. Il
+              perche' tecnico va invece sotto la tendina. */}
+          <div style={{ fontSize: 13, color: "hsl(210 10% 78%)", lineHeight: 1.55, maxWidth: "70ch" }}>
+            Confrontato solo con gli altri cavalli storici, su guadagni, record e percentuale
+            di vittorie.
           </div>
+          <Spiegazione titolo="Perche&#39; ha una scala a parte">
+            Di questo cavallo l&apos;archivio conosce i totali di carriera presi
+            dall&apos;anagrafe ufficiale, ma non le singole gare: per gli anni in cui ha corso
+            non esistono online. Confrontarlo con i cavalli di oggi sarebbe doppiamente
+            sbagliato, perche&apos; correvano in un&apos;altra epoca e con altri montepremi.
+            <br />
+            La tenuta, che per i cavalli in attivita&apos; vale un quarto del voto, qui non
+            e&apos; misurabile perche&apos; servirebbero le date delle corse: il suo peso viene
+            ridistribuito sulle tre voci note, mantenendone le proporzioni.
+          </Spiegazione>
         </div>
       )}
 
@@ -531,14 +581,37 @@ export default function HorsePage() {
           {horse.sire_percentile != null && (
             <PercentileBar label={`vs fratellastri (${horse.sire})`} value={horse.sire_percentile} />
           )}
+          {/* Il rapporto stagioni corse su possibili diventa un numero, non
+              una frase: era il dato piu' concreto del riquadro e stava
+              sepolto in fondo a un paragrafo. */}
           {horse.stagioni_corse != null && horse.stagioni_possibili != null && (
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
-              Ha corso in {horse.stagioni_corse}{" "}
-              {horse.stagioni_corse === 1 ? "stagione" : "stagioni"} sulle{" "}
-              {horse.stagioni_possibili} che poteva correre alla sua eta'. Il voto tiene conto
-              anche di questo: una carriera lunga vale piu' di una stagione brillante.
+            <div className="tabular" style={{
+              fontSize: 12.5, color: "hsl(210 10% 78%)", marginTop: 12,
+              paddingTop: 10, borderTop: "1px solid hsl(220 10% 16%)",
+            }}>
+              Stagioni corse:{" "}
+              <strong style={{ color: "hsl(210 10% 92%)" }}>
+                {horse.stagioni_corse} su {horse.stagioni_possibili}
+              </strong>{" "}
+              <span style={{ color: "var(--muted)" }}>possibili alla sua età</span>
             </div>
           )}
+
+          <Spiegazione titolo="Che cosa sono i percentili">
+            <p style={{ margin: "0 0 8px" }}>
+              Ogni barra dice quanti cavalli nati nello stesso anno questo cavallo lascia
+              dietro di sé. Il 90% sui guadagni vuol dire che ha guadagnato pi&ugrave; di nove
+              coetanei su dieci. Il confronto è sempre dentro l&apos;annata, così i giovani
+              non risultano scarsi solo perch&eacute; hanno corso meno.
+            </p>
+            <p style={{ margin: 0 }}>
+              &laquo;Stagioni corse&raquo; misura quante annate il cavallo è rimasto in
+              attivit&agrave;, &laquo;continuit&agrave; per la sua et&agrave;&raquo; lo rapporta
+              a quante avrebbe potuto correrne. La seconda serve a non punire un tre anni per
+              non avere ancora la carriera di un nove anni. Il voto tiene conto di entrambe:
+              una carriera lunga vale pi&ugrave; di una stagione brillante.
+            </p>
+          </Spiegazione>
         </div>
       )}
 
@@ -573,7 +646,7 @@ export default function HorsePage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
         {/* Last races */}
         <div style={panelStyle}>
           <div style={panelTitle}>Ultime gare</div>
@@ -654,7 +727,7 @@ export default function HorsePage() {
 
       {/* Track stats + Best races */}
       {stats && (stats.bestRaces.length > 0 || stats.trackStats.length > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "0" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginTop: "0" }}>
           {/* Best races */}
           {stats.bestRaces.length > 0 && (
             <div style={panelStyle}>

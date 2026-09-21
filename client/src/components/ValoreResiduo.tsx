@@ -1,4 +1,5 @@
 import { Fuel, TrendingDown, TrendingUp, Activity, HelpCircle } from "lucide-react";
+import { Spiegazione } from "./Spiegazione";
 
 /**
  * Pannello "quanto puo' ancora guadagnare".
@@ -164,7 +165,9 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
         </div>
       </div>
 
-      <div style={{ fontSize: "12px", color: MUTED, lineHeight: 1.6, marginTop: "12px" }}>
+      {/* La frase riassuntiva resta in chiaro: e' il senso del riquadro.
+          I dettagli del metodo vanno sotto la tendina. */}
+      <div style={{ fontSize: "12px", color: MUTED, lineHeight: 1.55, marginTop: "12px" }}>
         {v.spiegazione}
       </div>
 
@@ -196,11 +199,6 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
               </div>
             ))}
           </div>
-          <div style={{ fontSize: "10.5px", color: DIM, marginTop: "7px", lineHeight: 1.5 }}>
-            Il guadagno indicato e' quello tipico di chi corre a quell'eta'.
-            La percentuale accanto e' la probabilita' che il cavallo sia ancora
-            in attivita': il totale qui sopra tiene conto di entrambe le cose.
-          </div>
         </div>
       )}
 
@@ -214,10 +212,24 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
         </div>
       )}
 
-      <div style={{ fontSize: "10.5px", color: DIM, marginTop: "12px", lineHeight: 1.5 }}>
-        Media storica per fascia di voto, non una previsione su questo animale:
-        infortuni, cambio di scuderia e qualita' del driver non sono considerati.
-      </div>
+      {/* Le due note di metodo, unite in una tendina sola: dicevano cose
+          diverse ma erano entrambe "come si legge questo numero", e in chiaro
+          occupavano piu' spazio del numero stesso. */}
+      <Spiegazione titolo="Come si calcola questa stima">
+        {v.prossimi_anni.length > 0 && (
+          <p style={{ margin: "0 0 8px" }}>
+            Il guadagno indicato per ogni eta&apos; e&apos; quello tipico di chi corre a
+            quell&apos;eta&apos;. La percentuale accanto e&apos; la probabilita&apos; che il
+            cavallo sia ancora in attivita&apos;: il totale in cima tiene conto di entrambe
+            le cose, moltiplicando anno per anno il guadagno tipico per la probabilita&apos;
+            di essere ancora in pista.
+          </p>
+        )}
+        <p style={{ margin: 0 }}>
+          E&apos; una media storica per fascia di voto, non una previsione su questo animale:
+          infortuni, cambio di scuderia e qualita&apos; del driver non sono considerati.
+        </p>
+      </Spiegazione>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import GradeBadge from "../components/GradeBadge";
 import { ChevronLeft, ChevronRight, SortAsc } from "lucide-react";
 import { formatRecord } from "@/lib/record";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import { Spiegazione } from "../components/Spiegazione";
 
 interface LeaderboardRow {
   name: string;
@@ -148,23 +149,25 @@ export default function LeaderboardPage() {
         {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
             il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
         {mode === "storico" && (
-          <p style={{ fontSize: "12px", color: "hsl(210 8% 48%)", marginTop: "8px", lineHeight: 1.6, maxWidth: "78ch" }}>
-            Cavalli di cui l&apos;archivio conosce i totali di carriera ma non le singole gare,
-            perche&apos; per gli anni in cui hanno corso non esistono online. Sono confrontati solo
-            fra loro, su guadagni, record e percentuale di vittorie: i loro voti non si possono
-            paragonare a quelli dei cavalli in gara oggi.
-          </p>
+          <Spiegazione titolo="Perche&#39; questi cavalli hanno una scala a parte" compatta>
+            Di questi cavalli l&apos;archivio conosce i totali di carriera ma non le singole
+            gare, perche&apos; per gli anni in cui hanno corso non esistono online. Sono
+            confrontati solo fra loro, su guadagni, record e percentuale di vittorie: i loro
+            voti non si possono paragonare a quelli dei cavalli in gara oggi, che correvano
+            in un&apos;altra epoca e con altri montepremi.
+          </Spiegazione>
         )}
         {/* Il voto d'annata non e' un voto nuovo: e' lo stesso punteggio letto
             contro i coetanei. Senza spiegarlo, un cavallo che passa da B a SS
             sembrerebbe essere stato promosso. */}
         {mode === "performance" && voto === "annata" && (
-          <p style={{ fontSize: "12px", color: "hsl(210 8% 48%)", marginTop: "8px", lineHeight: 1.6, maxWidth: "78ch" }}>
-            Ogni cavallo e&apos; confrontato solo con i nati nel suo stesso anno, che hanno avuto
-            lo stesso tempo per correre. Il punteggio non cambia, cambia con chi viene paragonato:
-            nel confronto generale i giovani sono penalizzati perche&apos; hanno meno stagioni alle
-            spalle. Fra i nati nel 2023, il 63% sale di lettera guardandoli fra coetanei.
-          </p>
+          <Spiegazione titolo="Che cosa cambia in questa lettura" compatta>
+            Ogni cavallo e&apos; confrontato solo con i nati nel suo stesso anno, che hanno
+            avuto lo stesso tempo per correre. Il punteggio non cambia, cambia con chi viene
+            paragonato: nel confronto generale i giovani sono penalizzati perche&apos; hanno
+            meno stagioni alle spalle. Fra i nati nel 2023, il 63% sale di lettera guardandoli
+            fra coetanei.
+          </Spiegazione>
         )}
       </div>
 
