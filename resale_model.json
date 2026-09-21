@@ -1,0 +1,25 @@
+{
+ "b0": 9.318645,
+ "b1": 0.019386,
+ "sd_log": 0.696423,
+ "n": 401,
+ "r2": 0.0683,
+ "quota_venduti": 0.814,
+ "mediana_venduti": 20000,
+ "n_lotti_totali": 532,
+ "fonti": [
+  {
+   "nome": "Asta ANACT yearlings 2026, risultati ufficiali",
+   "url": "https://www.gaet.it/notizie/daily/asta-anact-risultati-ufficiali"
+  },
+  {
+   "nome": "ITS Asta Selezionata Yearling Trottatori 2025",
+   "url": "https://www.its-aste.com/aste/asta-selezionata-yearling-trottatori/"
+  },
+  {
+   "nome": "ITS Asta Selezionata Yearlings Trottatori 2024",
+   "url": "https://www.its-aste.com/aste/asta-selezionata-yearlings-trottatori-5/"
+  }
+ ],
+ "nota": "Regressione di log(prezzo) sul voto medio dei figli del padre, calcolata su 401 yearling effettivamente aggiudicati nelle aste italiane ANACT e ITS. R2 0,068: il padre sposta il prezzo ma la maggior parte della variabilita' dipende da conformazione, presentazione, linea materna e piazza d'asta."
+}

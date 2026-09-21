@@ -51,7 +51,7 @@ export default function StudFarmsPage({ embedded = false }: { embedded?: boolean
   const fmtK = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : fmt(v);
 
   return (
-    <div style={{ padding: embedded ? "0" : "28px 32px", maxWidth: "1000px" }}>
+    <div className={embedded ? "" : "page-shell"}>
       {!embedded && (
         <div style={{ marginBottom: "20px" }}>
           <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>

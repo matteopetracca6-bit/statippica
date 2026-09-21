@@ -283,7 +283,7 @@ export default function HorsePage() {
   };
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1100px" }} className="fade-in">
+    <div className="page-shell fade-in">
       {/* Top bar: back + search */}
       <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "16px" }}>
         <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>

@@ -70,7 +70,7 @@ export default function HorsesPage() {
   const resetPage = (fn: () => void) => { setPage(1); fn(); };
 
   return (
-    <div style={{ padding: "24px 32px 40px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="page-shell">
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
         <Users size={24} style={{ color: "hsl(183 80% 55%)" }} />
         <h1 style={{ fontSize: "24px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: 0 }}>

@@ -87,7 +87,7 @@ export default function LeaderboardPage() {
   } as React.CSSProperties;
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1100px" }}>
+    <div className="page-shell">
       {/* Header */}
       <div style={{ marginBottom: "22px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>Leaderboard</h1>

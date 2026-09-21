@@ -21,6 +21,7 @@ import {
 } from "./advisorEngine";
 import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
 import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
+import { stimaRivendita } from "./resaleValue";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -1382,6 +1383,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Controllo rispetto al disciplinare del Libro genealogico (UNIRE/ANACT)
       const eligibility = checkEligibility(db, stallion, mare);
 
+      // ── Strada alternativa: vendere il puledro come yearling ────────
+      // Chi vende a un anno non paga addestramento ne' attivita'
+      // agonistica, quindi il costo di confronto e' molto piu' basso.
+      const costoYearling = studFee + COSTI.riproduzione + COSTI.puledro_anno1 + COSTI.yearling;
+      const rivendita = stimaRivendita(prediction.expected_score, costoYearling);
+
       res.json({
         stallion,
         mare,
@@ -1413,6 +1420,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           prob_recupero_costi: Math.round(probRecupero * 1000) / 10,
         },
         roi_range: roiRange,
+        rivendita,
         inbreeding: {
           // Campi storici mantenuti per compatibilita'; il calcolo completo
           // su piu' generazioni sta in inbreeding_detail.

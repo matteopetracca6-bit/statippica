@@ -123,7 +123,7 @@ export default function MarePage() {
   };
 
   return (
-    <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "20px 20px 48px" }}>
+    <div className="page-shell">
       <Link href="/fattrici">
         <a style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "hsl(210 8% 60%)", textDecoration: "none", marginBottom: "14px" }}>
           <ArrowLeft size={14} /> Fattrici

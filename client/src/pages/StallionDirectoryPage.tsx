@@ -152,7 +152,7 @@ export default function StallionDirectoryPage() {
   }, [filtered]);
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1200px" }} className="fade-in">
+    <div className="page-shell fade-in">
       {/* Header */}
       <div style={{ marginBottom: "20px" }}>
         <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.03em", margin: "0 0 6px" }}>

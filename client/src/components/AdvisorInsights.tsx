@@ -312,6 +312,23 @@ export interface RoiRange {
   avvertenza: string;
 }
 
+export interface Rivendita {
+  prezzo_mediano: number;
+  prezzo_p25: number;
+  prezzo_p75: number;
+  prezzo_p10: number;
+  prezzo_p90: number;
+  prob_vendita_pct: number;
+  costo_fino_a_yearling: number;
+  utile_mediano: number;
+  roi_mediano_pct: number;
+  ricavo_ponderato: number;
+  r2: number;
+  n_lotti: number;
+  fonti: { nome: string; url: string }[];
+  avvertenza: string;
+}
+
 function euro(n: number) {
   return "\u20ac" + Math.round(n).toLocaleString("it-IT");
 }
@@ -427,11 +444,14 @@ export function ConclusioneEconomica({
   r,
   roiMedioStorico,
   ricavoMedio,
+  riv,
 }: {
   r: RoiRange;
   /** ROI calcolato sulle medie, mantenuto solo come confronto dichiarato. */
   roiMedioStorico: number;
   ricavoMedio: number;
+  /** Stima di rivendita come yearling, se disponibile. */
+  riv?: Rivendita | null;
 }) {
   const perditaTipica = r.guadagno_mediano - r.costo_atteso;
   const inPari = r.roi_mediano_pct >= 0;
@@ -495,6 +515,8 @@ export function ConclusioneEconomica({
           </div>
         )}
 
+        {riv && <ScenariRivendita r={r} riv={riv} />}
+
         <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.6, borderTop: BORDER, paddingTop: "10px" }}>
           <div style={{ marginBottom: "6px" }}>
             Calcolato sul puledro tipico. Lo stesso conto fatto sulle <em>medie</em> dei guadagni darebbe{" "}
@@ -504,11 +526,101 @@ export function ConclusioneEconomica({
             con un ricavo di {euro(ricavoMedio)}: un risultato piu&#39; generoso ma fuorviante, perche&#39; la
             media e&#39; sollevata dai pochi campioni e non descrive il puledro che nascera&#39; davvero.
           </div>
-          <div style={{ color: "hsl(210 8% 40%)" }}>
-            Nei conti non entra il valore di rivendita del puledro o dello yearling, che per un allevatore
-            e&#39; spesso il vero ricavo: il ritorno qui e&#39; quindi il piu&#39; prudente possibile, quello
-            ottenuto correndo.
-          </div>
+          {!riv && (
+            <div style={{ color: "hsl(210 8% 40%)" }}>
+              Nei conti non entra il valore di rivendita del puledro, che per un allevatore e&#39; spesso il
+              vero ricavo: il ritorno qui e&#39; quindi il piu&#39; prudente possibile, quello ottenuto correndo.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/**
+ * Due strade per lo stesso puledro: farlo correre o venderlo da yearling.
+ * Sono scenari alternativi con costi diversi, quindi vanno confrontati
+ * affiancati e non sommati: chi vende a un anno non paga addestramento
+ * ne' attivita' agonistica.
+ */
+function ScenariRivendita({ r, riv }: { r: RoiRange; riv: Rivendita }) {
+  const megliovendere = riv.roi_mediano_pct > r.roi_mediano_pct;
+
+  const Colonna = ({
+    titolo, sottotitolo, spesa, incasso, incassoNota, roi, vince,
+  }: {
+    titolo: string; sottotitolo: string; spesa: number; incasso: string;
+    incassoNota: string; roi: number; vince: boolean;
+  }) => (
+    <div style={{
+      flex: "1 1 190px", background: "hsl(220 12% 9%)",
+      border: vince ? "1px solid hsl(100 45% 32%)" : BORDER,
+      borderRadius: "8px", padding: "12px 14px",
+    }}>
+      <div style={{ fontSize: "12.5px", fontWeight: 700, color: vince ? "hsl(100 58% 58%)" : "hsl(210 8% 72%)" }}>
+        {titolo}
+      </div>
+      <div style={{ fontSize: "10.5px", color: "hsl(210 8% 42%)", marginBottom: "9px" }}>{sottotitolo}</div>
+      <div className="tabular" style={{ fontSize: "21px", fontWeight: 800, color: roi >= 0 ? "hsl(100 58% 55%)" : "hsl(0 62% 58%)", lineHeight: 1.1 }}>
+        {(roi > 0 ? "+" : "") + roi.toFixed(0)}%
+      </div>
+      <div style={{ fontSize: "11px", color: MUTED, marginTop: "6px", lineHeight: 1.55 }}>
+        spende {euro(spesa)}<br />
+        incassa {incasso}
+        <span style={{ color: "hsl(210 8% 38%)" }}> &middot; {incassoNota}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ marginBottom: "13px" }}>
+      <div style={{ fontSize: "10.5px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
+        Due strade per lo stesso puledro
+      </div>
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "9px" }}>
+        <Colonna
+          titolo="Farlo correre"
+          sottotitolo="due anni e mezzo di costi, premi di carriera"
+          spesa={r.costo_atteso}
+          incasso={euro(r.guadagno_mediano)}
+          incassoNota="premi tipici"
+          roi={r.roi_mediano_pct}
+          vince={!megliovendere}
+        />
+        <Colonna
+          titolo="Venderlo da yearling"
+          sottotitolo="niente addestramento ne' corse"
+          spesa={riv.costo_fino_a_yearling}
+          incasso={euro(riv.prezzo_mediano)}
+          incassoNota={"in asta, fascia " + euro(riv.prezzo_p25) + "\u2013" + euro(riv.prezzo_p75)}
+          roi={riv.roi_mediano_pct}
+          vince={megliovendere}
+        />
+      </div>
+      <div style={{
+        background: "hsl(220 12% 9%)", border: BORDER, borderRadius: "8px",
+        padding: "10px 13px", fontSize: "11px", color: MUTED, lineHeight: 1.6,
+      }}>
+        <div style={{ marginBottom: "5px", color: "hsl(210 8% 60%)" }}>
+          {megliovendere
+            ? "Con questo accoppiamento la vendita da yearling rende piu' della carriera: il prezzo d'asta arriva subito, i premi arrivano dopo anni di spese."
+            : "Qui la vendita da yearling non migliora il conto: la monta costa piu' di quanto il mercato paghi per il puledro."}
+        </div>
+        <div>
+          Solo {riv.prob_vendita_pct.toFixed(0)} lotti su 100 trovano un compratore in asta: tenendo conto
+          del rischio di non vendere il ricavo atteso scende a {euro(riv.ricavo_ponderato)}.
+        </div>
+        <div style={{ marginTop: "5px", color: "hsl(210 8% 40%)" }}>{riv.avvertenza}</div>
+        <div style={{ marginTop: "5px", color: "hsl(210 8% 38%)" }}>
+          Fonti prezzi:{" "}
+          {riv.fonti.map((f, i) => (
+            <span key={f.url}>
+              {i > 0 && " \u00b7 "}
+              <a href={f.url} target="_blank" rel="noreferrer" style={{ color: "hsl(183 55% 50%)" }}>{f.nome}</a>
+            </span>
+          ))}
         </div>
       </div>
     </div>

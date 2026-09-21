@@ -147,7 +147,7 @@ export default function Home() {
           pointerEvents: "none",
         }} />
 
-        <div style={{ position: "relative", maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ position: "relative", maxWidth: "1680px", margin: "0 auto" }}>
           {/* Title */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
@@ -186,7 +186,7 @@ export default function Home() {
       </div>
 
       {/* ─── KPI CARDS ─── */}
-      <div style={{ padding: "24px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
+      <div className="page-shell">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
           {[
             { label: "Cavalli", value: stats?.totalHorses ?? 0, icon: Users, color: "hsl(183 100% 45%)" },
@@ -221,7 +221,7 @@ export default function Home() {
       </div>
 
       {/* ─── MAIN GRID: Grade distribution + Top stallions ─── */}
-      <div style={{ padding: "20px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
+      <div className="page-shell">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
           {/* Grade distribution — proper bar chart */}
@@ -325,7 +325,7 @@ export default function Home() {
       </div>
 
       {/* ─── CHAMPIONS + TOP EARNERS ─── */}
-      <div style={{ padding: "16px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
+      <div className="page-shell">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
           {/* Champion per generation */}
@@ -424,7 +424,7 @@ export default function Home() {
 
 
       {/* ─── TOP PRIZE RACES ─── */}
-      <div style={{ padding: "20px 32px 0", maxWidth: "1200px", margin: "0 auto" }}>
+      <div className="page-shell">
         <div style={{
           background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
           borderRadius: "14px", padding: "22px 24px",

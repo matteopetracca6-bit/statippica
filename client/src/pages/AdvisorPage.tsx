@@ -6,7 +6,7 @@ import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import NameSelect from "../components/NameSelect";
 import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel, RoiRangePanel, ConclusioneEconomica } from "../components/AdvisorInsights";
-import type { Prediction, InbreedingDetail, Eligibility, RoiRange } from "../components/AdvisorInsights";
+import type { Prediction, InbreedingDetail, Eligibility, RoiRange, Rivendita } from "../components/AdvisorInsights";
 import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
@@ -75,6 +75,7 @@ interface Simulation {
   costs: { stud_fee: number; riproduzione: number; puledro_anno1: number; yearling: number; training: number; agone: number; costo_base: number; costo_se_morte: number; costo_atteso: number };
   roi: { costo_atteso: number; ricavo_atteso: number; utile_atteso: number; roi_pct: number; prob_recupero_costi: number };
   roi_range?: RoiRange;
+  rivendita?: Rivendita | null;
   inbreeding: { risk: boolean; ancestor: string | null };
   prediction?: Prediction;
   inbreeding_detail?: InbreedingDetail;
@@ -196,6 +197,7 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
           r={sim.roi_range}
           roiMedioStorico={sim.roi.roi_pct}
           ricavoMedio={sim.roi.ricavo_atteso}
+          riv={sim.rivendita}
         />
       ) : (
         <div style={{
@@ -372,7 +374,7 @@ export default function AdvisorPage() {
   const mareName = data?.fattrice?.name || fattrice.trim();
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "920px" }}>
+    <div className="page-shell">
       {/* Header */}
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>

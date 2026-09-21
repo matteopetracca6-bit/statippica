@@ -10,6 +10,19 @@ const GRADE_COLORS: Record<string, string> = {
   D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(0 60% 45%)",
 };
 
+/**
+ * Applica una trasparenza a un colore HSL.
+ *
+ * Serve perche' prima il codice scriveva `GRADE_COLORS[g] + "88"`, che
+ * produce "hsl(183 100% 55%)88": stringa non valida, quindi il browser
+ * scartava lo sfondo e le barre del grafico risultavano invisibili (si
+ * vedeva solo il loro bordo da 1 pixel). La notazione corretta per i
+ * colori HSL e' "hsl(H S% L% / alfa)".
+ */
+function conAlfa(hsl: string, alfa: number): string {
+  return hsl.replace(/^hsl\((.*)\)$/, (_m, dentro) => `hsl(${dentro} / ${alfa})`);
+}
+
 interface TrendsData {
   gradeByYear: { birth_year: number; grade: string; cnt: number }[];
   earningsByYear: { birth_year: number; n_horses: number; avg_earnings: number; avg_races: number; avg_wins: number; avg_win_rate: number }[];
@@ -66,7 +79,7 @@ export default function TrendsPage() {
   ];
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1000px" }}>
+    <div className="page-shell">
       <div style={{ marginBottom: "20px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>
           Trend Temporali
@@ -128,8 +141,8 @@ export default function TrendsPage() {
                     style={{
                       display: "flex", alignItems: "center", gap: "4px",
                       padding: "3px 8px", borderRadius: "6px", cursor: "pointer",
-                      background: showGrades.has(g) ? `${GRADE_COLORS[g]}22` : "transparent",
-                      border: `1px solid ${showGrades.has(g) ? GRADE_COLORS[g] + "55" : "hsl(220 10% 14%)"}`,
+                      background: showGrades.has(g) ? conAlfa(GRADE_COLORS[g], 0.13) : "transparent",
+                      border: `1px solid ${showGrades.has(g) ? conAlfa(GRADE_COLORS[g], 0.33) : "hsl(220 10% 14%)"}`,
                       fontSize: "11px", fontWeight: 700,
                       color: showGrades.has(g) ? GRADE_COLORS[g] : "hsl(210 8% 30%)",
                       transition: "all 0.15s",
@@ -190,7 +203,7 @@ export default function TrendsPage() {
                             key={g.grade}
                             style={{
                               height: `${(g.cnt / visibleTotal) * 100}%`,
-                              background: GRADE_COLORS[g.grade] + (hoveredBar === `grade-${yd.year}` ? "cc" : "88"),
+                              background: conAlfa(GRADE_COLORS[g.grade], hoveredBar === `grade-${yd.year}` ? 0.8 : 0.53),
                               borderTop: `1px solid ${GRADE_COLORS[g.grade]}`,
                               transition: "background 0.2s",
                             }}

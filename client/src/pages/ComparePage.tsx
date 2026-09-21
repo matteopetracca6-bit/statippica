@@ -12,6 +12,16 @@ const GRADE_COLOR: Record<string,string> = {
   D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(0 60% 45%)",
 };
 
+/**
+ * Applica una trasparenza a un colore HSL. La concatenazione di un codice
+ * esadecimale ("hsl(...)55") non e' CSS valido e fa scartare il colore:
+ * la notazione giusta e' "hsl(H S% L% / alfa)".
+ */
+function conAlfa(hsl: string, alfa: number): string {
+  return hsl.replace(/^hsl\((.*)\)$/, (_m, dentro) => `hsl(${dentro} / ${alfa})`);
+}
+
+
 function GradeBadge({ grade, size = "md" }: { grade: string; size?: "sm"|"md" }) {
   const fs = size === "sm" ? "14px" : "20px";
   const px = size === "sm" ? "3px 8px" : "4px 12px";
@@ -20,8 +30,8 @@ function GradeBadge({ grade, size = "md" }: { grade: string; size?: "sm"|"md" })
       display: "inline-block", padding: px, borderRadius: "6px",
       fontWeight: 800, fontSize: fs,
       color: GRADE_COLOR[grade] || "hsl(210 8% 70%)",
-      background: `${GRADE_COLOR[grade] || "hsl(210 8% 70%)"}1A`,
-      border: `1.5px solid ${GRADE_COLOR[grade] || "hsl(210 8% 70%)"}55`,
+      background: conAlfa(GRADE_COLOR[grade] || "hsl(210 8% 70%)", 0.1),
+      border: `1.5px solid ${conAlfa(GRADE_COLOR[grade] || "hsl(210 8% 70%)", 0.33)}`,
       letterSpacing: "0.04em",
     }}>{grade || "—"}</span>
   );
@@ -200,7 +210,7 @@ export default function ComparePage() {
   };
 
   return (
-    <div style={{ padding: "32px 28px", maxWidth: "920px", margin: "0 auto" }}>
+    <div className="page-shell">
       {/* Header */}
       <div style={{ marginBottom: "28px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: 0, letterSpacing: "-0.01em" }}>

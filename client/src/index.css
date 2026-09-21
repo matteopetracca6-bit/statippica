@@ -150,3 +150,26 @@ body {
   animation: shimmer 1.4s infinite;
   border-radius: 4px;
 }
+
+/* ────────────────────────────────────────────────────────────────
+   Contenitore di pagina
+
+   Prima ogni pagina fissava un proprio maxWidth in linea (da 700 a
+   1280 px) e diverse non avevano "margin: 0 auto": su uno schermo
+   largo il contenuto restava schiacciato a sinistra con mezzo monitor
+   vuoto. Ora la larghezza e' una sola, definita qui, generosa sui
+   monitor grandi e centrata sempre.
+   ──────────────────────────────────────────────────────────────── */
+.page-shell {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .page-shell {
+    padding: 20px 16px 36px;
+  }
+}

@@ -35,7 +35,7 @@ export default function AllevamentoHubPage() {
   ];
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "24px 20px 48px" }}>
+    <div className="page-shell">
       <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
         Allevamento
       </h1>

@@ -160,7 +160,7 @@ export default function ValidazionePage() {
   const advisor = data.models[0];
 
   return (
-    <div style={{ maxWidth: "980px", margin: "0 auto", padding: "28px 20px 60px" }}>
+    <div className="page-shell">
       <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>
         Il consiglio funziona davvero?
       </h1>

@@ -94,6 +94,16 @@ const GRADE_COLORS: Record<string, string> = {
   D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(40 3% 28%)"
 };
 
+/**
+ * Applica una trasparenza a un colore HSL. La concatenazione di un codice
+ * esadecimale ("hsl(...)55") non e' CSS valido e fa scartare il colore:
+ * la notazione giusta e' "hsl(H S% L% / alfa)".
+ */
+function conAlfa(hsl: string, alfa: number): string {
+  return hsl.replace(/^hsl\((.*)\)$/, (_m, dentro) => `hsl(${dentro} / ${alfa})`);
+}
+
+
 const panelStyle: React.CSSProperties = {
   background: "hsl(220 12% 10%)",
   border: "1px solid hsl(220 10% 16%)",
@@ -314,7 +324,7 @@ export default function StallionPage() {
   };
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1100px" }} className="fade-in">
+    <div className="page-shell fade-in">
       <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
         <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
           <ArrowLeft size={16} /> Indietro
@@ -516,7 +526,7 @@ export default function StallionPage() {
                 return (
                   <div key={g} title={`${g}: ${cnt}`} style={{
                     flex: cnt,
-                    background: GRADE_COLORS[g] + "55",
+                    background: conAlfa(GRADE_COLORS[g], 0.33),
                     borderTop: `3px solid ${GRADE_COLORS[g]}`,
                   }} />
                 );

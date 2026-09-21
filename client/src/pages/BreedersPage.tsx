@@ -109,7 +109,7 @@ export default function BreedersPage({ embedded = false }: { embedded?: boolean 
   // ── Scheda del singolo allevatore ──
   if (selected) {
     return (
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px 20px 48px" }}>
+      <div className="page-shell">
         <button
           onClick={() => setSelected(null)}
           style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "hsl(183 80% 60%)", fontSize: "13px", cursor: "pointer", padding: 0, marginBottom: "14px" }}
@@ -183,7 +183,7 @@ export default function BreedersPage({ embedded = false }: { embedded?: boolean 
 
   // ── Elenco ──
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: embedded ? "0" : "24px 20px 48px" }}>
+    <div className={embedded ? "" : "page-shell"}>
       {!embedded && (
         <>
           <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>

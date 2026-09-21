@@ -200,7 +200,7 @@ export default function PedigreePage() {
   }, [data]);
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: "1100px" }}>
+    <div className="page-shell">
       {/* Header */}
       <div style={{ marginBottom: "20px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>

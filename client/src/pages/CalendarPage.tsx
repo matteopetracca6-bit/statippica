@@ -83,7 +83,7 @@ export default function CalendarPage() {
   const raceKey = (r: RaceEvent) => `${r.track}-${r.race_date}-${r.race_time}`;
 
   return (
-    <div style={{ padding: "24px 32px 40px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="page-shell">
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
         <Calendar size={24} style={{ color: "hsl(0 60% 55%)" }} />
         <h1 style={{ fontSize: "24px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: 0 }}>
