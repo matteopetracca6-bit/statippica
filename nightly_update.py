@@ -533,6 +533,17 @@ def init_db(conn: sqlite3.Connection):
         ("stagioni_possibili",    "INTEGER"),
         ("tenuta_percentile",     "REAL"),
         ("integrita_percentile",  "REAL"),
+        # Carriera divisa fra Italia ed estero. Salvata qui e non calcolata al
+        # volo perche' la classifica deve poterci filtrare e ordinare sopra.
+        # L'archivio marca le gare estere con ippodromo 'ESTERO' ma non dice
+        # QUALE paese: tutte hanno lo stesso codice, quindi si puo' separare
+        # Italia da estero, non la Francia dalla Svezia.
+        ("gare_italia",      "INTEGER"),
+        ("gare_estero",      "INTEGER"),
+        ("vitt_italia",      "INTEGER"),
+        ("vitt_estero",      "INTEGER"),
+        ("guad_italia",      "REAL"),
+        ("guad_estero",      "REAL"),
         ("last_updated",     "TEXT"),
     ]:
         try:
@@ -2159,10 +2170,45 @@ def phase_ratings(conn: sqlite3.Connection):
     tot_c = sum((r[3] or 0) for r in pool)
     media_vittorie = (tot_v / tot_c * 100) if tot_c else 0.0
 
+    # Carriera divisa fra Italia ed estero, in un colpo solo per tutti.
+    # Serve solo a mostrarla: il voto NON la usa. Una gara all'estero paga in
+    # media quasi quattro volte una italiana, quindi correggere i guadagni
+    # esteri cambierebbe la classifica in modo discutibile - chi ha vinto a
+    # Parigi o a Solvalla quei soldi li ha vinti per davvero.
+    carriera_divisa: dict[str, tuple] = {}
+    for nome_d, gi, ge, vi, ve, pi_, pe in conn.execute("""
+        SELECT horse_name,
+               SUM(CASE WHEN track <> 'ESTERO' THEN 1 ELSE 0 END),
+               SUM(CASE WHEN track  = 'ESTERO' THEN 1 ELSE 0 END),
+               SUM(CASE WHEN track <> 'ESTERO' AND placement = 1 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN track  = 'ESTERO' AND placement = 1 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN track <> 'ESTERO' THEN COALESCE(prize_net, 0) ELSE 0 END),
+               SUM(CASE WHEN track  = 'ESTERO' THEN COALESCE(prize_net, 0) ELSE 0 END)
+        FROM races GROUP BY horse_name
+    """):
+        carriera_divisa[(nome_d or "").strip().upper()] = (gi, ge, vi, ve, pi_, pe)
+
     scores = {}
     for row in horses:
         (name, birth_year, sire, career_races, career_wins,
          career_earnings, record_career, _source_role) = row
+
+        # I cavalli storici NON prendono il voto atleti.
+        #
+        # Di loro l'archivio conosce solo i totali di carriera presi
+        # dall'anagrafe: le gare singole prima del 2014 non esistono online, e
+        # infatti tutti e 229 hanno zero righe nella tabella delle gare. Dare
+        # loro un voto sulla scala degli atleti produceva due errori sommati.
+        # Primo, li confrontava con una popolazione che ha corso in un'altra
+        # epoca. Secondo, e piu' grave: la tenuta si misura contando le
+        # stagioni dalle date delle gare, che per loro non ci sono, quindi
+        # risultavano zero stagioni su nove. Ma zero e' un dato IGNOTO, non
+        # nullo: Varenne, 46 corse e 41 vittorie, veniva punito per una
+        # carriera che l'archivio non vede, e finiva grado A come un mediocre.
+        #
+        # Vengono valutati a parte, fra loro, in phase_historic_ratings().
+        if row[7] == CLASS_BREEDER:
+            continue
         if not career_races:
             continue
         ep = earn_pct(career_earnings or 0)
@@ -2203,6 +2249,7 @@ def phase_ratings(conn: sqlite3.Connection):
             "stagioni_possibili": st_poss,
             "tenuta_percentile": tenuta,
             "integrita_percentile": integrita,
+            "divisa": carriera_divisa.get((name or "").strip().upper()),
         }
 
     # Soglie dinamiche: calcolate sui percentili del pool di riferimento
@@ -2253,8 +2300,10 @@ def phase_ratings(conn: sqlite3.Connection):
                  win_rate, rating_mode,
                  stagioni_corse, stagioni_possibili,
                  tenuta_percentile, integrita_percentile,
+                 gare_italia, gare_estero, vitt_italia, vitt_estero,
+                 guad_italia, guad_estero,
                  horse_class, last_updated)
-            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?, ?,?,?,?, ?,?)
+            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?, ?,?,?,?, ?,?,?,?,?,?, ?,?)
         """, (
             name, birth_year, sire_name or None,
             data["grade"], data["score"],
@@ -2263,6 +2312,7 @@ def phase_ratings(conn: sqlite3.Connection):
             data["win_rate"], "performance",
             data["stagioni_corse"], data["stagioni_possibili"],
             data["tenuta_percentile"], data["integrita_percentile"],
+            *(data["divisa"] or (0, 0, 0, 0, 0.0, 0.0)),
             # Denormalizzata qui perche' il sito filtra le classifiche su questa
             # tabella: senza, ogni endpoint dovrebbe fare una JOIN su horses.
             CLASS_BREEDER if (name, birth_year) in backfill_keys else CLASS_ATHLETE,
@@ -2271,6 +2321,137 @@ def phase_ratings(conn: sqlite3.Connection):
 
     conn.commit()
     print(f"[RATINGS] Rating cavalli: {len(scores)}", file=sys.stderr)
+
+
+# ─────────────────────────────────────────────
+# FASE 3a-bis — CLASSIFICA STORICA
+#
+# I cavalli nati prima del 2012 (e quelli recuperati come genitori) hanno in
+# archivio solo i totali di carriera: nome, corse, vittorie, guadagni, record.
+# Le gare una per una non esistono online per quegli anni, quindi di loro non
+# si puo' sapere ne' quando hanno corso ne' per quante stagioni.
+#
+# Confrontarli con i cavalli in attivita' e' scorretto in due direzioni: i
+# montepremi sono cambiati, e la tenuta - che vale un quarto del voto atleti -
+# per loro non e' misurabile. Vengono quindi messi in una classifica propria,
+# dove si confrontano solo fra loro e solo su cio' che di loro si sa davvero.
+#
+# Il peso della tenuta viene ridistribuito sulle tre voci rimaste mantenendone
+# le proporzioni (0,45 / 0,15 / 0,15 diviso 0,75), cosi' la scala resta
+# confrontabile nella forma anche se le popolazioni non lo sono.
+# ─────────────────────────────────────────────
+PESO_ST_GUADAGNI = 0.60
+PESO_ST_RECORD = 0.20
+PESO_ST_VITTORIE = 0.20
+
+
+def phase_historic_ratings(conn: sqlite3.Connection):
+    print("[RATINGS] Calcolo classifica storica...", file=sys.stderr)
+
+    righe = conn.execute(f"""
+        SELECT name, birth_year, sire, career_races, career_wins,
+               career_earnings, record_career
+        FROM horses
+        WHERE horse_class = '{CLASS_BREEDER}'
+          AND career_races > 0
+    """).fetchall()
+
+    if not righe:
+        print("[RATINGS] Nessun cavallo storico da valutare.", file=sys.stderr)
+        return
+
+    guadagni = sorted(r[5] for r in righe if r[5])
+
+    # Il record va trattato con prudenza: alcune schede storiche riportano
+    # 0'00"0, che vuol dire "non registrato" e non "tempo nullo". Se finisse
+    # nel calcolo come zero diventerebbe il tempo piu' veloce dell'archivio.
+    def record_valido(rec: str) -> Optional[float]:
+        t = _time_to_seconds(rec or "")
+        return t if t and t > 1 else None
+
+    tempi = sorted(t for r in righe if (t := record_valido(r[6])))
+
+    tot_v = sum((r[4] or 0) for r in righe)
+    tot_c = sum((r[3] or 0) for r in righe)
+    media_vittorie = (tot_v / tot_c * 100) if tot_c else 0.0
+
+    def pct_guadagni(v) -> float:
+        if not guadagni or not v:
+            return 0.0
+        return round(bisect.bisect_right(guadagni, v) / len(guadagni) * 100, 2)
+
+    def pct_record(rec) -> Optional[float]:
+        t = record_valido(rec)
+        if t is None or not tempi:
+            return None
+        return round((len(tempi) - bisect.bisect_left(tempi, t)) / len(tempi) * 100, 2)
+
+    calcolati = []
+    for name, birth_year, sire, corse, vitt, euro, rec in righe:
+        pg = pct_guadagni(euro or 0)
+        pr = pct_record(rec)
+        tasso = ((vitt or 0) + RICHIAMO_VITTORIE * media_vittorie / 100) \
+            / ((corse or 0) + RICHIAMO_VITTORIE) * 100
+
+        if pr is None:
+            # Record non registrato: invece di dare zero - che sarebbe una
+            # bocciatura per un dato mancante - si ripartisce il suo peso
+            # sulle due voci note, cosi' il cavallo non viene punito per una
+            # lacuna dell'archivio.
+            quota = PESO_ST_GUADAGNI + PESO_ST_VITTORIE
+            punteggio = (pg * (PESO_ST_GUADAGNI / quota)
+                         + tasso * (PESO_ST_VITTORIE / quota))
+        else:
+            punteggio = (pg * PESO_ST_GUADAGNI
+                         + pr * PESO_ST_RECORD
+                         + tasso * PESO_ST_VITTORIE)
+
+        calcolati.append({
+            "name": name, "birth_year": birth_year, "sire": sire,
+            "score": round(min(punteggio, 100.0), 2),
+            "pct_guadagni": pg, "pct_record": pr,
+            "win_rate": round((vitt or 0) / corse * 100, 2) if corse else 0.0,
+            "corse": corse, "vitt": vitt, "euro": euro, "rec": rec,
+        })
+
+    soglie = _build_percentile_thresholds([c["score"] for c in calcolati])
+
+    def grado(s: float) -> str:
+        for limite, g in soglie:
+            if s >= limite:
+                return g
+        return "F"
+
+    ora = datetime.utcnow().isoformat()
+    conn.execute("DELETE FROM horse_ratings WHERE rating_mode = 'storico'")
+    for c in calcolati:
+        conn.execute("""
+            INSERT INTO horse_ratings
+                (name, birth_year, sire, grade, score,
+                 earn_percentile, time_percentile, win_rate,
+                 career_races, career_wins, career_earnings, record_career,
+                 rating_mode, horse_class, last_updated)
+            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, 'storico', ?, ?)
+        """, (c["name"], c["birth_year"], _normalize_name(c["sire"]) if c["sire"] else None,
+              grado(c["score"]), c["score"],
+              c["pct_guadagni"], c["pct_record"], c["win_rate"],
+              c["corse"], c["vitt"], c["euro"], c["rec"],
+              CLASS_BREEDER, ora))
+
+    # Il vecchio voto sulla scala atleti va rimosso, altrimenti la scheda del
+    # cavallo continuerebbe a mostrarlo accanto a quello nuovo.
+    eliminati = conn.execute(f"""
+        DELETE FROM horse_ratings
+        WHERE rating_mode = 'performance' AND horse_class = '{CLASS_BREEDER}'
+    """).rowcount
+    conn.commit()
+
+    migliori = sorted(calcolati, key=lambda x: -x["score"])[:3]
+    print(f"[RATINGS] Classifica storica: {len(calcolati)} cavalli "
+          f"({eliminati} vecchi voti sulla scala atleti rimossi). "
+          f"Primi: " + ", ".join(f"{m['name']} {m['score']}" for m in migliori),
+          file=sys.stderr)
+
 
 # ─────────────────────────────────────────────
 # FASE 3b — RATINGS STALLONI
@@ -3670,6 +3851,7 @@ def main():
         phase_vp_qualifiche(conn)       # FASE 2f: qualifiche giovani + allevatori
         phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
         phase_ratings(conn)             # FASE 3: rating cavalli
+        phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
         phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats

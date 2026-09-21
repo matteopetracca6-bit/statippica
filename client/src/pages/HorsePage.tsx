@@ -31,6 +31,12 @@ interface HorseData {
   stagioni_possibili?: number | null;
   tenuta_percentile?: number | null;
   integrita_percentile?: number | null;
+  gare_italia?: number | null;
+  gare_estero?: number | null;
+  vitt_italia?: number | null;
+  vitt_estero?: number | null;
+  guad_italia?: number | null;
+  guad_estero?: number | null;
   sire_percentile: number;
   rating_mode: string;
   win_rate: number;
@@ -284,7 +290,14 @@ export default function HorsePage() {
   );
 
   const SEX_LABEL: Record<string, string> = { M: "Maschio", F: "Femmina" };
-  const MODE_LABEL = horse.rating_mode === "performance" ? "Gare" : "Pedigree";
+  // Tre scale diverse, e vanno chiamate per nome: confonderle era il difetto
+  // che portava Varenne (46 corse, 41 vittorie, nessuna gara in archivio) a
+  // comparire come un grado A qualunque accanto ai cavalli in attivita'.
+  const MODE_LABEL =
+    horse.rating_mode === "performance" ? "Gare"
+      : horse.rating_mode === "storico" ? "Storico"
+        : "Pedigree";
+  const eStorico = horse.rating_mode === "storico";
 
   const navigateTo = (hName: string, hYear: number) => {
     navigate(`/horse/${encodeURIComponent(hName)}/${hYear}`);
@@ -366,6 +379,58 @@ export default function HorsePage() {
           serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
           questo dice cosa gli resta. */}
       <ValoreResiduo v={horse.valore_carriera} />
+
+      {/* Carriera in Italia e all'estero.
+
+          Una gara all'estero paga in media quasi quattro volte una italiana
+          (1.920 euro contro 518), quindi sapere DOVE un cavallo ha guadagnato
+          cambia la lettura della sua carriera. Il voto non usa questa
+          divisione: serve a chi guarda, non al calcolo. L'archivio marca le
+          gare fuori confine ma non dice quale paese, percio' si puo' dividere
+          Italia da estero e non oltre. */}
+      {(horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0 && (
+        <div style={panelStyle}>
+          <div style={panelTitle}>Dove ha corso</div>
+          <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 12 }}>
+            {([
+              ["In Italia", horse.gare_italia ?? 0, horse.vitt_italia ?? 0, horse.guad_italia ?? 0],
+              ["All'estero", horse.gare_estero ?? 0, horse.vitt_estero ?? 0, horse.guad_estero ?? 0],
+            ] as [string, number, number, number][]).map(([etichetta, gare, vitt, euro]) => (
+              <div key={etichetta} style={{ minWidth: 150 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{etichetta}</div>
+                <div className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>
+                  €{Math.round(euro).toLocaleString("it-IT")}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                  {gare} {gare === 1 ? "gara" : "gare"} · {vitt} {vitt === 1 ? "vittoria" : "vittorie"}
+                </div>
+              </div>
+            ))}
+          </div>
+          {(horse.gare_estero ?? 0) > 0 && (
+            <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.55, maxWidth: "70ch" }}>
+              Una gara all&apos;estero paga in media quasi quattro volte una italiana, quindi i
+              guadagni fuori confine pesano piu&apos; del numero di corse. L&apos;archivio registra
+              che la gara e&apos; stata all&apos;estero ma non in quale paese.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* I cavalli storici vanno spiegati, altrimenti il loro voto sembra
+          confrontabile con quello dei cavalli in attivita' e non lo e'. */}
+      {eStorico && (
+        <div style={{ ...panelStyle, borderLeft: "3px solid hsl(51 70% 50%)" }}>
+          <div style={panelTitle}>Voto storico, non confrontabile con i cavalli in gara</div>
+          <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, maxWidth: "75ch" }}>
+            Di questo cavallo l&apos;archivio conosce i totali di carriera presi dall&apos;anagrafe
+            ufficiale, ma non le singole gare: per gli anni in cui ha corso non esistono online.
+            Viene quindi confrontato solo con gli altri cavalli storici, su guadagni, record e
+            percentuale di vittorie. La tenuta, che per i cavalli in attivita&apos; vale un quarto
+            del voto, qui non e&apos; misurabile perche&apos; servirebbero le date delle corse.
+          </div>
+        </div>
+      )}
 
       {/* Percentile bars */}
       {horse.rating_mode === "performance" && (

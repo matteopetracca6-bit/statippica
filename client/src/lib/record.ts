@@ -19,6 +19,11 @@ export function formatRecord(raw: string | number | null | undefined): string {
   // Valori non numerici (es. "tnc") vanno mostrati come sono.
   if (!/\d/.test(v)) return v;
 
+  // Le schede dei cavalli storici riportano 0'00"0 quando il record non e'
+  // stato registrato. Non e' un tempo: e' un dato mancante, e mostrarlo
+  // faceva comparire "1.0.00.0" in classifica accanto a Mack Grace SM.
+  if (/^0+[.'’]?0*[."”]?0*$/.test(v.replace(/\s+/g, ""))) return "—";
+
   // Apici e virgolette diventano punti: 1'13"6 -> 1.13.6
   let s = v.replace(/['’]/g, ".").replace(/["”]/g, ".").replace(/\s+/g, "");
   s = s.replace(/\.+$/, "").replace(/\.{2,}/g, ".");

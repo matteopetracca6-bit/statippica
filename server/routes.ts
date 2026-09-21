@@ -98,10 +98,15 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.grade, hr.score, hr.earn_percentile, hr.time_percentile,
                hr.sire_percentile, hr.rating_mode, hr.win_rate,
                hr.stagioni_corse, hr.stagioni_possibili,
-               hr.tenuta_percentile, hr.integrita_percentile
+               hr.tenuta_percentile, hr.integrita_percentile,
+               hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
+               hr.guad_italia, hr.guad_estero
         FROM horses h
+        -- I cavalli storici non hanno un voto sulla scala atleti: il loro sta
+        -- in rating_mode='storico'. Senza questo OR la loro scheda mostrerebbe
+        -- la casella del voto vuota.
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
-                                  AND hr.rating_mode = 'performance'
+                                  AND hr.rating_mode IN ('performance', 'storico')
         WHERE h.name = ? AND h.birth_year = ?
       `).get(name, year) as any;
 
@@ -447,7 +452,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
     // hr.* qualificato: la query principale fa JOIN con horses, e un
     // horse_class nudo sarebbe ambiguo (errore SQLite visto in test).
-    const conditions: string[] = ["hr.rating_mode = ?", ONLY_ATHLETES];
+    // La classifica storica ha una popolazione sua: i cavalli di cui
+    // l'archivio conosce solo i totali di carriera, senza le singole gare.
+    // Vanno confrontati fra loro, quindi il filtro sugli atleti non si applica.
+    const storico = mode === "storico";
+    const conditions: string[] = storico
+      ? ["hr.rating_mode = ?"]
+      : ["hr.rating_mode = ?", ONLY_ATHLETES];
     const params: any[] = [mode];
 
     if (year) { conditions.push("hr.birth_year = ?"); params.push(year); }
@@ -458,6 +469,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
     // costruito su cinquanta: chi vuole una classifica solida filtra qui.
     const minRaces = parseInt(req.query.min_races as string) || 0;
     if (minRaces > 0) { conditions.push("COALESCE(hr.career_races,0) >= ?"); params.push(minRaces); }
+
+    // Dove ha corso. Non tocca il voto, filtra soltanto: una gara all'estero
+    // paga in media quasi quattro volte una italiana, e c'e' chi vuole vedere
+    // solo chi ha fatto carriera in Italia - o solo chi e' andato fuori.
+    const dove = req.query.dove as string || null;
+    if (dove === "italia") {
+      // Carriera fatta in Italia: nessuna gara all'estero.
+      conditions.push("COALESCE(hr.gare_estero, 0) = 0");
+    } else if (dove === "estero") {
+      conditions.push("COALESCE(hr.gare_estero, 0) > 0");
+    } else if (dove === "solo_estero") {
+      conditions.push("COALESCE(hr.gare_estero, 0) > 0 AND COALESCE(hr.gare_italia, 0) = 0");
+    }
 
     const where = conditions.join(" AND ");
     const sortCol = sortBy === "earnings" ? "career_earnings" : "score";
@@ -470,6 +494,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const rows = db.prepare(`
         SELECT hr.name, hr.birth_year, hr.sire, hr.grade, hr.score, hr.earn_percentile, hr.time_percentile,
                hr.sire_percentile, hr.career_races, hr.career_wins, hr.career_earnings, hr.record_career, hr.win_rate,
+               hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
+               hr.guad_italia, hr.guad_estero,
                h.country
         FROM horse_ratings hr
         LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year
@@ -487,14 +513,23 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/leaderboard/years — available birth years
   // ──────────────────────────────────────────────
-  app.get("/api/leaderboard/years", (_req, res) => {
+  app.get("/api/leaderboard/years", (req, res) => {
     const db = getDb();
     try {
-      const rows = db.prepare(`
-        SELECT DISTINCT birth_year FROM horse_ratings
-        WHERE birth_year IS NOT NULL AND COALESCE(horse_class, 'athlete') = 'athlete'
-        ORDER BY birth_year DESC
-      `).all() as any[];
+      // Gli anni dipendono dalla classifica: quella storica copre il 1990-2015,
+      // quella in gara il 2012 in avanti. Offrire gli anni sbagliati produce
+      // un filtro che non trova nessun cavallo.
+      const storico = (req.query.mode as string) === "storico";
+      const rows = db.prepare(
+        storico
+          ? `SELECT DISTINCT birth_year FROM horse_ratings
+             WHERE birth_year IS NOT NULL AND rating_mode = 'storico'
+             ORDER BY birth_year DESC`
+          : `SELECT DISTINCT birth_year FROM horse_ratings
+             WHERE birth_year IS NOT NULL AND COALESCE(horse_class, 'athlete') = 'athlete'
+               AND rating_mode <> 'storico'
+             ORDER BY birth_year DESC`,
+      ).all() as any[];
       res.json(rows.map((r) => r.birth_year));
     } finally {
       db.close();

@@ -50,11 +50,17 @@ export default function LeaderboardPage() {
   const MIN_RACES_SOLID = 4;
 
   const { data: years } = useQuery<number[]>({
-    queryKey: ["/api/leaderboard/years"],
-    queryFn: async () => { const r = await apiRequest("GET", "/api/leaderboard/years"); return r.json(); },
+    queryKey: ["/api/leaderboard/years", mode],
+    queryFn: async () => {
+      const r = await apiRequest("GET", `/api/leaderboard/years?mode=${mode}`);
+      return r.json();
+    },
   });
 
-  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly]);
+  // Dove ha corso. Filtra soltanto, non tocca il voto.
+  const [dove, setDove] = useState<string>("");
+
+  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly, dove]);
 
   const params = new URLSearchParams();
   if (year) params.set("year", year);
@@ -65,9 +71,10 @@ export default function LeaderboardPage() {
   params.set("page", String(page));
   params.set("limit", String(LIMIT));
   if (solidOnly) params.set("min_races", String(MIN_RACES_SOLID));
+  if (dove) params.set("dove", dove);
 
   const { data, isLoading } = useQuery<LeaderboardData>({
-    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly],
+    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove],
     queryFn: async () => {
       const r = await apiRequest("GET", `/api/leaderboard?${params}`);
       return r.json();
@@ -93,15 +100,28 @@ export default function LeaderboardPage() {
       <div style={{ marginBottom: "22px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>Leaderboard</h1>
         <p style={{ fontSize: "13px", color: "hsl(210 8% 48%)" }}>
-          {data?.total != null ? `${data.total.toLocaleString("it-IT")} cavalli` : "—"} · {mode === "performance" ? "in gara" : "solo pedigree"}
+          {data?.total != null ? `${data.total.toLocaleString("it-IT")} cavalli` : "—"} · {
+            mode === "performance" ? "in gara"
+              : mode === "storico" ? "cavalli storici, confrontati fra loro"
+                : "solo pedigree"}
         </p>
+        {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
+            il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
+        {mode === "storico" && (
+          <p style={{ fontSize: "12px", color: "hsl(210 8% 48%)", marginTop: "8px", lineHeight: 1.6, maxWidth: "78ch" }}>
+            Cavalli di cui l&apos;archivio conosce i totali di carriera ma non le singole gare,
+            perche&apos; per gli anni in cui hanno corso non esistono online. Sono confrontati solo
+            fra loro, su guadagni, record e percentuale di vittorie: i loro voti non si possono
+            paragonare a quelli dei cavalli in gara oggi.
+          </p>
+        )}
       </div>
 
       {/* Filters */}
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px", alignItems: "center" }}>
         {/* Mode */}
         <div style={{ display: "flex", background: "hsl(220 12% 12%)", border: "1px solid hsl(220 10% 20%)", borderRadius: "8px", overflow: "hidden" }}>
-          {[{ v: "performance", l: "In gara" }, { v: "pedigree", l: "Pedigree" }].map(({ v, l }) => (
+          {[{ v: "performance", l: "In gara" }, { v: "pedigree", l: "Pedigree" }, { v: "storico", l: "Storici" }].map(({ v, l }) => (
             <button key={v} onClick={() => setMode(v)} style={{
               padding: "8px 14px", fontSize: "13px", background: mode === v ? "hsl(183 100% 38% / 0.2)" : "none",
               color: mode === v ? "hsl(183 80% 65%)" : "hsl(210 8% 55%)",
@@ -121,6 +141,18 @@ export default function LeaderboardPage() {
           <option value="">Tutti i voti</option>
           {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
+
+        {/* Dove ha corso. Non compare per gli storici: di loro l'archivio ha
+            solo i totali di carriera, senza le singole gare, quindi non si sa
+            dove le abbiano corse. */}
+        {mode !== "storico" && (
+          <select value={dove} onChange={e => setDove(e.target.value)} style={filterStyle} data-testid="select-dove">
+            <option value="">Italia ed estero</option>
+            <option value="italia">Solo carriera in Italia</option>
+            <option value="estero">Ha corso anche all&apos;estero</option>
+            <option value="solo_estero">Solo carriera all&apos;estero</option>
+          </select>
+        )}
 
         {/* Sort */}
         <select value={sort} onChange={e => setSort(e.target.value)} style={filterStyle} data-testid="select-sort">
