@@ -37,6 +37,21 @@ interface Segment {
   spearman_con_nonna_materna?: number; n_con_nonna_informativa?: number;
   nota_nonna?: string;
 }
+interface ConfrontoSignificativita {
+  contro: string;
+  domanda: string;
+  avvertenza?: string;
+  vantaggio: number;
+  intervallo95: [number, number];
+  quota_ricampionamenti_sfavorevoli: number;
+  significativo: boolean;
+  n_giri: number;
+}
+interface Significativita {
+  spiegazione: string;
+  confronti: ConfrontoSignificativita[];
+  contro_il_caso: { spearman_osservato: number; valore_p: number; n_giri: number };
+}
 interface Fonte {
   autori: string; anno: number; titolo: string; rivista: string;
   doi?: string; url: string; rilevanza: string;
@@ -49,6 +64,7 @@ interface Validation {
   test_years: [number, number];
   models: ModelRow[];
   segments?: Segment[];
+  significativita?: Significativita;
   theoretical_ceiling?: {
     formula: string; spiegazione: string;
     valori: Record<string, number>;
@@ -266,6 +282,88 @@ export default function ValidazionePage() {
             </p>
             <div style={{ fontSize: "10.5px", color: DIM, marginTop: "10px", lineHeight: 1.5 }}>
               Ereditabilita' di riferimento da: {ceil.fonti.join(" · ")}
+            </div>
+          </div>
+        </Section>
+      )}
+
+      {data.significativita && (
+        <Section
+          title="Il vantaggio e' reale o e' fortuna?"
+          icon={<Target size={17} />}
+          sub={data.significativita.spiegazione}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "10px" }}>
+            {data.significativita.confronti.map(c => (
+              <div key={c.contro} style={{
+                background: PANEL,
+                border: c.significativo ? "1px solid hsl(150 50% 30%)" : "1px solid hsl(30 60% 35%)",
+                borderRadius: "10px", padding: "14px 16px",
+              }}>
+                <div style={{ fontSize: "11px", color: DIM, marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  contro {c.contro}
+                </div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: TEXT, marginBottom: "10px", lineHeight: 1.35 }}>
+                  {c.domanda}
+                </div>
+                <div className="tabular" style={{
+                  fontSize: "24px", fontWeight: 800,
+                  color: c.significativo ? "hsl(150 60% 55%)" : "hsl(30 80% 60%)",
+                  lineHeight: 1.1,
+                }}>
+                  +{c.vantaggio.toFixed(3)}
+                </div>
+                <div style={{ fontSize: "11px", color: MUTED, marginBottom: "9px" }}>
+                  di correlazione in piu'
+                </div>
+                <div style={{ fontSize: "11.5px", color: MUTED, lineHeight: 1.5 }}>
+                  Riestraendo il campione {c.n_giri.toLocaleString("it-IT")} volte, il vantaggio
+                  resta fra <strong className="tabular" style={{ color: TEXT }}>+{c.intervallo95[0].toFixed(3)}</strong> e{" "}
+                  <strong className="tabular" style={{ color: TEXT }}>+{c.intervallo95[1].toFixed(3)}</strong>.
+                </div>
+                <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "5px", lineHeight: 1.5 }}>
+                  {c.quota_ricampionamenti_sfavorevoli === 0
+                    ? "In nessuno dei ricampionamenti l'Advisor e' risultato peggiore."
+                    : `L'Advisor risulta peggiore nel ${(c.quota_ricampionamenti_sfavorevoli * 100).toFixed(1)}% dei ricampionamenti.`}
+                </div>
+                <div style={{
+                  marginTop: "10px", fontSize: "11px", fontWeight: 700,
+                  color: c.significativo ? "hsl(150 60% 55%)" : "hsl(30 80% 60%)",
+                }}>
+                  {c.significativo
+                    ? "Vantaggio non attribuibile al caso"
+                    : "Vantaggio compatibile con il caso"}
+                </div>
+                {c.avvertenza && (
+                  <div style={{ fontSize: "11px", color: DIM, marginTop: "8px", lineHeight: 1.45, fontStyle: "italic" }}>
+                    {c.avvertenza}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div style={{
+            marginTop: "12px", padding: "13px 16px", borderRadius: "10px",
+            background: "hsl(220 12% 7%)", border: BORDER,
+          }}>
+            <div style={{ fontSize: "12px", color: TEXT, fontWeight: 700, marginBottom: "4px" }}>
+              Prova contro il puro caso
+            </div>
+            <div style={{ fontSize: "11.5px", color: MUTED, lineHeight: 1.55 }}>
+              Mescolando {data.significativita.contro_il_caso.n_giri.toLocaleString("it-IT")} volte
+              i risultati veri, una correlazione alta quanto quella dell'Advisor
+              (<span className="tabular" style={{ color: TEXT }}>{data.significativita.contro_il_caso.spearman_osservato.toFixed(3)}</span>)
+              si e' presentata con probabilita'{" "}
+              <strong className="tabular" style={{ color: "hsl(150 60% 55%)" }}>
+                {data.significativita.contro_il_caso.valore_p < 0.001
+                  ? "inferiore a 1 su 1000"
+                  : data.significativita.contro_il_caso.valore_p.toFixed(4)}
+              </strong>.
+            </div>
+            <div style={{ fontSize: "11px", color: DIM, marginTop: "7px", lineHeight: 1.5 }}>
+              Attenzione a cosa vuol dire: il vantaggio esiste ed e' misurabile, ma
+              resta piccolo in valore assoluto. Significativo non vuol dire grande.
             </div>
           </div>
         </Section>

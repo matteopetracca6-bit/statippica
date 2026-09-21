@@ -22,6 +22,7 @@ import {
 import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
 import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
+import { stimaValoreResiduo } from "./careerValue";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -164,7 +165,50 @@ export function registerRoutes(httpServer: Server, app: Express) {
         dam_dam:   pedigreeRow?.dam_dam   || pedigreeRow?.dam_unire_dam   || spDam?.dam   || vp.get("mm") || null,
       };
 
-      res.json({ ...horse, races, siblings, pedigree });
+      /* Valore residuo di carriera.
+         Il cavallo si considera in attivita' se ha corso nell'anno in
+         corso o in quello precedente: la stagione e' lunga e un cavallo
+         che ha corso a novembre non e' ritirato a gennaio. */
+      const annoOggi = new Date().getFullYear();
+      /* Circa una gara su dieci nell'archivio non ha data. Per un cavallo
+         con qualche gara datata non e' un problema, ma per uno che non ne
+         ha nessuna non si puo' dire se sia fermo o se manchi il dato: sono
+         due cose diverse e vanno distinte, altrimenti un campione in
+         attivita' verrebbe dichiarato ritirato. */
+      const gareInfo = db.prepare(`
+        SELECT MAX(race_date) AS ultima,
+               COUNT(*) AS n_tot,
+               SUM(CASE WHEN race_date LIKE '____-%' THEN 1 ELSE 0 END) AS n_datate
+        FROM races WHERE horse_name = ?
+      `).get(name) as any;
+      const annoUltimaGara = gareInfo?.ultima
+        ? parseInt(String(gareInfo.ultima).slice(0, 4)) : null;
+      const dateMancanti = (gareInfo?.n_tot || 0) > 0 && (gareInfo?.n_datate || 0) === 0;
+      const inAttivita = annoUltimaGara != null && annoUltimaGara >= annoOggi - 1;
+
+      let valoreCarriera = stimaValoreResiduo(
+        horse.score,
+        horse.birth_year,
+        horse.career_earnings || 0,
+        inAttivita,
+        annoOggi,
+      );
+      if (valoreCarriera && dateMancanti) {
+        const motivo =
+          "Le gare di questo cavallo sono in archivio senza data, quindi " +
+          "non si puo' stabilire se sia ancora in attivita'. La stima " +
+          "richiede di sapere quando ha corso l'ultima volta.";
+        valoreCarriera = { ...valoreCarriera, disponibile: false, motivo,
+                           giudizio: "non_stimabile", titolo: "Non stimabile",
+                           spiegazione: motivo };
+      }
+
+      res.json({
+        ...horse, races, siblings, pedigree,
+        anno_ultima_gara: annoUltimaGara,
+        in_attivita: inAttivita,
+        valore_carriera: valoreCarriera,
+      });
     } finally {
       db.close();
     }

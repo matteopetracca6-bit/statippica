@@ -7,6 +7,7 @@ import HorseSearchBar from "../components/HorseSearchBar";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin } from "lucide-react";
 import { formatRecord } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
+import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
 
 interface HorseData {
   name: string;
@@ -31,6 +32,9 @@ interface HorseData {
   win_rate: number;
   races: Race[];
   siblings: Sibling[];
+  anno_ultima_gara?: number | null;
+  in_attivita?: boolean;
+  valore_carriera?: ValoreCarriera | null;
   pedigree: {
     sire: string | null;
     dam: string | null;
@@ -352,6 +356,12 @@ export default function HorsePage() {
         <Stat label="Guadagni" value={horse.career_earnings != null ? `€${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
         {horse.record_career && <Stat label="Record km" value={formatRecord(horse.record_career)} />}
       </div>
+
+      {/* Valore residuo: quanto puo' ancora guadagnare.
+          Va subito sotto i guadagni di carriera, perche' e' la lettura che
+          serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
+          questo dice cosa gli resta. */}
+      <ValoreResiduo v={horse.valore_carriera} />
 
       {/* Percentile bars */}
       {horse.rating_mode === "performance" && (

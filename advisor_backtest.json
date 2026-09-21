@@ -110,6 +110,53 @@
    "Thiruvenkadan et al. 2009, Livest Sci 124:163-181"
   ]
  },
+ "significativita": {
+  "spiegazione": "Due prove indipendenti. La prima riestrae 2000 volte il gruppo di verifica per vedere se il vantaggio dell'Advisor resta positivo anche cambiando i cavalli del campione. La seconda mescola i risultati veri 2000 volte per misurare quanto facilmente il caso produrrebbe la correlazione osservata.",
+  "confronti": [
+   {
+    "contro": "Solo il padre",
+    "domanda": "La linea materna aggiunge davvero qualcosa?",
+    "vantaggio": 0.0257,
+    "intervallo95": [
+     0.0134,
+     0.0382
+    ],
+    "quota_ricampionamenti_sfavorevoli": 0.0,
+    "significativo": true,
+    "n_giri": 2000
+   },
+   {
+    "contro": "Fama del padre",
+    "domanda": "L'Advisor batte chi sceglie guardando il nome del padre?",
+    "vantaggio": 0.0353,
+    "intervallo95": [
+     0.0206,
+     0.0502
+    ],
+    "quota_ricampionamenti_sfavorevoli": 0.0,
+    "significativo": true,
+    "n_giri": 2000
+   },
+   {
+    "contro": "Costo della monta (oggi)",
+    "domanda": "L'Advisor batte chi sceglie guardando il prezzo?",
+    "avvertenza": "Il prezzo di oggi e' stato fissato dopo aver visto questi risultati, quindi gioca in casa. Se l'Advisor lo batte comunque, il confronto e' conservativo.",
+    "vantaggio": 0.0911,
+    "intervallo95": [
+     0.0618,
+     0.1218
+    ],
+    "quota_ricampionamenti_sfavorevoli": 0.0,
+    "significativo": true,
+    "n_giri": 2000
+   }
+  ],
+  "contro_il_caso": {
+   "spearman_osservato": 0.1874,
+   "valore_p": 0.0005,
+   "n_giri": 2000
+  }
+ },
  "segments": [
   {
    "label": "Fattrici con figli gia' valutati",

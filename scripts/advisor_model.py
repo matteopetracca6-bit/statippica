@@ -35,6 +35,7 @@ Tutto finisce in advisor_backtest.json, che alimenta la pagina di verifica.
 import json
 import math
 import os
+import random
 import sqlite3
 import sys
 from collections import defaultdict
@@ -176,6 +177,63 @@ def top_decile_lift(pred, actual, frac=0.1):
     base = sum(actual) / n
     return {"top_mean": round(top, 2), "population_mean": round(base, 2),
             "lift": round(top - base, 2), "n_top": k}
+
+
+def bootstrap_differenza(pred_a, pred_b, actual, n_giri=2000, seme=12345):
+    """Il vantaggio dell'Advisor e' reale o e' fortuna del campione?
+
+    Si riestrae molte volte il gruppo di verifica con reinserimento e ogni
+    volta si ricalcola di quanto l'Advisor batte l'alternativa. Se anche
+    ricampionando il vantaggio resta quasi sempre positivo, non dipende da
+    quali cavalli sono capitati nel campione.
+
+    Restituisce il vantaggio osservato, l'intervallo entro cui cade nel 95%
+    dei ricampionamenti e la quota di ricampionamenti in cui l'Advisor
+    perde (una specie di valore-p a una coda).
+    """
+    rnd = random.Random(seme)
+    n = len(actual)
+    osservato = spearman(pred_a, actual) - spearman(pred_b, actual)
+    differenze = []
+    for _ in range(n_giri):
+        idx = [rnd.randrange(n) for _ in range(n)]
+        a = [actual[i] for i in idx]
+        differenze.append(spearman([pred_a[i] for i in idx], a)
+                          - spearman([pred_b[i] for i in idx], a))
+    differenze.sort()
+    lo = differenze[int(0.025 * n_giri)]
+    hi = differenze[int(0.975 * n_giri) - 1]
+    quota_negativa = sum(1 for d in differenze if d <= 0) / n_giri
+    return {
+        "vantaggio": round(osservato, 4),
+        "intervallo95": [round(lo, 4), round(hi, 4)],
+        "quota_ricampionamenti_sfavorevoli": round(quota_negativa, 4),
+        "significativo": bool(lo > 0),
+        "n_giri": n_giri,
+    }
+
+
+def prova_permutazione(pred, actual, n_giri=2000, seme=999):
+    """La correlazione osservata e' distinguibile dal puro caso?
+
+    Si mescolano i risultati veri e si ricalcola la correlazione: cosi' si
+    costruisce la distribuzione di cio' che si otterrebbe se la previsione
+    non contenesse nessuna informazione. La quota di mescolamenti che fanno
+    meglio della previsione vera e' il valore-p.
+    """
+    rnd = random.Random(seme)
+    osservato = spearman(pred, actual)
+    mescolati = list(actual)
+    superiori = 0
+    for _ in range(n_giri):
+        rnd.shuffle(mescolati)
+        if spearman(pred, mescolati) >= osservato:
+            superiori += 1
+    return {
+        "spearman_osservato": round(osservato, 4),
+        "valore_p": round((superiori + 1) / (n_giri + 1), 5),
+        "n_giri": n_giri,
+    }
 
 
 def main():
@@ -349,6 +407,42 @@ def main():
                 "Rohe et al. 2001, Arch Tierz 44:580-588",
                 "Thiruvenkadan et al. 2009, Livest Sci 124:163-181",
             ],
+        },
+        # ── Il vantaggio e' reale o e' rumore? ───────────────────────
+        # Finora il confronto diceva "l'Advisor ordina meglio". Mancava la
+        # domanda successiva, quella che conta: di quanto, e con quanta
+        # certezza? Senza questo, un vantaggio di pochi centesimi poteva
+        # essere semplicemente il campione fortunato.
+        "significativita": {
+            "spiegazione":
+                "Due prove indipendenti. La prima riestrae 2000 volte il "
+                "gruppo di verifica per vedere se il vantaggio dell'Advisor "
+                "resta positivo anche cambiando i cavalli del campione. La "
+                "seconda mescola i risultati veri 2000 volte per misurare "
+                "quanto facilmente il caso produrrebbe la correlazione "
+                "osservata.",
+            "confronti": [
+                {
+                    "contro": "Solo il padre",
+                    "domanda": "La linea materna aggiunge davvero qualcosa?",
+                    **bootstrap_differenza(pred, pred_sire_only, act),
+                },
+                {
+                    "contro": "Fama del padre",
+                    "domanda": "L'Advisor batte chi sceglie guardando il nome del padre?",
+                    **bootstrap_differenza(pred, pred_fame, act),
+                },
+                {
+                    "contro": "Costo della monta (oggi)",
+                    "domanda": "L'Advisor batte chi sceglie guardando il prezzo?",
+                    "avvertenza":
+                        "Il prezzo di oggi e' stato fissato dopo aver visto "
+                        "questi risultati, quindi gioca in casa. Se l'Advisor "
+                        "lo batte comunque, il confronto e' conservativo.",
+                    **bootstrap_differenza(pred, pred_fee, act),
+                },
+            ],
+            "contro_il_caso": prova_permutazione(pred, act),
         },
         "segments": segments,
         "scatter": [
