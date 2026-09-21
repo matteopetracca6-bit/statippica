@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { useState, useMemo } from "react";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const GRADE_COLORS: Record<string, string> = {
@@ -157,7 +158,7 @@ export default function TrendsPage() {
 
               {/* Chart */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
-                {gradeDataByYear.map(yd => {
+                {gradeDataByYear.map((yd, idxAnno) => {
                   const visibleGrades = yd.grades.filter(g => showGrades.has(g.grade));
                   const visibleTotal = visibleGrades.reduce((s, g) => s + g.cnt, 0) || 1;
                   return (
@@ -194,9 +195,10 @@ export default function TrendsPage() {
                           </div>
                         </div>
                       )}
-                      <div style={{
+                      <div className="barra-su" style={{
                         display: "flex", flexDirection: "column-reverse", height: "220px",
                         width: "100%", borderRadius: "4px 4px 0 0", overflow: "hidden",
+                        animationDelay: `${Math.min(idxAnno, 14) * 45}ms`,
                       }}>
                         {visibleGrades.map(g => g.cnt > 0 && (
                           <div
@@ -228,7 +230,7 @@ export default function TrendsPage() {
                 Guadagno medio per anno di nascita
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
-                {data.earningsByYear.map(yr => (
+                {data.earningsByYear.map((yr, idxAnno) => (
                   <div
                     key={yr.birth_year}
                     onMouseEnter={() => setHoveredBar(`earn-${yr.birth_year}`)}
@@ -258,7 +260,8 @@ export default function TrendsPage() {
                     <span className="tabular" style={{ fontSize: "10px", color: "hsl(51 70% 55%)", fontWeight: 700 }}>
                       €{fmtK(yr.avg_earnings)}
                     </span>
-                    <div style={{
+                    <div className="barra-su" style={{
+                      animationDelay: `${Math.min(idxAnno, 14) * 45}ms`,
                       width: "100%", height: `${(yr.avg_earnings / maxEarnings) * 200}px`,
                       background: hoveredBar === `earn-${yr.birth_year}`
                         ? "linear-gradient(180deg, hsl(51 90% 60%), hsl(30 80% 50%))"
@@ -283,7 +286,7 @@ export default function TrendsPage() {
                 Gare e cavalli per anno
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
-                {data.racesPerYear.map(yr => (
+                {data.racesPerYear.map((yr, idxAnno) => (
                   <div
                     key={yr.year}
                     onMouseEnter={() => setHoveredBar(`race-${yr.year}`)}
@@ -312,7 +315,8 @@ export default function TrendsPage() {
                     <span className="tabular" style={{ fontSize: "10px", color: "hsl(183 80% 55%)", fontWeight: 700 }}>
                       {fmtK(yr.n_races)}
                     </span>
-                    <div style={{
+                    <div className="barra-su" style={{
+                      animationDelay: `${Math.min(idxAnno, 14) * 45}ms`,
                       width: "100%", height: `${(yr.n_races / maxRaces) * 200}px`,
                       background: hoveredBar === `race-${yr.year}`
                         ? "linear-gradient(180deg, hsl(183 90% 55%), hsl(183 70% 40%))"
@@ -363,7 +367,8 @@ export default function TrendsPage() {
                       {t.track || "—"}
                     </span>
                     <div style={{ flex: 2, height: "20px", background: "hsl(220 10% 12%)", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{
+                      <div className="barra-destra" style={{
+                        animationDelay: `${Math.min(i, 14) * 45}ms`,
                         height: "100%", width: `${(t.n_races / maxTrackRaces) * 100}%`,
                         background: hoveredTrack === i
                           ? "linear-gradient(90deg, hsl(183 90% 55%), hsl(183 70% 45%))"
@@ -393,6 +398,11 @@ export default function TrendsPage() {
           )}
         </>
       )}
+      <CollegamentiCorrelati voci={[
+        { href: "/leaderboard", titolo: "Leaderboard", descrizione: "I singoli cavalli dietro questi andamenti." },
+        { href: "/qualifiche", titolo: "Qualifiche", descrizione: "I cavalli giovani non ancora in classifica, appena qualificati." },
+        { href: "/advisor", titolo: "Advisor", descrizione: "Usa questi andamenti per scegliere un accoppiamento." },
+      ]} />
     </div>
   );
 }

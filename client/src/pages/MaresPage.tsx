@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 /**
  * SEZIONE FATTRICI.
@@ -289,6 +290,11 @@ export default function MaresPage() {
           </button>
         </div>
       )}
+      <CollegamentiCorrelati voci={[
+        { href: "/advisor", titolo: "Advisor", descrizione: "Scegli una fattrice e vedi quali stalloni le stanno meglio." },
+        { href: "/stalloni", titolo: "Catalogo stalloni", descrizione: "Gli stalloni disponibili, con tasse di monta." },
+        { href: "/pedigree", titolo: "Pedigree", descrizione: "Albero genealogico e consanguineita' fino a cinque generazioni." },
+      ]} />
     </div>
   );
 }

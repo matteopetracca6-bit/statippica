@@ -8,6 +8,7 @@ import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { Dna } from "lucide-react";
 import NameSelect from "../components/NameSelect";
 import InbreedingPanel from "../components/InbreedingPanel";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 interface PedigreeNode {
   name: string;
@@ -408,6 +409,11 @@ export default function PedigreePage() {
           Cerca un cavallo per visualizzare il suo pedigree.
         </div>
       )}
+      <CollegamentiCorrelati voci={[
+        { href: "/compare", titolo: "Comparazione", descrizione: "Metti due cavalli a confronto su statistiche e carriera." },
+        { href: "/advisor", titolo: "Advisor", descrizione: "Verifica un accoppiamento prima di farlo, consanguineita' inclusa." },
+        { href: "/leaderboard", titolo: "Leaderboard", descrizione: "Cerca un cavallo da cui partire." },
+      ]} />
     </div>
   );
 }

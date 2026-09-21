@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, Filter, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 /**
  * SEZIONE QUALIFICHE.
@@ -352,6 +353,11 @@ export default function QualifichePage() {
       <p style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "28px", lineHeight: 1.6 }}>
         Fonte dei dati di qualifica: VendoPuledri. Aggiornati ogni notte.
       </p>
+      <CollegamentiCorrelati voci={[
+        { href: "/leaderboard", titolo: "Leaderboard", descrizione: "I cavalli che hanno gia' una carriera in corso." },
+        { href: "/advisor", titolo: "Advisor", descrizione: "Stima quanto vale un puledro prima che debutti." },
+        { href: "/trend", titolo: "Trend", descrizione: "Come si distribuiscono i voti per anno di nascita." },
+      ]} />
     </div>
   );
 }

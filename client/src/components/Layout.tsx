@@ -1,13 +1,29 @@
-import { Link } from "wouter";
-import { Home as HomeIcon } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { useEffect, useRef } from "react";
 import logoHorse from "@assets/statippica-logo.png";
 import Wordmark from "./Wordmark";
+import NavBar from "./NavBar";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const [percorso] = useLocation();
+  const areaContenuto = useRef<HTMLElement>(null);
+
+  /**
+   * Riporta in cima a ogni cambio di scheda.
+   *
+   * Prima lo scorrimento restava dov'era: se si apriva un cavallo dal
+   * fondo della classifica, la sua scheda si apriva a meta' pagina.
+   * La zona che scorre e' il <main>, non la finestra, quindi va mossa
+   * quella.
+   */
+  useEffect(() => {
+    areaContenuto.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [percorso]);
+
   return (
     <div style={{
       height: "100dvh",
@@ -33,32 +49,15 @@ export default function Layout({ children }: LayoutProps) {
             <Wordmark size={17} withLogo logoSrc={logoHorse} logoSize={30} />
           </a>
         </Link>
-        <Link href="/">
-          <a style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "6px 12px",
-            borderRadius: "8px",
-            background: "hsl(220 10% 12%)",
-            border: "1px solid hsl(220 10% 16%)",
-            color: "hsl(210 8% 65%)",
-            fontSize: "12px",
-            fontWeight: 600,
-            textDecoration: "none",
-            transition: "all 0.15s",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = "hsl(220 10% 16%)"; e.currentTarget.style.color = "hsl(183 80% 60%)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "hsl(220 10% 12%)"; e.currentTarget.style.color = "hsl(210 8% 65%)"; }}
-          >
-            <HomeIcon size={14} />
-            Home
-          </a>
-        </Link>
+        <span style={{ fontSize: "11px", color: "hsl(210 8% 38%)", letterSpacing: "0.04em" }}>
+          Archivio trotto italiano
+        </span>
       </header>
 
+      <NavBar />
+
       {/* Main content area */}
-      <main style={{
+      <main ref={areaContenuto} style={{
         flex: 1,
         overflow: "auto",
         overscrollBehavior: "contain",

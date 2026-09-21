@@ -6,6 +6,7 @@ import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import { ChevronLeft, ChevronRight, SortAsc } from "lucide-react";
 import { formatRecord } from "@/lib/record";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 interface LeaderboardRow {
   name: string;
@@ -171,7 +172,14 @@ export default function LeaderboardPage() {
             ))}
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          /* L'intestazione era dichiarata "appiccicata in alto" ma non lo
+             era mai: un contenitore con scorrimento orizzontale diventa
+             lui il riferimento, e non scorrendo in verticale la riga dei
+             titoli restava semplicemente in cima alla tabella e usciva
+             dallo schermo. Dando a questo contenitore anche un'altezza
+             massima e lo scorrimento verticale, la riga dei titoli resta
+             davvero visibile mentre si scorrono i cavalli. */
+          <div style={{ overflow: "auto", maxHeight: "calc(100dvh - 300px)", minHeight: "320px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ position: "sticky", top: 0, background: "hsl(220 12% 9%)", zIndex: 2 }}>
                 <tr>
@@ -293,6 +301,11 @@ export default function LeaderboardPage() {
           </div>
         )}
       </div>
+      <CollegamentiCorrelati voci={[
+        { href: "/advisor", titolo: "Advisor", descrizione: "Simula un accoppiamento e stima costi, premi e prezzo di rivendita del puledro." },
+        { href: "/stalloni", titolo: "Catalogo stalloni", descrizione: "Chi sono i padri dei cavalli in classifica, con tasse di monta e produzione." },
+        { href: "/trend", titolo: "Trend", descrizione: "Come cambiano voti, guadagni e numero di gare anno per anno." },
+      ]} />
     </div>
   );
 }

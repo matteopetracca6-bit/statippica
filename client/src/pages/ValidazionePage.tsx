@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { BookOpen, FlaskConical, Ruler, Target, TrendingUp } from "lucide-react";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 const MUTED = "hsl(210 8% 45%)";
 const DIM = "hsl(210 8% 35%)";
@@ -342,6 +343,11 @@ export default function ValidazionePage() {
           </div>
         </Section>
       )}
+      <CollegamentiCorrelati voci={[
+        { href: "/advisor", titolo: "Advisor", descrizione: "Prova il consiglio su una tua fattrice." },
+        { href: "/trend", titolo: "Trend", descrizione: "Da dove vengono i dati: distribuzione dei voti nel tempo." },
+        { href: "/leaderboard", titolo: "Leaderboard", descrizione: "I cavalli su cui il modello e' stato addestrato e verificato." },
+      ]} />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import NameSelect from "../components/NameSelect";
 import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel, RoiRangePanel, ConclusioneEconomica } from "../components/AdvisorInsights";
 import type { Prediction, InbreedingDetail, Eligibility, RoiRange, Rivendita } from "../components/AdvisorInsights";
 import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const GRADE_COLORS: Record<string, string> = {
@@ -637,6 +638,11 @@ export default function AdvisorPage() {
           </div>
         </div>
       )}
+      <CollegamentiCorrelati voci={[
+        { href: "/validazione", titolo: "Verifica advisor", descrizione: "La prova che il consiglio funziona: test su puledri mai visti dal modello." },
+        { href: "/fattrici", titolo: "Fattrici", descrizione: "Cerca un'altra fattrice da cui partire, valutata sulla progenie." },
+        { href: "/stalloni", titolo: "Catalogo stalloni", descrizione: "Tutti gli stalloni valutati, con tasse di monta e allevamento." },
+      ]} />
     </div>
   );
 }

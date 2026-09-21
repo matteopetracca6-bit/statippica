@@ -173,3 +173,75 @@ body {
     padding: 20px 16px 36px;
   }
 }
+
+/* ────────────────────────────────────────────────────────────────
+   Movimento
+
+   Tre effetti, tenuti volutamente brevi (meno di mezzo secondo):
+   1. i pannelli di una pagina entrano dal basso, uno dopo l'altro;
+   2. le barre dei grafici si alzano da terra la prima volta;
+   3. chi ha chiesto al sistema operativo di ridurre le animazioni
+      non ne vede nessuna (ultima regola del blocco).
+   ──────────────────────────────────────────────────────────────── */
+
+@keyframes entraDalBasso {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* I figli diretti del contenitore di pagina entrano a cascata.
+   Il ritardo cresce di 60 ms per volta e si fermo al sesto: oltre,
+   l'attesa si noterebbe come lentezza invece che come eleganza. */
+/* Il riempimento e' "backwards" e non "both" di proposito: con "both"
+   la trasformazione resta applicata anche a animazione finita, e una
+   trasformazione (pure se nulla) impedisce alle intestazioni di tabella
+   di restare appiccicate in alto durante lo scorrimento. Con
+   "backwards" lo stato iniziale vale solo prima della partenza e alla
+   fine l'elemento torna del tutto normale. */
+.page-shell > * {
+  animation: entraDalBasso 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.page-shell > *:nth-child(1) { animation-delay: 0ms; }
+.page-shell > *:nth-child(2) { animation-delay: 60ms; }
+.page-shell > *:nth-child(3) { animation-delay: 120ms; }
+.page-shell > *:nth-child(4) { animation-delay: 180ms; }
+.page-shell > *:nth-child(5) { animation-delay: 240ms; }
+.page-shell > *:nth-child(n+6) { animation-delay: 300ms; }
+
+/* Barre verticali: crescono da terra. La scala agisce sull'altezza
+   senza deformare il testo, che nelle barre non c'e'. */
+@keyframes cresciSu {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.barra-su {
+  transform-origin: bottom center;
+  animation: cresciSu 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* Barre orizzontali (classifica ippodromi): crescono da sinistra. */
+@keyframes cresciDestra {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.barra-destra {
+  transform-origin: left center;
+  animation: cresciDestra 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* Numeri e valori che compaiono con un accenno di ingrandimento. */
+@keyframes entraConZoom {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+.entra-zoom { animation: entraConZoom 0.35s ease-out backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-shell > *,
+  .barra-su,
+  .barra-destra,
+  .entra-zoom,
+  .fade-in {
+    animation: none !important;
+  }
+}

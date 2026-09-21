@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, MapPin, Euro, Filter, ArrowUpDown } from "lucide-react";
+import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 interface StallionEntry {
   name: string;
@@ -419,6 +420,11 @@ export default function StallionDirectoryPage() {
         e schede individuali degli allevamenti. I prezzi si intendono + IVA salvo dove diversamente indicato.
         Alcuni stalloni hanno tariffe in USD convertite a un cambio approssimato.
       </div>
+      <CollegamentiCorrelati voci={[
+        { href: "/advisor", titolo: "Advisor", descrizione: "Prova uno di questi stalloni su una tua fattrice." },
+        { href: "/fattrici", titolo: "Fattrici", descrizione: "L'altra meta' dell'accoppiamento, valutata sulla progenie." },
+        { href: "/allevamento", titolo: "Allevamento", descrizione: "Allevatori e stazioni di monta, con la qualita' media della produzione." },
+      ]} />
     </div>
   );
 }
