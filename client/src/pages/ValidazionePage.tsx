@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import { BookOpen, FlaskConical, Ruler, Target, TrendingUp } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import { Spiegazione } from "../components/Spiegazione";
 
 const MUTED = "hsl(210 8% 45%)";
 const DIM = "hsl(210 8% 35%)";
@@ -87,7 +88,15 @@ function Section({ title, icon, children, sub }: {
         <span style={{ color: CYAN }}>{icon}</span>
         <h2 style={{ fontSize: "16px", fontWeight: 800, color: "hsl(210 10% 88%)", margin: 0 }}>{title}</h2>
       </div>
-      {sub && <p style={{ fontSize: "13px", color: MUTED, lineHeight: 1.6, margin: "0 0 14px" }}>{sub}</p>}
+      {/* Il sottotitolo di sezione era un paragrafo sempre aperto: cinque
+          sezioni, cinque paragrafi, e i grafici finivano sotto la piega.
+          Ora e' una tendina, cosi' chi conosce gia' la pagina vede subito i
+          risultati e chi no puo' sempre aprirla. */}
+      {sub && (
+        <div style={{ marginBottom: "14px" }}>
+          <Spiegazione titolo="Che cosa mostra questa sezione" compatta>{sub}</Spiegazione>
+        </div>
+      )}
       {children}
     </section>
   );
@@ -142,12 +151,12 @@ function ScatterPlot({ points }: { points: { pred: number; actual: number }[] })
         <text x={12} y={H / 2} textAnchor="middle" fontSize={11} fill={MUTED}
           transform={`rotate(-90 12 ${H / 2})`}>voto realmente ottenuto</text>
       </svg>
-      <div style={{ fontSize: "11px", color: DIM, marginTop: "8px", lineHeight: 1.5 }}>
+      <Spiegazione titolo="Come si legge questo grafico" compatta>
         Ogni puntino e' un puledro nato dopo il 2019, che il modello non aveva mai visto.
         La linea arancione e' la media reale per fascia di previsione: se sale da sinistra
         a destra, vuol dire che una previsione piu' alta corrisponde davvero a cavalli
         migliori. La nuvola resta larga perche' il singolo puledro non e' prevedibile.
-      </div>
+      </Spiegazione>
     </div>
   );
 }
@@ -181,19 +190,21 @@ export default function ValidazionePage() {
       <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>
         Il consiglio funziona davvero?
       </h1>
-      <p style={{ fontSize: "14px", color: MUTED, lineHeight: 1.65, margin: "0 0 30px" }}>
-        Un consiglio di accoppiamento e' facile da scrivere e difficile da dimostrare.
-        Questa pagina mette alla prova l'Advisor nell'unico modo onesto: gli si nascondono
-        i puledri nati dopo il {data.cutoff_year}, lo si addestra solo su quelli nati prima,
-        e poi gli si chiede di ordinare i figli che non ha mai visto. Se l'ordine che
-        propone somiglia a quello vero, il metodo funziona.
-      </p>
+      <div style={{ marginBottom: "26px" }}>
+        <Spiegazione titolo="Che cosa dimostra questa pagina" compatta>
+          Un consiglio di accoppiamento e&apos; facile da scrivere e difficile da dimostrare.
+          Questa pagina mette alla prova l&apos;Advisor nell&apos;unico modo onesto: gli si
+          nascondono i puledri nati dopo il {data.cutoff_year}, lo si addestra solo su quelli
+          nati prima, e poi gli si chiede di ordinare i figli che non ha mai visto. Se
+          l&apos;ordine che propone somiglia a quello vero, il metodo funziona.
+        </Spiegazione>
+      </div>
 
       <Section
         title="Come e' stata fatta la prova"
         icon={<FlaskConical size={17} />}
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px" }}>
           {[
             { k: "Puledri per imparare", v: data.n_train.toLocaleString("it-IT"), n: `nati fino al ${data.cutoff_year}` },
             { k: "Puledri per la prova", v: data.n_test.toLocaleString("it-IT"), n: `nati dal ${data.test_years[0]} al ${data.test_years[1]}, mai visti` },
@@ -271,7 +282,7 @@ export default function ValidazionePage() {
                 <div style={{ fontSize: "20px", fontWeight: 800, color: CYAN }}>{advisor.spearman.toFixed(3)}</div>
               </div>
             </div>
-            <p style={{ fontSize: "12.5px", color: TEXT, lineHeight: 1.65, margin: 0 }}>
+            <Spiegazione titolo="Perche' esiste un tetto, e perche' e' basso" compatta>
               L'ereditabilita' dei guadagni nel trotto misurata dalla letteratura sta fra{" "}
               {ceil.heritability_usata.guadagni_basso} e {ceil.heritability_usata.guadagni_alto}.
               Da questa si ricava, con {ceil.formula}, il massimo che qualunque previsione
@@ -279,7 +290,7 @@ export default function ValidazionePage() {
               {advisor.spearman.toFixed(3)}: vicino al limite inferiore di quel tetto.
               Un modello che dichiarasse 0,80 su questi dati non sarebbe bravo, starebbe
               sbagliando la prova.
-            </p>
+            </Spiegazione>
             <div style={{ fontSize: "10.5px", color: DIM, marginTop: "10px", lineHeight: 1.5 }}>
               Ereditabilita' di riferimento da: {ceil.fonti.join(" · ")}
             </div>
@@ -396,8 +407,12 @@ export default function ValidazionePage() {
                     </span>
                   </div>
                 ))}
-                <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.55, marginTop: "9px", paddingTop: "9px", borderTop: BORDER }}>
-                  {s.note}{s.nota_nonna ? " " + s.nota_nonna : ""}
+                {/* La nota di ogni scenario e' un paragrafo: tre scenari
+                    facevano tre paragrafi fra i numeri che contano. */}
+                <div style={{ marginTop: "9px", paddingTop: "9px", borderTop: BORDER }}>
+                  <Spiegazione titolo="Che cosa dice questo scenario" compatta>
+                    {s.note}{s.nota_nonna ? " " + s.nota_nonna : ""}
+                  </Spiegazione>
                 </div>
               </div>
             ))}

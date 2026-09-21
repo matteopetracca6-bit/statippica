@@ -334,7 +334,7 @@ export default function StallionPage() {
 
       {/* Prev/Next navigation */}
       {neighbors && (neighbors.prev || neighbors.next) && (
-        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+        <div className="navigazione-vicini" style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
           <StallionNavArrow direction="prev" neighbor={neighbors.prev} onClick={navigateTo} />
           <StallionNavArrow direction="next" neighbor={neighbors.next} onClick={navigateTo} />
         </div>
@@ -578,7 +578,11 @@ export default function StallionPage() {
           {/* Top children */}
           <div style={panelStyle}>
             <div style={panelTitle}>Top prodotti (per guadagni)</div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            {/* Otto colonne non si stringono sotto una certa larghezza: invece
+                di tagliarle fuori dallo schermo, la tabella scorre dentro il
+                suo riquadro. */}
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
                   {["Cavallo", "Anno", "Voto", "Score", "Guadagni", "Record", "Win%", "% vs fratelli"].map(h => (
@@ -610,6 +614,7 @@ export default function StallionPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Grade earnings map (context for ROI) */}

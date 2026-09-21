@@ -6,6 +6,7 @@ import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, MapPin, Euro, Filter, ArrowUpDown } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import { Spiegazione } from "../components/Spiegazione";
 
 interface StallionEntry {
   name: string;
@@ -160,9 +161,15 @@ export default function StallionDirectoryPage() {
           Stalloni
         </h1>
         <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)", margin: 0 }}>
-          {stats.total} stalloni con produzione valutata. Spunta "Solo monta 2026" per vedere
-          soltanto quelli disponibili in Italia questa stagione. Fonti: Trot Stallions Directory e ANACT.
+          {stats.total} stalloni con produzione valutata.
         </p>
+        {/* L'istruzione sul filtro e le fonti non servono a chi guarda la
+            classifica: erano due righe di testo prima dei dati. */}
+        <Spiegazione titolo="Il filtro della stagione e le fonti" compatta>
+          Spuntando &quot;Solo monta 2026&quot; restano soltanto gli stalloni disponibili in
+          Italia in questa stagione. I dati vengono da Trot Stallions Directory e dal Libro
+          Stalloni ANACT.
+        </Spiegazione>
       </div>
 
       {/* Summary cards */}
@@ -416,9 +423,12 @@ export default function StallionDirectoryPage() {
         fontSize: "11px", color: "hsl(210 8% 38%)", marginTop: "24px", padding: "12px 16px",
         background: "hsl(220 12% 9%)", borderRadius: "8px", border: "1px solid hsl(220 10% 14%)",
       }}>
-        Dati raccolti da Trot Stallions Directory (stagione 2026), ANACT Libro Stalloni,
-        e schede individuali degli allevamenti. I prezzi si intendono + IVA salvo dove diversamente indicato.
-        Alcuni stalloni hanno tariffe in USD convertite a un cambio approssimato.
+        <Spiegazione titolo="Come leggere i prezzi di monta" compatta>
+          Dati raccolti da Trot Stallions Directory (stagione 2026), ANACT Libro Stalloni e
+          schede individuali degli allevamenti. I prezzi si intendono + IVA salvo dove
+          diversamente indicato; alcuni stalloni hanno tariffe in dollari, convertite a un
+          cambio approssimato.
+        </Spiegazione>
       </div>
       <CollegamentiCorrelati voci={[
         { href: "/advisor", titolo: "Advisor", descrizione: "Prova uno di questi stalloni su una tua fattrice." },

@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import { Spiegazione } from "../components/Spiegazione";
 
 /**
  * SEZIONE FATTRICI.
@@ -119,11 +120,11 @@ export default function MaresPage() {
           Fattrici
         </h1>
       </div>
-      <p style={{ fontSize: "13px", color: "hsl(210 8% 60%)", margin: "0 0 20px", maxWidth: "760px", lineHeight: 1.55 }}>
+      <Spiegazione titolo="Come si vota una fattrice" compatta>
         Il voto di una fattrice viene dalla progenie, non dalla sua carriera: quello che conta è
         quanto valgono i figli che ha prodotto. La sua carriera, quando la conosciamo, è mostrata
         nella scheda come contesto di lettura.
-      </p>
+      </Spiegazione>
 
       {/* Filtri */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "18px" }}>

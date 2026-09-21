@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, Filter, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import { Spiegazione } from "../components/Spiegazione";
 
 /**
  * SEZIONE QUALIFICHE.
@@ -134,12 +135,14 @@ export default function QualifichePage() {
       <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
         Qualifiche
       </h1>
-      <p style={{ fontSize: "13px", color: "hsl(210 8% 60%)", margin: "0 0 20px", maxWidth: "820px", lineHeight: 1.55 }}>
-        La prova di qualifica è il primo tempo ufficiale di un cavallo, sostenuta da giovane prima
-        di poter correre. Per molti di questi soggetti è l'unica informazione esistente: non hanno
-        ancora una carriera e quindi nemmeno un voto. Il tempo è al chilometro, quindi più basso è
-        meglio è.
-      </p>
+      <div style={{ marginBottom: "20px" }}>
+        <Spiegazione titolo="Che cos&#39;e&#39; la prova di qualifica" compatta>
+          La prova di qualifica e&apos; il primo tempo ufficiale di un cavallo, sostenuta da
+          giovane prima di poter correre. Per molti di questi soggetti e&apos; l&apos;unica
+          informazione esistente: non hanno ancora una carriera e quindi nemmeno un voto. Il
+          tempo e&apos; al chilometro, quindi piu&apos; basso e&apos; meglio e&apos;.
+        </Spiegazione>
+      </div>
 
       {/* Riepilogo */}
       {stats && (
@@ -350,9 +353,9 @@ export default function QualifichePage() {
         </div>
       )}
 
-      <p style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "28px", lineHeight: 1.6 }}>
+      <Spiegazione titolo="Da dove vengono questi numeri" compatta>
         Fonte dei dati di qualifica: VendoPuledri. Aggiornati ogni notte.
-      </p>
+      </Spiegazione>
       <CollegamentiCorrelati voci={[
         { href: "/leaderboard", titolo: "Leaderboard", descrizione: "I cavalli che hanno gia' una carriera in corso." },
         { href: "/advisor", titolo: "Advisor", descrizione: "Stima quanto vale un puledro prima che debutti." },

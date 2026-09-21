@@ -3,6 +3,7 @@ import { useRoute } from "wouter";
 import BreedersPage from "./BreedersPage";
 import StudFarmsPage from "./StudFarmsPage";
 import { Warehouse, MapPin } from "lucide-react";
+import { Spiegazione } from "../components/Spiegazione";
 
 /**
  * ALLEVAMENTO: UNA SOLA SCHEDA, DUE ELENCHI.
@@ -39,12 +40,12 @@ export default function AllevamentoHubPage() {
       <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
         Allevamento
       </h1>
-      <p style={{ fontSize: "13px", color: "hsl(210 8% 60%)", margin: "0 0 18px", maxWidth: "840px", lineHeight: 1.55 }}>
+      <Spiegazione titolo="Che differenza c&#39;e&#39; fra i due elenchi" compatta>
         Due elenchi diversi nello stesso posto: gli allevatori, cioè chi ha materialmente allevato
         i cavalli, e le stazioni di monta, cioè i centri dove stanno gli stalloni. Il voto medio,
         in entrambi i casi, tiene conto solo dei cavalli che hanno già corso abbastanza da essere
         valutati.
-      </p>
+      </Spiegazione>
 
       <div style={{ display: "flex", gap: "8px", marginBottom: "22px", flexWrap: "wrap" }}>
         {tabs.map(t => {

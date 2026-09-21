@@ -3,6 +3,7 @@ import { useLocation, useParams, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import { ArrowLeft } from "lucide-react";
+import { Spiegazione } from "../components/Spiegazione";
 
 /**
  * Scheda di una FATTRICE: voto sulla progenie + elenco dei figli.
@@ -162,10 +163,10 @@ export default function MarePage() {
       <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>
         La sua carriera
       </h2>
-      <p style={{ fontSize: "12px", color: "hsl(210 8% 55%)", margin: "0 0 10px", maxWidth: "720px", lineHeight: 1.5 }}>
+      <Spiegazione titolo="Perche&#39; qui non c&#39;e&#39; l&#39;elenco delle gare" compatta>
         Sono i totali di carriera, non l'elenco delle singole corse: per i riproduttori la fonte
         fornisce solo i dati aggregati. Non incidono sul voto della progenie, servono a leggerlo.
-      </p>
+      </Spiegazione>
       {ownRaces > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "24px" }}>
           <Stat label="Corse" value={String(ownRaces)} />

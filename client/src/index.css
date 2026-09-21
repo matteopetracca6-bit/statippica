@@ -286,3 +286,46 @@ body {
   .navigazione-vicini { flex-wrap: wrap; }
   .navigazione-vicini > button { max-width: none !important; flex: 1 1 100% !important; }
 }
+
+/* Riga del pronostico gara: sei colonne (posizione, medaglia, nome, voto,
+   punteggio, barra della stima) stanno su un computer ma non in 341 pixel,
+   dove la barra veniva tagliata fuori dallo schermo. Su telefono la medaglia
+   spa
+isce - la posizione la dice gia' - e la barra passa a riga propria,
+   dove ha tutta la larghezza. */
+@media (max-width: 560px) {
+  .riga-pronostico {
+    grid-template-columns: 26px 1fr auto auto !important;
+    gap: 8px 10px !important;
+    padding: 10px 12px !important;
+  }
+  .riga-pronostico > svg,
+  .riga-pronostico > span[style*="width: 14px"] {
+    display: none;
+  }
+  .riga-pronostico .barra-stima {
+    grid-column: 1 / -1;
+    min-width: 0 !important;
+  }
+}
+
+/* Anteprima del podio nell'intestazione di una gara: tre nomi di cavallo
+   affiancati chiedono circa 500 pixel e su un telefono spingevano la riga
+   fuori dallo schermo. Li' l'anteprima sparisce: aprendo la gara il podio
+   si vede per intero, in colonna e con i numeri accanto. */
+@media (max-width: 620px) {
+  .podio-anteprima { display: none !important; }
+}
+
+/* Etichette degli anni sotto i grafici a barre. Su un telefono tredici anni
+   si dividono poco piu' di 300 pixel: ogni etichetta ne ha 16 e "2012" ne
+   chiede 22, quindi i numeri si sovrapponevano e diventavano tutti
+   illeggibili. Ruotate di 90 gradi la larghezza non serve piu'. */
+@media (max-width: 560px) {
+  .etichetta-anno {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    margin-top: 4px;
+    letter-spacing: 0;
+  }
+}

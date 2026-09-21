@@ -132,7 +132,7 @@ export default function CalendarPage() {
                   onClick={() => setExpandedRace(expanded ? null : key)}
                   style={{
                     display: "flex", alignItems: "center", gap: "16px",
-                    padding: "16px 20px", cursor: "pointer",
+                    padding: "16px 20px", cursor: "pointer", minWidth: 0,
                     transition: "background 0.15s",
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 13%)"}
@@ -175,7 +175,7 @@ export default function CalendarPage() {
 
                   {/* Podium preview */}
                   {top3.length >= 3 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <div className="podio-anteprima" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       {top3.map((e, idx) => (
                         <div key={idx} style={{
                           display: "flex", alignItems: "center", gap: "4px",
@@ -223,7 +223,7 @@ export default function CalendarPage() {
                         const podiumColor = idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : idx === 2 ? "hsl(30 70% 50%)" : "hsl(210 8% 40%)";
                         const podiumBg = idx === 0 ? "hsl(51 80% 50% / 0.06)" : idx === 1 ? "hsl(0 0% 70% / 0.04)" : idx === 2 ? "hsl(30 70% 50% / 0.04)" : "transparent";
                         return (
-                          <div key={`${entry.horse_name}-${idx}`} style={{
+                          <div key={`${entry.horse_name}-${idx}`} className="riga-pronostico" style={{
                             display: "grid",
                             gridTemplateColumns: "28px 24px 1fr auto auto auto",
                             alignItems: "center", gap: "12px",
@@ -283,7 +283,7 @@ export default function CalendarPage() {
                             </div>
 
                             {/* Win estimate bar */}
-                            <div style={{ minWidth: "100px", display: "flex", alignItems: "center", gap: "8px" }}>
+                            <div className="barra-stima" style={{ minWidth: "100px", display: "flex", alignItems: "center", gap: "8px" }}>
                               <div style={{ flex: 1, height: "8px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden" }}>
                                 <div style={{
                                   height: "100%", width: `${Math.min(entry.win_estimate * 2, 100)}%`,

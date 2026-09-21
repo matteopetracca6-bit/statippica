@@ -213,7 +213,11 @@ export default function TrendsPage() {
                           />
                         ))}
                       </div>
-                      <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yd.year}</span>
+                      {/* Tredici anni su 340 pixel danno 16 pixel a etichetta:
+                          "2012" ne chiede 22, quindi i numeri si accavallavano e
+                          non se ne leggeva nessuno. Su telefono l'etichetta
+                          ruota in verticale, dove la larghezza non serve piu'. */}
+                      <span className="tabular etichetta-anno" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yd.year}</span>
                     </div>
                   );
                 })}

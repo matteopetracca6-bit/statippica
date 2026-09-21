@@ -30,6 +30,10 @@ export function Spiegazione({
       className="spiegazione"
       style={{
         marginTop: compatta ? 8 : 12,
+        // I paragrafi che questa tendina ha sostituito avevano uno spazio sotto:
+        // senza, la riga col punto interrogativo si incollava al contenuto
+        // successivo e sembrava farne parte.
+        marginBottom: 12,
         borderTop: compatta ? "none" : "1px solid hsl(220 10% 16%)",
         paddingTop: compatta ? 0 : 10,
       }}
