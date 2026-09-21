@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
-import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 import NameSelect from "../components/NameSelect";
 import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel, RoiRangePanel, ConclusioneEconomica } from "../components/AdvisorInsights";
 import type { Prediction, InbreedingDetail, Eligibility, RoiRange, Rivendita } from "../components/AdvisorInsights";
@@ -91,7 +91,7 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
     staleTime: 120000,
   });
 
-  if (isLoading) return <TrottingHorseLoader label="Simulazione in corso..." />;
+  if (isLoading) return <CavalloCaricamento label="Simulazione in corso..." />;
 
   if (!sim) return <div style={{ padding: "16px", color: "hsl(210 8% 45%)", fontSize: "13px" }}>Errore caricamento simulazione.</div>;
 
@@ -280,7 +280,7 @@ function ComparePanel({ mare, stallions, onClear }: { mare: string; stallions: s
         }}>Azzera</button>
       </div>
 
-      {isLoading ? <TrottingHorseLoader label="Calcolo il confronto..." /> : (
+      {isLoading ? <CavalloCaricamento label="Calcolo il confronto..." /> : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "620px" }}>
             <thead>
@@ -445,7 +445,7 @@ export default function AdvisorPage() {
       </form>
 
       {/* Loading */}
-      {isPending && <TrottingHorseLoader label="Ricerca stalloni compatibili..." />}
+      {isPending && <CavalloCaricamento label="Ricerca stalloni compatibili..." />}
 
       {/* Not found */}
       {data && !data.found && (

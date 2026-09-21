@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { getFlag } from "@/lib/flags";
-import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 
 const GRADE_ORDER = ["SSS","SS","S","A","B","C","D","E","F"] as const;
 const GRADE_COLOR: Record<string,string> = {
@@ -236,7 +236,7 @@ export default function ComparePage() {
       </div>
 
       {/* Loading */}
-      {isLoading && <TrottingHorseLoader label="Caricamento confronto..." />}
+      {isLoading && <CavalloCaricamento label="Caricamento confronto..." />}
 
       {/* Not found messages */}
       {data && !h1 && sel1 && (

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 import { useState, useMemo } from "react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
@@ -113,7 +113,7 @@ export default function TrendsPage() {
       </div>
 
       {isLoading ? (
-        <TrottingHorseLoader label="Caricamento trend..." />
+        <CavalloCaricamento label="Caricamento trend..." />
       ) : !data ? (
         <div style={{ color: "hsl(210 8% 45%)", padding: "40px" }}>Nessun dato.</div>
       ) : (

@@ -6,7 +6,7 @@ import HorseSearchBar from "../components/HorseSearchBar";
 import Wordmark from "../components/Wordmark";
 import logoHorse from "@assets/statippica-logo.png";
 import GradeBadge from "../components/GradeBadge";
-import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,

@@ -13,7 +13,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 import { BookOpen, FlaskConical, Ruler, Target, TrendingUp } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
@@ -168,7 +168,7 @@ export default function ValidazionePage() {
     staleTime: 600000,
   });
 
-  if (isLoading) return <TrottingHorseLoader label="Carico la verifica del modello..." />;
+  if (isLoading) return <CavalloCaricamento label="Carico la verifica del modello..." />;
   // Guardia: se la verifica non e' stata ancora generata, meglio un messaggio
   // che una pagina bianca. Senza questo controllo un campo mancante faceva
   // sparire tutto il sito, non solo questa sezione.

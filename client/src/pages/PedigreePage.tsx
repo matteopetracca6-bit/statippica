@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
-import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 import { Dna } from "lucide-react";
 import NameSelect from "../components/NameSelect";
 import InbreedingPanel from "../components/InbreedingPanel";
@@ -249,7 +249,7 @@ export default function PedigreePage() {
         </div>
       </div>
 
-      {isLoading && <TrottingHorseLoader label="Costruzione albero genealogico..." size={120} />}
+      {isLoading && <CavalloCaricamento label="Costruzione albero genealogico..." size={120} />}
 
       {error && search && !isLoading && (
         <div style={{

@@ -3,7 +3,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
-import TrottingHorseLoader from "../components/TrottingHorseLoader";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 import { useState, useMemo } from "react";
 
 interface Farm {
@@ -111,7 +111,7 @@ export default function StudFarmsPage({ embedded = false }: { embedded?: boolean
       )}
 
       {isLoading ? (
-        <TrottingHorseLoader label="Caricamento allevamenti..." />
+        <CavalloCaricamento label="Caricamento allevamenti..." />
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px", color: "hsl(210 8% 38%)", fontSize: "14px" }}>
           Nessun allevamento trovato.
