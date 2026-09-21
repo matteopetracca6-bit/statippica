@@ -27,6 +27,10 @@ interface HorseData {
   score: number;
   earn_percentile: number;
   time_percentile: number;
+  stagioni_corse?: number | null;
+  stagioni_possibili?: number | null;
+  tenuta_percentile?: number | null;
+  integrita_percentile?: number | null;
   sire_percentile: number;
   rating_mode: string;
   win_rate: number;
@@ -369,8 +373,22 @@ export default function HorsePage() {
           <div style={panelTitle}>Percentili generazione {horse.birth_year}</div>
           <PercentileBar label="Guadagni" value={horse.earn_percentile} />
           <PercentileBar label="Miglior tempo" value={horse.time_percentile} />
+          {horse.tenuta_percentile != null && (
+            <PercentileBar label="Stagioni corse" value={horse.tenuta_percentile} />
+          )}
+          {horse.integrita_percentile != null && (
+            <PercentileBar label="Continuita' per la sua eta'" value={horse.integrita_percentile} />
+          )}
           {horse.sire_percentile != null && (
             <PercentileBar label={`vs fratellastri (${horse.sire})`} value={horse.sire_percentile} />
+          )}
+          {horse.stagioni_corse != null && horse.stagioni_possibili != null && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
+              Ha corso in {horse.stagioni_corse}{" "}
+              {horse.stagioni_corse === 1 ? "stagione" : "stagioni"} sulle{" "}
+              {horse.stagioni_possibili} che poteva correre alla sua eta'. Il voto tiene conto
+              anche di questo: una carriera lunga vale piu' di una stagione brillante.
+            </div>
           )}
         </div>
       )}

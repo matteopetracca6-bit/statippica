@@ -4,7 +4,10 @@ services:
     runtime: node
     region: frankfurt
     plan: free
-    buildCommand: npm install && npm run build && cp data.db /data/data.db
+    # L'archivio viaggia compresso: da aperto supera i 100 MB che GitHub
+    # accetta per un singolo file, da compresso sta in meno di 30. Va quindi
+    # riaperto qui, sul disco di Render, prima che il sito parta.
+    buildCommand: npm install && npm run build && gunzip -c data.db.gz > /data/data.db
     startCommand: NODE_ENV=production node dist/index.cjs
     envVars:
       - key: NODE_ENV

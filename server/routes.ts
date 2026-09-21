@@ -96,7 +96,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
                h.career_races, h.career_wins, h.career_places, h.career_earnings, h.record_career,
                h.record_short, h.record_long,
                hr.grade, hr.score, hr.earn_percentile, hr.time_percentile,
-               hr.sire_percentile, hr.rating_mode, hr.win_rate
+               hr.sire_percentile, hr.rating_mode, hr.win_rate,
+               hr.stagioni_corse, hr.stagioni_possibili,
+               hr.tenuta_percentile, hr.integrita_percentile
         FROM horses h
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
                                   AND hr.rating_mode = 'performance'
@@ -965,18 +967,40 @@ export function registerRoutes(httpServer: Server, app: Express) {
   app.get("/api/trends", (_req, res) => {
     const db = getDb();
     try {
-      // Grade distribution by birth year (last 15 years)
+      // Distribuzione dei voti per anno di nascita.
+      //
+      // Il filtro sul numero di cavalli non e' un dettaglio estetico. Le annate
+      // ai bordi dell'archivio hanno pochissimi soggetti — il 2010 ne aveva
+      // otto, sopravvissuti per caso — e producono medie prive di significato:
+      // il guadagno medio di quegli otto era 238.000 euro contro i 29.000 del
+      // 2012, e il grafico mostrava una prima colonna otto volte piu' alta di
+      // tutte le altre. Non era un andamento, era un artefatto.
+      const ANNATA_MINIMA = 200;
       const gradeByYear = db.prepare(`
         SELECT birth_year, grade, COUNT(*) as cnt
         FROM horse_ratings
         WHERE rating_mode = 'performance'
           AND grade IS NOT NULL
           AND birth_year >= 2010
+          AND birth_year IN (
+            SELECT birth_year FROM horse_ratings
+            WHERE rating_mode = 'performance' AND birth_year IS NOT NULL
+            GROUP BY birth_year HAVING COUNT(*) >= ?
+          )
         GROUP BY birth_year, grade
         ORDER BY birth_year ASC
-      `).all() as any[];
+      `).all(ANNATA_MINIMA) as any[];
 
-      // Avg earnings by birth year
+      // Guadagno medio per annata di nascita.
+      //
+      // Letto senza avvertenze questo grafico mente. Passa da 38.000 euro nel
+      // 2014 a 65 euro nel 2024 e sembra il crollo del trotto italiano; in
+      // realta' i nati nel 2024 hanno due anni e devono ancora correre. Non e'
+      // un andamento del settore, e' l'eta' dei cavalli. Marchiamo quindi le
+      // annate che hanno finito la carriera, cosi' la pagina puo' dire quali
+      // colonne sono confrontabili fra loro e quali no.
+      const annoCorrente = new Date().getFullYear();
+      const ETA_CARRIERA_CONCLUSA = 10;
       const earningsByYear = db.prepare(`
         SELECT birth_year,
                COUNT(*) as n_horses,
@@ -989,8 +1013,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
           AND birth_year >= 2010
           AND career_races > 0
         GROUP BY birth_year
+        HAVING COUNT(*) >= ?
         ORDER BY birth_year ASC
-      `).all() as any[];
+      `).all(ANNATA_MINIMA) as any[];
 
       // Total races and horses per year (from races table)
       const racesPerYear = db.prepare(`
@@ -1021,7 +1046,26 @@ export function registerRoutes(httpServer: Server, app: Express) {
         LIMIT 15
       `).all() as any[];
 
-      res.json({ gradeByYear, earningsByYear, racesPerYear, topTracks });
+      const guadagniPerAnnata = earningsByYear.map((r: any) => ({
+        ...r,
+        eta: annoCorrente - r.birth_year,
+        carriera_conclusa: annoCorrente - r.birth_year >= ETA_CARRIERA_CONCLUSA,
+      }));
+
+      res.json({
+        gradeByYear,
+        earningsByYear: guadagniPerAnnata,
+        racesPerYear,
+        topTracks,
+        nota_annate: {
+          annata_minima: ANNATA_MINIMA,
+          eta_carriera_conclusa: ETA_CARRIERA_CONCLUSA,
+          avvertenza:
+            "Le annate recenti guadagnano meno perche' i cavalli sono giovani e " +
+            "devono ancora correre, non perche' il settore stia calando. Sono " +
+            "confrontabili fra loro solo le annate con la carriera conclusa.",
+        },
+      });
     } finally { db.close(); }
   });
 

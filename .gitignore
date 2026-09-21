@@ -14,3 +14,7 @@ data.db-journal
 *.log
 .DS_Store
 __pycache__/
+
+# L archivio compresso sta in git (data.db.gz); il file aperto viene
+# ricreato al momento del deploy e resta solo in locale.
+data.db

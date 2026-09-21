@@ -26,7 +26,8 @@ function conAlfa(hsl: string, alfa: number): string {
 
 interface TrendsData {
   gradeByYear: { birth_year: number; grade: string; cnt: number }[];
-  earningsByYear: { birth_year: number; n_horses: number; avg_earnings: number; avg_races: number; avg_wins: number; avg_win_rate: number }[];
+  earningsByYear: { birth_year: number; n_horses: number; avg_earnings: number; avg_races: number; avg_wins: number; avg_win_rate: number; eta?: number; carriera_conclusa?: boolean }[];
+  nota_annate?: { annata_minima: number; eta_carriera_conclusa: number; avvertenza: string };
   racesPerYear: { year: string; n_races: number; n_horses: number; avg_prize: number; total_prize: number }[];
   topTracks: { track: string; n_races: number; avg_prize: number; total_prize: number }[];
 }
@@ -229,6 +230,14 @@ export default function TrendsPage() {
               <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Guadagno medio per anno di nascita
               </div>
+              {/* Senza questa riga il grafico si legge come un crollo del
+                  settore, mentre e' soltanto l'eta' dei cavalli: i nati di
+                  recente devono ancora correre. */}
+              <div style={{ fontSize: "12px", color: "hsl(210 8% 55%)", marginBottom: "18px", lineHeight: 1.55, maxWidth: "70ch" }}>
+                Le annate recenti guadagnano meno perche&apos; i cavalli sono ancora giovani e
+                devono correre, non perche&apos; il settore stia calando. Sono confrontabili fra
+                loro solo le colonne piene, cioe&apos; le annate che hanno concluso la carriera.
+              </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
                 {data.earningsByYear.map((yr, idxAnno) => (
                   <div
@@ -255,6 +264,11 @@ export default function TrendsPage() {
                         <div style={{ color: "hsl(210 8% 55%)" }}>{yr.n_horses} cavalli</div>
                         <div style={{ color: "hsl(210 8% 55%)" }}>{fmt(yr.avg_races)} gare medie</div>
                         <div style={{ color: "hsl(100 50% 55%)" }}>{yr.avg_win_rate}% win rate</div>
+                        {yr.carriera_conclusa === false && (
+                          <div style={{ color: "hsl(51 60% 60%)", marginTop: "4px" }}>
+                            carriera non conclusa: {yr.eta} anni
+                          </div>
+                        )}
                       </div>
                     )}
                     <span className="tabular" style={{ fontSize: "10px", color: "hsl(51 70% 55%)", fontWeight: 700 }}>
@@ -263,9 +277,14 @@ export default function TrendsPage() {
                     <div className="barra-su" style={{
                       animationDelay: `${Math.min(idxAnno, 14) * 45}ms`,
                       width: "100%", height: `${(yr.avg_earnings / maxEarnings) * 200}px`,
-                      background: hoveredBar === `earn-${yr.birth_year}`
-                        ? "linear-gradient(180deg, hsl(51 90% 60%), hsl(30 80% 50%))"
-                        : "linear-gradient(180deg, hsl(51 80% 55%), hsl(30 70% 45%))",
+                      // Colonna piena = carriera conclusa, quindi confrontabile.
+                      // Colonna a tratteggio = annata ancora in corsa.
+                      background: yr.carriera_conclusa === false
+                        ? "repeating-linear-gradient(135deg, hsl(51 40% 40%) 0 5px, transparent 5px 10px)"
+                        : hoveredBar === `earn-${yr.birth_year}`
+                          ? "linear-gradient(180deg, hsl(51 90% 60%), hsl(30 80% 50%))"
+                          : "linear-gradient(180deg, hsl(51 80% 55%), hsl(30 70% 45%))",
+                      border: yr.carriera_conclusa === false ? "1px solid hsl(51 40% 35%)" : "none",
                       borderRadius: "4px 4px 0 0",
                       transition: "background 0.2s, height 0.4s ease",
                     }} />

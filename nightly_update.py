@@ -20,6 +20,7 @@ Fasi:
 Output finale su stdout (ultima riga): JSON con chiavi new_horses, new_races, horses_updated, horses_backfilled
 """
 
+import bisect
 import os
 import re
 import json
@@ -197,6 +198,42 @@ GRADE_WEIGHTS = {
     "SSS": 100, "SS": 85, "S": 70, "A": 55, "B": 40,
     "C": 25, "D": 15, "E": 8, "F": 2
 }
+
+# ─────────────────────────────────────────────
+# PESI DEL VOTO AI CAVALLI
+#
+# La formula precedente era: guadagni 0,50 · record 0,30 · vittorie 0,20, con
+# la percentuale di vittorie presa alla lettera. Produceva un risultato
+# indifendibile: American Kronos, otto corse e 66.878 euro, risultava il primo
+# cavallo dell'archivio, davanti a Vivid Wise As che ne ha incassati 3,4
+# milioni in 105 corse. Le cause erano due.
+#
+# La prima: otto vittorie su otto davano i venti punti pieni, mentre chi ne
+# vince venticinque su novantatre ne prendeva cinque. Un rendimento misurato
+# su otto prove non e' confrontabile con uno misurato su novanta, e va tirato
+# verso la media finche' le prove non bastano.
+#
+# La seconda, piu' pesante: il record sul chilometro valeva 0,30, quasi quanto
+# i guadagni. Ma il record e' il singolo giorno migliore di una carriera:
+# premiarlo cosi' tanto e' proprio il difetto da togliere. Sceso a 0,15.
+#
+# Mancava infine qualunque misura della tenuta, che e' la variabile piu'
+# importante economicamente: la tavola di sopravvivenza di questo progetto
+# mostra che i guadagni stanno negli anni in pista, non nel colpo singolo.
+# ─────────────────────────────────────────────
+PESO_GUADAGNI = 0.45
+PESO_RECORD = 0.15
+PESO_VITTORIE = 0.15
+PESO_TENUTA = 0.125      # stagioni corse, in assoluto
+PESO_INTEGRITA = 0.125   # stagioni corse su quelle che poteva correre
+
+# Quante "corse fantasma" a rendimento medio si aggiungono per correggere la
+# percentuale di vittorie. Con venti, un cavallo da venti corse pesa per meta'
+# se stesso e per meta' la popolazione; a novanta corse la correzione sparisce.
+RICHIAMO_VITTORIE = 20
+
+# Oltre questa eta' non si pretende che un cavallo sia ancora in pista.
+ETA_FINE_CARRIERA = 10
 
 # Soglie rating cavalli (performance) — calcolate dinamicamente sui percentili
 # del dataset reale (sostituite a runtime da build_horse_grade_thresholds).
@@ -489,6 +526,13 @@ def init_db(conn: sqlite3.Connection):
         ("rating_mode",      "TEXT DEFAULT 'performance'"),
         # 'athlete' | 'breeder': il sito filtra le classifiche su questa colonna
         ("horse_class",      "TEXT"),
+        # Tenuta: stagioni davvero corse, stagioni che poteva correre e i due
+        # percentili che ne derivano. Salvati perche' la scheda del cavallo
+        # deve poter spiegare da dove viene il voto.
+        ("stagioni_corse",        "INTEGER"),
+        ("stagioni_possibili",    "INTEGER"),
+        ("tenuta_percentile",     "REAL"),
+        ("integrita_percentile",  "REAL"),
         ("last_updated",     "TEXT"),
     ]:
         try:
@@ -2047,6 +2091,28 @@ def phase_ratings(conn: sqlite3.Connection):
               f"di {len(pool)} cavalli, esclusi dal calcolo dei percentili.",
               file=sys.stderr)
 
+    # Stagioni effettivamente corse: la misura diretta della tenuta. Diventa
+    # utilizzabile solo da quando le date delle gare sono state recuperate.
+    stagioni_corse: dict[str, int] = {}
+    for nome_g, n_st in conn.execute("""
+        SELECT horse_name, COUNT(DISTINCT substr(race_date, 1, 4))
+        FROM races WHERE race_date LIKE '____-%' GROUP BY horse_name
+    """):
+        stagioni_corse[(nome_g or "").strip().upper()] = n_st
+
+    anno_corrente = datetime.utcnow().year
+
+    def stagioni_possibili(birth_year) -> int:
+        """Stagioni che il cavallo ha AVUTO a disposizione.
+
+        Si debutta a due anni e oltre i dieci non si pretende che corra ancora.
+        Serve a non confondere "carriera corta" con "carriera non ancora
+        finita": senza questo, un tre anni verrebbe punito per essere giovane.
+        """
+        if not birth_year:
+            return 1
+        return max(1, min(anno_corrente, birth_year + ETA_FINE_CARRIERA) - birth_year - 1)
+
     # Percentili earnings
     all_earnings = sorted([r[5] for r in pool if r[5]])
     n_earn = len(all_earnings)
@@ -2054,7 +2120,7 @@ def phase_ratings(conn: sqlite3.Connection):
     def earn_pct(earnings: float) -> float:
         if n_earn == 0 or not earnings:
             return 0.0
-        pos = sum(1 for e in all_earnings if e <= earnings)
+        pos = bisect.bisect_right(all_earnings, earnings)
         return round(pos / n_earn * 100, 2)
 
     all_times = sorted([t for r in pool if (t := _time_to_seconds(r[6] or ""))])
@@ -2064,8 +2130,34 @@ def phase_ratings(conn: sqlite3.Connection):
         t = _time_to_seconds(record or "")
         if not t or n_times == 0:
             return 0.0
-        pos = sum(1 for x in all_times if x >= t)
+        # Sul tempo vince il piu' basso, quindi si conta al contrario.
+        pos = n_times - bisect.bisect_left(all_times, t)
         return round(pos / n_times * 100, 2)
+
+    # Percentili di tenuta, sui soli atleti.
+    tenuta_pool = sorted(stagioni_corse.get((r[0] or "").strip().upper(), 0) for r in pool)
+    n_ten = len(tenuta_pool)
+
+    def tenuta_pct(stagioni: int) -> float:
+        if not n_ten:
+            return 0.0
+        return round(bisect.bisect_right(tenuta_pool, stagioni) / n_ten * 100, 2)
+
+    integrita_pool = sorted(
+        stagioni_corse.get((r[0] or "").strip().upper(), 0) / stagioni_possibili(r[1])
+        for r in pool)
+    n_int = len(integrita_pool)
+
+    def integrita_pct(quota: float) -> float:
+        if not n_int:
+            return 0.0
+        return round(bisect.bisect_right(integrita_pool, quota) / n_int * 100, 2)
+
+    # Tasso di vittoria medio della popolazione: e' il valore verso cui si
+    # tirano i cavalli con poche corse.
+    tot_v = sum((r[4] or 0) for r in pool)
+    tot_c = sum((r[3] or 0) for r in pool)
+    media_vittorie = (tot_v / tot_c * 100) if tot_c else 0.0
 
     scores = {}
     for row in horses:
@@ -2076,11 +2168,41 @@ def phase_ratings(conn: sqlite3.Connection):
         ep = earn_pct(career_earnings or 0)
         tp = time_pct(record_career or "")
         win_rate = (career_wins / career_races * 100) if career_races else 0
-        score = round(min(ep * 0.50 + tp * 0.30 + win_rate * 0.20, 100.0), 2)
+
+        # Percentuale di vittorie corretta per quante corse la sostengono.
+        # Otto vittorie su otto danno il 100%, ma con otto corse non si
+        # distingue chi vince sempre da chi e' stato fortunato: con quattro
+        # teste di fila nessuno conclude che la moneta e' truccata. Si fa
+        # quindi una media pesata fra il rendimento del cavallo e quello della
+        # popolazione, dove il secondo vale come RICHIAMO_VITTORIE corse
+        # aggiuntive. Con poche corse pesa la popolazione, con molte il cavallo.
+        win_rate_corretto = ((career_wins + RICHIAMO_VITTORIE * media_vittorie / 100)
+                             / (career_races + RICHIAMO_VITTORIE)) * 100
+
+        st_corse = stagioni_corse.get((name or "").strip().upper(), 0)
+        st_poss = stagioni_possibili(birth_year)
+        # Due facce della tenuta. Quante stagioni ha corso in assoluto premia
+        # le carriere lunghe; quante ne ha corse su quelle che poteva correrne
+        # misura l'integrita' senza penalizzare chi e' ancora giovane. Pesano
+        # uguale: la prima da' sola svantaggerebbe i giovani, la seconda da'
+        # sola darebbe pieni voti a un due anni con una sola stagione.
+        tenuta = tenuta_pct(st_corse)
+        integrita = integrita_pct(st_corse / st_poss)
+
+        score = round(min(
+            ep * PESO_GUADAGNI
+            + tp * PESO_RECORD
+            + win_rate_corretto * PESO_VITTORIE
+            + tenuta * PESO_TENUTA
+            + integrita * PESO_INTEGRITA, 100.0), 2)
         scores[(name, birth_year)] = {
             "score": score,
             "earn_percentile": ep, "time_percentile": tp,
             "win_rate": round(win_rate, 2),
+            "stagioni_corse": st_corse,
+            "stagioni_possibili": st_poss,
+            "tenuta_percentile": tenuta,
+            "integrita_percentile": integrita,
         }
 
     # Soglie dinamiche: calcolate sui percentili del pool di riferimento
@@ -2128,14 +2250,19 @@ def phase_ratings(conn: sqlite3.Connection):
                 (name, birth_year, sire, grade, score,
                  earn_percentile, time_percentile, sire_percentile,
                  career_races, career_wins, career_earnings, record_career,
-                 win_rate, rating_mode, horse_class, last_updated)
-            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?,?,?)
+                 win_rate, rating_mode,
+                 stagioni_corse, stagioni_possibili,
+                 tenuta_percentile, integrita_percentile,
+                 horse_class, last_updated)
+            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?, ?,?,?,?, ?,?)
         """, (
             name, birth_year, sire_name or None,
             data["grade"], data["score"],
             data["earn_percentile"], data["time_percentile"], sp,
             horse_row[0], horse_row[1], horse_row[2], horse_row[3],
             data["win_rate"], "performance",
+            data["stagioni_corse"], data["stagioni_possibili"],
+            data["tenuta_percentile"], data["integrita_percentile"],
             # Denormalizzata qui perche' il sito filtra le classifiche su questa
             # tabella: senza, ogni endpoint dovrebbe fare una JOIN su horses.
             CLASS_BREEDER if (name, birth_year) in backfill_keys else CLASS_ATHLETE,
@@ -2536,7 +2663,23 @@ def phase_git_push():
         remote_url = f"https://{GITHUB_USER}:{token}@github.com/{GITHUB_USER}/{GITHUB_REPO}.git"
         subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True, capture_output=True)
 
-        subprocess.run(["git", "add", "data.db"], check=True, capture_output=True)
+        # L'archivio aperto supera i 100 MB che GitHub accetta per un singolo
+        # file, quindi in git ci va solo la copia compressa; Render la riapre
+        # al momento del deploy. Va rifatta ADESSO, dopo il lavoro di stanotte,
+        # altrimenti si pubblicherebbe la versione di ieri.
+        print("[GIT] Comprimo l'archivio per la pubblicazione...", file=sys.stderr)
+        import gzip as _gzip
+        import shutil as _shutil
+        with open("data.db", "rb") as _src, _gzip.open("data.db.gz", "wb", compresslevel=9) as _dst:
+            _shutil.copyfileobj(_src, _dst, 1024 * 1024)
+        _mb = os.path.getsize("data.db.gz") / 1048576
+        print(f"[GIT] Archivio compresso: {_mb:.1f} MB", file=sys.stderr)
+        if _mb > 95:
+            print("[GIT] ATTENZIONE: anche da compresso si avvicina al limite "
+                  "di GitHub. Serve un'altra soluzione per l'archivio.",
+                  file=sys.stderr)
+
+        subprocess.run(["git", "add", "data.db.gz"], check=True, capture_output=True)
 
         now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
         result  = subprocess.run(
