@@ -37,6 +37,20 @@ interface HorseData {
   vitt_estero?: number | null;
   guad_italia?: number | null;
   guad_estero?: number | null;
+  grade_annata?: string | null;
+  pos_annata?: number | null;
+  tot_annata?: number | null;
+  affidabilita_voto?: {
+    disponibile: boolean;
+    motivo?: string;
+    livello?: "provvisorio" | "in_via_di_conferma" | "consolidato";
+    frase?: string;
+    resta?: number;
+    sale?: number;
+    scende?: number;
+    n?: number;
+    eta_usata?: number;
+  } | null;
   sire_percentile: number;
   rating_mode: string;
   win_rate: number;
@@ -379,6 +393,76 @@ export default function HorsePage() {
           serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
           questo dice cosa gli resta. */}
       <ValoreResiduo v={horse.valore_carriera} />
+
+      {/* Le due letture del voto, e quanto quel voto sia gia' definitivo.
+
+          Il voto globale confronta il cavallo con tutti, e questo penalizza i
+          giovani per costruzione: si calcola sulla carriera fatta finora,
+          quindi un tre anni viene misurato contro cavalli con dieci stagioni
+          alle spalle. Il voto d'annata legge lo STESSO punteggio contro i soli
+          coetanei. E l'affidabilita' dice quanto la lettera reggera': a due
+          anni resta ferma in meno di un caso su tre. */}
+      {horse.rating_mode === "performance" &&
+        (horse.grade_annata || horse.affidabilita_voto?.disponibile) && (
+        <div style={panelStyle}>
+          <div style={panelTitle}>Come leggere questo voto</div>
+
+          {horse.grade_annata && (
+            <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 14 }}>
+              <div style={{ minWidth: 165 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
+                  Contro tutti i cavalli
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>{horse.grade}</div>
+              </div>
+              <div style={{ minWidth: 165 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
+                  Nella sua annata {horse.birth_year}
+                </div>
+                <div style={{
+                  fontSize: 22, fontWeight: 700,
+                  color: horse.grade_annata !== horse.grade ? "hsl(51 75% 58%)" : undefined,
+                }}>
+                  {horse.grade_annata}
+                </div>
+                {horse.pos_annata != null && horse.tot_annata != null && (
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    {horse.pos_annata}° su {horse.tot_annata.toLocaleString("it-IT")} coetanei
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {horse.grade_annata && horse.grade_annata !== horse.grade && (
+            <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6, maxWidth: "75ch", marginBottom: 12 }}>
+              Le due lettere nascono dallo stesso punteggio: cambia solo con chi viene
+              confrontato. Il voto generale mette insieme tutte le generazioni, e i cavalli
+              giovani ne escono penalizzati perche&apos; hanno avuto meno anni per correre e
+              guadagnare.
+            </div>
+          )}
+
+          {horse.affidabilita_voto?.disponibile && horse.affidabilita_voto.frase && (
+            <div style={{
+              fontSize: 12.5, lineHeight: 1.6, maxWidth: "75ch",
+              padding: "10px 12px", borderRadius: 8,
+              background: "hsl(220 12% 13%)",
+              borderLeft: `3px solid ${
+                horse.affidabilita_voto.livello === "provvisorio" ? "hsl(28 80% 55%)"
+                  : horse.affidabilita_voto.livello === "in_via_di_conferma" ? "hsl(51 70% 50%)"
+                    : "hsl(150 50% 45%)"}`,
+            }}>
+              {horse.affidabilita_voto.frase}
+              <div style={{ color: "var(--muted)", marginTop: 6 }}>
+                Misurato su {horse.affidabilita_voto.n?.toLocaleString("it-IT")} cavalli nati fra il
+                2012 e il 2016, di cui la carriera e&apos; conclusa. È una statistica di gruppo,
+                non una previsione su questo cavallo.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Carriera in Italia e all'estero.
 

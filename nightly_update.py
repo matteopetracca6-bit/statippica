@@ -544,6 +544,12 @@ def init_db(conn: sqlite3.Connection):
         ("vitt_estero",      "INTEGER"),
         ("guad_italia",      "REAL"),
         ("guad_estero",      "REAL"),
+        # Voto d'annata: lo STESSO punteggio, ma con le soglie calcolate solo
+        # sui nati nello stesso anno. Serve a leggere i giovani senza il
+        # confronto impari con chi ha dieci stagioni alle spalle.
+        ("grade_annata",     "TEXT"),
+        ("pos_annata",       "INTEGER"),
+        ("tot_annata",       "INTEGER"),
         ("last_updated",     "TEXT"),
     ]:
         try:
@@ -2264,6 +2270,58 @@ def phase_ratings(conn: sqlite3.Connection):
     for key, data in scores.items():
         data["grade"] = score_to_horse_grade(data["score"], horse_thresholds)
 
+    # ── VOTO D'ANNATA ────────────────────────────────────────────────────
+    #
+    # Il voto globale confronta tutti con tutti, e questo penalizza i giovani
+    # per come e' costruito: si calcola sulla carriera FATTA FINORA, quindi un
+    # tre anni che ha corso una stagione viene misurato contro cavalli con
+    # dieci anni di gare alle spalle. Verificato sui nati 2012-2016: il voto
+    # medio va da 5,4 per chi ha corso 1-5 gare a 66,8 per chi ne ha corse 81
+    # o piu'. Un puledro non prende una lettera bassa perche' e' scarso, ma
+    # perche' e' giovane.
+    #
+    # Il voto d'annata risponde a un'altra domanda: fra i nati nel suo stesso
+    # anno, che hanno avuto lo stesso tempo per correre, dove si colloca? Lo
+    # stesso punteggio letto contro i coetanei invece che contro tutti. Un
+    # cavallo puo' quindi essere A nel confronto generale e S nella sua
+    # annata, e le due cose non sono in contraddizione.
+    per_annata: dict[int, list[float]] = {}
+    for (nome_a, anno_a), d in scores.items():
+        if (nome_a, anno_a) in backfill_keys or anno_a is None:
+            continue
+        per_annata.setdefault(anno_a, []).append(d["score"])
+
+    # Un'annata con pochi cavalli non regge una classifica propria: le soglie
+    # si appoggerebbero su una manciata di soggetti e la lettera sarebbe
+    # rumore. Sotto questa soglia non si assegna il voto d'annata.
+    ANNATA_MINIMA_VOTO = 100
+    soglie_annata: dict[int, list[tuple[float, str]]] = {}
+    for anno_a, punti in per_annata.items():
+        if len(punti) >= ANNATA_MINIMA_VOTO:
+            soglie_annata[anno_a] = _build_percentile_thresholds(punti)
+
+    ordinate_annata = {a: sorted(p) for a, p in per_annata.items()}
+
+    for (nome_a, anno_a), d in scores.items():
+        soglie = soglie_annata.get(anno_a)
+        if soglie is None or (nome_a, anno_a) in backfill_keys:
+            d["grade_annata"] = None
+            d["pos_annata"] = None
+            d["tot_annata"] = None
+            continue
+        d["grade_annata"] = score_to_horse_grade(d["score"], soglie)
+        lista = ordinate_annata[anno_a]
+        # Posizione nell'annata: quanti coetanei stanno davanti, piu' uno.
+        d["pos_annata"] = len(lista) - bisect.bisect_right(lista, d["score"]) + 1
+        d["tot_annata"] = len(lista)
+
+    n_con_annata = sum(1 for d in scores.values() if d.get("grade_annata"))
+    n_diverso = sum(1 for d in scores.values()
+                    if d.get("grade_annata") and d["grade_annata"] != d["grade"])
+    print(f"[RATINGS] Voto d'annata su {len(soglie_annata)} annate, "
+          f"{n_con_annata} cavalli; diverso dal voto globale per {n_diverso}.",
+          file=sys.stderr)
+
     # Percentili per sire — anche qui il gruppo di confronto resta la popolazione
     # storica: i genitori recuperati non spostano il percentile dei figli.
     sire_groups: dict[str, list[float]] = {}
@@ -2302,8 +2360,9 @@ def phase_ratings(conn: sqlite3.Connection):
                  tenuta_percentile, integrita_percentile,
                  gare_italia, gare_estero, vitt_italia, vitt_estero,
                  guad_italia, guad_estero,
+                 grade_annata, pos_annata, tot_annata,
                  horse_class, last_updated)
-            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?, ?,?,?,?, ?,?,?,?,?,?, ?,?)
+            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, ?,?, ?,?,?,?, ?,?,?,?,?,?, ?,?,?, ?,?)
         """, (
             name, birth_year, sire_name or None,
             data["grade"], data["score"],
@@ -2313,6 +2372,7 @@ def phase_ratings(conn: sqlite3.Connection):
             data["stagioni_corse"], data["stagioni_possibili"],
             data["tenuta_percentile"], data["integrita_percentile"],
             *(data["divisa"] or (0, 0, 0, 0, 0.0, 0.0)),
+            data.get("grade_annata"), data.get("pos_annata"), data.get("tot_annata"),
             # Denormalizzata qui perche' il sito filtra le classifiche su questa
             # tabella: senza, ogni endpoint dovrebbe fare una JOIN su horses.
             CLASS_BREEDER if (name, birth_year) in backfill_keys else CLASS_ATHLETE,
@@ -2459,6 +2519,35 @@ def phase_historic_ratings(conn: sqlite3.Connection):
 #          stallion_score = base_score × volume_multiplier
 #          + boost vendopuledri (max +5 punti, normalizzato)
 # ─────────────────────────────────────────────
+def phase_grade_stability(conn: sqlite3.Connection) -> None:
+    """Ricalcola quanto e' affidabile il voto, a seconda dell'eta' a cui si legge.
+
+    Il voto si calcola sulla carriera fatta finora: a due anni e' una manciata
+    di corse, a otto e' tutto quello che il cavallo fara' mai. La stessa
+    lettera non vale la stessa cosa nei due casi, e il sito la mostrava
+    identica. Qui si misura la differenza sui nati 2012-2016, di cui la
+    carriera e' conclusa.
+
+    Gira in un processo separato perche' e' un'analisi a se' stante, che legge
+    l'archivio in sola lettura e scrive un file: se fallisce non deve fermare
+    l'aggiornamento notturno, il sito continua a funzionare senza il riquadro.
+    """
+    import subprocess
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "scripts", "grade_stability.py")
+    if not os.path.exists(script):
+        print("[STABILITA] Script assente, riquadro affidabilita' non aggiornato.", file=sys.stderr)
+        return
+    try:
+        r = subprocess.run([sys.executable, script], capture_output=True, text=True, timeout=1800)
+        if r.returncode != 0:
+            print(f"[STABILITA] Fallita (codice {r.returncode}): {r.stderr.strip()[-400:]}", file=sys.stderr)
+        else:
+            print(r.stderr.strip(), file=sys.stderr)
+    except Exception as e:
+        print(f"[STABILITA] Fallita: {e}", file=sys.stderr)
+
+
 def phase_stallion_ratings(conn: sqlite3.Connection):
     """
     Calcola rating stalloni.
@@ -3854,6 +3943,7 @@ def main():
         phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
         phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
+        phase_grade_stability(conn)     # FASE 3d: affidabilita' del voto per eta'
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:

@@ -1,0 +1,405 @@
+{
+ "descrizione": "Quanto e' affidabile il voto di un cavallo, secondo l'eta' a cui lo si legge. Il voto si calcola sulla carriera fatta finora: a due anni e' una manciata di corse, a otto e' tutto.",
+ "metodo": "Cavalli nati fra il 2012 e il 2016, con la carriera conclusa. Per ogni eta' si ricostruisce il voto che avevano allora, usando solo le gare corse entro quel momento e confrontandoli con i coetanei di allora. Poi si guarda il voto raggiunto a fine carriera.",
+ "lettura": "resta = quota che ha chiuso con la stessa lettera; sale = finita piu' in alto; scende = finita piu' in basso. Percentuali.",
+ "limiti": [
+  "E' una statistica di gruppo, non una previsione sul singolo cavallo.",
+  "La tenuta non entra nel voto ricostruito: a due o tre anni non e' misurabile, e includerla renderebbe falso il confronto fra eta'.",
+  "Si basa sulle annate 2012-2016, le uniche con carriera conclusa e gare datate."
+ ],
+ "gruppo_minimo": 30,
+ "per_eta": {
+  "2": {
+   "SSS": {
+    "n": 38,
+    "resta": 10.5,
+    "sale": 0.0,
+    "scende": 89.5
+   },
+   "SS": {
+    "n": 150,
+    "resta": 30.7,
+    "sale": 8.7,
+    "scende": 60.7
+   },
+   "S": {
+    "n": 187,
+    "resta": 18.2,
+    "sale": 14.4,
+    "scende": 67.4
+   },
+   "A": {
+    "n": 562,
+    "resta": 27.9,
+    "sale": 18.0,
+    "scende": 54.1
+   },
+   "B": {
+    "n": 562,
+    "resta": 19.0,
+    "sale": 35.2,
+    "scende": 45.7
+   },
+   "C": {
+    "n": 749,
+    "resta": 26.0,
+    "sale": 46.6,
+    "scende": 27.4
+   },
+   "D": {
+    "n": 562,
+    "resta": 19.8,
+    "sale": 57.3,
+    "scende": 23.0
+   },
+   "E": {
+    "n": 562,
+    "resta": 19.2,
+    "sale": 61.7,
+    "scende": 19.0
+   },
+   "F": {
+    "n": 374,
+    "resta": 24.3,
+    "sale": 75.7,
+    "scende": 0.0
+   }
+  },
+  "3": {
+   "SSS": {
+    "n": 59,
+    "resta": 39.0,
+    "sale": 0.0,
+    "scende": 61.0
+   },
+   "SS": {
+    "n": 236,
+    "resta": 37.3,
+    "sale": 6.8,
+    "scende": 55.9
+   },
+   "S": {
+    "n": 294,
+    "resta": 23.8,
+    "sale": 19.0,
+    "scende": 57.1
+   },
+   "A": {
+    "n": 882,
+    "resta": 40.6,
+    "sale": 14.7,
+    "scende": 44.7
+   },
+   "B": {
+    "n": 882,
+    "resta": 29.3,
+    "sale": 26.3,
+    "scende": 44.4
+   },
+   "C": {
+    "n": 1176,
+    "resta": 38.4,
+    "sale": 30.7,
+    "scende": 30.9
+   },
+   "D": {
+    "n": 882,
+    "resta": 44.6,
+    "sale": 32.1,
+    "scende": 23.4
+   },
+   "E": {
+    "n": 882,
+    "resta": 66.8,
+    "sale": 23.1,
+    "scende": 10.1
+   },
+   "F": {
+    "n": 588,
+    "resta": 80.4,
+    "sale": 19.6,
+    "scende": 0.0
+   }
+  },
+  "4": {
+   "SSS": {
+    "n": 61,
+    "resta": 65.6,
+    "sale": 0.0,
+    "scende": 34.4
+   },
+   "SS": {
+    "n": 240,
+    "resta": 55.8,
+    "sale": 6.7,
+    "scende": 37.5
+   },
+   "S": {
+    "n": 301,
+    "resta": 30.6,
+    "sale": 16.9,
+    "scende": 52.5
+   },
+   "A": {
+    "n": 901,
+    "resta": 55.5,
+    "sale": 13.4,
+    "scende": 31.1
+   },
+   "B": {
+    "n": 902,
+    "resta": 49.0,
+    "sale": 23.1,
+    "scende": 27.9
+   },
+   "C": {
+    "n": 1202,
+    "resta": 72.0,
+    "sale": 18.4,
+    "scende": 9.7
+   },
+   "D": {
+    "n": 902,
+    "resta": 83.1,
+    "sale": 11.8,
+    "scende": 5.1
+   },
+   "E": {
+    "n": 901,
+    "resta": 94.3,
+    "sale": 5.1,
+    "scende": 0.6
+   },
+   "F": {
+    "n": 601,
+    "resta": 98.0,
+    "sale": 2.0,
+    "scende": 0.0
+   }
+  },
+  "5": {
+   "SSS": {
+    "n": 61,
+    "resta": 75.4,
+    "sale": 0.0,
+    "scende": 24.6
+   },
+   "SS": {
+    "n": 241,
+    "resta": 68.0,
+    "sale": 4.6,
+    "scende": 27.4
+   },
+   "S": {
+    "n": 301,
+    "resta": 47.5,
+    "sale": 15.6,
+    "scende": 36.9
+   },
+   "A": {
+    "n": 903,
+    "resta": 70.3,
+    "sale": 11.0,
+    "scende": 18.7
+   },
+   "B": {
+    "n": 904,
+    "resta": 69.4,
+    "sale": 15.7,
+    "scende": 14.9
+   },
+   "C": {
+    "n": 1204,
+    "resta": 85.5,
+    "sale": 11.0,
+    "scende": 3.5
+   },
+   "D": {
+    "n": 904,
+    "resta": 93.9,
+    "sale": 4.4,
+    "scende": 1.7
+   },
+   "E": {
+    "n": 903,
+    "resta": 98.1,
+    "sale": 1.9,
+    "scende": 0.0
+   },
+   "F": {
+    "n": 602,
+    "resta": 99.0,
+    "sale": 1.0,
+    "scende": 0.0
+   }
+  },
+  "6": {
+   "SSS": {
+    "n": 61,
+    "resta": 83.6,
+    "sale": 0.0,
+    "scende": 16.4
+   },
+   "SS": {
+    "n": 241,
+    "resta": 80.1,
+    "sale": 4.1,
+    "scende": 15.8
+   },
+   "S": {
+    "n": 301,
+    "resta": 68.1,
+    "sale": 11.3,
+    "scende": 20.6
+   },
+   "A": {
+    "n": 905,
+    "resta": 83.3,
+    "sale": 6.4,
+    "scende": 10.3
+   },
+   "B": {
+    "n": 904,
+    "resta": 84.2,
+    "sale": 9.7,
+    "scende": 6.1
+   },
+   "C": {
+    "n": 1206,
+    "resta": 94.2,
+    "sale": 4.5,
+    "scende": 1.3
+   },
+   "D": {
+    "n": 905,
+    "resta": 97.6,
+    "sale": 1.8,
+    "scende": 0.7
+   },
+   "E": {
+    "n": 904,
+    "resta": 99.4,
+    "sale": 0.6,
+    "scende": 0.0
+   },
+   "F": {
+    "n": 603,
+    "resta": 99.7,
+    "sale": 0.3,
+    "scende": 0.0
+   }
+  },
+  "7": {
+   "SSS": {
+    "n": 61,
+    "resta": 91.8,
+    "sale": 0.0,
+    "scende": 8.2
+   },
+   "SS": {
+    "n": 241,
+    "resta": 88.4,
+    "sale": 2.1,
+    "scende": 9.5
+   },
+   "S": {
+    "n": 302,
+    "resta": 79.8,
+    "sale": 7.0,
+    "scende": 13.2
+   },
+   "A": {
+    "n": 904,
+    "resta": 89.9,
+    "sale": 4.3,
+    "scende": 5.8
+   },
+   "B": {
+    "n": 905,
+    "resta": 92.3,
+    "sale": 5.5,
+    "scende": 2.2
+   },
+   "C": {
+    "n": 1206,
+    "resta": 97.9,
+    "sale": 1.7,
+    "scende": 0.4
+   },
+   "D": {
+    "n": 905,
+    "resta": 99.1,
+    "sale": 0.7,
+    "scende": 0.2
+   },
+   "E": {
+    "n": 904,
+    "resta": 99.8,
+    "sale": 0.2,
+    "scende": 0.0
+   },
+   "F": {
+    "n": 603,
+    "resta": 99.8,
+    "sale": 0.2,
+    "scende": 0.0
+   }
+  },
+  "8": {
+   "SSS": {
+    "n": 61,
+    "resta": 98.4,
+    "sale": 0.0,
+    "scende": 1.6
+   },
+   "SS": {
+    "n": 241,
+    "resta": 94.2,
+    "sale": 0.4,
+    "scende": 5.4
+   },
+   "S": {
+    "n": 302,
+    "resta": 89.4,
+    "sale": 4.0,
+    "scende": 6.6
+   },
+   "A": {
+    "n": 905,
+    "resta": 95.6,
+    "sale": 2.2,
+    "scende": 2.2
+   },
+   "B": {
+    "n": 905,
+    "resta": 96.8,
+    "sale": 2.1,
+    "scende": 1.1
+   },
+   "C": {
+    "n": 1206,
+    "resta": 98.9,
+    "sale": 0.8,
+    "scende": 0.2
+   },
+   "D": {
+    "n": 905,
+    "resta": 99.7,
+    "sale": 0.3,
+    "scende": 0.0
+   },
+   "E": {
+    "n": 905,
+    "resta": 100.0,
+    "sale": 0.0,
+    "scende": 0.0
+   },
+   "F": {
+    "n": 603,
+    "resta": 99.8,
+    "sale": 0.2,
+    "scende": 0.0
+   }
+  }
+ }
+}

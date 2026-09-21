@@ -23,6 +23,7 @@ import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./
 import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo } from "./careerValue";
+import { affidabilitaVoto } from "./gradeStability";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -100,7 +101,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.stagioni_corse, hr.stagioni_possibili,
                hr.tenuta_percentile, hr.integrita_percentile,
                hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
-               hr.guad_italia, hr.guad_estero
+               hr.guad_italia, hr.guad_estero,
+               hr.grade_annata, hr.pos_annata, hr.tot_annata
         FROM horses h
         -- I cavalli storici non hanno un voto sulla scala atleti: il loro sta
         -- in rating_mode='storico'. Senza questo OR la loro scheda mostrerebbe
@@ -210,11 +212,22 @@ export function registerRoutes(httpServer: Server, app: Express) {
                            spiegazione: motivo };
       }
 
+      // Quanto pesa la lettera che questo cavallo ha addosso. Un SSS a tre
+      // anni resta SSS nel 39% dei casi, a otto nel 98%: senza dirlo, il
+      // sito presenta come equivalenti due giudizi molto diversi.
+      // Solo per i cavalli in gara: gli storici hanno la loro scala, e per
+      // loro non esistono le date da cui ricostruire la stabilita'.
+      const affidabilita =
+        horse.rating_mode === "performance" && horse.birth_year
+          ? affidabilitaVoto(annoOggi - horse.birth_year, horse.grade)
+          : null;
+
       res.json({
         ...horse, races, siblings, pedigree,
         anno_ultima_gara: annoUltimaGara,
         in_attivita: inAttivita,
         valore_carriera: valoreCarriera,
+        affidabilita_voto: affidabilita,
       });
     } finally {
       db.close();
@@ -462,7 +475,15 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const params: any[] = [mode];
 
     if (year) { conditions.push("hr.birth_year = ?"); params.push(year); }
-    if (grade) { conditions.push("hr.grade = ?"); params.push(grade); }
+    // Il filtro sul voto puo' agire sulla lettera globale o su quella
+    // d'annata: sono letture diverse dello stesso punteggio, e chi cerca "i
+    // migliori del 2023" intende la seconda.
+    const votoAnnata = req.query.voto === "annata";
+    if (grade) {
+      conditions.push(votoAnnata ? "hr.grade_annata = ?" : "hr.grade = ?");
+      params.push(grade);
+    }
+    if (votoAnnata) { conditions.push("hr.grade_annata IS NOT NULL"); }
     if (sire) { conditions.push("hr.sire LIKE ?"); params.push(`%${sire}%`); }
 
     // Un voto costruito su una o due corse non e' confrontabile con uno
@@ -496,6 +517,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.sire_percentile, hr.career_races, hr.career_wins, hr.career_earnings, hr.record_career, hr.win_rate,
                hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
                hr.guad_italia, hr.guad_estero,
+               hr.grade_annata, hr.pos_annata, hr.tot_annata,
                h.country
         FROM horse_ratings hr
         LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year

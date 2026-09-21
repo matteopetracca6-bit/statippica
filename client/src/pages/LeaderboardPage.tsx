@@ -13,6 +13,9 @@ interface LeaderboardRow {
   birth_year: number;
   sire: string;
   grade: string;
+  grade_annata?: string | null;
+  pos_annata?: number | null;
+  tot_annata?: number | null;
   score: number;
   earn_percentile: number;
   time_percentile: number;
@@ -60,7 +63,13 @@ export default function LeaderboardPage() {
   // Dove ha corso. Filtra soltanto, non tocca il voto.
   const [dove, setDove] = useState<string>("");
 
-  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly, dove]);
+  // Quale delle due letture del voto mostrare. "globale" confronta con tutti,
+  // "annata" solo con i nati nello stesso anno. Stesso punteggio, due letture:
+  // il confronto generale penalizza i giovani, che hanno avuto meno anni per
+  // correre - fra i nati nel 2023 il 63% sale di lettera guardandoli fra pari.
+  const [voto, setVoto] = useState<string>("globale");
+
+  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly, dove, voto]);
 
   const params = new URLSearchParams();
   if (year) params.set("year", year);
@@ -72,9 +81,10 @@ export default function LeaderboardPage() {
   params.set("limit", String(LIMIT));
   if (solidOnly) params.set("min_races", String(MIN_RACES_SOLID));
   if (dove) params.set("dove", dove);
+  if (voto === "annata") params.set("voto", "annata");
 
   const { data, isLoading } = useQuery<LeaderboardData>({
-    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove],
+    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove, voto],
     queryFn: async () => {
       const r = await apiRequest("GET", `/api/leaderboard?${params}`);
       return r.json();
@@ -115,6 +125,17 @@ export default function LeaderboardPage() {
             paragonare a quelli dei cavalli in gara oggi.
           </p>
         )}
+        {/* Il voto d'annata non e' un voto nuovo: e' lo stesso punteggio letto
+            contro i coetanei. Senza spiegarlo, un cavallo che passa da B a SS
+            sembrerebbe essere stato promosso. */}
+        {mode === "performance" && voto === "annata" && (
+          <p style={{ fontSize: "12px", color: "hsl(210 8% 48%)", marginTop: "8px", lineHeight: 1.6, maxWidth: "78ch" }}>
+            Ogni cavallo e&apos; confrontato solo con i nati nel suo stesso anno, che hanno avuto
+            lo stesso tempo per correre. Il punteggio non cambia, cambia con chi viene paragonato:
+            nel confronto generale i giovani sono penalizzati perche&apos; hanno meno stagioni alle
+            spalle. Fra i nati nel 2023, il 63% sale di lettera guardandoli fra coetanei.
+          </p>
+        )}
       </div>
 
       {/* Filters */}
@@ -141,6 +162,16 @@ export default function LeaderboardPage() {
           <option value="">Tutti i voti</option>
           {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
+
+        {/* Le due letture del voto. Solo per i cavalli in gara: gli storici
+            non hanno un voto d'annata, e il pedigree non ha annate su cui
+            confrontare. */}
+        {mode === "performance" && (
+          <select value={voto} onChange={e => setVoto(e.target.value)} style={filterStyle} data-testid="select-voto">
+            <option value="globale">Voto: contro tutti</option>
+            <option value="annata">Voto: nella sua annata</option>
+          </select>
+        )}
 
         {/* Dove ha corso. Non compare per gli storici: di loro l'archivio ha
             solo i totali di carriera, senza le singole gare, quindi non si sa
@@ -256,7 +287,22 @@ export default function LeaderboardPage() {
                         ) : "—"}
                       </td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        <GradeBadge grade={row.grade ?? "N/A"} size="sm" />
+                        {/* Con la lettura per annata si mostra quella lettera,
+                            e sotto si tiene la lettera generale: sono lo
+                            stesso punteggio, e nascondere l'altra farebbe
+                            sembrare che il voto sia cambiato. */}
+                        <GradeBadge
+                          grade={(voto === "annata" ? row.grade_annata : row.grade) ?? row.grade ?? "N/A"}
+                          size="sm"
+                        />
+                        {voto === "annata" && row.grade_annata && row.grade_annata !== row.grade && (
+                          <span
+                            title={`Contro tutti i cavalli questo cavallo e' ${row.grade}`}
+                            style={{ marginLeft: 6, fontSize: 10, color: "var(--muted)" }}
+                          >
+                            ({row.grade} in generale)
+                          </span>
+                        )}
                         {(row.career_races ?? 0) < MIN_RACES_SOLID && (
                           <span
                             title={`Voto calcolato su ${row.career_races ?? 0} corse: poco affidabile`}
