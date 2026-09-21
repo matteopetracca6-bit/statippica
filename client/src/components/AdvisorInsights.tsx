@@ -302,6 +302,12 @@ export interface RoiRange {
   n_figli_valutati: number;
   anno_maturita: number;
   base_figli: "maturi" | "tutti" | "nessuna";
+  pareggio: {
+    grado_minimo: string | null;
+    guadagno_tipico_del_grado: number;
+    probabilita_pct: number;
+    serve: number;
+  };
   nota: string;
   avvertenza: string;
 }
@@ -398,6 +404,113 @@ function Stat({ label, value, color, sub }: { label: string; value: string; colo
       </div>
       <div className="tabular" style={{ fontSize: "17px", fontWeight: 800, color }}>{value}</div>
       <div style={{ fontSize: "10px", color: "hsl(210 8% 40%)" }}>{sub}</div>
+    </div>
+  );
+}
+
+
+// ────────────────────────────────────────────────────────────────
+// Conclusione economica, in fondo alla tendina
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Chiude la scheda rispondendo alla sola domanda che conta per chi paga la
+ * monta: conviene o no, e a che condizione.
+ *
+ * Prima qui c'era un unico "ROI atteso" calcolato sulle medie dei guadagni.
+ * Era in contraddizione con la fascia mostrata piu' in alto: per un
+ * accoppiamento poteva dire +48% in verde mentre il puledro tipico perdeva
+ * il 62%. La media e' alta perche' pochi cavalli eccezionali la tirano su,
+ * e chi decide una monta non compra la media: compra un puledro.
+ */
+export function ConclusioneEconomica({
+  r,
+  roiMedioStorico,
+  ricavoMedio,
+}: {
+  r: RoiRange;
+  /** ROI calcolato sulle medie, mantenuto solo come confronto dichiarato. */
+  roiMedioStorico: number;
+  ricavoMedio: number;
+}) {
+  const perditaTipica = r.guadagno_mediano - r.costo_atteso;
+  const inPari = r.roi_mediano_pct >= 0;
+
+  // Il verdetto non guarda solo il caso tipico: un accoppiamento puo' essere
+  // in perdita nel caso tipico e comunque sensato se la coda buona e' grossa.
+  const verdetto = inPari
+    ? { testo: "Sostenibile nel caso tipico", col: "hsl(100 58% 52%)", bg: "hsl(100 30% 10%)", bd: "hsl(100 45% 26%)" }
+    : r.prob_pareggio_pct >= 25
+      ? { testo: "In perdita nel caso tipico, ma la scommessa e' aperta", col: "hsl(45 80% 58%)", bg: "hsl(45 30% 10%)", bd: "hsl(45 45% 26%)" }
+      : { testo: "In perdita nel caso tipico, e il colpo e' raro", col: "hsl(0 62% 58%)", bg: "hsl(0 30% 10%)", bd: "hsl(0 45% 26%)" };
+
+  return (
+    <div style={{ marginTop: "4px" }}>
+      <SectionTitle icon={<Scale size={12} />}>In conclusione: conviene?</SectionTitle>
+      <div style={{ background: verdetto.bg, border: "1px solid " + verdetto.bd, borderRadius: "10px", padding: "14px 18px" }}>
+        <div style={{ fontSize: "15px", fontWeight: 800, color: verdetto.col, marginBottom: "12px" }}>
+          {verdetto.testo}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))", gap: "12px", marginBottom: "14px" }}>
+          <Stat
+            label="Spesa complessiva"
+            value={euro(r.costo_atteso)}
+            color="hsl(15 70% 58%)"
+            sub="monta e 2 anni e mezzo"
+          />
+          <Stat
+            label="Incassa, tipicamente"
+            value={euro(r.guadagno_mediano)}
+            color="hsl(51 70% 58%)"
+            sub="in premi di carriera"
+          />
+          <Stat
+            label={perditaTipica >= 0 ? "Utile tipico" : "Perdita tipica"}
+            value={(perditaTipica >= 0 ? "+" : "\u2212") + euro(Math.abs(perditaTipica)).replace("\u20ac", "\u20ac")}
+            color={perditaTipica >= 0 ? "hsl(100 58% 55%)" : "hsl(0 62% 58%)"}
+            sub={(r.roi_mediano_pct > 0 ? "+" : "") + r.roi_mediano_pct.toFixed(0) + "% sul capitale"}
+          />
+          <Stat
+            label="Chiude in pari o meglio"
+            value={r.prob_pareggio_pct.toFixed(0) + "%"}
+            color="hsl(183 75% 55%)"
+            sub="dei casi simulati"
+          />
+        </div>
+
+        {r.pareggio.grado_minimo && (
+          <div style={{
+            background: "hsl(220 12% 9%)", border: BORDER, borderRadius: "8px",
+            padding: "10px 13px", marginBottom: "12px", fontSize: "12px",
+            color: "hsl(210 8% 68%)", lineHeight: 1.6,
+          }}>
+            Per rientrare della spesa il puledro deve arrivare almeno al livello{" "}
+            <strong style={{ color: "hsl(183 75% 60%)" }}>{r.pareggio.grado_minimo}</strong>, dove i cavalli
+            guadagnano tipicamente {euro(r.pareggio.guadagno_tipico_del_grado)}. Con questo accoppiamento la
+            probabilita&#39; di arrivarci e&#39;{" "}
+            <strong style={{ color: r.pareggio.probabilita_pct >= 25 ? "hsl(100 58% 58%)" : "hsl(45 80% 60%)" }}>
+              {r.pareggio.probabilita_pct.toFixed(0)} su 100
+            </strong>.
+          </div>
+        )}
+
+        <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.6, borderTop: BORDER, paddingTop: "10px" }}>
+          <div style={{ marginBottom: "6px" }}>
+            Calcolato sul puledro tipico. Lo stesso conto fatto sulle <em>medie</em> dei guadagni darebbe{" "}
+            <strong style={{ color: "hsl(210 8% 62%)" }}>
+              {(roiMedioStorico > 0 ? "+" : "") + roiMedioStorico.toFixed(1)}%
+            </strong>{" "}
+            con un ricavo di {euro(ricavoMedio)}: un risultato piu&#39; generoso ma fuorviante, perche&#39; la
+            media e&#39; sollevata dai pochi campioni e non descrive il puledro che nascera&#39; davvero.
+          </div>
+          <div style={{ color: "hsl(210 8% 40%)" }}>
+            Nei conti non entra il valore di rivendita del puledro o dello yearling, che per un allevatore
+            e&#39; spesso il vero ricavo: il ritorno qui e&#39; quindi il piu&#39; prudente possibile, quello
+            ottenuto correndo.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

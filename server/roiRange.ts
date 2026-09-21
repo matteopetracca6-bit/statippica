@@ -75,6 +75,18 @@ export interface RoiRange {
   anno_maturita: number;
   /** "maturi" = figli con carriera conclusa; "tutti" = ripiego sui figli ancora in attivita'. */
   base_figli: "maturi" | "tutti" | "nessuna";
+  /**
+   * Soglia di pareggio: il livello minimo che il puledro deve raggiungere
+   * perche' i guadagni tipici di quel livello coprano i costi, e quanto e'
+   * probabile arrivarci.
+   */
+  pareggio: {
+    grado_minimo: string | null;
+    guadagno_tipico_del_grado: number;
+    probabilita_pct: number;
+    /** Guadagno che serve per chiudere in pari. */
+    serve: number;
+  };
   nota: string;
   avvertenza: string;
 }
@@ -169,6 +181,28 @@ export function simulateRoi(
     if (guadagno < costo * 0.5) perditeGravi++;
   }
 
+  // ── Soglia di pareggio ──────────────────────────────────────────
+  // Domanda concreta dell'allevatore: che livello deve raggiungere il
+  // puledro per non perderci? Si scorre la scala dal basso e si prende il
+  // primo livello i cui guadagni TIPICI (mediana, non media) coprono il
+  // costo, poi si somma la probabilita' di quel livello e di tutti quelli
+  // migliori.
+  const scalaDalBasso = GRADE_LIST.slice().reverse();
+  let gradoMinimo: string | null = null;
+  let guadagnoTipicoGrado = 0;
+  for (const g of scalaDalBasso) {
+    const urna = earnings.get(g);
+    if (!urna || !urna.length) continue;
+    const ord = urna.slice().sort((a, b) => a - b);
+    const mediana = ord[Math.floor(ord.length / 2)];
+    if (mediana >= costoAtteso) { gradoMinimo = g; guadagnoTipicoGrado = mediana; break; }
+  }
+  let probPareggioGrado = 0;
+  if (gradoMinimo) {
+    const limite = GRADE_LIST.indexOf(gradoMinimo as (typeof GRADE_LIST)[number]);
+    for (let k = 0; k <= limite; k++) probPareggioGrado += probs.get(GRADE_LIST[k]) ?? 0;
+  }
+
   rois.sort((a, b) => a - b);
   guadagni.sort((a, b) => a - b);
   const pct = (x: number) => Math.round(x * 1000) / 10;
@@ -199,6 +233,12 @@ export function simulateRoi(
     n_figli_valutati: nOffspring,
     anno_maturita: annoMaturita(),
     base_figli: baseFigli,
+    pareggio: {
+      grado_minimo: gradoMinimo,
+      guadagno_tipico_del_grado: Math.round(guadagnoTipicoGrado),
+      probabilita_pct: Math.round((probPareggioGrado / (totale || 1)) * 1000) / 10,
+      serve: costoAtteso,
+    },
     nota: baseFigli === "tutti"
       ? nota + " Inoltre questo stallone e' troppo recente per avere figli con la carriera " +
         "conclusa: si usano i figli ancora in attivita', che hanno voti piu' bassi perche' " +

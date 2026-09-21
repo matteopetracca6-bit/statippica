@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import TrottingHorseLoader from "../components/TrottingHorseLoader";
 import NameSelect from "../components/NameSelect";
-import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel, RoiRangePanel } from "../components/AdvisorInsights";
+import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel, RoiRangePanel, ConclusioneEconomica } from "../components/AdvisorInsights";
 import type { Prediction, InbreedingDetail, Eligibility, RoiRange } from "../components/AdvisorInsights";
 import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -110,6 +110,10 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
         <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
           Distribuzione voti puledro atteso
         </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0", fontSize: "9.5px", color: "hsl(210 8% 38%)", marginBottom: "4px" }}>
+          <span style={{ width: "50px", textAlign: "right" }}>probab.</span>
+          <span style={{ width: "70px", textAlign: "right" }}>media livello</span>
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           {sim.distribution.map(d => (
             <div key={d.grade} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -136,8 +140,8 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
         </div>
         <div style={{ fontSize: "10px", color: "hsl(210 8% 35%)", marginTop: "8px" }}>
           {sim.source === "stallion_offspring"
-            ? `Basato su ${sim.total_offspring} figli esistenti di questo stallone`
-            : "Dati insufficienti sullo stallone — uso distribuzione popolazione generale"}
+            ? `Basato su ${sim.total_offspring} figli gia' valutati di questo stallone. La colonna in euro e' la media di tutti i cavalli di quel livello, non il guadagno del puledro tipico: per quello vedi la conclusione qui sotto.`
+            : "Pochi figli valutati per questo stallone: la distribuzione e' quella generale di tutti i puledri."}
         </div>
       </div>
 
@@ -183,39 +187,30 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
         </div>
       </div>
 
-      {/* ROI summary */}
-      <div style={{
-        background: roiPositive ? "hsl(100 30% 12%)" : "hsl(0 30% 12%)",
-        border: `1px solid ${roiPositive ? "hsl(100 50% 30%)" : "hsl(0 50% 30%)"}`,
-        borderRadius: "10px", padding: "14px 18px",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <div>
+      {/* Conclusione economica: sostituisce il vecchio riquadro "ROI atteso",
+          che era calcolato sulle medie dei guadagni e finiva per contraddire
+          la fascia mostrata piu' in alto (verde +48% mentre il puledro tipico
+          perdeva il 62%). */}
+      {sim.roi_range ? (
+        <ConclusioneEconomica
+          r={sim.roi_range}
+          roiMedioStorico={sim.roi.roi_pct}
+          ricavoMedio={sim.roi.ricavo_atteso}
+        />
+      ) : (
+        <div style={{
+          background: roiPositive ? "hsl(100 30% 12%)" : "hsl(0 30% 12%)",
+          border: `1px solid ${roiPositive ? "hsl(100 50% 30%)" : "hsl(0 50% 30%)"}`,
+          borderRadius: "10px", padding: "14px 18px",
+        }}>
           <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
-            ROI sulla media
+            Ritorno stimato sulle medie
           </div>
-          <div style={{
-            fontSize: "22px", fontWeight: 800,
-            color: roiPositive ? "hsl(100 60% 55%)" : "hsl(0 60% 55%)",
-          }}>
+          <div style={{ fontSize: "22px", fontWeight: 800, color: roiPositive ? "hsl(100 60% 55%)" : "hsl(0 60% 55%)" }}>
             {sim.roi.roi_pct > 0 ? "+" : ""}{sim.roi.roi_pct.toFixed(1)}%
           </div>
-          <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "2px" }}>
-            Ricavo medio €{sim.roi.ricavo_atteso.toLocaleString("it-IT")} · calcolato sulle medie, vedi sopra la fascia reale
-          </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
-            Prob. recupero costi
-          </div>
-          <div style={{ fontSize: "22px", fontWeight: 800, color: "hsl(183 80% 55%)" }}>
-            {sim.roi.prob_recupero_costi.toFixed(1)}%
-          </div>
-          <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "2px" }}>
-            P(cavalli con guadagni ≥ costo)
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
