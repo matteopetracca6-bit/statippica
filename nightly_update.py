@@ -3062,10 +3062,12 @@ def phase_git_push():
             _shutil.copyfileobj(_src, _dst, 1024 * 1024)
         _mb = os.path.getsize("data.db.gz") / 1048576
         print(f"[GIT] Archivio compresso: {_mb:.1f} MB", file=sys.stderr)
-        if _mb > 95:
-            print("[GIT] ATTENZIONE: anche da compresso si avvicina al limite "
-                  "di GitHub. Serve un'altra soluzione per l'archivio.",
-                  file=sys.stderr)
+        # Il vecchio avviso sui 100 MB non serve piu': quel limite valeva per
+        # un file dentro git. In un rilascio il tetto e' 2 GB per file, e
+        # l'archivio compresso sta sotto i 30.
+        if _mb > 1800:
+            print("[GIT] ATTENZIONE: l'archivio si avvicina ai 2 GB che un "
+                  "rilascio accetta per un singolo file.", file=sys.stderr)
 
         # L'archivio va pubblicato in un RILASCIO, non dentro git.
         #
@@ -3078,10 +3080,23 @@ def phase_git_push():
         # In un rilascio la copia nuova SOSTITUISCE la vecchia: il peso resta
         # fermo a 30 MB per sempre, e i rilasci non contano nel peso del
         # progetto ne' consumano quote di traffico.
-        pubblica_archivio_nel_rilascio()
+        if not pubblica_archivio_nel_rilascio():
+            # Se il caricamento non riesce, l'archivio di stanotte esiste solo
+            # sulla macchina che sta girando e sparira' con lei. Va detto
+            # forte: il sito continuera' a servire quello di ieri, che e'
+            # sbagliato ma non rotto, e domani si ritentera'.
+            print("[GIT] ATTENZIONE: l'archivio non e' stato pubblicato. Il "
+                  "sito resta su quello di ieri. Il lavoro di stanotte e' "
+                  "perso: va rifatto.", file=sys.stderr)
 
-        subprocess.run(["git", "add", "data.db.gz"], check=True, capture_output=True)
-
+        # L'archivio NON si aggiunge piu' a git: e' quello il punto di tutto
+        # il cambiamento. In git ogni versione si sommava alle precedenti per
+        # sempre, 30 MB a notte che non si potevano piu' togliere. Ora sta nel
+        # rilascio, dove la copia nuova sostituisce la vecchia.
+        #
+        # Il commit resta per i file di supporto (indici, riepiloghi) che sono
+        # piccoli e di testo, cioe' esattamente cio' per cui git e' fatto. Se
+        # non ce n'e' nessuno da aggiornare, non si committa nulla: e' normale.
         now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
         result  = subprocess.run(
             ["git", "commit", "-m", f"nightly update {now_str}"],

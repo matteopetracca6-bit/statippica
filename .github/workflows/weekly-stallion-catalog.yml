@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "10 3 * * 1"
   workflow_dispatch: {}
+permissions:
+  contents: write # serve per caricare l'archivio nel rilascio
+
 jobs:
   sync:
     name: Aggiorna i dati del catalogo monte
@@ -21,48 +24,38 @@ jobs:
           python-version: "3.11"
       - name: Installa dipendenze
         run: pip install requests beautifulsoup4
-      - name: Riapri l'archivio compresso
-        # In git sta solo data.db.gz: il file aperto e' escluso perche' da
-        # aperto supera i 100 MB che GitHub accetta per un singolo file.
-        # Va riaperto QUI, prima di lavorarci. Senza questo passo
-        # sqlite3.connect("data.db") non fallisce: crea un archivio VUOTO,
-        # il lavoro gira sul nulla e alla fine pubblica il vuoto.
-        run: |
-          set -euo pipefail
-          if [ ! -f data.db.gz ]; then
-            echo "::error::data.db.gz non presente nel repo: mi fermo."
-            exit 1
-          fi
-          gunzip -c data.db.gz > data.db
-          BYTE=$(stat -c%s data.db)
-          echo "Archivio riaperto: $BYTE byte"
-          if [ "$BYTE" -lt 20000000 ]; then
-            echo "::error::archivio sospettosamente piccolo ($BYTE byte): mi fermo."
-            exit 1
-          fi
-          GARE=$(python -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
-          echo "Gare in archivio: $GARE"
-          if [ "$GARE" -lt 500000 ]; then
-            echo "::error::solo $GARE gare in archivio, me ne aspetto oltre 500000: mi fermo."
-            exit 1
-          fi
+      - name: Procura l'archivio
+        # Lo scarica dal rilascio e verifica il numero di gare. Se non torna,
+        # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e
+        # pubblicare al posto di quello vero. La logica sta in un solo script
+        # perche' la usano tutti e quattro i lavori automatici.
+        run: bash scripts/ottieni_archivio.sh
       - name: Leggi il catalogo e aggiorna il database
         run: python scripts/sync_stallion_catalog.py --db data.db
       - name: Ripulisci i nomi degli allevamenti
         run: python scripts/clean_stud_farm.py --db data.db
-      - name: Commit e push del database
+      - name: Pubblica l'archivio aggiornato nel rilascio
+        # NON dentro git: e' il punto di tutto il cambiamento. In git ogni
+        # versione si sommava alle precedenti per sempre, 30 MB che non si
+        # potevano piu' togliere. In un rilascio la copia nuova sostituisce la
+        # vecchia e il peso resta fermo.
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
         run: |
-          git config user.email "nightly@statippica.bot"
-          git config user.name "StatIppica Catalog Sync"
-          git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
-          git pull --rebase origin main || git rebase --abort || true
-          # In git va la copia compressa, non quella aperta: "git add data.db"
-          # non salvava piu' nulla, perche' il file aperto e' escluso.
+          set -euo pipefail
+          # Prima di pubblicare: e' ancora l'archivio buono? Se il lavoro di
+          # prima l'ha danneggiato, pubblicarlo cancellerebbe quello vero.
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
           gzip -9 -c data.db > data.db.gz
           ls -l data.db.gz
-          git add data.db.gz
-          git commit -m "catalogo monte aggiornato $(date -u '+%Y-%m-%d')" || echo "nessuna modifica"
-          git push origin main || echo "push saltato"
+          gh release upload archivio data.db.gz \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Archivio pubblicato."
       - name: Trigger deploy Render
         if: success()
         run: |

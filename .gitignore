@@ -15,6 +15,23 @@ data.db-journal
 .DS_Store
 __pycache__/
 
-# L archivio compresso sta in git (data.db.gz); il file aperto viene
+# L'archivio NON sta in git, ne' aperto ne' compresso.
+#
+# In git ogni versione nuova si somma alle precedenti per sempre. L'archivio
+# cambia ogni notte ed e' un binario compresso da 30 MB: non ha nulla in comune
+# con la versione di ieri, quindi git non puo' condividere niente e aggiunge
+# 30 MB di cronologia a notte, circa 900 MB al mese. In tre mesi il progetto
+# era arrivato a 477 MB, con GitHub che raccomanda di restare sotto 1 GB e di
+# tenere fuori da git i file generati da un programma.
+#
+# Ora sta in un rilascio, a indirizzo fisso, dove la copia nuova SOSTITUISCE
+# la vecchia e il peso resta fermo:
+#   https://github.com/matteopetracca6-bit/statippica/releases/download/archivio/data.db.gz
+#
+# Il sito lo scarica con scripts/prepara_archivio.sh prima di partire, i lavori
+# automatici con scripts/ottieni_archivio.sh prima di lavorarci.
+data.db
+data.db.gz
+.gz); il file aperto viene
 # ricreato al momento del deploy e resta solo in locale.
 data.db

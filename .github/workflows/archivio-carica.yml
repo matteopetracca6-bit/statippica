@@ -27,14 +27,37 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          # Serve tutta la cronologia: se il rilascio va perso, l'ultima
+          # copia dell'archivio si recupera dai vecchi commit, che la
+          # conservano ancora.
+          fetch-depth: 0
 
-      - name: Controlla che l'archivio ci sia e sia quello vero
+      - name: Procura l'archivio da cui partire
+        # L'archivio non sta piu' nel progetto. Le fonti, in ordine:
+        #  1. il rilascio, se c'e' ancora (qui si finisce per riverificarlo);
+        #  2. la cronologia di git, che conserva tutte le copie salvate fino
+        #     al passaggio: e' la via di recupero se il rilascio va perso.
+        run: |
+          set -uo pipefail
+          IND="https://github.com/$GITHUB_REPOSITORY/releases/download/archivio/data.db.gz"
+          if curl -fsSL --retry 2 -m 600 -o data.db.gz "$IND"; then
+            echo "Partito dal rilascio ($(stat -c%s data.db.gz) byte)."
+          else
+            echo "Il rilascio non risponde: cerco l'ultima copia nella cronologia."
+            COMMIT=$(git log --format=%H --all -- data.db.gz | head -1)
+            if [ -z "$COMMIT" ]; then
+              echo "::error::nessuna copia dell'archivio, ne' nel rilascio ne' nella cronologia."
+              exit 1
+            fi
+            echo "Trovata nel commit $COMMIT"
+            git show "$COMMIT:data.db.gz" > data.db.gz
+            echo "Recuperati $(stat -c%s data.db.gz) byte dalla cronologia."
+          fi
+
+      - name: Controlla che sia quello vero
         run: |
           set -euo pipefail
-          if [ ! -f data.db.gz ]; then
-            echo "::error::data.db.gz non e' nel progetto. Se l'hai gia' tolto da git, l'archivio va ricaricato dal rilascio precedente o rigenerato da un notturno."
-            exit 1
-          fi
           BYTE=$(stat -c%s data.db.gz)
           echo "Archivio compresso: $BYTE byte"
           if [ "$BYTE" -lt 20000000 ]; then
