@@ -28,6 +28,12 @@ jobs:
         # pubblicare al posto di quello vero. La logica sta in un solo script
         # perche' la usano tutti e quattro i lavori automatici.
         run: bash scripts/ottieni_archivio.sh
+      - name: Controlla che le soglie coincidano
+        # Le soglie stanno in due posti (chi addestra e il sito). Se divergono
+        # non si vede niente: il sito giudicherebbe il modello con un criterio
+        # diverso da quello usato per addestrarlo. Meglio fermarsi qui.
+        run: python3 scripts/controlla_soglie.py
+
       - name: Addestra il modello
         env:
           DB_PATH: data.db

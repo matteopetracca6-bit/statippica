@@ -82,11 +82,80 @@ FEATURES = [
 # ── Criteri minimi di validazione ────────────────────────────
 # Le soglie si applicano alle metriche out-of-fold per GRUPPI FAMILIARI, non
 # alla cross-validation casuale: è la misura più vicina all'uso reale.
-MIN_R2_DECISION = 0.20
+#
+# ATTENZIONE, QUESTA SOGLIA E' STATA SBAGLIATA UNA VOLTA. Fino al 23/09/2026
+# qui c'era MIN_R2_DECISION = 0.20, senza nessuna giustificazione: era la
+# convenzione generica "sotto il 20% un modello non serve", presa da fuori e
+# appoggiata su un problema a cui non appartiene. Era sbagliata due volte.
+#
+# PRIMO ERRORE: la metrica. Prevedere la carriera di UN SINGOLO figlio dai
+# genitori ha un tetto biologico basso, e non per colpa del modello. Il figlio
+# prende meta' dei geni da ciascun genitore, ma QUALI meta' e' un sorteggio:
+# due fratelli pieni hanno gli stessi genitori e carriere diverse. Quella parte
+# nessun modello puo' prevederla, oggi o fra cent'anni.
+#
+# La quota ereditabile nel trotto e' misurata: guadagni annui per corsa
+# 0,26-0,31 nel trottatore francese; guadagni annui 0,19 nel cavallo finlandese
+# e 0,27 nello Standardbred; tempo sul chilometro 0,32-0,34. Simulando con
+# questi valori, e tenendo conto che gli stalloni in monta sono gia' selezionati
+# (nell'archivio: 629 padri per 16.919 cavalli che hanno corso, uno ogni 27),
+# il tetto massimo teorico sta intorno al 15%. La soglia era quindi vicina o
+# oltre il limite del possibile: un cancello che non si poteva aprire.
+#
+# SECONDO ERRORE, piu' grave: il segnale che c'e' DAVVERO nei dati. Misurato
+# direttamente, senza modelli, la correlazione fra il voto del padre e quello
+# del figlio e' +0,158, con la madre +0,099. Entrambi i genitori insieme
+# spiegano il 3,6%, e questo e' il numero GONFIATO, ottenuto verificando sugli
+# stessi cavalli usati per imparare. Il modello ne ottiene 2,3% misurato
+# onestamente. Non sta fallendo: sta estraendo quasi tutto quello che esiste.
+# La distanza fra 3,6% e 20% non si colma con piu' dati o algoritmi migliori,
+# perche' quel segnale nei dati non c'e'.
+#
+# Il motivo sta in un numero solo: la variabilita' dei voti dei padri usati e'
+# 6,2, contro 22 delle madri e 17 dei figli. I padri si assomigliano troppo,
+# perche' sono tutti gia' selezionati. Sapere chi e' il padre dice poco proprio
+# perche' sono tutti bravi.
+#
+# LE SOGLIE DI ADESSO sono ancorate a quei due numeri e non a una convenzione:
+#  - 8% per il supporto decisionale: il doppio del segnale misurato nel caso
+#    piu' favorevole (3,6%), e circa metà del tetto teorico (15%). Superarlo
+#    vorrebbe dire aver trovato qualcosa che oggi nei dati non si vede, e
+#    restando sotto il tetto resta un traguardo raggiungibile, non un muro.
+#  - 3% per lo stato sperimentale: appena sopra il segnale misurato barando.
+#    Sotto questa soglia il modello non sta nemmeno pareggiando la statistica
+#    piu' banale.
+#
+# PERCHE' NON SI ALZA AL 15%. Il tetto teorico e' il caso ideale: misure
+# perfette, nessun errore di trascrizione, popolazione non selezionata. I dati
+# veri non ci arrivano. Mettere la soglia al tetto sarebbe tornare all'errore
+# di prima con un numero diverso.
+#
+# LA STRADA CHE FUNZIONA, per chi legge questo codice in futuro: non e' questa.
+# Gli enti genetici non prevedono il singolo puledro, valutano il RIPRODUTTORE
+# dai figli che ha gia' in pista, e pubblicano accanto al giudizio la sua
+# affidabilita'. Misurato su questo archivio, quel metodo funziona: i figli
+# nati fino al 2020 predicono quelli nati dopo con correlazione +0,59, che sale
+# a +0,74 per gli stalloni con almeno venti figli. Si spiega il 35% contro il
+# 2,3% di qui. Quella valutazione sta in phase_stallion_ratings di
+# nightly_update.py, con l'affidabilita' calcolata dalla prova di progenie.
+#
+# Le fonti dei valori di ereditabilita':
+#   https://pmc.ncbi.nlm.nih.gov/articles/PMC4340234/   (trottatore francese)
+#   https://pubmed.ncbi.nlm.nih.gov/22785161/           (finlandese/Standardbred)
+MIN_R2_DECISION = 0.08
 MIN_AUC_DECISION = 0.65
 MIN_SAMPLES_DECISION = 500
-MIN_R2_EXPERIMENTAL = 0.0
+MIN_R2_EXPERIMENTAL = 0.03
 MIN_AUC_EXPERIMENTAL = 0.55
+
+# Tetto teorico stimato dall'ereditabilita' pubblicata, tenuto conto della
+# selezione dei riproduttori. Serve per dire, accanto al risultato, quanto
+# margine resta davvero: senza questo riferimento un 2,3% sembra un disastro,
+# mentre e' vicino al massimo ottenibile da questa impostazione.
+TETTO_TEORICO_R2 = 0.15
+# Segnale misurato direttamente nei dati, nel caso piu' favorevole possibile
+# (verifica sugli stessi cavalli usati per imparare, quindi gonfiato).
+SEGNALE_MISURATO_R2 = 0.036
 
 METHODOLOGY_NOTICE = (
     "Validazione out-of-fold con GroupKFold per stallone (nessuna famiglia "
@@ -108,6 +177,15 @@ def validation_status(cv_r2: float, cv_auc: float, n_samples: int) -> dict:
     return {
         "validation_status": status,
         "is_decision_support_ready": status == "decision_support_ready",
+        # Il risultato da solo non si sa leggere. Un 2,3% sembra un disastro
+        # finche' non si sa che il massimo ottenibile e' intorno al 15% e che
+        # il segnale realmente presente nei dati e' il 3,6%. Questi due numeri
+        # viaggiano quindi accanto al risultato, non nei commenti del codice.
+        "tetto_teorico_r2": TETTO_TEORICO_R2,
+        "segnale_misurato_r2": SEGNALE_MISURATO_R2,
+        "quota_del_tetto_raggiunta": (
+            round(cv_r2 / TETTO_TEORICO_R2, 3) if TETTO_TEORICO_R2 else None
+        ),
         "validation_criteria": {
             "min_r2_decision": MIN_R2_DECISION,
             "min_auc_decision": MIN_AUC_DECISION,
@@ -440,6 +518,36 @@ def main():
         "grade_thresholds": compute_grade_thresholds(conn),
     }
     conn.close()
+
+    # ── Non peggiorare il modello che c'e' gia' ──────────────────────────
+    #
+    # PERCHE'. Questo addestramento gira ogni domenica da solo. Il campione si
+    # sta restringendo: il 20/09/2026 erano 1.632 accoppiamenti, il 23/09 la
+    # stessa selezione ne trovava 380, perche' gli stalloni invecchiando
+    # passano alla scala dei cavalli storici e questo modello accetta solo
+    # quella dei cavalli in attivita'. Senza una difesa, ogni domenica
+    # sovrascriverebbe il modello con uno addestrato su meno dati, e nessuno se
+    # ne accorgerebbe: il file cambia in silenzio e il sito mostra il nuovo.
+    #
+    # La regola: se il campione e' meno di meta' di quello del modello in
+    # essere, non si sostituisce niente. Un modello vecchio ma su piu' dati
+    # vale piu' di uno nuovo su pochi.
+    precedente = Path(args.out)
+    if precedente.exists():
+        try:
+            vecchio = json.loads(precedente.read_text())
+            n_vecchio = int(vecchio.get("n_samples") or 0)
+        except Exception:
+            n_vecchio = 0
+        if n_vecchio and payload["n_samples"] < n_vecchio * 0.5:
+            print(f"[TRAIN] NON sostituisco il modello: ora ci sono "
+                  f"{payload['n_samples']} accoppiamenti contro i {n_vecchio} "
+                  f"del modello in essere (meno della meta'). Un modello su "
+                  f"piu' dati vale piu' di uno nuovo su pochi.", file=sys.stderr)
+            print(f"::warning::campione dimezzato ({payload['n_samples']} vs "
+                  f"{n_vecchio}): modello non aggiornato.", file=sys.stderr)
+            Path(args.report).write_text(json.dumps(report, indent=2))
+            return
 
     Path(args.out).write_text(json.dumps(payload))
     Path(args.report).write_text(json.dumps(report, indent=2))

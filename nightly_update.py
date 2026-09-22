@@ -357,7 +357,13 @@ def init_db(conn: sqlite3.Connection):
         avg_earnings     REAL,
         vp_boost         REAL DEFAULT 0,
         final_score      REAL,
-        last_updated     TEXT
+        last_updated     TEXT,
+        -- Quanto ci si puo' fidare del giudizio. Un voto costruito su 3 figli
+        -- e uno su 200 apparivano identici sul sito: due numeri, nessuna
+        -- avvertenza. Queste tre colonne rendono visibile la differenza.
+        affidabilita     REAL,    -- da 0 a 1, dalla prova di progenie
+        affidabilita_txt TEXT,    -- la stessa cosa a parole
+        n_figli_corsi    INTEGER  -- figli che hanno davvero corso
     );
 
     -- Rating FATTRICI: stesso impianto degli stalloni, tabella separata perche'
@@ -583,6 +589,9 @@ def init_db(conn: sqlite3.Connection):
         ("vp_boost",        "REAL DEFAULT 0"),
         ("final_score",     "REAL"),
         ("last_updated",    "TEXT"),
+        ("affidabilita",     "REAL"),
+        ("affidabilita_txt", "TEXT"),
+        ("n_figli_corsi",    "INTEGER"),
     ]:
         try:
             conn.execute(f"ALTER TABLE stallion_rating_stats ADD COLUMN {col} {typ}")
@@ -2625,6 +2634,65 @@ def phase_grade_stability(conn: sqlite3.Connection) -> None:
         print(f"[STABILITA] Fallita: {e}", file=sys.stderr)
 
 
+# ─────────────────────────────────────────────
+# AFFIDABILITA' DEL GIUDIZIO SU UNO STALLONE
+# ─────────────────────────────────────────────
+# Quota ereditabile della prestazione nel trotto. Le stime pubblicate: guadagni
+# annui per corsa 0,26-0,31 nel trottatore francese; guadagni annui 0,19 nel
+# cavallo finlandese e 0,27 nello Standardbred; tempo sul chilometro 0,32-0,34.
+# Si usa 0,30, che sta in mezzo ed e' il valore piu' ricorrente per il tempo.
+EREDITABILITA = 0.30
+
+# Costante della prova di progenie: k = (4 - h2) / h2. Con h2=0,30 vale 12,3.
+_K_PROGENIE = (4 - EREDITABILITA) / EREDITABILITA
+
+
+def affidabilita_giudizio(n_figli_in_pista: int) -> float:
+    """Quanto ci si puo' fidare del giudizio su uno stallone, da 0 a 1.
+
+    PERCHE' SERVE. Un giudizio su 3 figli e uno su 200 figli non valgono
+    uguale, ma sul sito apparivano identici: due voti, nessuna avvertenza.
+    Chi sceglie uno stallone deve sapere se sta leggendo una misura o
+    un'impressione.
+
+    LA FORMULA e' quella classica della prova di progenie: n / (n + k), con
+    k = (4 - h2) / h2. Non l'ho presa sulla fiducia: l'ho verificata sui dati
+    di questo archivio dividendo a caso i figli di ogni stallone in due meta' e
+    guardando quanto la prima meta' predice la seconda.
+
+        figli per meta'   stalloni   osservato   atteso
+              10-19          132       0,712     0,606
+              20-39           82       0,790     0,760
+              40 e oltre      42       0,858     0,836
+
+    Da dieci figli in su la formula regge. Sotto i dieci il dato osservato e'
+    piu' alto di quanto la genetica preveda (0,54 contro 0,29), e questo NON
+    significa che con pochi figli si possa stare tranquilli: significa che a
+    numeri piccoli la somiglianza fra fratelli e' gonfiata da cause non
+    genetiche, stesso allenatore, stesso allevamento, stessa annata. La
+    formula resta quella giusta perche' misura la sola parte ereditaria, ed
+    essendo piu' prudente sbaglia dalla parte sicura.
+
+    Conta il numero di figli CHE HANNO CORSO, non quelli nati: un figlio che
+    non e' mai sceso in pista non porta nessuna informazione.
+    """
+    n = max(0, int(n_figli_in_pista or 0))
+    return n / (n + _K_PROGENIE) if n else 0.0
+
+
+def etichetta_affidabilita(valore: float) -> str:
+    """Traduce l'affidabilita' in una parola, per chi legge il sito."""
+    if valore >= 0.80:
+        return "molto alta"
+    if valore >= 0.60:
+        return "alta"
+    if valore >= 0.40:
+        return "media"
+    if valore >= 0.20:
+        return "bassa"
+    return "insufficiente"
+
+
 def phase_stallion_ratings(conn: sqlite3.Connection):
     """
     Calcola rating stalloni.
@@ -2720,11 +2788,25 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
             WHERE UPPER(TRIM(h.sire))=UPPER(TRIM(?)) AND r.race_date >= ?
         """, (sire_name, cutoff)).fetchone()[0] or 0
 
+        # Quanti figli hanno DAVVERO corso: e' questo che rende attendibile il
+        # giudizio, non quanti ne sono nati. Un figlio mai sceso in pista non
+        # dice niente sul padre.
+        n_figli_corsi = conn.execute("""
+            SELECT COUNT(DISTINCT h.name)
+            FROM horses h
+            JOIN races r ON r.horse_name = h.name
+            WHERE UPPER(TRIM(h.sire))=UPPER(TRIM(?))
+        """, (sire_name,)).fetchone()[0] or 0
+
+        aff = affidabilita_giudizio(n_figli_corsi)
+        aff_txt = etichetta_affidabilita(aff)
+
         all_final_scores.append(final_score)
         row_buffer.append((
             sire_name, n_figli_totali, n_in_corsa, stallion_score,
             n_SSS, n_SS, n_S, pct_top_S, round(avg_earnings, 2),
-            vp_boost, final_score, now_iso
+            vp_boost, final_score, now_iso,
+            round(aff, 3), aff_txt, n_figli_corsi
         ))
 
     dyn_thresholds = build_stallion_grade_thresholds(all_final_scores)
@@ -2732,18 +2814,21 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
 
     for (sire_name, n_figli_totali, n_in_corsa, stallion_score,
          n_SSS, n_SS, n_S, pct_top_S, avg_earn,
-         vp_boost, final_score, ts) in row_buffer:
+         vp_boost, final_score, ts,
+         aff, aff_txt, n_figli_corsi) in row_buffer:
         grade = score_to_stallion_grade(final_score, dyn_thresholds) if final_score > 0 else "N/A"
         conn.execute("""
             INSERT OR REPLACE INTO stallion_rating_stats
                 (sire, n_figli_totali, n_in_corsa, avg_score, grade,
                  n_SSS, n_SS, n_S, pct_top_S, avg_earnings,
-                 vp_boost, final_score, last_updated)
-            VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?)
+                 vp_boost, final_score, last_updated,
+                 affidabilita, affidabilita_txt, n_figli_corsi)
+            VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?, ?,?,?)
         """, (
             sire_name, n_figli_totali, n_in_corsa, stallion_score, grade,
             n_SSS, n_SS, n_S, pct_top_S, avg_earn,
-            vp_boost, final_score, ts
+            vp_boost, final_score, ts,
+            aff, aff_txt, n_figli_corsi
         ))
 
     conn.commit()

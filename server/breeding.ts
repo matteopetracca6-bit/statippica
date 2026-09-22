@@ -42,10 +42,22 @@ interface BreedingModel {
 // ── Gate di validazione ─────────────────────────────────
 // Fallback per artefatti generati prima dell'introduzione dei campi:
 // lo stato viene ricalcolato dalle metriche presenti nel JSON.
-const MIN_R2_DECISION = 0.20;
+//
+// QUESTE SOGLIE DEVONO RESTARE UGUALI a quelle di train_breeding_model.py,
+// dove sta la spiegazione di come sono state ricavate. Erano 0,20 senza nessuna
+// giustificazione: una convenzione generica appoggiata su un problema a cui non
+// apparteneva, e sopra il tetto che la genetica consente (circa 15%). Adesso
+// sono ancorate a due misure: il segnale realmente presente nei dati (3,6%,
+// misurato barando) e quel tetto teorico.
+//
+// Avere lo stesso numero scritto in due posti e' una trappola: se qui resta
+// 0,20 e nello script diventa 0,08, il sito giudica un modello con un criterio
+// e chi lo addestra con un altro, e la differenza non da' nessun errore. Chi
+// cambia una soglia deve cambiarla in entrambi i punti.
+const MIN_R2_DECISION = 0.08;
 const MIN_AUC_DECISION = 0.65;
 const MIN_SAMPLES_DECISION = 500;
-const MIN_R2_EXPERIMENTAL = 0;
+const MIN_R2_EXPERIMENTAL = 0.03;
 const MIN_AUC_EXPERIMENTAL = 0.55;
 
 const DEFAULT_NOTICE =

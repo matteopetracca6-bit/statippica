@@ -397,6 +397,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
         final_score:     stats?.final_score     ?? null,      // NUOVO — punteggio finale
         pct_top_S:       stats?.pct_top_S       ?? null,
         avg_earnings:    stats?.avg_earnings    ?? null,
+        // L'affidabilita' viaggia sempre col voto: dice se si sta leggendo una
+        // misura o un'impressione. Dipende da quanti figli hanno davvero corso,
+        // non da quanti ne sono nati.
+        affidabilita:     stats?.affidabilita     ?? null,
+        affidabilita_txt: stats?.affidabilita_txt ?? null,
+        n_figli_corsi:    stats?.n_figli_corsi    ?? null,
         max_earnings:    children.length > 0
                            ? Math.max(...children.map((c: any) => c.career_earnings ?? 0))
                            : null,
@@ -800,6 +806,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
           s.country, s.season, s.fee_source,
           sr.avg_score, sr.final_score, sr.grade,
           sr.n_figli_totali, sr.n_in_corsa, sr.pct_top_S, sr.vp_boost,
+          -- L'affidabilita' viaggia SEMPRE accanto al voto. Un giudizio su 2
+          -- figli e uno su 400 avevano lo stesso aspetto: due lettere, nessuna
+          -- avvertenza. Chi sceglie uno stallone deve poter distinguere una
+          -- misura da un'impressione.
+          sr.affidabilita, sr.affidabilita_txt, sr.n_figli_corsi,
           COALESCE(s.country, sp.nationality)               AS nationality,
           CASE WHEN s.name IS NOT NULL THEN 1 ELSE 0 END    AS in_catalog
         FROM stallion_rating_stats sr
@@ -814,6 +825,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
           s.country, s.season, s.fee_source,
           NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+          NULL, NULL, NULL,
           COALESCE(s.country, sp.nationality), 1
         FROM stallions s
         LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))

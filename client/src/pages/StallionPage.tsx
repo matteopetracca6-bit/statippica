@@ -30,6 +30,10 @@ interface StallionData {
   grade: string | null;
   vp_boost: number;
   final_score: number | null;
+  // Quanto ci si puo' fidare del voto: dipende da quanti figli hanno corso.
+  affidabilita: number | null;
+  affidabilita_txt: string | null;
+  n_figli_corsi: number | null;
   no_offspring_data?: boolean;
   stud?: {
     stud_fee_eur: number;
@@ -472,6 +476,52 @@ export default function StallionPage() {
                   {stallion.pct_top_S != null ? `${stallion.pct_top_S.toFixed(1)}%` : "—"}
                 </div>
               </div>
+
+              {/* AFFIDABILITA' — sta accanto al voto, non in fondo alla pagina.
+                  Un voto costruito su 2 figli e uno su 400 avevano lo stesso
+                  aspetto: chi legge non poteva distinguere una misura da
+                  un'impressione. Il colore segue il livello, cosi' si capisce
+                  a colpo d'occhio. */}
+              {stallion.affidabilita != null && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Affidabilità</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "7px" }}>
+                    <span className="tabular" style={{
+                      fontSize: "18px", fontWeight: 700,
+                      color: stallion.affidabilita >= 0.6 ? "hsl(120 45% 58%)"
+                           : stallion.affidabilita >= 0.4 ? "hsl(45 70% 58%)"
+                           : "hsl(8 65% 60%)",
+                    }}>
+                      {Math.round(stallion.affidabilita * 100)}%
+                    </span>
+                    <span style={{ fontSize: "11px", color: "hsl(210 8% 50%)" }}>
+                      {stallion.affidabilita_txt}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Avvertenza quando il giudizio non regge. Sotto il 50% di
+              affidabilita' — che con questa ereditabilita' vuol dire meno di
+              tredici figli in pista — il voto non e' una misura: e' il caso.
+              Prima la pagina mostrava comunque una lettera, e uno stallone
+              con un figlio solo risultava "F" come se fosse stato valutato. */}
+          {stallion.affidabilita != null && stallion.affidabilita < 0.5 && (
+            <div style={{
+              background: "hsl(8 40% 12%)", border: "1px solid hsl(8 45% 26%)",
+              borderRadius: "10px", padding: "13px 16px", marginBottom: "18px",
+              fontSize: "12.5px", lineHeight: 1.6, color: "hsl(8 25% 80%)",
+            }}>
+              <strong style={{ color: "hsl(8 60% 72%)" }}>Giudizio non attendibile.</strong>{" "}
+              Questo voto poggia su {stallion.n_figli_corsi ?? 0}{" "}
+              {stallion.n_figli_corsi === 1 ? "figlio che ha" : "figli che hanno"} corso.
+              Con così pochi risultati la parte dovuta al caso supera quella
+              dovuta allo stallone: due figli fortunati o sfortunati spostano
+              tutto. Il voto è mostrato per trasparenza, non per orientare una
+              scelta. Serve almeno una dozzina di figli in pista perché il
+              giudizio cominci a reggere, e la solidità cresce con il numero.
             </div>
           )}
 
