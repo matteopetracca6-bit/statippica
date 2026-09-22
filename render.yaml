@@ -4,14 +4,18 @@ services:
     runtime: node
     region: frankfurt
     plan: free
-    # L'archivio viaggia compresso: da aperto supera i 100 MB che GitHub
-    # accetta per un singolo file, da compresso sta in meno di 30.
+    # L'archivio NON sta dentro il progetto: lo scarica prima di partire.
     #
-    # Va riaperto nella cartella del progetto, NON sul disco montato: il
-    # server apre data.db relativo alla cartella di lavoro (server/routes.ts,
-    # DB_PATH = cwd + "data.db"). Riaprirlo altrove lascia il sito senza
-    # archivio e ogni richiesta risponde "unable to open database file".
-    buildCommand: npm install && npm run build && gunzip -c data.db.gz > data.db && ls -l data.db
+    # Dentro git ogni versione nuova si somma alle precedenti per sempre, e un
+    # binario compresso da 30 MB che cambia ogni notte non ha nulla in comune
+    # con quello di ieri: git aggiunge 30 MB di cronologia a notte, circa
+    # 900 MB al mese. In tre mesi il progetto era a 477 MB, con GitHub che
+    # raccomanda di restare sotto 1 GB. Ora l'archivio sta in un rilascio, a
+    # un indirizzo fisso, e la copia nuova sostituisce la vecchia.
+    #
+    # Lo script scarica, verifica (dimensione e numero di gare) e, se qualcosa
+    # non torna, FERMA la pubblicazione invece di avviare un sito senza dati.
+    buildCommand: npm install && npm run build && bash scripts/prepara_archivio.sh
     startCommand: NODE_ENV=production node dist/index.cjs
     envVars:
       - key: NODE_ENV
@@ -20,7 +24,3 @@ services:
         value: "true"
       - key: PORT
         value: "10000"
-    disk:
-      name: statippica-data
-      mountPath: /data
-      sizeGB: 1

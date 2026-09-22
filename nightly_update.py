@@ -2941,6 +2941,84 @@ def _update_horse_career_stats(conn: sqlite3.Connection, horse_name: str):
         conn.commit()
 
 # ─────────────────────────────────────────────
+# PUBBLICAZIONE DELL'ARCHIVIO (fuori da git)
+# ─────────────────────────────────────────────
+TAG_ARCHIVIO = "archivio"
+
+def pubblica_archivio_nel_rilascio() -> bool:
+    """Carica data.db.gz in un rilascio fisso, sostituendo la copia precedente.
+
+    Perche' non dentro git: git conserva ogni versione per sempre, e un
+    binario compresso da 30 MB che cambia ogni notte non ha nulla in comune
+    con la versione di ieri, quindi ogni notte aggiunge 30 MB di cronologia
+    che non si possono piu' togliere. Un rilascio invece tiene UNA copia sola:
+    quella nuova sostituisce la vecchia e il peso non cresce.
+
+    L'indirizzo resta sempre lo stesso, cosi' il sito sa dove trovarlo:
+    https://github.com/<utente>/<progetto>/releases/download/archivio/data.db.gz
+
+    Torna True se il caricamento e' riuscito.
+    """
+    if not os.path.exists("data.db.gz"):
+        print("[RILASCIO] data.db.gz non c'e', salto.", file=sys.stderr)
+        return False
+
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        print("[RILASCIO] Nessun permesso di scrittura disponibile, salto.",
+              file=sys.stderr)
+        return False
+
+    utente  = os.environ.get("GITHUB_USER", "matteopetracca6-bit")
+    progetto = os.environ.get("GITHUB_REPO", "statippica")
+    repo = f"{utente}/{progetto}"
+    amb = dict(os.environ, GH_TOKEN=token)
+
+    # Il rilascio deve esistere. Se c'e' gia', "create" fallisce e va bene:
+    # interessa solo che ci sia. Se e' rimasto in bozza da un tentativo
+    # precedente, va pubblicato, altrimenti il sito non puo' scaricarlo.
+    esiste = subprocess.run(
+        ["gh", "release", "view", TAG_ARCHIVIO, "--repo", repo],
+        capture_output=True, text=True, env=amb
+    ).returncode == 0
+
+    if not esiste:
+        print(f"[RILASCIO] Creo il rilascio '{TAG_ARCHIVIO}'...", file=sys.stderr)
+        subprocess.run(
+            ["gh", "release", "create", TAG_ARCHIVIO, "--repo", repo,
+             "--title", "Archivio dati StatIppica",
+             "--notes", "L'archivio delle gare, rifatto ogni notte dal lavoro "
+                        "automatico. Sta qui e non dentro il progetto perche' "
+                        "in git ogni versione si sommerebbe alle precedenti per "
+                        "sempre; qui la copia nuova sostituisce la vecchia."],
+            capture_output=True, text=True, env=amb
+        )
+    else:
+        # se e' una bozza, pubblicalo: le bozze non sono scaricabili
+        subprocess.run(
+            ["gh", "release", "edit", TAG_ARCHIVIO, "--repo", repo, "--draft=false"],
+            capture_output=True, text=True, env=amb
+        )
+
+    mb = os.path.getsize("data.db.gz") / 1048576
+    print(f"[RILASCIO] Carico l'archivio ({mb:.1f} MB)...", file=sys.stderr)
+    r = subprocess.run(
+        ["gh", "release", "upload", TAG_ARCHIVIO, "data.db.gz",
+         "--repo", repo, "--clobber"],
+        capture_output=True, text=True, env=amb
+    )
+    if r.returncode != 0:
+        print(f"[RILASCIO] ERRORE nel caricamento: {r.stderr.strip()}",
+              file=sys.stderr)
+        return False
+
+    print("[RILASCIO] Archivio pubblicato. Indirizzo fisso:", file=sys.stderr)
+    print(f"[RILASCIO]   https://github.com/{repo}/releases/download/"
+          f"{TAG_ARCHIVIO}/data.db.gz", file=sys.stderr)
+    return True
+
+
+# ─────────────────────────────────────────────
 # FASE 4 — SYNC
 # ─────────────────────────────────────────────
 def phase_sync():
@@ -2988,6 +3066,19 @@ def phase_git_push():
             print("[GIT] ATTENZIONE: anche da compresso si avvicina al limite "
                   "di GitHub. Serve un'altra soluzione per l'archivio.",
                   file=sys.stderr)
+
+        # L'archivio va pubblicato in un RILASCIO, non dentro git.
+        #
+        # Dentro git ogni versione nuova si somma alle precedenti per sempre:
+        # 30 MB di binario compresso a notte che git non riesce a condividere
+        # con la versione di ieri, quindi 30 MB di cronologia in piu' ogni
+        # notte, circa 900 MB al mese. In tre mesi il progetto e' arrivato a
+        # 477 MB, e GitHub raccomanda di restare sotto 1 GB.
+        #
+        # In un rilascio la copia nuova SOSTITUISCE la vecchia: il peso resta
+        # fermo a 30 MB per sempre, e i rilasci non contano nel peso del
+        # progetto ne' consumano quote di traffico.
+        pubblica_archivio_nel_rilascio()
 
         subprocess.run(["git", "add", "data.db.gz"], check=True, capture_output=True)
 
