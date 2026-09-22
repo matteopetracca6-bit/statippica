@@ -9,29 +9,99 @@ import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
 import path from "node:path";
 
-// L'archivio viaggia in git compresso, perche' da aperto supera i 100 MB che
-// GitHub accetta per un singolo file. Normalmente lo riapre il comando di
-// installazione, ma se quel passaggio manca o cambia, il sito parte senza
-// archivio e ogni pagina risponde "unable to open database file" — e' gia'
-// successo una volta. Questa e' la rete di sicurezza: se il file aperto non
-// c'e' e quello compresso si', lo apriamo qui prima di accettare richieste.
+// L'archivio NON sta dentro il progetto: lo scarica il sito, prima di
+// accettare richieste.
+//
+// Perche' fuori da git: ogni versione nuova si sommava alle precedenti per
+// sempre, 30 MB a notte che non si potevano piu' togliere (477 MB in tre
+// mesi). Ora sta in un rilascio, dove la copia nuova sostituisce la vecchia.
+//
+// PERCHE' IL CONTROLLO STA QUI E NON NEL COMANDO DI PUBBLICAZIONE. Il servizio
+// su Render e' stato creato a mano, quindi render.yaml NON viene letto: il
+// comando vero sta nel pannello di Render, e cambiarlo nel progetto non ha
+// effetto. E' cosi' che il sito e' finito a rispondere "unable to open
+// database file" a ogni richiesta pur avendo la configurazione giusta scritta
+// nel progetto.
+//
+// Questo codice invece arriva dal progetto, quindi comanda davvero: qualunque
+// cosa dica il pannello, il sito si procura l'archivio prima di partire. Copre
+// anche gli spegnimenti del piano gratuito, dove il file puo' sparire.
+const INDIRIZZO_ARCHIVIO =
+  "https://github.com/matteopetracca6-bit/statippica/releases/download/archivio/data.db.gz";
+const BYTE_MINIMI_APERTO = 90_000_000; // un archivio vero da aperto sta sopra i 100 MB
+
+function archivioSembraBuono(percorso: string): boolean {
+  try {
+    return statSync(percorso).size >= BYTE_MINIMI_APERTO;
+  } catch {
+    return false;
+  }
+}
+
 async function assicuraArchivio(): Promise<void> {
   const aperto = path.resolve(process.cwd(), "data.db");
   const compresso = aperto + ".gz";
-  if (existsSync(aperto)) return;
-  if (!existsSync(compresso)) {
+
+  if (archivioSembraBuono(aperto)) return;
+
+  if (existsSync(aperto)) {
+    // C'e' ma e' troppo piccolo: probabilmente e' il file vuoto che si crea
+    // da solo quando qualcosa prova ad aprire un archivio che non esiste.
+    // Tenerlo sarebbe peggio che non averlo: va rifatto.
+    console.warn("[ARCHIVIO] data.db c'e' ma e' troppo piccolo: lo rifaccio.");
+  }
+
+  // 1) Se per qualche motivo c'e' una copia compressa qui, usala: e' piu'
+  //    veloce che scaricare.
+  if (existsSync(compresso)) {
+    console.log("[ARCHIVIO] Riapro la copia compressa presente...");
+    try {
+      await pipeline(createReadStream(compresso), createGunzip(), createWriteStream(aperto));
+      if (archivioSembraBuono(aperto)) {
+        console.log(
+          `[ARCHIVIO] Pronto: ${(statSync(aperto).size / 1048576).toFixed(1)} MB`,
+        );
+        return;
+      }
+      console.warn("[ARCHIVIO] La copia presente non va bene: provo a scaricarlo.");
+    } catch (e) {
+      console.warn("[ARCHIVIO] La copia presente non si apre: provo a scaricarlo.", e);
+    }
+  }
+
+  // 2) La strada normale: scaricarlo dal rilascio e riaprirlo mentre arriva,
+  //    senza tenerlo tutto in memoria (il piano gratuito ha 512 MB).
+  console.log(`[ARCHIVIO] Scarico l'archivio da ${INDIRIZZO_ARCHIVIO}`);
+  const inizio = Date.now();
+  try {
+    const risposta = await fetch(INDIRIZZO_ARCHIVIO, { redirect: "follow" });
+    if (!risposta.ok || !risposta.body) {
+      throw new Error(`risposta ${risposta.status}`);
+    }
+    await pipeline(
+      // @ts-expect-error il corpo della risposta e' uno stream leggibile
+      risposta.body,
+      createGunzip(),
+      createWriteStream(aperto),
+    );
+  } catch (e) {
     console.error(
-      "[ARCHIVIO] Manca sia data.db sia data.db.gz in " + process.cwd() +
-      ". Il sito non ha dati da mostrare.",
+      "[ARCHIVIO] Scaricamento non riuscito. Il sito non ha dati da mostrare.",
+      e,
     );
     return;
   }
-  console.log("[ARCHIVIO] data.db assente: lo riapro da data.db.gz...");
-  const inizio = Date.now();
-  await pipeline(createReadStream(compresso), createGunzip(), createWriteStream(aperto));
-  const mb = statSync(aperto).size / 1048576;
+
+  if (!archivioSembraBuono(aperto)) {
+    console.error(
+      "[ARCHIVIO] Quello scaricato e' troppo piccolo per essere l'archivio vero.",
+    );
+    return;
+  }
+
   console.log(
-    `[ARCHIVIO] Riaperto: ${mb.toFixed(1)} MB in ${((Date.now() - inizio) / 1000).toFixed(1)}s`,
+    `[ARCHIVIO] Pronto: ${(statSync(aperto).size / 1048576).toFixed(1)} MB ` +
+      `in ${((Date.now() - inizio) / 1000).toFixed(1)}s`,
   );
 }
 
