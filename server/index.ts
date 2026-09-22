@@ -81,13 +81,31 @@ async function assicuraArchivio(): Promise<void> {
     // quindi il sito si rimette in pari da solo nel giro di poco.
     const mia = targaSalvata(aperto);
     const sua = await targaPubblicata();
-    if (!sua || !mia || mia === sua) {
-      // Nessuna delle due targhe, o coincidono: va bene cosi'. Se non si
-      // riesce a leggere quella pubblicata, si tiene la copia che c'e':
-      // meglio un archivio di ieri che un sito senza dati.
+
+    if (!sua) {
+      // Non si riesce a leggere la targa pubblicata: si tiene la copia che
+      // c'e'. Meglio un archivio di ieri che un sito senza dati.
       return;
     }
-    console.log("[ARCHIVIO] E' stato pubblicato un archivio piu' recente: lo scarico.");
+
+    // ATTENZIONE, QUI C'ERA UN ERRORE MIO. La prima versione di questo
+    // controllo, scritta il 22/09, diceva "se non ho la targa, va bene
+    // cosi'". Sembra prudente ed e' il contrario: l'archivio senza targa
+    // accanto e' proprio quello scaricato dalla versione PRECEDENTE del
+    // programma, cioe' esattamente il caso per cui questo controllo esiste.
+    // Il risultato era che il contenitore in funzione si teneva il suo
+    // archivio vecchio per sempre, e il controllo non scattava mai: l'ho
+    // scoperto perche' un archivio pubblicato non arrivava al sito.
+    //
+    // Nessuna targa significa "non so cosa ho in mano", e non so' non e'
+    // "va bene": si riscarica una volta e da quel momento la targa c'e'.
+    if (!mia) {
+      console.log("[ARCHIVIO] Non so da quando e' questo archivio: lo riprendo.");
+    } else if (mia === sua) {
+      return; // le targhe coincidono: la copia e' quella giusta
+    } else {
+      console.log("[ARCHIVIO] E' stato pubblicato un archivio piu' recente.");
+    }
   }
 
   if (existsSync(aperto) && !archivioSembraBuono(aperto)) {
