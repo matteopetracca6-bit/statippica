@@ -1,0 +1,131 @@
+name: StatIppica — Riallinea i totali di carriera (a mano)
+
+# Rimette i totali di carriera (corse, vittorie, guadagni) in accordo con le
+# gare in archivio, e pubblica l'archivio corretto.
+#
+# Serve perche' la funzione che rifaceva i totali contava solo le gare
+# classificate, escludendo le partenze con squalifica o ritiro: un cavallo con
+# 99 partenze ne mostrava 37, e i premi di quelle gare (304.744 euro in tutto)
+# finivano fuori dai guadagni.
+#
+# Si lancia a mano: e' una riparazione, non manutenzione. Il difetto nella
+# funzione e' gia' corretto, quindi da adesso i totali nascono giusti.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova, senza scrivere niente"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write # serve per pubblicare l'archivio corretto nel rilascio
+
+jobs:
+  allinea:
+    runs-on: ubuntu-latest
+    name: Riallinea i totali e pubblica
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4
+
+      - name: Procura l'archivio
+        run: bash scripts/ottieni_archivio.sh
+
+      - name: Fotografia dei campioni storici, prima
+        # Vanno guardati prima e dopo: sono i piu' esposti, perche' hanno
+        # totali veri ma nessuna gara dettagliata, e un ricalcolo distratto
+        # li azzererebbe.
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+          c = sqlite3.connect('data.db')
+          for n in ("VARENNE", "MACK GRACE SM", "LOONEY TUNES"):
+              r = c.execute("""select career_races, career_wins, career_earnings
+                                 from horses where name=?""", (n,)).fetchone()
+              print(f"{n}: {r}")
+          tot = c.execute("""select count(*) from horses h
+                              where not exists (select 1 from races
+                                                 where horse_name = h.name)
+                                and coalesce(h.career_races, 0) > 0""").fetchone()[0]
+          print(f"Cavalli storici senza gare in archivio: {tot}")
+          PY
+
+      - name: Riallinea i totali
+        run: |
+          if [ "${{ inputs.prova }}" = "true" ]; then
+            python3 scripts/allinea_totali.py --prova
+          else
+            python3 scripts/allinea_totali.py
+          fi
+
+      - name: Controlla il risultato
+        run: |
+          python3 - <<'PY'
+          import sqlite3, sys
+          c = sqlite3.connect('data.db')
+
+          for n in ("VARENNE", "MACK GRACE SM", "LOONEY TUNES"):
+              r = c.execute("""select career_races, career_wins, career_earnings
+                                 from horses where name=?""", (n,)).fetchone()
+              print(f"{n}: {r}")
+              if r and not r[1]:
+                  print(f"::error::{n} ha perso le sue vittorie.")
+                  sys.exit(1)
+
+          brutti = 0
+          for et, q in [
+              ("corse", "coalesce(h.career_races,0) <> (select count(*) from races where horse_name=h.name)"),
+              ("guadagni", "abs(coalesce(h.career_earnings,0) - (select coalesce(sum(prize_net),0) from races where horse_name=h.name)) > 1"),
+              ("vittorie", "coalesce(h.career_wins,0) <> (select count(*) from races where horse_name=h.name and placement=1)"),
+          ]:
+              n = c.execute(f"""select count(*) from horses h
+                                 where exists (select 1 from races where horse_name=h.name)
+                                   and {q}""").fetchone()[0]
+              print(f"{et}: {n} disallineati")
+              brutti += n
+          if brutti:
+              print("::error::restano totali disallineati.")
+              sys.exit(1)
+          print("Tutti i totali combaciano con le gare.")
+          PY
+
+      - name: Pubblica l'archivio corretto
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          gh release upload archivio data.db.gz \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Archivio corretto pubblicato."
+
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" \
+            -d '{}' | head -c 300
+          echo
