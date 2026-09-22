@@ -2942,13 +2942,40 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
     return inserted
 
 def _update_horse_career_stats(conn: sqlite3.Connection, horse_name: str):
+    """Rifa' i totali di carriera di un cavallo dalle sue gare.
+
+    DUE REGOLE, imparate correggendo due errori veri.
+
+    1. Si contano TUTTE le partenze, non solo le gare classificate.
+       Un cavallo squalificato, ritirato o distanziato ha comunque corso, e la
+       fonte lo conta fra le corse. Filtrare su "ha un piazzamento" tagliava
+       fuori piu' di meta' delle partenze: un cavallo con 99 corse ne mostrava
+       37. Peggio, quelle partenze possono aver fruttato un premio: nelle gare
+       senza piazzamento ci sono 304.744 euro di premi che sparivano dai
+       guadagni di carriera.
+
+    2. Se il cavallo non ha NESSUNA gara in archivio, non si tocca niente.
+       I campioni storici (VARENNE, MACK GRACE SM, LOONEY TUNES...) hanno i
+       totali di carriera presi dalla fonte ma nessuna gara dettagliata,
+       perche' correvano prima dell'inizio dell'archivio. Ricalcolarli
+       azzererebbe 41 vittorie di Varenne, sostituendo un dato giusto con uno
+       sbagliato, in silenzio. Sono 447 cavalli.
+    """
+    # Se non c'e' nessuna gara, i totali che ci sono valgono piu' di quelli
+    # che calcoleremmo noi: vengono dalla fonte. Meglio lasciarli stare.
+    ne_ha = conn.execute(
+        "SELECT COUNT(*) FROM races WHERE horse_name=?", (horse_name,)
+    ).fetchone()[0]
+    if not ne_ha:
+        return
+
     stats = conn.execute("""
         SELECT
             COUNT(*) as n_races,
             SUM(CASE WHEN placement=1 THEN 1 ELSE 0 END) as wins,
             SUM(COALESCE(prize_net, 0)) as earnings
         FROM races
-        WHERE horse_name=? AND placement IS NOT NULL
+        WHERE horse_name=?
     """, (horse_name,)).fetchone()
 
     # Record km: va calcolato come minimo NUMERICO reale (secondi totali), non
