@@ -1,0 +1,129 @@
+name: StatIppica — Calcola l'affidabilità dei giudizi sugli stalloni (a mano)
+
+# Ricalcola i giudizi sugli stalloni aggiungendo l'affidabilità, e pubblica
+# l'archivio aggiornato.
+#
+# Serve perché l'affidabilità è appena stata introdotta: nell'archivio
+# pubblicato le colonne sono vuote, e il sito non la mostrerebbe finché il
+# lavoro notturno non ripassa da solo. Questo la mette subito.
+#
+# Si lancia a mano: è un riempimento una volta sola. Dalla prossima notte il
+# calcolo avviene insieme agli altri, senza bisogno di questo flusso.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova, senza pubblicare niente"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write # serve per pubblicare l'archivio aggiornato nel rilascio
+
+jobs:
+  affidabilita:
+    runs-on: ubuntu-latest
+    name: Calcola l'affidabilità e pubblica
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4
+
+      - name: Procura l'archivio
+        run: bash scripts/ottieni_archivio.sh
+
+      - name: Ricalcola i giudizi sugli stalloni
+        run: |
+          python3 - <<'PY'
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nu)
+
+          conn = sqlite3.connect("data.db")
+          nu.init_db(conn)                    # aggiunge le colonne nuove
+          nu.phase_stallion_ratings(conn)     # ricalcola con l'affidabilità
+          conn.commit()
+          conn.close()
+          PY
+
+      - name: Controlla il risultato
+        run: |
+          python3 - <<'PY'
+          import sqlite3, sys
+          c = sqlite3.connect('data.db')
+
+          tot = c.execute("SELECT COUNT(*) FROM stallion_rating_stats").fetchone()[0]
+          con = c.execute("""SELECT COUNT(*) FROM stallion_rating_stats
+                              WHERE affidabilita IS NOT NULL""").fetchone()[0]
+          print(f"stalloni con un giudizio: {tot}, con affidabilità calcolata: {con}")
+          if tot == 0 or con < tot:
+              print("::error::l'affidabilità non è stata calcolata per tutti.")
+              sys.exit(1)
+
+          # Un cavallo con molti figli deve risultare affidabile, uno con pochi no.
+          # Se queste due cose non tornano, il calcolo è sbagliato da qualche parte.
+          for nome, minimo in (("VARENNE", 0.90), ("MAHARAJAH", 0.90)):
+              r = c.execute("""SELECT n_figli_corsi, affidabilita
+                                 FROM stallion_rating_stats WHERE sire=?""",
+                            (nome,)).fetchone()
+              if r:
+                  print(f"  {nome}: {r[0]} figli in pista, affidabilità {r[1]}")
+                  if (r[1] or 0) < minimo:
+                      print(f"::error::{nome} ha {r[0]} figli ma affidabilità {r[1]}.")
+                      sys.exit(1)
+
+          scarsi = c.execute("""SELECT COUNT(*) FROM stallion_rating_stats
+                                 WHERE n_figli_corsi <= 2 AND affidabilita >= 0.5""").fetchone()[0]
+          if scarsi:
+              print(f"::error::{scarsi} stalloni con 2 figli o meno risultano affidabili.")
+              sys.exit(1)
+
+          for et, lo, hi in (("insufficiente", 0.0, 0.2), ("bassa", 0.2, 0.4),
+                             ("media", 0.4, 0.6), ("alta", 0.6, 0.8),
+                             ("molto alta", 0.8, 1.01)):
+              n = c.execute("""SELECT COUNT(*) FROM stallion_rating_stats
+                                WHERE affidabilita >= ? AND affidabilita < ?""",
+                            (lo, hi)).fetchone()[0]
+              print(f"  {et:14} {n:4} stalloni")
+          print("Tutto coerente.")
+          PY
+
+      - name: Pubblica l'archivio aggiornato
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          gh release upload archivio data.db.gz \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Archivio aggiornato pubblicato."
+
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" \
+            -d '{}' | head -c 300
+          echo
