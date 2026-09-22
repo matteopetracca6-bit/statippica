@@ -1,25 +1,456 @@
 {
- "b0": 9.318645,
- "b1": 0.019386,
- "sd_log": 0.696423,
- "n": 401,
- "r2": 0.0683,
- "quota_venduti": 0.814,
- "mediana_venduti": 20000,
- "n_lotti_totali": 532,
- "fonti": [
-  {
-   "nome": "Asta ANACT yearlings 2026, risultati ufficiali",
-   "url": "https://www.gaet.it/notizie/daily/asta-anact-risultati-ufficiali"
+  "versione": 2,
+  "metodo": "fascia storica dei figli venduti quando ci sono almeno 3 vendite; altrimenti stima dalla tassa di monta",
+  "fasce_per_stallone": {
+    "DONATO HANOVER": {
+      "n_venduti": 19,
+      "n_lotti": 25,
+      "quota_venduti": 0.76,
+      "p25": 10500,
+      "mediana": 13000,
+      "p75": 20000,
+      "minimo": 5000,
+      "massimo": 52000
+    },
+    "VARENNE": {
+      "n_venduti": 12,
+      "n_lotti": 13,
+      "quota_venduti": 0.923,
+      "p25": 17000,
+      "mediana": 20500,
+      "p75": 27750,
+      "minimo": 10000,
+      "massimo": 43000
+    },
+    "MAHARAJAH": {
+      "n_venduti": 56,
+      "n_lotti": 68,
+      "quota_venduti": 0.824,
+      "p25": 18750,
+      "mediana": 30000,
+      "p75": 45500,
+      "minimo": 10000,
+      "massimo": 170000
+    },
+    "VICTOR GIO": {
+      "n_venduti": 13,
+      "n_lotti": 14,
+      "quota_venduti": 0.929,
+      "p25": 14000,
+      "mediana": 16000,
+      "p75": 24000,
+      "minimo": 9000,
+      "massimo": 48000
+    },
+    "EL IDEAL": {
+      "n_venduti": 34,
+      "n_lotti": 37,
+      "quota_venduti": 0.919,
+      "p25": 10500,
+      "mediana": 16000,
+      "p75": 24000,
+      "minimo": 6000,
+      "massimo": 75000
+    },
+    "INTERNATIONAL MONI": {
+      "n_venduti": 7,
+      "n_lotti": 11,
+      "quota_venduti": 0.636,
+      "p25": 7500,
+      "mediana": 8000,
+      "p75": 12000,
+      "minimo": 7000,
+      "massimo": 30000
+    },
+    "NUNCIO": {
+      "n_venduti": 9,
+      "n_lotti": 12,
+      "quota_venduti": 0.75,
+      "p25": 12000,
+      "mediana": 13000,
+      "p75": 25000,
+      "minimo": 10000,
+      "massimo": 36000
+    },
+    "BIRD PARKER": {
+      "n_venduti": 6,
+      "n_lotti": 7,
+      "quota_venduti": 0.857,
+      "p25": 25750,
+      "mediana": 29000,
+      "p75": 31500,
+      "minimo": 10000,
+      "massimo": 32000
+    },
+    "ALRAJAH ONE": {
+      "n_venduti": 8,
+      "n_lotti": 13,
+      "quota_venduti": 0.615,
+      "p25": 17750,
+      "mediana": 20500,
+      "p75": 22000,
+      "minimo": 16000,
+      "massimo": 40000
+    },
+    "NAD AL SHEBA": {
+      "n_venduti": 24,
+      "n_lotti": 32,
+      "quota_venduti": 0.75,
+      "p25": 15500,
+      "mediana": 19000,
+      "p75": 25000,
+      "minimo": 9000,
+      "massimo": 64000
+    },
+    "GREENSHOE": {
+      "n_venduti": 7,
+      "n_lotti": 11,
+      "quota_venduti": 0.636,
+      "p25": 38500,
+      "mediana": 42000,
+      "p75": 67500,
+      "minimo": 27000,
+      "massimo": 90000
+    },
+    "CALGARY GAMES": {
+      "n_venduti": 13,
+      "n_lotti": 16,
+      "quota_venduti": 0.812,
+      "p25": 16000,
+      "mediana": 26000,
+      "p75": 35000,
+      "minimo": 12000,
+      "massimo": 220000
+    },
+    "VERNISSAGE GRIF": {
+      "n_venduti": 5,
+      "n_lotti": 6,
+      "quota_venduti": 0.833,
+      "p25": 15000,
+      "mediana": 19000,
+      "p75": 22000,
+      "minimo": 8000,
+      "massimo": 31000
+    },
+    "FATHER PATRICK": {
+      "n_venduti": 14,
+      "n_lotti": 21,
+      "quota_venduti": 0.667,
+      "p25": 21250,
+      "mediana": 25500,
+      "p75": 31750,
+      "minimo": 7000,
+      "massimo": 67000
+    },
+    "RINGOSTAR TREB": {
+      "n_venduti": 3,
+      "n_lotti": 3,
+      "quota_venduti": 1.0,
+      "p25": 23000,
+      "mediana": 25000,
+      "p75": 26500,
+      "minimo": 21000,
+      "massimo": 28000
+    },
+    "WISHING STONE": {
+      "n_venduti": 10,
+      "n_lotti": 10,
+      "quota_venduti": 1.0,
+      "p25": 13250,
+      "mediana": 18500,
+      "p75": 21000,
+      "minimo": 10000,
+      "massimo": 30000
+    },
+    "BAR HOPPING": {
+      "n_venduti": 5,
+      "n_lotti": 9,
+      "quota_venduti": 0.556,
+      "p25": 22000,
+      "mediana": 24000,
+      "p75": 28000,
+      "minimo": 10000,
+      "massimo": 80000
+    },
+    "GIMPANZEE": {
+      "n_venduti": 3,
+      "n_lotti": 4,
+      "quota_venduti": 0.75,
+      "p25": 41000,
+      "mediana": 57000,
+      "p75": 81000,
+      "minimo": 25000,
+      "massimo": 105000
+    },
+    "CAPTAIN COREY": {
+      "n_venduti": 9,
+      "n_lotti": 11,
+      "quota_venduti": 0.818,
+      "p25": 29000,
+      "mediana": 38000,
+      "p75": 42000,
+      "minimo": 18000,
+      "massimo": 100000
+    },
+    "GOOGOO GAAGAA": {
+      "n_venduti": 7,
+      "n_lotti": 10,
+      "quota_venduti": 0.7,
+      "p25": 13500,
+      "mediana": 16000,
+      "p75": 21000,
+      "minimo": 8000,
+      "massimo": 70000
+    },
+    "ROBERT BI": {
+      "n_venduti": 4,
+      "n_lotti": 5,
+      "quota_venduti": 0.8,
+      "p25": 15250,
+      "mediana": 19500,
+      "p75": 23500,
+      "minimo": 10000,
+      "massimo": 28000
+    },
+    "RESOLVE": {
+      "n_venduti": 3,
+      "n_lotti": 3,
+      "quota_venduti": 1.0,
+      "p25": 13500,
+      "mediana": 16000,
+      "p75": 17500,
+      "minimo": 11000,
+      "massimo": 19000
+    },
+    "SOUTHWIND FRANK": {
+      "n_venduti": 4,
+      "n_lotti": 8,
+      "quota_venduti": 0.5,
+      "p25": 11000,
+      "mediana": 14500,
+      "p75": 21750,
+      "minimo": 8000,
+      "massimo": 36000
+    },
+    "READLY EXPRESS": {
+      "n_venduti": 11,
+      "n_lotti": 16,
+      "quota_venduti": 0.688,
+      "p25": 18500,
+      "mediana": 25000,
+      "p75": 45500,
+      "minimo": 12000,
+      "massimo": 60000
+    },
+    "TRIXTON": {
+      "n_venduti": 3,
+      "n_lotti": 4,
+      "quota_venduti": 0.75,
+      "p25": 10500,
+      "mediana": 13000,
+      "p75": 14500,
+      "minimo": 8000,
+      "massimo": 16000
+    },
+    "SIX PACK": {
+      "n_venduti": 7,
+      "n_lotti": 10,
+      "quota_venduti": 0.7,
+      "p25": 6500,
+      "mediana": 10000,
+      "p75": 17000,
+      "minimo": 3000,
+      "massimo": 22000
+    },
+    "TONY GIO": {
+      "n_venduti": 3,
+      "n_lotti": 4,
+      "quota_venduti": 0.75,
+      "p25": 6500,
+      "mediana": 7000,
+      "p75": 16000,
+      "minimo": 6000,
+      "massimo": 25000
+    },
+    "TACTICAL LANDING": {
+      "n_venduti": 3,
+      "n_lotti": 4,
+      "quota_venduti": 0.75,
+      "p25": 25500,
+      "mediana": 26000,
+      "p75": 70500,
+      "minimo": 25000,
+      "massimo": 115000
+    },
+    "TWISTER BI": {
+      "n_venduti": 5,
+      "n_lotti": 5,
+      "quota_venduti": 1.0,
+      "p25": 11000,
+      "mediana": 12000,
+      "p75": 12000,
+      "minimo": 8000,
+      "massimo": 14000
+    },
+    "MANOFMANYMISSION": {
+      "n_venduti": 4,
+      "n_lotti": 5,
+      "quota_venduti": 0.8,
+      "p25": 10000,
+      "mediana": 11500,
+      "p75": 17750,
+      "minimo": 7000,
+      "massimo": 35000
+    },
+    "VIVID WISE AS": {
+      "n_venduti": 4,
+      "n_lotti": 8,
+      "quota_venduti": 0.5,
+      "p25": 12750,
+      "mediana": 16500,
+      "p75": 20000,
+      "minimo": 12000,
+      "massimo": 20000
+    },
+    "FACE TIME BOURBON": {
+      "n_venduti": 9,
+      "n_lotti": 9,
+      "quota_venduti": 1.0,
+      "p25": 40000,
+      "mediana": 52000,
+      "p75": 70000,
+      "minimo": 35000,
+      "massimo": 75000
+    },
+    "VITRUVIO": {
+      "n_venduti": 6,
+      "n_lotti": 7,
+      "quota_venduti": 0.857,
+      "p25": 7000,
+      "mediana": 11000,
+      "p75": 21750,
+      "minimo": 5000,
+      "massimo": 65000
+    },
+    "OROPURO BAR": {
+      "n_venduti": 4,
+      "n_lotti": 6,
+      "quota_venduti": 0.667,
+      "p25": 14000,
+      "mediana": 23500,
+      "p75": 30500,
+      "minimo": 5000,
+      "massimo": 32000
+    },
+    "THE BANK": {
+      "n_venduti": 9,
+      "n_lotti": 14,
+      "quota_venduti": 0.643,
+      "p25": 9000,
+      "mediana": 12000,
+      "p75": 13000,
+      "minimo": 4000,
+      "massimo": 27000
+    },
+    "HOHNECK": {
+      "n_venduti": 3,
+      "n_lotti": 4,
+      "quota_venduti": 0.75,
+      "p25": 29000,
+      "mediana": 30000,
+      "p75": 37500,
+      "minimo": 28000,
+      "massimo": 45000
+    },
+    "ADRIAN CHIP": {
+      "n_venduti": 3,
+      "n_lotti": 4,
+      "quota_venduti": 0.75,
+      "p25": 19000,
+      "mediana": 24000,
+      "p75": 24500,
+      "minimo": 14000,
+      "massimo": 25000
+    },
+    "TROLLEY": {
+      "n_venduti": 5,
+      "n_lotti": 5,
+      "quota_venduti": 1.0,
+      "p25": 14000,
+      "mediana": 15000,
+      "p75": 16000,
+      "minimo": 11000,
+      "massimo": 17000
+    },
+    "RINGOSTARR TREB": {
+      "n_venduti": 5,
+      "n_lotti": 6,
+      "quota_venduti": 0.833,
+      "p25": 8000,
+      "mediana": 8000,
+      "p75": 9000,
+      "minimo": 4000,
+      "massimo": 15000
+    },
+    "BEPI BI": {
+      "n_venduti": 3,
+      "n_lotti": 4,
+      "quota_venduti": 0.75,
+      "p25": 9500,
+      "mediana": 10000,
+      "p75": 10500,
+      "minimo": 9000,
+      "massimo": 11000
+    },
+    "DIMITRI FERM": {
+      "n_venduti": 3,
+      "n_lotti": 3,
+      "quota_venduti": 1.0,
+      "p25": 7500,
+      "mediana": 8000,
+      "p75": 9500,
+      "minimo": 7000,
+      "massimo": 11000
+    },
+    "ZACCARIA BAR": {
+      "n_venduti": 5,
+      "n_lotti": 5,
+      "quota_venduti": 1.0,
+      "p25": 5000,
+      "mediana": 6000,
+      "p75": 8000,
+      "minimo": 5000,
+      "massimo": 10000
+    }
   },
-  {
-   "nome": "ITS Asta Selezionata Yearling Trottatori 2025",
-   "url": "https://www.its-aste.com/aste/asta-selezionata-yearling-trottatori/"
+  "min_vendite_fascia": 3,
+  "stima_da_monta": {
+    "b0": 5.832077,
+    "b1": 0.45475,
+    "sd_log": 0.357441,
+    "r2": 0.3905,
+    "r2_verificato": 0.2511,
+    "n_stalloni": 26
   },
-  {
-   "nome": "ITS Asta Selezionata Yearlings Trottatori 2024",
-   "url": "https://www.its-aste.com/aste/asta-selezionata-yearlings-trottatori-5/"
-  }
- ],
- "nota": "Regressione di log(prezzo) sul voto medio dei figli del padre, calcolata su 401 yearling effettivamente aggiudicati nelle aste italiane ANACT e ITS. R2 0,068: il padre sposta il prezzo ma la maggior parte della variabilita' dipende da conformazione, presentazione, linea materna e piazza d'asta."
+  "quota_venduti_globale": 0.783,
+  "mediana_globale": 19500,
+  "p25_globale": 12000,
+  "p75_globale": 30000,
+  "n_lotti_totali": 539,
+  "n_venduti": 422,
+  "fonti": [
+    {
+      "nome": "ITS Asta Selezionata Yearling Trottatori 2025",
+      "url": "https://www.its-aste.com/aste/asta-selezionata-yearling-trottatori/"
+    },
+    {
+      "nome": "ITS Asta Selezionata Yearlings Trottatori 2024",
+      "url": "https://www.its-aste.com/aste/asta-selezionata-yearlings-trottatori-5/"
+    },
+    {
+      "nome": "Asta ANACT yearlings, risultati ufficiali",
+      "url": "https://www.gaet.it/notizie/daily/asta-anact-risultati-ufficiali"
+    }
+  ],
+  "nota": "Fasce di prezzo ricavate da 539 lotti yearling delle aste italiane ANACT e ITS, di cui 422 realmente aggiudicati (78%). I lotti ricomprati dal venditore non contano come vendite. Per 42 stalloni la fascia e' quella dei loro figli veri; per gli altri e' stimata dalla tassa di monta, che spiega il 25 per cento del prezzo (verificato su stalloni esclusi dal calcolo). Le aste sono selezionate: il prezzo base parte da 3.000 euro e un puledro qualunque non vi accede."
 }

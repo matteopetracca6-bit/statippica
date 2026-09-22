@@ -1588,7 +1588,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Chi vende a un anno non paga addestramento ne' attivita'
       // agonistica, quindi il costo di confronto e' molto piu' basso.
       const costoYearling = studFee + COSTI.riproduzione + COSTI.puledro_anno1 + COSTI.yearling;
-      const rivendita = stimaRivendita(prediction.expected_score, costoYearling);
+      // Si passa il NOME dello stallone, non il voto atteso del puledro: la
+      // fascia di prezzo viene dai suoi figli realmente venduti in asta quando
+      // ce ne sono abbastanza, e solo in mancanza di quelli si stima dalla
+      // tassa di monta. Prima si passava il voto atteso, che e' compresso fra
+      // 43 e 51 e rendeva il prezzo praticamente uguale per tutti.
+      const rivendita = stimaRivendita(stallion, studFee, costoYearling);
 
       res.json({
         stallion,

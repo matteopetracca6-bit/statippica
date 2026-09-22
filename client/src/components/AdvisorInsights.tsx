@@ -321,18 +321,24 @@ export interface RoiRange {
 }
 
 export interface Rivendita {
-  prezzo_mediano: number;
+  /** Da dove viene la fascia: i figli veri dello stallone, o la tassa di monta. */
+  base: "figli_veri" | "tassa_monta";
+  /** Quanti yearling di questo stallone sono stati realmente venduti. */
+  n_vendite_osservate: number;
   prezzo_p25: number;
+  prezzo_mediano: number;
   prezzo_p75: number;
-  prezzo_p10: number;
-  prezzo_p90: number;
+  prezzo_minimo?: number;
+  prezzo_massimo?: number;
   prob_vendita_pct: number;
   costo_fino_a_yearling: number;
   utile_mediano: number;
+  roi_p25_pct: number;
   roi_mediano_pct: number;
+  roi_p75_pct: number;
+  roi_ponderato_pct: number;
   ricavo_ponderato: number;
-  r2: number;
-  n_lotti: number;
+  solidita: string;
   fonti: { nome: string; url: string }[];
   avvertenza: string;
 }
@@ -599,10 +605,12 @@ function ScenariRivendita({ r, riv }: { r: RoiRange; riv: Rivendita }) {
         />
         <Colonna
           titolo="Venderlo da yearling"
-          sottotitolo="niente addestramento ne' corse"
+          sottotitolo={riv.base === "figli_veri"
+            ? `su ${riv.n_vendite_osservate} figli suoi venduti in asta`
+            : "stima dalla tassa di monta"}
           spesa={riv.costo_fino_a_yearling}
           incasso={euro(riv.prezzo_mediano)}
-          incassoNota={"in asta, fascia " + euro(riv.prezzo_p25) + "\u2013" + euro(riv.prezzo_p75)}
+          incassoNota={"fascia " + euro(riv.prezzo_p25) + "\u2013" + euro(riv.prezzo_p75)}
           roi={riv.roi_mediano_pct}
           vince={megliovendere}
         />
@@ -616,10 +624,32 @@ function ScenariRivendita({ r, riv }: { r: RoiRange; riv: Rivendita }) {
             ? "Con questo accoppiamento la vendita da yearling rende piu' della carriera: il prezzo d'asta arriva subito, i premi arrivano dopo anni di spese."
             : "Qui la vendita da yearling non migliora il conto: la monta costa piu' di quanto il mercato paghi per il puledro."}
         </div>
-        <div>
-          Solo {riv.prob_vendita_pct.toFixed(0)} lotti su 100 trovano un compratore in asta: tenendo conto
-          del rischio di non vendere il ricavo atteso scende a {euro(riv.ricavo_ponderato)}.
+        {/* IL RITORNO VA DATO COME FASCIA. Un numero solo suggerisce una
+            precisione che non c'e': i figli dello stesso stallone si vendono a
+            prezzi molto diversi, e il ritorno segue quella dispersione. */}
+        <div style={{ marginBottom: "5px" }}>
+          A seconda di come va la giornata d'asta il ritorno va da{" "}
+          <strong style={{ color: riv.roi_p25_pct >= 0 ? "hsl(100 58% 58%)" : "hsl(0 62% 58%)" }}>
+            {(riv.roi_p25_pct > 0 ? "+" : "") + riv.roi_p25_pct.toFixed(0)}%
+          </strong>{" "}
+          a{" "}
+          <strong style={{ color: riv.roi_p75_pct >= 0 ? "hsl(100 58% 58%)" : "hsl(0 62% 58%)" }}>
+            {(riv.roi_p75_pct > 0 ? "+" : "") + riv.roi_p75_pct.toFixed(0)}%
+          </strong>{" "}
+          nella meta' centrale dei casi
+          {riv.prezzo_minimo != null && riv.prezzo_massimo != null && (
+            <>; i figli di questo stallone sono stati battuti da {euro(riv.prezzo_minimo)} a{" "}
+              {euro(riv.prezzo_massimo)}</>
+          )}.
         </div>
+        <div>
+          Solo {riv.prob_vendita_pct.toFixed(0)} lotti su 100 trovano un compratore: tenendo conto
+          del rischio di non vendere il ricavo atteso scende a {euro(riv.ricavo_ponderato)}, cioe'{" "}
+          <strong style={{ color: riv.roi_ponderato_pct >= 0 ? "hsl(100 58% 58%)" : "hsl(0 62% 58%)" }}>
+            {(riv.roi_ponderato_pct > 0 ? "+" : "") + riv.roi_ponderato_pct.toFixed(0)}%
+          </strong>.
+        </div>
+        <div style={{ marginTop: "5px", color: "hsl(45 60% 62%)" }}>{riv.solidita}</div>
         <div style={{ marginTop: "5px", color: "hsl(210 8% 40%)" }}>{riv.avvertenza}</div>
         <div style={{ marginTop: "5px", color: "hsl(210 8% 38%)" }}>
           Fonti prezzi:{" "}
