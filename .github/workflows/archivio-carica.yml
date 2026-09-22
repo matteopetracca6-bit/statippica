@@ -1,0 +1,110 @@
+name: StatIppica — Carica l'archivio nel rilascio (a mano)
+
+# Serve in due casi:
+#  - la prima volta, per riempire il rilascio senza aspettare un notturno
+#    intero (il notturno carica l'archivio solo alla fine, dopo un'ora o due);
+#  - se il rilascio va perso o si corrompe, per rimetterlo a posto subito.
+#
+# Prende l'archivio da dove lo trova: prima la copia dentro il progetto
+# (data.db.gz), che durante il passaggio c'e' ancora; e la ricomprime solo se
+# serve. Non raccoglie dati nuovi: e' solo un trasloco.
+
+on:
+  workflow_dispatch:
+    inputs:
+      motivo:
+        description: "Perche' lo stai caricando"
+        required: false
+        default: "caricamento a mano"
+
+permissions:
+  contents: write # serve per creare il rilascio e caricarci dentro un file
+
+jobs:
+  carica:
+    runs-on: ubuntu-latest
+    name: Carica data.db.gz nel rilascio
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Controlla che l'archivio ci sia e sia quello vero
+        run: |
+          set -euo pipefail
+          if [ ! -f data.db.gz ]; then
+            echo "::error::data.db.gz non e' nel progetto. Se l'hai gia' tolto da git, l'archivio va ricaricato dal rilascio precedente o rigenerato da un notturno."
+            exit 1
+          fi
+          BYTE=$(stat -c%s data.db.gz)
+          echo "Archivio compresso: $BYTE byte"
+          if [ "$BYTE" -lt 20000000 ]; then
+            echo "::error::archivio sospettosamente piccolo ($BYTE byte): mi fermo."
+            exit 1
+          fi
+          # Aprirlo e contare le gare e' l'unico controllo che dice davvero
+          # se e' l'archivio buono e non un file troncato.
+          gunzip -c data.db.gz > /tmp/controllo.db
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('/tmp/controllo.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare in archivio: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare, me ne aspetto oltre 500000: mi fermo."
+            exit 1
+          fi
+          rm -f /tmp/controllo.db
+
+      - name: Crea il rilascio se non c'e'
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -uo pipefail
+          if gh release view archivio --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Il rilascio c'e' gia'."
+            # Una bozza non e' scaricabile: se e' rimasta tale, va pubblicata.
+            gh release edit archivio --repo "$GITHUB_REPOSITORY" --draft=false || true
+          else
+            echo "Creo il rilascio."
+            gh release create archivio --repo "$GITHUB_REPOSITORY" \
+              --title "Archivio dati StatIppica" \
+              --notes "L'archivio delle gare, rifatto ogni notte dal lavoro automatico.
+
+          Sta qui e non dentro il progetto perche' in git ogni versione nuova si
+          sommerebbe alle precedenti per sempre: 30 MB di cronologia in piu' ogni
+          notte, che non si possono piu' togliere. Qui la copia nuova sostituisce
+          la vecchia e il peso resta fermo.
+
+          Il sito lo scarica da questo indirizzo fisso prima di partire:
+          https://github.com/$GITHUB_REPOSITORY/releases/download/archivio/data.db.gz"
+          fi
+
+      - name: Carica l'archivio
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload archivio data.db.gz \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Caricato."
+
+      - name: Verifica che sia davvero scaricabile
+        # Il caricamento puo' riuscire e il file restare inservibile (rilascio
+        # in bozza, caricamento interrotto a meta'). L'unica verifica che conta
+        # e' rifare quello che fa il sito: scaricarlo e contare le gare.
+        run: |
+          set -euo pipefail
+          IND="https://github.com/$GITHUB_REPOSITORY/releases/download/archivio/data.db.gz"
+          echo "Scarico da: $IND"
+          curl -fsSL --retry 3 --retry-delay 5 -m 300 -o /tmp/riscaricato.gz "$IND"
+          BYTE=$(stat -c%s /tmp/riscaricato.gz)
+          echo "Riscaricati $BYTE byte"
+          if [ "$BYTE" -lt 20000000 ]; then
+            echo "::error::quello che si scarica e' troppo piccolo: il rilascio non e' a posto."
+            exit 1
+          fi
+          gunzip -c /tmp/riscaricato.gz > /tmp/riscaricato.db
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('/tmp/riscaricato.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio scaricato: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::l'archivio scaricato ha solo $GARE gare."
+            exit 1
+          fi
+          echo "Verificato: il sito puo' partire da qui."
