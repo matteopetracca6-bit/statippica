@@ -1,0 +1,131 @@
+name: StatIppica — Rimetti i premi mancanti (a mano)
+
+# Rilegge i convegni le cui gare risultano senza premio e ci rimette il premio,
+# poi rifa' i totali di carriera e pubblica l'archivio corretto.
+#
+# Perche' un flusso e non un comando lanciato a mano: il caricamento
+# dell'archivio nel rilascio richiede un permesso che solo GitHub ha. Chi
+# ripara l'archivio deve anche poterlo pubblicare, altrimenti la riparazione
+# resta su una macchina e va persa.
+#
+# Si lancia a mano, non a ore fisse: e' una riparazione, non manutenzione.
+# Il difetto nella raccolta e' gia' stato corretto, quindi le gare nuove
+# arrivano col premio; questo serve per quelle gia' registrate a zero.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova, senza scrivere niente"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write # serve per pubblicare l'archivio corretto nel rilascio
+
+jobs:
+  ripara:
+    runs-on: ubuntu-latest
+    name: Rimetti i premi e pubblica
+    timeout-minutes: 180
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4
+
+      - name: Procura l'archivio
+        run: bash scripts/ottieni_archivio.sh
+
+      - name: Conta le gare senza premio, prima
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+          c = sqlite3.connect('data.db')
+          n = c.execute("""select count(*) from races
+                            where placement is not null
+                              and race_date >= '2026-06-01'
+                              and (prize_net is null or prize_net = 0)""").fetchone()[0]
+          print(f"Gare concluse senza premio, prima: {n}")
+          PY
+
+      - name: Rimetti i premi
+        run: |
+          if [ "${{ inputs.prova }}" = "true" ]; then
+            python3 scripts/recupera_premi.py --prova
+          else
+            python3 scripts/recupera_premi.py
+          fi
+
+      - name: Controlla il risultato
+        # Il controllo che conta non e' "quante gare sono state toccate" ma
+        # "quali restano a zero". In Italia devono restare solo quelle dal
+        # sesto posto in giu', che davvero non incassano: se un primo posto
+        # resta a zero, la riparazione non ha funzionato.
+        run: |
+          python3 - <<'PY'
+          import sqlite3, sys
+          c = sqlite3.connect('data.db')
+          n = c.execute("""select count(*) from races
+                            where placement is not null
+                              and race_date >= '2026-06-01'
+                              and (prize_net is null or prize_net = 0)""").fetchone()[0]
+          print(f"Gare concluse senza premio, dopo: {n}")
+
+          primi = c.execute("""select count(*) from races
+                                where placement <= 5 and track <> 'ESTERO'
+                                  and race_date >= '2026-06-01'
+                                  and (prize_net is null or prize_net = 0)""").fetchone()[0]
+          print(f"Italia, primi cinque posti ancora senza premio: {primi}")
+          if primi > 50:
+              print(f"::warning::{primi} piazzamenti nei primi cinque restano senza premio.")
+
+          dis = c.execute("""select count(*) from horses h
+                              where exists (select 1 from races r
+                                             where r.horse_name = h.name
+                                               and r.race_date >= '2026-06-01')
+                                and abs(coalesce(h.career_earnings, 0) -
+                                        (select coalesce(sum(prize_net), 0) from races
+                                          where horse_name = h.name
+                                            and placement is not null)) > 1""").fetchone()[0]
+          print(f"Cavalli col totale di carriera disallineato: {dis}")
+          if dis:
+              print("::error::i totali di carriera non combaciano con la somma delle gare.")
+              sys.exit(1)
+          PY
+
+      - name: Pubblica l'archivio corretto
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          gh release upload archivio data.db.gz \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Archivio corretto pubblicato."
+
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" \
+            -d '{}' | head -c 300
+          echo
