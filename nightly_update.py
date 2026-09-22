@@ -1410,6 +1410,23 @@ def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str
     return results
 
 
+def _con_premi(url: str) -> str:
+    """Trasforma l'indirizzo di un convegno nella versione CON i premi.
+
+    La pagina dei risultati di Trottoweb ha due versioni:
+      flag_ris_u=0  righe senza la colonna del premio
+      flag_ris_u=1  stesse righe, con la colonna del premio
+    I collegamenti della homepage puntano alla prima. Chi legge la prima non
+    trova la colonna e scrive zero, e la gara resta registrata come se non
+    avesse fruttato nulla anche quando e' stata vinta.
+    """
+    from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+    pezzi = urlparse(url)
+    q = parse_qs(pezzi.query, keep_blank_values=True)
+    q["flag_ris_u"] = ["1"]
+    return urlunparse(pezzi._replace(query=urlencode(q, doseq=True)))
+
+
 def _fetch_all_hris_convegni() -> list[dict]:
     """Legge la homepage risultati e restituisce tutti i convegni disponibili."""
     soup = fetch_url(TROTTOWEB_RESULTS_HOME)
@@ -1433,6 +1450,17 @@ def _fetch_all_hris_convegni() -> list[dict]:
         full_url  = ("https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php?" +
                      href.split("?", 1)[-1]) if "?" in href else (
                     "https://www.trottoweb.it/TrottoWeb/php_resp/" + href)
+
+        # La pagina dei risultati esiste in DUE versioni e i collegamenti
+        # della homepage puntano a quella SENZA premi (flag_ris_u=0). Le due
+        # pagine hanno le stesse righe, ma in quella senza premi la colonna
+        # del premio non c'e' proprio: il lettore non trovava nulla e scriveva
+        # zero. Per questo tutte le gare raccolte da qui risultavano senza
+        # premio pur essendo vinte o piazzate.
+        #
+        # Chiedere flag_ris_u=1 e' l'unica differenza necessaria: il lettore
+        # sa gia' riconoscere la colonna del premio, non l'aveva mai vista.
+        full_url = _con_premi(full_url)
 
         convegni.append({
             "data": data, "sigla": sigla, "ippodromo": ippodromo,
@@ -1547,8 +1575,17 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
                 "time_km":       h["time_km"],
                 "distance":      h["distance"],
                 "driver":        h["driver"],
+                # Il numero che la pagina fornisce e' il premio NETTO:
+                # verificato incrociando 18 gare del vecchio archivio di cui
+                # si conoscevano sia netto sia lordo, e combaciava sempre col
+                # netto. Il lordo NON viene fornito e non si inventa: il
+                # rapporto netto/lordo non e' costante (vale 0,85 nell'87%
+                # delle gare, ma non all'estero ne' ovunque in Italia), quindi
+                # calcolarlo produrrebbe numeri falsi. Resta vuoto, che vuol
+                # dire "non lo so", diverso da zero che vorrebbe dire
+                # "non ha fruttato niente". Il sito mostra il netto.
                 "prize_net":     h["prize"],
-                "prize_gross":   h["prize"],
+                "prize_gross":   None,
                 "race_code":     h["race_code"],
             }
             n_inserted = _insert_races(conn, [race_dict])
