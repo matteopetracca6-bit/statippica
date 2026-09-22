@@ -19,6 +19,33 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4
+      - name: Riapri l'archivio compresso
+        # In git sta solo data.db.gz: il file aperto e' escluso perche' da
+        # aperto supera i 100 MB che GitHub accetta per un singolo file.
+        # Va riaperto QUI, prima di lavorarci. Senza questo passo
+        # sqlite3.connect("data.db") non fallisce: crea un archivio VUOTO,
+        # il lavoro gira sul nulla e alla fine pubblica il vuoto.
+        run: |
+          set -euo pipefail
+          if [ ! -f data.db.gz ]; then
+            echo "::error::data.db.gz non presente nel repo: mi fermo."
+            exit 1
+          fi
+          gunzip -c data.db.gz > data.db
+          BYTE=$(stat -c%s data.db)
+          echo "Archivio riaperto: $BYTE byte"
+          if [ "$BYTE" -lt 20000000 ]; then
+            echo "::error::archivio sospettosamente piccolo ($BYTE byte): mi fermo."
+            exit 1
+          fi
+          GARE=$(python -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare in archivio: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare in archivio, me ne aspetto oltre 500000: mi fermo."
+            exit 1
+          fi
       - name: Leggi il catalogo e aggiorna il database
         run: python scripts/sync_stallion_catalog.py --db data.db
       - name: Ripulisci i nomi degli allevamenti
@@ -29,7 +56,11 @@ jobs:
           git config user.name "StatIppica Catalog Sync"
           git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
           git pull --rebase origin main || git rebase --abort || true
-          git add data.db
+          # In git va la copia compressa, non quella aperta: "git add data.db"
+          # non salvava piu' nulla, perche' il file aperto e' escluso.
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          git add data.db.gz
           git commit -m "catalogo monte aggiornato $(date -u '+%Y-%m-%d')" || echo "nessuna modifica"
           git push origin main || echo "push saltato"
       - name: Trigger deploy Render

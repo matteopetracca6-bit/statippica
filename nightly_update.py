@@ -3943,8 +3943,47 @@ def main():
 
     print(f"[START] {datetime.utcnow().isoformat()} — StatIppica nightly_update.py (mode={mode})", file=sys.stderr)
 
+    # PRIMA di aprire: l'archivio DEVE esistere e avere dentro l'archivio vero.
+    #
+    # sqlite3.connect() su un file mancante non solleva un errore: CREA un
+    # file vuoto. Da quando in git sta solo la copia compressa, una copia
+    # scaricata del progetto non contiene il file aperto, e senza questo
+    # controllo il lavoro notturno girerebbe su un archivio vuoto per poi
+    # comprimerlo sopra quello vero e pubblicarlo: il sito resterebbe senza
+    # dati e la cronologia di git conserverebbe solo il vuoto.
+    #
+    # Il controllo sta qui e non solo nel flusso di GitHub perche' lo script
+    # si lancia anche a mano, e la protezione deve valere comunque.
+    if not DB_PATH.exists():
+        gz = DB_PATH.with_suffix(DB_PATH.suffix + ".gz")
+        if gz.exists():
+            print(f"[AVVIO] {DB_PATH} manca: lo riapro da {gz}", file=sys.stderr)
+            import gzip as _gz
+            with _gz.open(str(gz), "rb") as _s, open(str(DB_PATH), "wb") as _d:
+                shutil.copyfileobj(_s, _d, 1024 * 1024)
+        else:
+            print(f"[AVVIO] ERRORE: manca sia {DB_PATH} sia {gz}. "
+                  "Mi fermo invece di creare un archivio vuoto.", file=sys.stderr)
+            sys.exit(1)
+
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
+
+    # Secondo controllo: il file c'e', ma e' quello giusto? Un archivio vero
+    # ha centinaia di migliaia di gare. Se ne ha poche, e' un file sbagliato
+    # o troncato, e pubblicarlo cancellerebbe i dati veri.
+    try:
+        _gare = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
+    except sqlite3.Error:
+        _gare = 0
+    GARE_MINIME = 500_000
+    if _gare < GARE_MINIME:
+        print(f"[AVVIO] ERRORE: l'archivio ha solo {_gare} gare, me ne aspetto "
+              f"almeno {GARE_MINIME}. Mi fermo per non pubblicare un archivio "
+              "incompleto sopra quello buono.", file=sys.stderr)
+        sys.exit(1)
+    print(f"[AVVIO] Archivio verificato: {_gare} gare.", file=sys.stderr)
+
     init_db(conn)
 
     new_horses = new_races = horses_updated = horses_backfilled = 0

@@ -25,6 +25,35 @@ jobs:
           python-version: "3.11"
       - name: Installa dipendenze
         run: pip install requests beautifulsoup4
+      - name: Riapri l'archivio compresso
+        # In git sta solo data.db.gz: il file aperto e' escluso perche' da
+        # aperto supera i 100 MB che GitHub accetta per un singolo file.
+        # Va riaperto QUI, prima di lavorarci. Senza questo passo
+        # sqlite3.connect("data.db") non fallisce: crea un archivio VUOTO,
+        # il lavoro notturno gira sul nulla e alla fine sovrascrive
+        # data.db.gz con un archivio vuoto, che finisce pubblicato.
+        run: |
+          set -euo pipefail
+          if [ ! -f data.db.gz ]; then
+            echo "::error::data.db.gz non presente nel repo: mi fermo."
+            exit 1
+          fi
+          gunzip -c data.db.gz > data.db
+          # Un archivio vero pesa quasi 100 MB e ha centinaia di migliaia di
+          # gare. Se dopo la riapertura e' minuscolo o illeggibile, qualcosa
+          # e' andato storto e fermarsi ora e' molto meglio che pubblicare.
+          BYTE=$(stat -c%s data.db)
+          echo "Archivio riaperto: $BYTE byte"
+          if [ "$BYTE" -lt 20000000 ]; then
+            echo "::error::archivio sospettosamente piccolo ($BYTE byte): mi fermo."
+            exit 1
+          fi
+          GARE=$(python -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare in archivio: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare in archivio, me ne aspetto oltre 500000: mi fermo."
+            exit 1
+          fi
       - name: Esegui nightly_update.py (maintenance)
         env:
           NIGHTLY_MODE: maintenance
