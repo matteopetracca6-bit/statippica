@@ -83,8 +83,10 @@ export function PredictionCard({ p }: { p: Prediction }) {
   // Lo scarto dalla media generale si ricava qui: e' una sottrazione, non
   // serve che arrivi dal server.
   const delta = p.expected_score - p.population_mean;
-  const confColor = p.confidence_label === "alta" ? "hsl(100 60% 50%)"
-    : p.confidence_label === "media" ? "hsl(45 85% 55%)" : "hsl(25 80% 55%)";
+  // Il colore segue la quantita' di dati sui genitori. Non e' un semaforo sulla
+  // bonta' del consiglio: quella e' un'altra cosa, e la dice l'avviso qui sotto.
+  const confColor = p.confidence_label === "molti dati" ? "hsl(100 60% 50%)"
+    : p.confidence_label === "dati sufficienti" ? "hsl(45 85% 55%)" : "hsl(25 80% 55%)";
 
   return (
     <div style={{ marginBottom: "18px" }}>
@@ -103,8 +105,14 @@ export function PredictionCard({ p }: { p: Prediction }) {
           </span>
         </div>
         <div style={{ marginLeft: "auto", textAlign: "right", paddingBottom: "2px" }}>
+          {/* Si chiamava "Attendibilita'", e non lo era: questo numero dice
+              soltanto quanti figli valutati hanno i due genitori, cioe' quanto
+              e' ben misurato l'indizio di partenza. Un indizio ben misurato
+              resta un indizio debole se il modello che lo usa spiega il 2,3%
+              dei risultati. La parola vecchia prometteva quello che il modello
+              non mantiene. */}
           <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Attendibilita'
+            Dati sui genitori
           </div>
           <div style={{ fontSize: "14px", fontWeight: 800, color: confColor }}>{p.confidence_label}</div>
         </div>

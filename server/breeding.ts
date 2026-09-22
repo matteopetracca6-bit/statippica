@@ -77,28 +77,53 @@ export function getValidationInfo(m: Partial<BreedingModel>): ValidationInfo {
   const auc = typeof m.cv_auc_poor === "number" ? m.cv_auc_poor : 0;
   const n = typeof m.n_samples === "number" ? m.n_samples : 0;
 
-  let status = m.validation_status;
-  if (!status) {
-    if (r2 >= MIN_R2_DECISION && auc >= MIN_AUC_DECISION && n >= MIN_SAMPLES_DECISION) {
-      status = "decision_support_ready";
-    } else if (r2 >= MIN_R2_EXPERIMENTAL || auc >= MIN_AUC_EXPERIMENTAL) {
-      status = "experimental";
-    } else {
-      status = "not_ready";
-    }
+  // LE SOGLIE VALIDE SONO SEMPRE QUELLE DI QUI, non quelle scritte dentro il
+  // modello.
+  //
+  // PERCHE'. Prima questa funzione si fidava dei criteri incisi nel modello
+  // quando c'erano, e usava i propri solo come ripiego. Sembra ragionevole ed
+  // e' una trappola: il modello in uso e' stato addestrato il 20 settembre e
+  // porta dentro di se' la vecchia soglia del 20%, quella inventata. Ho
+  // corretto la soglia in due punti del codice e il sito ha continuato a
+  // mostrare il 20%, perche' il numero che leggeva veniva da un terzo posto.
+  //
+  // Una soglia e' una decisione di metodo del progetto, non una proprieta'
+  // dell'artefatto: se cambia, deve cambiare per tutti i modelli, anche per
+  // quelli addestrati prima. Altrimenti basta un modello vecchio che non si
+  // riesce a sostituire — ed e' il caso nostro, il campione si e' ristretto e
+  // la protezione impedisce di rimpiazzarlo — per congelare per sempre un
+  // criterio che si e' deciso di abbandonare.
+  //
+  // Anche lo stato viene ricalcolato qui, per la stessa ragione: uno stato
+  // deciso con la soglia vecchia non vale piu' niente.
+  let status: ValidationInfo["validation_status"];
+  if (r2 >= MIN_R2_DECISION && auc >= MIN_AUC_DECISION && n >= MIN_SAMPLES_DECISION) {
+    status = "decision_support_ready";
+  } else if (r2 >= MIN_R2_EXPERIMENTAL || auc >= MIN_AUC_EXPERIMENTAL) {
+    status = "experimental";
+  } else {
+    status = "not_ready";
   }
+
   return {
     validation_status: status,
-    is_decision_support_ready:
-      m.is_decision_support_ready ?? status === "decision_support_ready",
+    is_decision_support_ready: status === "decision_support_ready",
     methodology_notice: m.methodology_notice ?? DEFAULT_NOTICE,
-    validation_criteria: m.validation_criteria ?? {
+    validation_criteria: {
       min_r2_decision: MIN_R2_DECISION,
       min_auc_decision: MIN_AUC_DECISION,
       min_samples_decision: MIN_SAMPLES_DECISION,
       min_r2_experimental: MIN_R2_EXPERIMENTAL,
       min_auc_experimental: MIN_AUC_EXPERIMENTAL,
-      source: "fallback calcolato lato server (artefatto legacy)",
+      // I due riferimenti che rendono leggibile il risultato: senza sapere che
+      // il massimo ottenibile e' circa il 15% e che il segnale davvero presente
+      // nei dati e' il 3,6%, un 2,3% sembra un disastro invece di un valore
+      // vicino al limite di cio' che si puo' prevedere.
+      tetto_teorico_r2: 0.15,
+      segnale_misurato_r2: 0.036,
+      cv_scheme: (m.validation_criteria as any)?.cv_scheme
+        ?? "GroupKFold per stallone + holdout temporale",
+      source: "soglie del progetto, applicate anche ai modelli addestrati prima",
     },
   };
 }

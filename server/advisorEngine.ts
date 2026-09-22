@@ -220,7 +220,20 @@ export function predictPair(db: DB, stallion: string, mare: string): Prediction 
     typical_high: Math.min(100, Math.round((expected + 0.674 * sd) * 10) / 10),
     residual_sd: sd,
     confidence: conf,
-    confidence_label: conf >= 0.75 ? "alta" : conf >= 0.45 ? "media" : "bassa",
+    // ATTENZIONE A COME SI CHIAMA QUESTA COSA. Non misura quanto e' affidabile
+    // la previsione: misura solo quanto materiale c'e' sui due genitori, cioe'
+    // quanti figli valutati hanno. Uno stallone con 200 figli da' un indizio
+    // ben misurato; resta un indizio debole, perche' il modello che lo usa
+    // spiega il 2,3% dei risultati.
+    //
+    // Le etichette erano "alta / media / bassa" accanto a un voto atteso, e
+    // quasi tutti gli stalloni uscivano "media": chi leggeva capiva "il
+    // consiglio e' mediamente affidabile", che e' falso. Sono diventate
+    // "molti dati / dati sufficienti / pochi dati": dicono la stessa cosa senza
+    // promettere quello che il modello non mantiene.
+    confidence_label: conf >= 0.75 ? "molti dati"
+                    : conf >= 0.45 ? "dati sufficienti"
+                    : "pochi dati",
     sire, dam,
     population_mean: m.population_mean,
     expected_grade: gradeFromScore(expected),

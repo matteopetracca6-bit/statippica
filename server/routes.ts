@@ -1804,12 +1804,31 @@ export function registerRoutes(httpServer: Server, app: Express) {
         })
         .sort((a: any, b: any) => b.expected_score - a.expected_score);
 
+      // Lo stato del modello viaggia con i consigli, non solo nella pagina che
+      // spiega il metodo. Chi apre l'Advisor vede voti attesi e guadagni
+      // stimati: se il modello che li produce e' sperimentale, deve leggerlo
+      // qui, accanto ai numeri, non altrove.
+      let validazione = null;
+      try {
+        const percorsoModello = path.resolve(process.cwd(), "breeding_model.json");
+        if (require("fs").existsSync(percorsoModello)) {
+          validazione = getValidationInfo(
+            JSON.parse(require("fs").readFileSync(percorsoModello, "utf-8")),
+          );
+        }
+      } catch {
+        // Se il modello non si legge, i consigli restano: sono calcolati dalla
+        // progenie, non da lui. Si perde solo l'avviso, e in quel caso e'
+        // meglio non inventarne uno.
+      }
+
       res.json({
         found: true,
         fattrice: horse,
         ancestors: Array.from(ancestorNames),
         budget_max: budget_max || null,
         candidates,
+        validazione,
       });
     } finally {
       db.close();

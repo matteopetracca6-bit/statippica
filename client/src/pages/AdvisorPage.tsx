@@ -38,6 +38,15 @@ interface AdvisorResult {
   ancestors?: string[];
   budget_max?: number;
   candidates?: Candidate[];
+  validazione?: {
+    validation_status: string;
+    is_decision_support_ready: boolean;
+    validation_criteria?: {
+      min_r2_decision?: number;
+      tetto_teorico_r2?: number;
+      segnale_misurato_r2?: number;
+    };
+  } | null;
 }
 
 interface Candidate {
@@ -293,7 +302,9 @@ function ComparePanel({ mare, stallions, onClear }: { mare: string; stallions: s
                 <th style={th}>Consang.</th>
                 <th style={th}>Monta</th>
                 <th style={th}>Qualita' per euro</th>
-                <th style={th}>Attendib.</th>
+                {/* Si chiamava "Attendib." e non lo era: dice solo quanti
+                    figli valutati hanno i genitori. */}
+                <th style={th}>Dati genitori</th>
               </tr>
             </thead>
             <tbody>
@@ -382,7 +393,16 @@ export default function AdvisorPage() {
           Advisor Allevatore
         </h1>
         <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
-          Inserisci la tua fattrice: per ogni stallone compatibile vedrai la distribuzione probabilita' voti del puledro, i guadagni stimati e il ROI.
+          {/* La frase di prima diceva "vedrai i guadagni stimati e il ROI", e
+              prometteva una cosa che questo strumento non sa fare: annunciava
+              un ritorno economico sopra un modello che spiega il 2,3% dei
+              risultati. Ora dice cosa e' davvero, e l'avviso qui sotto spiega
+              perche'. */}
+          Scegli una fattrice: per ogni stallone compatibile vedrai il voto che
+          il modello si aspetta dal puledro, con quanto e' larga l'incertezza
+          intorno a quel voto, la consanguineita' e la tassa di monta. E' un
+          ordine di massima per restringere una lista, non una previsione: il
+          perche' e' spiegato appena sotto.
         </p>
       </div>
 
@@ -489,6 +509,39 @@ export default function AdvisorPage() {
       {/* Results */}
       {data?.found && data.fattrice && (
         <div className="fade-in">
+          {/* AVVISO SUL MODELLO, PRIMA DI QUALSIASI NUMERO.
+              Questa pagina promette voti attesi e guadagni stimati, e finche'
+              il modello non supera la verifica chi legge deve saperlo qui,
+              sopra i numeri, non in una pagina di metodo che potrebbe non
+              aprire mai. */}
+          {data.validazione && !data.validazione.is_decision_support_ready && (
+            <div style={{
+              background: "hsl(35 90% 10%)", border: "1px solid hsl(35 90% 45% / 0.55)",
+              borderRadius: "12px", padding: "14px 18px", marginBottom: "18px",
+              fontSize: "12.5px", lineHeight: 1.65, color: "hsl(35 35% 88%)",
+            }}>
+              <strong style={{ color: "hsl(35 95% 62%)" }}>
+                Strumento sperimentale, non usarlo per decidere una monta.
+              </strong>{" "}
+              Prevedere la carriera di un singolo puledro dai genitori e' quasi
+              impossibile, e non per un difetto di questo programma: il puledro
+              prende meta' dei geni da ciascun genitore, ma quali meta' e' un
+              sorteggio, e due fratelli pieni hanno carriere diverse. Sui dati
+              di questo archivio il legame tra genitori e figlio spiega circa il{" "}
+              {data.validazione.validation_criteria?.segnale_misurato_r2 != null
+                ? `${(data.validazione.validation_criteria.segnale_misurato_r2 * 100).toFixed(1)}%`
+                : "4%"}{" "}
+              dei risultati, e il massimo teorico e' intorno al{" "}
+              {data.validazione.validation_criteria?.tetto_teorico_r2 != null
+                ? `${(data.validazione.validation_criteria.tetto_teorico_r2 * 100).toFixed(0)}%`
+                : "15%"}.
+              I voti attesi qui sotto vanno letti come un ordine approssimativo,
+              non come una previsione. Per scegliere uno stallone, la strada che
+              funziona e' un'altra: guardare com'e' andata la sua progenie, sulla
+              sua scheda, dove e' scritto anche su quanti figli poggia il voto.
+            </div>
+          )}
+
           {/* Fattrice info */}
           <div style={{
             background: "hsl(220 12% 10%)", border: "1px solid hsl(183 100% 38% / 0.25)",
