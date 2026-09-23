@@ -40,6 +40,16 @@ jobs:
           GITHUB_USER: matteopetracca6-bit
           GITHUB_REPO: statippica
         run: python nightly_update.py
+
+      # Controlla che ogni dato mostrato dal sito abbia un lavoro automatico che
+      # lo aggiorna. Non blocca il flusso: l'archivio e' gia' stato aggiornato e
+      # va pubblicato comunque. Segnala e basta, perche' il guasto tipico qui e'
+      # silenzioso — una catena che si rompe e una pagina che continua a
+      # mostrare dati vecchi senza errori.
+      - name: Controlla che tutte le pagine si aggiornino
+        if: always()
+        continue-on-error: true
+        run: python3 scripts/controlla_aggiornamenti.py
       - name: Trigger deploy Render dopo aggiornamento DB
         if: success()
         run: |

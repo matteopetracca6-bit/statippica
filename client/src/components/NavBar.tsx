@@ -1,10 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
-import {
-  Home as HomeIcon, ChevronLeft, ChevronRight, Trophy, Users, BookOpen,
-  Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-  FlaskConical, Heart,
-} from "lucide-react";
+import { Home as HomeIcon, ChevronLeft, ChevronRight, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin } from "lucide-react";
 
 /**
  * Le schede del sito, nell'ordine in cui compaiono nel menu.
@@ -26,6 +22,8 @@ const SCHEDE: { href: string; label: string; icon: typeof HomeIcon }[] = [
   { href: "/trend", label: "Trend", icon: TrendingUp },
   { href: "/qualifiche", label: "Qualifiche", icon: Award },
   { href: "/allevamento", label: "Allevamento", icon: Building2 },
+  { href: "/guidatori", label: "Guidatori", icon: Users },
+  { href: "/ippodromi", label: "Ippodromi", icon: MapPin },
   { href: "/calendario", label: "Calendario", icon: Calendar },
 ];
 

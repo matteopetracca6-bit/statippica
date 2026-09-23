@@ -1,15 +1,32 @@
-name: StatIppica — Pedigree (test)
+name: StatIppica — Genealogia stalloni esteri
+
+# QUESTO FLUSSO ERA RIMASTO "(test)" E NON AVEVA NESSUN ORARIO.
+#
+# Riempie la genealogia degli stalloni esteri, quella che il sito usa quando
+# deve mostrare i nonni di un cavallo il cui padre o madre non e' italiano.
+# Essendo senza orario non e' mai partito da solo: al 23 settembre i dati
+# erano fermi al 2 luglio, tre mesi di genealogia vecchia mostrata come
+# attuale, senza nessun errore da nessuna parte. Nessuno se ne sarebbe accorto
+# perche' la pagina funziona lo stesso: mostra solo dati piu' vecchi.
+#
+# Ora gira ogni lunedi' alle 03:40 UTC, subito dopo il catalogo stalloni delle
+# 03:10, cosi' se il catalogo ha aggiunto stalloni nuovi la genealogia li
+# prende nello stesso giro. I valori predefiniti sono quelli veri (300 record,
+# salvataggio attivo) e non piu' quelli da prova.
+
 on:
+  schedule:
+    - cron: "40 3 * * 1"
   workflow_dispatch:
     inputs:
       limit:
-        description: "Quanti record processare per fase (test piccolo consigliato: 10)"
+        description: "Quanti record trattare per fase"
         required: false
-        default: "10"
+        default: "300"
       no_push:
-        description: "Non salvare su GitHub (solo test, true/false)"
+        description: "Non salvare su GitHub (solo prova, true/false)"
         required: false
-        default: "true"
+        default: "false"
 jobs:
   fill-pedigree:
     name: Esegui fill_pedigree.py
@@ -34,7 +51,10 @@ jobs:
           GITHUB_USER: matteopetracca6-bit
           GITHUB_REPO: statippica
         run: |
-          ARGS="--limit ${{ inputs.limit }}"
+          # Quando parte dall'orario gli input sono vuoti: senza un valore di
+          # ripiego il comando diventa "--limit" senza numero e fallisce.
+          LIMITE="${{ inputs.limit }}"
+          ARGS="--limit ${LIMITE:-300}"
           if [ "${{ inputs.no_push }}" = "true" ]; then
             ARGS="$ARGS --no-push"
           fi

@@ -2379,4 +2379,195 @@ export function registerRoutes(httpServer: Server, app: Express) {
       res.status(500).json({ error: e?.message });
     } finally { db.close(); }
   });
+
+  // ══════════════════════════════════════════════════════════════
+  // GUIDATORI
+  //
+  // Il rendimento di un guidatore non e' la sua percentuale di vittorie:
+  // quella misura i cavalli che gli affidano. Il numero che conta e'
+  // "effetto_corretto", cioe' quanto i cavalli arrivano meglio o peggio della
+  // LORO media quando li guida lui, corretto per il numero di partenza. Piu'
+  // e' negativo, meglio e': il cavallo arriva davanti rispetto al suo solito.
+  // ══════════════════════════════════════════════════════════════
+
+  app.get("/api/drivers", (req, res) => {
+    const db = getDb();
+    try {
+      if (!vpTableExists(db, "driver_stats")) {
+        return res.json({ disponibile: false, drivers: [] });
+      }
+
+      const soloAttivi = req.query.attivi === "1";
+      const minAffidabilita = parseFloat((req.query.min_affidabilita as string) || "0");
+
+      const rows = db.prepare(`
+        SELECT driver, n_gare, n_gare_recenti, n_cavalli, n_vittorie,
+               pct_vittorie, pct_primi_tre, effetto, effetto_corretto,
+               affidabilita, affidabilita_txt, partenza_media, premi_totali,
+               prima_gara, ultima_gara, ippodromo_top, attivo
+        FROM driver_stats
+        WHERE affidabilita >= ?
+          AND (? = 0 OR attivo = 1)
+        ORDER BY effetto_corretto ASC
+      `).all(minAffidabilita, soloAttivi ? 1 : 0) as any[];
+
+      res.json({
+        disponibile: true,
+        n: rows.length,
+        drivers: rows,
+        spiegazione:
+          "L'effetto e' quanto i cavalli arrivano meglio della loro media quando "
+          + "li guida questa persona, corretto per il numero di partenza. Un valore "
+          + "di -0,08 vuol dire che il cavallo arriva mediamente l'8% del gruppo "
+          + "piu' avanti del suo solito: in una gara da dieci partenti, quasi una "
+          + "posizione. La percentuale di vittorie invece dipende soprattutto da "
+          + "quali cavalli vengono affidati, quindi non misura il guidatore.",
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  app.get("/api/driver/:name", (req, res) => {
+    const db = getDb();
+    try {
+      const nome = decodeURIComponent(req.params.name);
+      if (!vpTableExists(db, "driver_stats")) {
+        return res.status(503).json({ error: "dati guidatori non ancora calcolati" });
+      }
+
+      const d = db.prepare("SELECT * FROM driver_stats WHERE driver = ?").get(nome) as any;
+      if (!d) return res.status(404).json({ error: "guidatore non trovato" });
+
+      // Su quali piste gira, e come rende su ciascuna.
+      const piste = db.prepare(`
+        SELECT track,
+               COUNT(*) AS n_gare,
+               ROUND(AVG(CASE WHEN placement = 1 THEN 100.0 ELSE 0 END), 1) AS pct_vittorie,
+               ROUND(AVG(CASE WHEN placement <= 3 THEN 100.0 ELSE 0 END), 1) AS pct_primi_tre
+        FROM races
+        WHERE driver = ? AND placement IS NOT NULL
+        GROUP BY track
+        HAVING COUNT(*) >= 20
+        ORDER BY n_gare DESC
+      `).all(nome) as any[];
+
+      // I cavalli che guida piu' spesso.
+      const cavalli = db.prepare(`
+        SELECT r.horse_name AS nome,
+               COUNT(*) AS n_gare,
+               SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               SUM(COALESCE(r.prize_net, 0)) AS premi,
+               (SELECT grade FROM horse_ratings hr
+                 WHERE hr.name = r.horse_name AND hr.rating_mode = 'performance'
+                 LIMIT 1) AS grade
+        FROM races r
+        WHERE r.driver = ? AND r.placement IS NOT NULL
+        GROUP BY r.horse_name
+        ORDER BY n_gare DESC
+        LIMIT 25
+      `).all(nome) as any[];
+
+      // Andamento per anno: serve a vedere se sta migliorando o calando.
+      const anni = db.prepare(`
+        SELECT substr(race_date, 1, 4) AS anno,
+               COUNT(*) AS n_gare,
+               ROUND(AVG(CASE WHEN placement = 1 THEN 100.0 ELSE 0 END), 1) AS pct_vittorie,
+               ROUND(AVG(CASE WHEN placement <= 3 THEN 100.0 ELSE 0 END), 1) AS pct_primi_tre
+        FROM races
+        WHERE driver = ? AND placement IS NOT NULL AND race_date IS NOT NULL
+        GROUP BY anno
+        HAVING COUNT(*) >= 10
+        ORDER BY anno
+      `).all(nome) as any[];
+
+      res.json({ ...d, piste, cavalli, anni });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // IPPODROMI
+  // ══════════════════════════════════════════════════════════════
+
+  app.get("/api/tracks", (_req, res) => {
+    const db = getDb();
+    try {
+      if (!vpTableExists(db, "track_stats")) {
+        return res.json({ disponibile: false, tracks: [] });
+      }
+
+      const tracks = db.prepare(`
+        SELECT * FROM track_stats ORDER BY n_gare DESC
+      `).all() as any[];
+
+      // La tabella dei numeri di partenza complessiva: e' il dato piu' netto
+      // che questo archivio contiene, e vale la pena mostrarlo subito.
+      const partenze = db.prepare(`
+        SELECT start_pos, n_gare, pct_vittorie, pct_primi_tre
+        FROM start_pos_stats WHERE track = '*' ORDER BY start_pos
+      `).all() as any[];
+
+      res.json({ disponibile: true, n: tracks.length, tracks, partenze });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  app.get("/api/track/:code", (req, res) => {
+    const db = getDb();
+    try {
+      const codice = decodeURIComponent(req.params.code).toUpperCase();
+      if (!vpTableExists(db, "track_stats")) {
+        return res.status(503).json({ error: "dati ippodromi non ancora calcolati" });
+      }
+
+      const t = db.prepare("SELECT * FROM track_stats WHERE track = ?").get(codice) as any;
+      if (!t) return res.status(404).json({ error: "ippodromo non trovato" });
+
+      const partenze = db.prepare(`
+        SELECT start_pos, n_gare, pct_vittorie, pct_primi_tre
+        FROM start_pos_stats WHERE track = ? ORDER BY start_pos
+      `).all(codice) as any[];
+
+      // Le distanze su cui si corre qui, non la loro media: una pista che corre
+      // sul 1600 e sul 2600 non corre "sul 2100".
+      const distanze = db.prepare(`
+        SELECT distance AS distanza, COUNT(*) AS n_gare,
+               ROUND(AVG(NULLIF(time_km, 0)), 2) AS tempo_km
+        FROM races
+        WHERE track = ? AND distance IS NOT NULL AND distance > 0
+        GROUP BY distance
+        HAVING COUNT(*) >= 100
+        ORDER BY n_gare DESC
+        LIMIT 8
+      `).all(codice) as any[];
+
+      const guidatori = db.prepare(`
+        SELECT driver, COUNT(*) AS n_gare,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(AVG(CASE WHEN placement = 1 THEN 100.0 ELSE 0 END), 1) AS pct_vittorie
+        FROM races
+        WHERE track = ? AND placement IS NOT NULL AND driver != ''
+        GROUP BY driver
+        HAVING COUNT(*) >= 50
+        ORDER BY vittorie DESC
+        LIMIT 15
+      `).all(codice) as any[];
+
+      const anni = db.prepare(`
+        SELECT substr(race_date, 1, 4) AS anno, COUNT(*) AS n_gare,
+               ROUND(AVG(NULLIF(prize_gross, 0))) AS premio_medio
+        FROM races
+        WHERE track = ? AND race_date IS NOT NULL
+        GROUP BY anno ORDER BY anno
+      `).all(codice) as any[];
+
+      res.json({ ...t, partenze, distanze, guidatori, anni });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
 }

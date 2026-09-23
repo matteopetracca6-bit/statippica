@@ -25,6 +25,10 @@ import MarePage from "./pages/MarePage";
 import QualifichePage from "./pages/QualifichePage";
 import BreedersPage from "./pages/BreedersPage";
 import CalendarPage from "./pages/CalendarPage";
+import DriversPage from "./pages/DriversPage";
+import DriverPage from "./pages/DriverPage";
+import TracksPage from "./pages/TracksPage";
+import TrackPage from "./pages/TrackPage";
 import NotFound from "./pages/not-found";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -58,6 +62,13 @@ export default function App() {
               <Route path="/fattrici" component={MaresPage} />
               <Route path="/fattrice/:name" component={MarePage} />
               <Route path="/calendario" component={CalendarPage} />
+              {/* Guidatori e ippodromi: due indirizzi ciascuno, singolare e
+                  plurale, perche' e' l'errore di battitura piu' probabile. */}
+              <Route path="/guidatori" component={DriversPage} />
+              <Route path="/guidatore/:name" component={DriverPage} />
+              <Route path="/ippodromi" component={TracksPage} />
+              <Route path="/ippodromo/:code" component={TrackPage} />
+              <Route path="/piste" component={TracksPage} />
               <Route path="/qualifiche" component={QualifichePage} />
               <Route path="/allevatori" component={AllevamentoHubPage} />
               <Route component={NotFound} />

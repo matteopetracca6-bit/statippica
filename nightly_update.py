@@ -38,6 +38,10 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
+# Le due fasi nuove stanno in un file a parte: questo ha gia' oltre
+# quattromila righe.
+from fasi_guidatori_ippodromi import phase_driver_stats, phase_track_stats
+
 # Senza questo, l'output può restare "bloccato" in un buffer per minuti prima
 # di comparire nei log di GitHub Actions (non essendo un terminale interattivo,
 # Python usa di default un buffering a blocchi, non riga-per-riga) — dando
@@ -4279,6 +4283,8 @@ def main():
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
         phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
         phase_grade_stability(conn)     # FASE 3d: affidabilita' del voto per eta'
+        phase_driver_stats(conn)        # FASE 3e: rendimento guidatori
+        phase_track_stats(conn)         # FASE 3f: schede ippodromi e numeri di partenza
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:
