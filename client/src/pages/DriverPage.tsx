@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { ArrowLeft, MapPin } from "lucide-react";
 import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
+import { Caricamento } from "../components/Caricamento";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 40%)";
@@ -40,7 +41,7 @@ export default function DriverPage() {
   });
 
   if (isLoading) {
-    return <div style={{ padding: "40px", textAlign: "center", color: MUTED }}>Carico...</div>;
+    return <Caricamento testo="Carico la scheda..." />;
   }
   if (error || !d || d.error) {
     return (

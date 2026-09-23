@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { MapPin, Search, X } from "lucide-react";
 import { Spiegazione } from "../components/Spiegazione";
+import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 interface Track {
@@ -53,7 +54,7 @@ function euro(n: number) {
 export default function TracksPage() {
   const [cerca, setCerca] = useState("");
 
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, error } = useQuery<{
     disponibile: boolean;
     n: number;
     tracks: Track[];
@@ -70,7 +71,11 @@ export default function TracksPage() {
   }, [data, cerca]);
 
   if (isLoading) {
-    return <div style={{ padding: "40px", textAlign: "center", color: MUTED }}>Carico gli ippodromi...</div>;
+    return <Caricamento testo="Carico gli ippodromi..." />;
+  }
+
+  if (error) {
+    return <ErroreCaricamento titolo="Ippodromi" cosa="i dati sugli ippodromi" />;
   }
 
   if (!data?.disponibile) {

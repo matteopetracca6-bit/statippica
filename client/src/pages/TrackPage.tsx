@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ArrowLeft } from "lucide-react";
 import { Spiegazione } from "../components/Spiegazione";
+import { Caricamento } from "../components/Caricamento";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 40%)";
@@ -28,7 +29,7 @@ export default function TrackPage() {
     enabled: !!codice,
   });
 
-  if (isLoading) return <div style={{ padding: "40px", textAlign: "center", color: MUTED }}>Carico...</div>;
+  if (isLoading) return <Caricamento testo="Carico la scheda della pista..." />;
   if (error || !t || t.error) {
     return (
       <div style={{ maxWidth: "700px", margin: "40px auto", padding: "0 20px", color: MUTED }}>

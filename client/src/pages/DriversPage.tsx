@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Search, X, Users, TrendingDown } from "lucide-react";
 import { Spiegazione } from "../components/Spiegazione";
+import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 interface Driver {
@@ -68,7 +69,7 @@ export default function DriversPage() {
   const [soloAttivi, setSoloAttivi] = useState(true);
   const [soloAffidabili, setSoloAffidabili] = useState(true);
 
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, error } = useQuery<{
     disponibile: boolean;
     n: number;
     drivers: Driver[];
@@ -88,11 +89,13 @@ export default function DriversPage() {
   }, [data, cerca, soloAttivi, soloAffidabili]);
 
   if (isLoading) {
-    return (
-      <div style={{ padding: "40px 20px", color: MUTED, textAlign: "center" }}>
-        Calcolo il rendimento dei guidatori...
-      </div>
-    );
+    return <Caricamento testo="Calcolo il rendimento dei guidatori..." />;
+  }
+
+  // Errore e dato mancante sono due cose diverse: un errore di rete non
+  // significa che i guidatori non siano stati calcolati.
+  if (error) {
+    return <ErroreCaricamento titolo="Guidatori" cosa="i dati sui guidatori" />;
   }
 
   if (!data?.disponibile) {
