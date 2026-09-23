@@ -1,0 +1,138 @@
+name: StatIppica — Calcola guidatori e ippodromi (a mano)
+
+# Riempie le tabelle dei guidatori, degli ippodromi e dei numeri di partenza
+# nell'archivio pubblicato, e lo ripubblica.
+#
+# Serve perché queste tabelle sono appena state introdotte: nell'archivio
+# pubblicato non esistono, quindi le due pagine nuove risulterebbero vuote
+# finché il lavoro notturno non ripassa da solo.
+#
+# Si lancia a mano una volta sola. Dal prossimo giro notturno il calcolo
+# avviene insieme agli altri (fasi 3e e 3f), senza bisogno di questo flusso.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova, senza pubblicare niente"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write # serve per pubblicare l'archivio aggiornato nel rilascio
+
+jobs:
+  guidatori_ippodromi:
+    runs-on: ubuntu-latest
+    name: Calcola guidatori e ippodromi e pubblica
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4
+
+      - name: Procura l'archivio
+        run: bash scripts/ottieni_archivio.sh
+
+      - name: Calcola guidatori, ippodromi e numeri di partenza
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+          from fasi_guidatori_ippodromi import phase_driver_stats, phase_track_stats
+
+          conn = sqlite3.connect("data.db")
+          print("guidatori valutati:", phase_driver_stats(conn))
+          print("ippodromi con scheda:", phase_track_stats(conn))
+          conn.commit()
+          conn.close()
+          PY
+
+      - name: Controlla il risultato
+        run: |
+          python3 - <<'PY'
+          import sqlite3, sys
+          c = sqlite3.connect('data.db')
+
+          guid = c.execute("SELECT COUNT(*) FROM driver_stats").fetchone()[0]
+          ipp  = c.execute("SELECT COUNT(*) FROM track_stats").fetchone()[0]
+          part = c.execute("SELECT COUNT(*) FROM start_pos_stats").fetchone()[0]
+          print(f"guidatori: {guid}, ippodromi: {ipp}, righe partenza: {part}")
+          if guid < 500 or ipp < 20 or part < 100:
+              print("::error::troppo pochi: il calcolo non è andato a fondo.")
+              sys.exit(1)
+
+          # "ESTERO" non è un ippodromo: la fonte ci mette dentro decine di piste
+          # in paesi diversi. Se ricompare fra le schede, l'esclusione si è rotta.
+          for finto in ("ESTERO", "ITALIA"):
+              if c.execute("SELECT COUNT(*) FROM track_stats WHERE track=?",
+                           (finto,)).fetchone()[0]:
+                  print(f"::error::'{finto}' è finito fra gli ippodromi.")
+                  sys.exit(1)
+
+          # Il vantaggio di partire dentro è un fatto misurato su centinaia di
+          # migliaia di gare: deve essere positivo su ogni pista grande. Se su
+          # qualcuna risultasse negativo, il conto sta sbagliando il verso.
+          for cod, gare, vant in c.execute("""SELECT track, n_gare, vantaggio_interno
+                                                FROM track_stats
+                                               WHERE n_gare > 20000
+                                               ORDER BY n_gare DESC"""):
+              print(f"  {cod:22} {gare:7} gare, partire dentro vale {vant}")
+              if vant is None or vant <= 0:
+                  print(f"::error::su {cod} partire dentro risulta uno svantaggio.")
+                  sys.exit(1)
+
+          # I giudizi migliori devono stare su chi ha molte gare, non su chi ne ha
+          # quattro fortunate: l'affidabilità serve esattamente a questo.
+          sospetti = c.execute("""SELECT COUNT(*) FROM driver_stats
+                                   WHERE n_gare < 50 AND affidabilita >= 0.5""").fetchone()[0]
+          if sospetti:
+              print(f"::error::{sospetti} guidatori con meno di 50 gare risultano affidabili.")
+              sys.exit(1)
+
+          print()
+          print("  I dieci che rendono meglio, fra quelli con un giudizio che regge:")
+          for n, g, e, a in c.execute("""SELECT driver, n_gare, effetto_corretto, affidabilita
+                                           FROM driver_stats
+                                          WHERE affidabilita >= 0.6
+                                          ORDER BY effetto_corretto ASC LIMIT 10"""):
+              print(f"    {n:24} {g:6} gare  effetto {e:+.3f}  affidabilità {a:.2f}")
+
+          print("Tutto coerente.")
+          PY
+
+      - name: Pubblica l'archivio aggiornato
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          gh release upload archivio data.db.gz \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Archivio aggiornato pubblicato."
+
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" \
+            -d '{}' | head -c 300
+          echo
