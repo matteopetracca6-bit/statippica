@@ -77,6 +77,22 @@ jobs:
                   print(f"::error::'{finto}' è finito fra gli ippodromi.")
                   sys.exit(1)
 
+          # Le sigle troncate sono già entrate una volta: "TO" con 1 gara, "MC"
+          # con 2, "ES" con 5, comparse quando la fonte ha scritto male qualche
+          # riga. Un ippodromo vero ha migliaia di gare, quindi se ne ricompare
+          # uno minuscolo la soglia si è rotta.
+          piccoli = c.execute("""SELECT track, n_gare FROM track_stats
+                                  WHERE n_gare < 1000""").fetchall()
+          if piccoli:
+              print(f"::error::sigle spurie fra gli ippodromi: {piccoli}")
+              sys.exit(1)
+
+          # Le piste italiane sono 26. Se il numero si sposta di molto, o la
+          # fonte ha cambiato le sigle o il filtro sta tagliando troppo.
+          if not (24 <= ipp <= 28):
+              print(f"::error::{ipp} ippodromi invece dei 26 attesi.")
+              sys.exit(1)
+
           # Il vantaggio di partire dentro è un fatto misurato su centinaia di
           # migliaia di gare: deve essere positivo su ogni pista grande. Se su
           # qualcuna risultasse negativo, il conto sta sbagliando il verso.

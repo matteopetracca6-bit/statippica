@@ -168,6 +168,17 @@ NOMI_IPPODROMI = {
 # dei guidatori, ma non ha una scheda propria e la pagina lo dice.
 NON_IPPODROMI = {"ESTERO"}
 
+# Quante gare deve avere una voce per essere considerata un ippodromo vero.
+#
+# PERCHE' SERVE, trovato provando in linea: fra le schede erano comparsi "TO"
+# con 1 gara, "MC" con 2 ed "ES" con 5. Non sono piste: sono sigle troncate,
+# residui di righe scritte male dalla fonte. Un ippodromo che ospita corse ne
+# ospita a migliaia, quindi la soglia separa le piste vere dalla sporcizia
+# senza dover inseguire i singoli casi. La piu' piccola pista vera
+# dell'archivio, Ferrara, ne ha 1.834: mille sta largo sotto di lei e molto
+# sopra i residui.
+MIN_GARE_IPPODROMO = 1000
+
 
 def phase_driver_stats(conn: sqlite3.Connection) -> int:
     """Valuta i guidatori confrontandoli dentro lo stesso cavallo."""
@@ -331,7 +342,7 @@ def phase_track_stats(conn: sqlite3.Connection) -> int:
             WHERE track = ? AND race_date >= date('now', '-12 months')
         """, (track,)).fetchone()[0]
 
-        if track in NON_IPPODROMI:
+        if track in NON_IPPODROMI or n_gare < MIN_GARE_IPPODROMO:
             continue
 
         righe.append((
