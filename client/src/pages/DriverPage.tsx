@@ -47,7 +47,7 @@ export default function DriverPage() {
     return (
       <div style={{ maxWidth: "700px", margin: "40px auto", padding: "0 20px", color: MUTED }}>
         <Link href="/guidatori"><a style={{ color: "hsl(183 75% 55%)", fontSize: "13px" }}>&larr; Tutti i guidatori</a></Link>
-        <p style={{ marginTop: "14px" }}>Guidatore non trovato.</p>
+        <p style={{ marginTop: "14px", lineHeight: 1.7 }}>{nome ? <><strong>{nome}</strong> non ha una scheda: ha meno di trenta gare con piazzamento nell'archivio, troppo poche per dire qualcosa sul suo rendimento.</> : "Guidatore non trovato."}</p>
       </div>
     );
   }
@@ -203,7 +203,11 @@ export default function DriverPage() {
                 {d.cavalli.slice(0, 10).map((c: any) => (
                   <tr key={c.nome}>
                     <td style={{ padding: "5px 0", color: "hsl(210 10% 80%)" }}>
-                      {c.nome}
+                      {c.anno ? (
+                        <Link href={`/horse/${encodeURIComponent(c.nome)}/${c.anno}`} className="collegamento-scheda">
+                          {c.nome}
+                        </Link>
+                      ) : c.nome}
                       {c.grade && <span style={{ marginLeft: "6px" }}><GradeBadge grade={c.grade} size="sm" /></span>}
                     </td>
                     <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: MUTED }}>{c.n_gare} gare</td>

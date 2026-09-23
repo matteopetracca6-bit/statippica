@@ -181,6 +181,8 @@ export default function Home() {
               <NavCard href="/allevamento" icon={Warehouse} title="Allevamento" desc="Allevatori e stazioni di monta in un'unica scheda, con la qualita media della produzione" color="hsl(20 70% 58%)" />
               <NavCard href="/validazione" icon={FlaskConical} title="Verifica Advisor" desc="La prova che il consiglio di accoppiamento funziona: test su puledri mai visti e fonti scientifiche" color="hsl(183 70% 52%)" />
               <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
+              <NavCard href="/guidatori" icon={Users} title="Guidatori" desc="Chi porta i cavalli a rendere piu' del loro solito, a parita' di cavallo e di numero di partenza" color="hsl(200 70% 58%)" />
+              <NavCard href="/ippodromi" icon={MapPin} title="Ippodromi" desc="Le 26 piste italiane e quanto pesa partire dentro o fuori su ciascuna" color="hsl(95 55% 52%)" />
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useRoute, useLocation, Link } from "wouter";
+import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getFlag, KNOWN_STALLION_NATIONALITY, COUNTRY_FLAG } from "@/lib/flags";
@@ -671,10 +672,10 @@ export default function HorsePage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "12px", color: "hsl(210 8% 65%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {r.track || "—"} {r.race_date ? `· ${r.race_date}` : ""}
+                      <LinkPista codice={r.track} /> {r.race_date ? `· ${r.race_date}` : ""}
                     </div>
                     <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)" }}>
-                      {r.driver || ""} {r.distance ? `· ${r.distance}m` : ""}
+                      <LinkGuidatore nome={r.driver} /> {r.distance ? `· ${r.distance}m` : ""}
                     </div>
                   </div>
                   {r.time_km != null && (
@@ -752,10 +753,10 @@ export default function HorsePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: "12px", color: "hsl(210 8% 65%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {r.track || "—"} {r.race_date ? `· ${r.race_date}` : ""}
+                        <LinkPista codice={r.track} /> {r.race_date ? `· ${r.race_date}` : ""}
                       </div>
                       <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)" }}>
-                        {r.driver || ""} {r.distance ? `· ${r.distance}m` : ""}
+                        <LinkGuidatore nome={r.driver} /> {r.distance ? `· ${r.distance}m` : ""}
                       </div>
                     </div>
                     <div className="tabular" style={{ fontSize: "12px", fontWeight: 700, color: "hsl(51 80% 60%)", flexShrink: 0 }}>
@@ -783,7 +784,7 @@ export default function HorsePage() {
                   <tbody>
                     {stats.trackStats.map((t, i) => (
                       <tr key={t.track} style={{ borderBottom: i < stats.trackStats.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
-                        <td style={{ padding: "7px 8px", color: "hsl(210 8% 65%)", fontSize: "11px" }}>{t.track}</td>
+                        <td style={{ padding: "7px 8px", color: "hsl(210 8% 65%)", fontSize: "11px" }}><LinkPista codice={t.track} /></td>
                         <td className="tabular" style={{ padding: "7px 8px", color: "hsl(210 8% 50%)" }}>{t.races}</td>
                         <td className="tabular" style={{ padding: "7px 8px", color: "hsl(51 80% 55%)" }}>{t.wins}</td>
                         <td className="tabular" style={{ padding: "7px 8px", color: "hsl(183 60% 55%)" }}>{t.places}</td>

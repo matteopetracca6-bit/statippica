@@ -57,6 +57,52 @@ function gradeColor(grade: string): string {
 
 export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
+  // GET /api/search/all?q=TESTO
+  // Ricerca unica, usata dalla barra in alto su ogni pagina: cerca insieme
+  // cavalli, stalloni, fattrici, guidatori e ippodromi, cosi' non serve
+  // tornare alla home o alla pagina giusta per cercare una cosa diversa.
+  // Poche righe per gruppo: e' fatta per saltare, non per sfogliare.
+  // ──────────────────────────────────────────────
+  app.get("/api/search/all", (req, res) => {
+    const q = (req.query.q as string || "").trim();
+    if (q.length < 2) return res.json({ cavalli: [], stalloni: [], fattrici: [], guidatori: [], ippodromi: [] });
+    const db = getDb();
+    const Q = q.toUpperCase();
+    // Chi comincia con il testo viene prima di chi lo contiene soltanto:
+    // cercando "VAR" si vuole VARENNE, non un cavallo che ha VAR nel mezzo.
+    const inizio = `${Q}%`, dentro = `%${Q}%`;
+    const prova = <T,>(f: () => T, vuoto: T): T => { try { return f(); } catch { return vuoto; } };
+    try {
+      const cavalli = prova(() => db.prepare(`
+        SELECT h.name, h.birth_year, h.sex, hr.grade
+        FROM horses h
+        LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
+                                  AND hr.rating_mode = 'performance'
+        WHERE h.name LIKE ?
+        ORDER BY h.name LIKE ? DESC, COALESCE(hr.score, -1) DESC
+        LIMIT 6`).all(dentro, inizio), [] as any[]);
+      const stalloni = prova(() => db.prepare(`
+        SELECT sire AS name, grade, n_figli_totali
+        FROM stallion_rating_stats WHERE sire LIKE ?
+        ORDER BY sire LIKE ? DESC, n_figli_totali DESC LIMIT 4`).all(dentro, inizio), [] as any[]);
+      const fattrici = prova(() => db.prepare(`
+        SELECT dam AS name, grade, n_valutati
+        FROM dam_rating_stats WHERE UPPER(dam) LIKE ?
+        ORDER BY UPPER(dam) LIKE ? DESC, n_valutati DESC LIMIT 4`).all(dentro, inizio), [] as any[]);
+      const guidatori = vpTableExists(db, "driver_stats") ? prova(() => db.prepare(`
+        SELECT driver AS name, n_gare, affidabilita_txt
+        FROM driver_stats WHERE UPPER(driver) LIKE ?
+        ORDER BY UPPER(driver) LIKE ? DESC, n_gare DESC LIMIT 4`).all(dentro, inizio), [] as any[]) : [];
+      const ippodromi = vpTableExists(db, "track_stats") ? prova(() => db.prepare(`
+        SELECT track AS code, nome AS name, n_gare
+        FROM track_stats WHERE UPPER(nome) LIKE ? OR track LIKE ?
+        ORDER BY n_gare DESC LIMIT 3`).all(dentro, dentro), [] as any[]) : [];
+      res.json({ cavalli, stalloni, fattrici, guidatori, ippodromi });
+    } finally {
+      db.close();
+    }
+  });
+
   // GET /api/search/horse?q=NAME
   // ──────────────────────────────────────────────
   app.get("/api/search/horse", (req, res) => {
@@ -2455,6 +2501,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // I cavalli che guida piu' spesso.
       const cavalli = db.prepare(`
         SELECT r.horse_name AS nome,
+               -- Serve per rendere il cavallo cliccabile: la sua scheda si
+               -- apre con nome E anno di nascita.
+               (SELECT h.birth_year FROM horses h WHERE h.name = r.horse_name
+                 LIMIT 1) AS anno,
                COUNT(*) AS n_gare,
                SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) AS vittorie,
                SUM(COALESCE(r.prize_net, 0)) AS premi,

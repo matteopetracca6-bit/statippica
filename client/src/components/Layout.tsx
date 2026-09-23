@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import logoHorse from "@assets/statippica-logo.png";
 import Wordmark from "./Wordmark";
 import NavBar from "./NavBar";
+import RicercaGlobale, { PulsanteRicerca, ricordaPercorso } from "./RicercaGlobale";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,7 +23,25 @@ export default function Layout({ children }: LayoutProps) {
    */
   useEffect(() => {
     areaContenuto.current?.scrollTo({ top: 0, behavior: "auto" });
+    // Ogni scheda aperta finisce fra le "aperte di recente" della ricerca.
+    ricordaPercorso(percorso);
   }, [percorso]);
+
+  // La ricerca si apre da ogni pagina: col pulsante, con "/" o con Ctrl+K.
+  // Il tasto "/" non deve scattare mentre si scrive in un'altra casella.
+  const [ricercaAperta, setRicercaAperta] = useState(false);
+  useEffect(() => {
+    const suTasto = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      const scrivendo = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if ((e.key === "k" && (e.ctrlKey || e.metaKey)) || (e.key === "/" && !scrivendo)) {
+        e.preventDefault();
+        setRicercaAperta(true);
+      }
+    };
+    window.addEventListener("keydown", suTasto);
+    return () => window.removeEventListener("keydown", suTasto);
+  }, []);
 
   return (
     <div style={{
@@ -49,10 +68,9 @@ export default function Layout({ children }: LayoutProps) {
             <Wordmark size={17} withLogo logoSrc={logoHorse} logoSize={30} />
           </a>
         </Link>
-        <span style={{ fontSize: "11px", color: "hsl(210 8% 38%)", letterSpacing: "0.04em" }}>
-          Archivio trotto italiano
-        </span>
+        <PulsanteRicerca onApri={() => setRicercaAperta(true)} />
       </header>
+      <RicercaGlobale aperta={ricercaAperta} onChiudi={() => setRicercaAperta(false)} />
 
       <NavBar />
 
