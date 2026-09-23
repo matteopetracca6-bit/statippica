@@ -156,6 +156,26 @@ def analizza_flussi() -> dict[str, dict]:
 # dieci giorni non c'e' niente di anomalo.
 GIORNI_TOLLERATI = 10
 
+# Tabelle che si riempiono a poco a poco e poi restano ferme perche' sono
+# COMPLETE, non perche' siano abbandonate.
+#
+# PERCHE' ESISTE QUESTA CATEGORIA, e come ci sono arrivato. Il controllo aveva
+# segnalato la genealogia degli stalloni come ferma da 83 giorni. Ho lanciato
+# il suo flusso per rimediare, e il flusso ha risposto: zero cavalli con
+# genitori mancanti, zero genitori da completare, niente da fare. La data
+# vecchia non era un guasto: era la data in cui il lavoro e' finito.
+#
+# Per queste tabelle la domanda giusta non e' "quanto e' vecchia" ma "restano
+# buchi". La data va guardata solo se il riempimento e' incompleto, altrimenti
+# il controllo grida al lupo ogni volta e si impara a ignorarlo — che e' il
+# modo peggiore in cui un allarme puo' fallire.
+A_RIEMPIMENTO = {
+    "stallion_pedigree":
+        "genealogia degli stalloni esteri: si prende una volta per stallone e "
+        "non cambia piu'. Il suo flusso gira ogni settimana e non trova niente "
+        "da fare perche' ha finito.",
+}
+
 # Colonne che contengono una data, in ordine di preferenza: si usa la prima che
 # la tabella possiede.
 COLONNE_DATA = ("date", "race_date", "ultima_gara", "last_race", "updated_at",
@@ -298,13 +318,25 @@ def main() -> int:
                 quanto = "oggi"
             else:
                 quanto = f"{giorni} giorn{'o' if giorni == 1 else 'i'} fa"
-            etichetta = "OK  " if giorni <= GIORNI_TOLLERATI else "VECCHIO"
+            if t.lower() in A_RIEMPIMENTO:
+                etichetta = "FATTA"
+            else:
+                etichetta = "OK  " if giorni <= GIORNI_TOLLERATI else "VECCHIO"
             # Il punto come separatore delle migliaia va messo solo al numero,
             # altrimenti mangia anche la virgola della frase.
             mille = f"{righe:,}".replace(",", ".")
             print(f"  {etichetta:4} {t:30} {quando}  ({quanto}, {mille} righe)")
-            if giorni > GIORNI_TOLLERATI and t.lower() in da_controllare:
+            if (giorni > GIORNI_TOLLERATI and t.lower() in da_controllare
+                    and t.lower() not in A_RIEMPIMENTO):
                 vecchie.append((t, quando, giorni))
+
+        mostrate = {t.lower() for t, _, _, _ in eta} & set(da_controllare)
+        if mostrate & set(A_RIEMPIMENTO):
+            print()
+            print("  Le tabelle segnate FATTA si riempiono una volta e poi restano")
+            print("  ferme perche' sono complete, non perche' siano abbandonate:")
+            for t in sorted(mostrate & set(A_RIEMPIMENTO)):
+                print(f"    {t}: {A_RIEMPIMENTO[t]}")
 
         if senza:
             print()
