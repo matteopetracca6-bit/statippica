@@ -33,6 +33,43 @@ const DB_PATH = path.resolve(process.cwd(), "data.db");
 let nightlyRunning = false;
 let nightlyStartedAt: string | null = null;
 
+// Cache delle informazioni prese da GitHub per la pagina "Metodo e dati".
+const REPO_PUBBLICO = "matteopetracca6-bit/statippica";
+let cacheGitHub: { quando: number; dati: any } | null = null;
+
+async function statoGitHub(): Promise<any> {
+  if (cacheGitHub && Date.now() - cacheGitHub.quando < 15 * 60 * 1000) return cacheGitHub.dati;
+  const chiedi = async (percorso: string) => {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${REPO_PUBBLICO}${percorso}`, {
+        headers: { Accept: "application/vnd.github+json", "User-Agent": "statippica" },
+        signal: AbortSignal.timeout(5000),
+      });
+      return r.ok ? await r.json() : null;
+    } catch { return null; }
+  };
+  const [rilascio, risultati, manutenzione] = await Promise.all([
+    chiedi("/releases/tags/archivio"),
+    chiedi("/actions/workflows/nightly-results.yml/runs?per_page=5&status=completed"),
+    chiedi("/actions/workflows/nightly-maintenance.yml/runs?per_page=5&status=completed"),
+  ]);
+  const asset = rilascio?.assets?.find((a: any) => a.name === "data.db.gz");
+  const ultimo = (x: any) => {
+    const run = x?.workflow_runs?.[0];
+    return run ? { esito: run.conclusion, quando: run.updated_at } : null;
+  };
+  const dati = {
+    archivio_pubblicato: asset?.updated_at ?? null,
+    notturno_risultati: ultimo(risultati),
+    notturno_manutenzione: ultimo(manutenzione),
+    github_raggiungibile: !!(rilascio || risultati),
+  };
+  // Se GitHub non ha risposto non si mette in cache il vuoto: al prossimo
+  // accesso si riprova.
+  if (dati.github_raggiungibile) cacheGitHub = { quando: Date.now(), dati };
+  return dati;
+}
+
 function getDb() {
   return new Database(DB_PATH, { readonly: true });
 }
@@ -57,6 +94,48 @@ function gradeColor(grade: string): string {
 
 export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
+  // GET /api/stato-dati
+  // Lo stato dell'archivio, per la pagina "Metodo e dati": quanti dati ci sono,
+  // fin dove arrivano, quando e' stato pubblicato l'archivio e com'e' andato
+  // l'ultimo lavoro notturno. Serve a mostrare che il sito si aggiorna DAVVERO,
+  // con date vere, invece di dirlo e basta.
+  //
+  // Le due informazioni che vengono da GitHub (data di pubblicazione e ultimo
+  // notturno) si chiedono al massimo ogni quindici minuti: il repository e'
+  // pubblico e non serve nessuna chiave, ma GitHub concede poche domande
+  // all'ora a chi non si presenta. Se non risponde, la pagina lo dice invece
+  // di inventare una data.
+  // ──────────────────────────────────────────────
+  app.get("/api/stato-dati", async (_req, res) => {
+    const db = getDb();
+    const uno = (sql: string, ...a: any[]) => { try { return db.prepare(sql).get(...a) as any; } catch { return null; } };
+    let archivio: any;
+    try {
+      // Il totale conta tutte le gare, come la home; le date solo quelle che ce l'hanno.
+      const gare = uno("SELECT COUNT(*) n, MIN(race_date) prima, MAX(race_date) ultima FROM races");
+      archivio = {
+        gare: gare?.n ?? 0,
+        prima_gara: gare?.prima ?? null,
+        ultima_gara: gare?.ultima ?? null,
+        cavalli_valutati: uno("SELECT COUNT(*) n FROM horse_ratings WHERE rating_mode = 'performance'")?.n ?? 0,
+        stalloni_valutati: uno("SELECT COUNT(*) n FROM stallion_rating_stats")?.n ?? 0,
+        fattrici_valutate: uno("SELECT COUNT(*) n FROM dam_rating_stats")?.n ?? 0,
+        guidatori: vpTableExists(db, "driver_stats") ? uno("SELECT COUNT(*) n FROM driver_stats")?.n ?? 0 : 0,
+        ippodromi: vpTableExists(db, "track_stats") ? uno("SELECT COUNT(*) n FROM track_stats")?.n ?? 0 : 0,
+        prossima_gara: uno("SELECT MAX(race_date) d FROM upcoming_races")?.d ?? null,
+        // Cavalli di cui il lavoro notturno deve ancora controllare se mancano
+        // gare vecchie: si svuota da solo, qualche centinaio a notte.
+        da_controllare: uno(`SELECT COUNT(*) n FROM horses
+                              WHERE birth_year >= 2012
+                                AND COALESCE(horse_class, 'athlete') <> 'breeder'
+                                AND (backfill_status IS NULL OR backfill_status = 'pending')`)?.n ?? null,
+      };
+    } finally {
+      db.close();
+    }
+    res.json({ archivio, ...(await statoGitHub()) });
+  });
+
   // GET /api/search/all?q=TESTO
   // Ricerca unica, usata dalla barra in alto su ogni pagina: cerca insieme
   // cavalli, stalloni, fattrici, guidatori e ippodromi, cosi' non serve

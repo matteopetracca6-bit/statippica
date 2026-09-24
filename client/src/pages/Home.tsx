@@ -10,7 +10,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
-  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical } from "lucide-react";
+  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked } from "lucide-react";
 
 interface Stats {
   totalHorses: number;
@@ -67,20 +67,26 @@ function AnimatedNumber({ value, format = true }: { value: number; format?: bool
   return <>{format ? display.toLocaleString("it-IT") : display}</>;
 }
 
+// I colori dei riquadri sono scritti come hsl(...): la trasparenza va messa
+// dentro la parentesi. Accodare "55" come si fa con i colori esadecimali
+// produce un colore non valido, e il bordo al passaggio non compariva.
+function trasparente(colore: string, alfa: number) {
+  return colore.startsWith("hsl(") ? colore.replace(/\)$/, ` / ${alfa})`) : colore;
+}
+
 function NavCard({ href, icon: Icon, title, desc, color }: { href: string; icon: any; title: string; desc: string; color: string }) {
+  // Al passaggio del cursore (o quando ci si arriva col tasto Tab) il
+  // riquadro prende un contorno del suo colore, con un alone leggero.
+  const vars = {
+    "--colore-riquadro": color,
+    "--colore-riquadro-alone": trasparente(color, 0.22),
+    "--colore-riquadro-icona": trasparente(color, 0.12),
+  } as React.CSSProperties;
   return (
     <Link href={href}>
-      <a style={{
-        display: "flex", flexDirection: "column", gap: "10px",
-        background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-        borderRadius: "14px", padding: "18px 20px", textDecoration: "none",
-        transition: "all 0.2s", cursor: "pointer",
-      }}
-        onMouseEnter={e => { e.currentTarget.style.background = "hsl(220 12% 13%)"; e.currentTarget.style.borderColor = color + "55"; e.currentTarget.style.transform = "translateY(-3px)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "hsl(220 12% 10%)"; e.currentTarget.style.borderColor = "hsl(220 10% 16%)"; e.currentTarget.style.transform = "none"; }}
-      >
+      <a className="riquadro-home" style={vars}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: 36, height: 36, borderRadius: "8px", background: color + "1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="riquadro-home-icona">
             <Icon size={18} style={{ color }} />
           </div>
           <span style={{ fontSize: "14px", fontWeight: 700, color: "hsl(210 10% 90%)", letterSpacing: "0.02em" }}>{title}</span>
@@ -150,8 +156,8 @@ export default function Home() {
         <div style={{ position: "relative", maxWidth: "1680px", margin: "0 auto" }}>
           {/* Title */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-              <h1 style={{ margin: 0, lineHeight: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "18px", maxWidth: "100%" }}>
+              <h1 style={{ margin: 0, lineHeight: 1, maxWidth: "100%", minWidth: 0 }}>
                 <Wordmark size={56} weight={700} withLogo logoSrc={logoHorse} logoSize={72} />
               </h1>
             </div>
@@ -183,6 +189,7 @@ export default function Home() {
               <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
               <NavCard href="/guidatori" icon={Users} title="Guidatori" desc="Chi porta i cavalli a rendere piu' del loro solito, a parita' di cavallo e di numero di partenza" color="hsl(200 70% 58%)" />
               <NavCard href="/ippodromi" icon={MapPin} title="Ippodromi" desc="Le 26 piste italiane e quanto pesa partire dentro o fuori su ciascuna" color="hsl(95 55% 52%)" />
+              <NavCard href="/metodo" icon={BookMarked} title="Metodo e dati" desc="Da dove vengono i numeri, come si calcola ogni voto, cosa non se ne puo' concludere e quando si e' aggiornato l'archivio" color="hsl(40 40% 72%)" />
             </div>
           </div>
         </div>

@@ -28,6 +28,7 @@ import CalendarPage from "./pages/CalendarPage";
 import DriversPage from "./pages/DriversPage";
 import DriverPage from "./pages/DriverPage";
 import TracksPage from "./pages/TracksPage";
+import MetodoPage from "./pages/MetodoPage";
 import TrackPage from "./pages/TrackPage";
 import NotFound from "./pages/not-found";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -69,6 +70,8 @@ export default function App() {
               <Route path="/ippodromi" component={TracksPage} />
               <Route path="/ippodromo/:code" component={TrackPage} />
               <Route path="/piste" component={TracksPage} />
+              <Route path="/metodo" component={MetodoPage} />
+              <Route path="/metodo-e-dati" component={MetodoPage} />
               <Route path="/qualifiche" component={QualifichePage} />
               <Route path="/allevatori" component={AllevamentoHubPage} />
               <Route component={NotFound} />
