@@ -1,6 +1,5 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
-import logoHorse from "@assets/statippica-logo.png";
 import Wordmark from "./Wordmark";
 import NavBar from "./NavBar";
 import RicercaGlobale, { PulsanteRicerca, ricordaPercorso } from "./RicercaGlobale";
@@ -63,11 +62,16 @@ export default function Layout({ children }: LayoutProps) {
         flexShrink: 0,
         zIndex: 100,
       }}>
-        <Link href="/">
-          <a style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
-            <Wordmark size={17} withLogo logoSrc={logoHorse} logoSize={30} />
-          </a>
-        </Link>
+        {/* In home il marchio grande e' gia' al centro della pagina: in alto a
+            sinistra sarebbe un doppione. Nelle altre schede resta, e riporta
+            alla home. */}
+        {percorso === "/" ? <span /> : (
+          <Link href="/">
+            <a aria-label="Torna alla home" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+              <Wordmark size={15} withLogo logoSize={34} />
+            </a>
+          </Link>
+        )}
         <PulsanteRicerca onApri={() => setRicercaAperta(true)} />
       </header>
       <RicercaGlobale aperta={ricercaAperta} onChiudi={() => setRicercaAperta(false)} />

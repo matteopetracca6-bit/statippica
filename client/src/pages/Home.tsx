@@ -4,7 +4,6 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import HorseSearchBar from "../components/HorseSearchBar";
 import Wordmark from "../components/Wordmark";
-import logoHorse from "@assets/statippica-logo.png";
 import GradeBadge from "../components/GradeBadge";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { getFlag } from "@/lib/flags";
@@ -158,7 +157,7 @@ export default function Home() {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "18px", maxWidth: "100%" }}>
               <h1 style={{ margin: 0, lineHeight: 1, maxWidth: "100%", minWidth: 0 }}>
-                <Wordmark size={56} weight={700} withLogo logoSrc={logoHorse} logoSize={72} />
+                <Wordmark size={54} withLogo logoSize={96} grande />
               </h1>
             </div>
           </div>

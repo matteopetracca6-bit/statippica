@@ -393,3 +393,75 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
   .wordmark-lettera { transition: color .01s; }
   .wordmark-lettera:hover { transform: none; }
 }
+
+
+/* Voci del menu in alto. Il colore arriva da ogni voce ed e' lo stesso del
+   suo riquadro nella home (giallo per i cavalli, verde per gli ippodromi...).
+   Al passaggio del cursore si accende l'icona; quando la scheda e' aperta la
+   voce si colora tutta, con fondo tenue e un filo di contorno. */
+.voce-menu {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 7px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  text-decoration: none;
+  color: hsl(210 8% 55%);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: color .15s, background .15s, box-shadow .15s;
+}
+.voce-menu svg { transition: color .15s; }
+.voce-menu:hover { color: hsl(210 10% 85%); background: hsl(220 10% 12%); }
+.voce-menu:hover svg { color: var(--colore-voce); }
+.voce-menu.attiva {
+  color: var(--colore-voce);
+  background: var(--colore-voce-fondo);
+  box-shadow: inset 0 0 0 1px var(--colore-voce-bordo);
+  font-weight: 700;
+}
+.voce-menu:focus-visible { outline: 2px solid var(--colore-voce); outline-offset: 1px; }
+
+/* Marchio: cavallo + scritta. La scritta si restringe se lo spazio non basta
+   (telefoni), il cavallo no. */
+.marchio { display: inline-flex; align-items: center; max-width: 100%; min-width: 0; }
+.marchio-cavallo {
+  flex-shrink: 0; display: block; object-fit: contain;
+  filter: drop-shadow(0 0 10px hsl(205 100% 55% / 0.35));
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), filter .35s ease;
+}
+.marchio-scritta {
+  position: relative; display: block; flex-shrink: 1; min-width: 0; max-width: 100%;
+  transition: filter .35s ease;
+}
+.marchio-scritta img { display: block; width: 100%; height: auto; }
+/* Il riflesso: una banda chiara, ritagliata sulla forma delle lettere. */
+.marchio-scritta::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, hsl(190 100% 92% / 0.95) 50%, transparent 62%);
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  background-repeat: no-repeat;
+  -webkit-mask-image: var(--maschera); mask-image: var(--maschera);
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  opacity: 0;
+}
+.marchio:hover .marchio-scritta { filter: drop-shadow(0 0 8px hsl(195 100% 60% / 0.55)); }
+.marchio:hover .marchio-scritta::after { animation: riflesso-marchio 1.1s ease-out; }
+.marchio:hover .marchio-cavallo {
+  transform: translateY(-3px) rotate(-2deg);
+  filter: drop-shadow(0 0 14px hsl(195 100% 60% / 0.6));
+}
+@keyframes riflesso-marchio {
+  0%   { opacity: 1; background-position: 130% 0; }
+  100% { opacity: 1; background-position: -30% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marchio:hover .marchio-scritta::after { animation: none; }
+  .marchio:hover .marchio-cavallo { transform: none; }
+}
+
+/* Sui telefoni il marchio grande della home va in colonna: cavallo sopra,
+   scritta sotto a tutta larghezza, invece di schiacciare la scritta. */
+@media (max-width: 560px) {
+  .marchio-grande { flex-direction: column; gap: 14px !important; }
+  .marchio-grande .marchio-cavallo { height: 84px; width: auto; }
+}

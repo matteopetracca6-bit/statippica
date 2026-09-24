@@ -9,34 +9,46 @@ import { Home as HomeIcon, ChevronLeft, ChevronRight, Trophy, Users, BookOpen, S
  * classifica all'advisor bisognava tornare indietro. Ora sono sempre
  * raggiungibili dalla barra in alto.
  */
-const SCHEDE: { href: string; label: string; icon: typeof HomeIcon }[] = [
+// Ogni scheda ha lo stesso colore del suo riquadro nella home: quando e'
+// aperta (o ci passa sopra il cursore) la voce del menu prende quel colore,
+// cosi' si riconosce a colpo d'occhio dove ci si trova.
+const SCHEDE: { href: string; label: string; icon: typeof HomeIcon; colore: string }[] = [
   // Cavalli e Leaderboard erano la stessa tabella con filtri diversi: sono
   // un'unica voce, con dentro tutti i filtri di entrambe.
-  { href: "/leaderboard", label: "Cavalli e classifica", icon: Trophy },
-  { href: "/stalloni", label: "Stalloni", icon: BookOpen },
-  { href: "/fattrici", label: "Fattrici", icon: Heart },
-  { href: "/advisor", label: "Advisor", icon: Sparkles },
-  { href: "/validazione", label: "Verifica", icon: FlaskConical },
-  { href: "/compare", label: "Comparazione", icon: GitCompare },
-  { href: "/pedigree", label: "Pedigree", icon: Network },
-  { href: "/trend", label: "Trend", icon: TrendingUp },
-  { href: "/qualifiche", label: "Qualifiche", icon: Award },
-  { href: "/allevamento", label: "Allevamento", icon: Building2 },
-  { href: "/guidatori", label: "Guidatori", icon: Users },
-  { href: "/ippodromi", label: "Ippodromi", icon: MapPin },
-  { href: "/metodo", label: "Metodo e dati", icon: BookMarked },
-  { href: "/calendario", label: "Calendario", icon: Calendar },
+  { href: "/leaderboard", label: "Cavalli e classifica", icon: Trophy, colore: "hsl(51 80% 55%)" },
+  { href: "/stalloni", label: "Stalloni", icon: BookOpen, colore: "hsl(120 60% 50%)" },
+  { href: "/fattrici", label: "Fattrici", icon: Heart, colore: "hsl(330 70% 58%)" },
+  { href: "/advisor", label: "Advisor", icon: Sparkles, colore: "hsl(280 60% 60%)" },
+  { href: "/validazione", label: "Verifica", icon: FlaskConical, colore: "hsl(183 70% 52%)" },
+  { href: "/compare", label: "Comparazione", icon: GitCompare, colore: "hsl(30 80% 55%)" },
+  { href: "/pedigree", label: "Pedigree", icon: Network, colore: "hsl(220 60% 60%)" },
+  { href: "/trend", label: "Trend", icon: TrendingUp, colore: "hsl(160 60% 50%)" },
+  { href: "/qualifiche", label: "Qualifiche", icon: Award, colore: "hsl(280 60% 62%)" },
+  { href: "/allevamento", label: "Allevamento", icon: Building2, colore: "hsl(20 70% 58%)" },
+  { href: "/guidatori", label: "Guidatori", icon: Users, colore: "hsl(200 70% 58%)" },
+  { href: "/ippodromi", label: "Ippodromi", icon: MapPin, colore: "hsl(95 55% 52%)" },
+  { href: "/metodo", label: "Metodo e dati", icon: BookMarked, colore: "hsl(40 40% 72%)" },
+  { href: "/calendario", label: "Calendario", icon: Calendar, colore: "hsl(0 60% 55%)" },
 ];
 
 /** Vero quando la scheda indicata e' quella aperta adesso. */
 function isAttiva(percorso: string, href: string): boolean {
-  if (href === "/leaderboard") return percorso.startsWith("/leaderboard");
+  if (href === "/leaderboard") return percorso.startsWith("/leaderboard") || percorso.startsWith("/cavalli") || percorso.startsWith("/horse");
   if (href === "/stalloni") return percorso.startsWith("/stalloni") || percorso.startsWith("/stallion");
   if (href === "/fattrici") return percorso.startsWith("/fattric");
   if (href === "/cavalli") return percorso.startsWith("/cavalli") || percorso.startsWith("/horse");
   if (href === "/allevamento") return percorso.startsWith("/allevam");
   if (href === "/validazione") return percorso.startsWith("/validazione");
+  if (href === "/guidatori") return percorso.startsWith("/guidator");
+  if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste");
+  if (href === "/metodo") return percorso.startsWith("/metodo");
+  if (href === "/advisor") return percorso.startsWith("/advisor");
   return percorso === href;
+}
+
+// Trasparenza dentro un colore hsl(...): "hsl(51 80% 55%)" -> "hsl(51 80% 55% / 0.15)".
+function trasparente(colore: string, alfa: number) {
+  return colore.replace(/\)$/, ` / ${alfa})`);
 }
 
 export default function NavBar() {
@@ -73,6 +85,19 @@ export default function NavBar() {
       setPassiAvanti(0);
     }
     navigazioneConFrecce.current = null;
+  }, [percorso]);
+
+  // Sui telefoni la fila delle voci scorre di lato: la voce della scheda
+  // aperta viene portata in vista, altrimenti il suo colore resterebbe
+  // fuori dallo schermo.
+  useEffect(() => {
+    const voce = document.querySelector<HTMLElement>(".nav-schede .voce-menu.attiva");
+    const fila = voce?.parentElement?.closest<HTMLElement>(".nav-schede");
+    if (!voce || !fila) return;
+    const v = voce.getBoundingClientRect(), f = fila.getBoundingClientRect();
+    if (v.left < f.left || v.right > f.right) {
+      fila.scrollBy({ left: (v.left + v.width / 2) - (f.left + f.width / 2), behavior: "smooth" });
+    }
   }, [percorso]);
 
   const vaiIndietro = () => { navigazioneConFrecce.current = "indietro"; window.history.back(); };
@@ -140,40 +165,27 @@ export default function NavBar() {
         <Link href="/">
           <a
             data-testid="nav-home"
-            style={{
-              display: "flex", alignItems: "center", gap: "5px",
-              padding: "5px 10px", borderRadius: "7px",
-              fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap",
-              textDecoration: "none",
-              color: percorso === "/" ? "hsl(183 85% 62%)" : "hsl(210 8% 55%)",
-              background: percorso === "/" ? "hsl(183 60% 30% / 0.16)" : "transparent",
-              transition: "color 0.15s, background 0.15s",
-            }}
-            onMouseEnter={e => { if (percorso !== "/") e.currentTarget.style.color = "hsl(210 10% 82%)"; }}
-            onMouseLeave={e => { if (percorso !== "/") e.currentTarget.style.color = "hsl(210 8% 55%)"; }}
+            className={`voce-menu${percorso === "/" ? " attiva" : ""}`}
+            style={{ "--colore-voce": "hsl(183 85% 62%)", "--colore-voce-fondo": "hsl(183 60% 30% / 0.16)", "--colore-voce-bordo": "hsl(183 85% 62% / 0.4)" } as React.CSSProperties}
           >
             <HomeIcon size={13} />
             Home
           </a>
         </Link>
 
-        {SCHEDE.map(({ href, label, icon: Icona }) => {
+        {SCHEDE.map(({ href, label, icon: Icona, colore }) => {
           const attiva = isAttiva(percorso, href);
           return (
             <Link key={href} href={href}>
               <a
                 data-testid={`nav-${label.toLowerCase()}`}
+                className={`voce-menu${attiva ? " attiva" : ""}`}
+                aria-current={attiva ? "page" : undefined}
                 style={{
-                  display: "flex", alignItems: "center", gap: "5px",
-                  padding: "5px 10px", borderRadius: "7px",
-                  fontSize: "12px", fontWeight: attiva ? 700 : 600,
-                  whiteSpace: "nowrap", textDecoration: "none",
-                  color: attiva ? "hsl(183 85% 62%)" : "hsl(210 8% 55%)",
-                  background: attiva ? "hsl(183 60% 30% / 0.16)" : "transparent",
-                  transition: "color 0.15s, background 0.15s",
-                }}
-                onMouseEnter={e => { if (!attiva) e.currentTarget.style.color = "hsl(210 10% 82%)"; }}
-                onMouseLeave={e => { if (!attiva) e.currentTarget.style.color = "hsl(210 8% 55%)"; }}
+                  "--colore-voce": colore,
+                  "--colore-voce-fondo": trasparente(colore, 0.14),
+                  "--colore-voce-bordo": trasparente(colore, 0.45),
+                } as React.CSSProperties}
               >
                 <Icona size={13} />
                 {label}
