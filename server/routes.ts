@@ -33,6 +33,17 @@ const DB_PATH = path.resolve(process.cwd(), "data.db");
 let nightlyRunning = false;
 let nightlyStartedAt: string | null = null;
 
+// Codici delle piste usati dal calendario delle corse in programma, tradotti
+// nei nomi dell'archivio (gli stessi mostrati dalla pagina Calendario).
+const NOMI_CALENDARIO: Record<string, string> = {
+  BO: "BOLOGNA", MI: "MILANO", RM: "ROMA", TO: "TORINO", NA: "NAPOLI",
+  CE: "CESENA", SR: "SIRACUSA", TV: "TREVISO", MT: "MONTECATINI",
+  CS: "CASARANO", PA: "PALERMO", MO: "MODENA", FI: "FIRENZE",
+  GA: "GARIGLIANO", PD: "PADOVA", VI: "VILLANOVA", CT: "CASTELLUCCIO",
+  TS: "TRIESTE", AV: "AVERSA", TA: "TARANTO", MG: "MONTEGIORGIO",
+  FE: "FERRARA", FO: "FOLLONICA", CV: "CIVITANOVA", PC: "PONTECAGNANO",
+};
+
 // Cache delle informazioni prese da GitHub per la pagina "Metodo e dati".
 const REPO_PUBBLICO = "matteopetracca6-bit/statippica";
 let cacheGitHub: { quando: number; dati: any } | null = null;
@@ -94,6 +105,97 @@ function gradeColor(grade: string): string {
 
 export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
+  // GET /api/notizie
+  // Le voci della fascia che scorre in alto nella home: i vincitori dell'ultima
+  // giornata corsa, le corse in programma nei prossimi giorni e lo stato
+  // dell'archivio. Tutto viene dall'archivio (e dalla data di pubblicazione su
+  // GitHub), quindi la fascia cambia da sola ogni notte.
+  // ──────────────────────────────────────────────
+  app.get("/api/notizie", async (_req, res) => {
+    const db = getDb();
+    const risultati: any[] = [];
+    const programma: any[] = [];
+    let gareTotali = 0;
+    let ultimaGara: string | null = null;
+    try {
+      const piste = new Map<string, string>();
+      if (vpTableExists(db, "track_stats")) {
+        for (const r of db.prepare("SELECT track, nome FROM track_stats").all() as any[]) piste.set(r.track, r.nome);
+      }
+      const guidatori = new Set<string>();
+      if (vpTableExists(db, "driver_stats")) {
+        for (const r of db.prepare("SELECT driver FROM driver_stats").all() as any[]) guidatori.add(r.driver);
+      }
+      const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+      const tot = db.prepare("SELECT COUNT(*) n FROM races").get() as any;
+      gareTotali = tot?.n ?? 0;
+      // L'ultima giornata "completa": la piu' recente con almeno cinque
+      // vincitori registrati. Il giorno appena passato puo' essere ancora
+      // parziale (i risultati arrivano cavallo per cavallo) e mostrerebbe un
+      // solo vincitore come se fosse l'intera giornata.
+      const giornate = db.prepare(`SELECT race_date d, COUNT(*) n FROM races
+                                    WHERE placement = 1 AND race_date <= ?
+                                      AND race_date >= date(?, '-14 day')
+                                    GROUP BY race_date ORDER BY race_date DESC`).all(oggi, oggi) as any[];
+      ultimaGara = giornate.find(g => g.n >= 5)?.d ?? giornate[0]?.d ?? null;
+
+      // 1. Vincitori dell'ultima giornata: le corse con il premio piu' alto,
+      //    al massimo due per pista cosi' non ne occupa una sola tutta la fascia.
+      if (ultimaGara) {
+        const righe = db.prepare(`
+          SELECT r.track, r.horse_name, r.driver, r.time_km, r.prize_net,
+                 (SELECT MAX(h.birth_year) FROM horses h WHERE h.name = r.horse_name) AS anno
+            FROM races r
+           WHERE r.race_date = ? AND r.placement = 1
+           ORDER BY r.prize_net DESC`).all(ultimaGara) as any[];
+        const perPista = new Map<string, number>();
+        for (const r of righe) {
+          const k = r.track || "";
+          if ((perPista.get(k) ?? 0) >= 3 || k === "ES" || k === "ESTERO") continue;
+          perPista.set(k, (perPista.get(k) ?? 0) + 1);
+          // Il tempo al km e' salvato come secondi oltre il minuto (13.1 = 1'13"1).
+          // Valori fuori da 1'08"-1'30" sono errori della fonte e non si mostrano.
+          const t = Number(r.time_km);
+          const tempo = t >= 8 && t <= 30 ? `1.${Math.floor(t).toString().padStart(2, "0")}.${Math.round((t % 1) * 10) % 10}` : null;
+          risultati.push({
+            data: ultimaGara,
+            pista: piste.get(k)?.split(" — ")[0] ?? k,
+            pista_codice: piste.has(k) ? k : null,
+            cavallo: r.horse_name,
+            anno: r.anno ?? null,
+            guidatore: r.driver || null,
+            guidatore_scheda: !!(r.driver && guidatori.has(r.driver)),
+            tempo,
+          });
+          if (risultati.length >= 8) break;
+        }
+      }
+
+      // 2. Corse in programma da oggi in avanti, una voce per giornata e pista.
+      //    I codici del calendario sono diversi da quelli dell'archivio: si
+      //    traducono nel nome e si collega la pista solo se ha una scheda.
+      if (vpTableExists(db, "upcoming_races")) {
+        const righe = db.prepare(`
+          SELECT race_date, track, COUNT(DISTINCT race_time) AS corse, COUNT(*) AS partenti
+            FROM upcoming_races WHERE race_date >= ?
+           GROUP BY race_date, track ORDER BY race_date, partenti DESC LIMIT 8`).all(oggi) as any[];
+        for (const r of righe) {
+          const nome = NOMI_CALENDARIO[r.track] ?? r.track;
+          const codice = piste.has(nome) ? nome : null;
+          programma.push({ data: r.race_date, pista: piste.get(nome)?.split(" — ")[0] ?? nome, pista_codice: codice, corse: r.corse, partenti: r.partenti });
+        }
+      }
+    } finally {
+      db.close();
+    }
+    const gh = await statoGitHub();
+    res.json({
+      risultati,
+      programma,
+      stato: { gare: gareTotali, ultima_gara: ultimaGara, archivio_pubblicato: gh.archivio_pubblicato ?? null },
+    });
+  });
+
   // GET /api/stato-dati
   // Lo stato dell'archivio, per la pagina "Metodo e dati": quanti dati ci sono,
   // fin dove arrivano, quando e' stato pubblicato l'archivio e com'e' andato

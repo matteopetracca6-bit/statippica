@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
 import Wordmark from "./Wordmark";
+import FasciaNotizie from "./FasciaNotizie";
 import NavBar from "./NavBar";
 import RicercaGlobale, { PulsanteRicerca, ricordaPercorso } from "./RicercaGlobale";
 
@@ -65,7 +66,7 @@ export default function Layout({ children }: LayoutProps) {
         {/* In home il marchio grande e' gia' al centro della pagina: in alto a
             sinistra sarebbe un doppione. Nelle altre schede resta, e riporta
             alla home. */}
-        {percorso === "/" ? <span /> : (
+        {percorso === "/" ? <FasciaNotizie /> : (
           <Link href="/">
             <a aria-label="Torna alla home" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
               <Wordmark size={15} withLogo logoSize={34} />

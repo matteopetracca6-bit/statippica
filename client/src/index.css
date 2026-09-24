@@ -465,3 +465,41 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
   .marchio-grande { flex-direction: column; gap: 14px !important; }
   .marchio-grande .marchio-cavallo { height: 84px; width: auto; }
 }
+
+
+/* Fascia di notizie in alto nella home. Il nastro contiene due copie uguali
+   e scorre di meta' della sua larghezza: alla fine del giro la seconda copia
+   e' al posto della prima e il movimento riparte senza scatti. I bordi
+   sfumano, cosi' le voci entrano ed escono invece di essere tagliate. */
+.fascia-notizie {
+  flex: 1; min-width: 0; overflow: hidden; margin-right: 16px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+.fascia-notizie-nastro {
+  display: flex; width: max-content;
+  animation: scorri-notizie linear infinite;
+}
+.fascia-notizie:hover .fascia-notizie-nastro,
+.fascia-notizie:focus-within .fascia-notizie-nastro,
+.fascia-notizie:active .fascia-notizie-nastro { animation-play-state: paused; }
+.fascia-notizie-copia { display: flex; align-items: center; flex-shrink: 0; }
+.notizia {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  font-size: 12.5px; color: hsl(210 10% 72%);
+  padding: 0 26px 0 0; margin-right: 26px;
+  border-right: 1px solid hsl(220 10% 18%);
+}
+.notizia-etichetta {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  border: 1px solid; border-radius: 4px; padding: 1px 6px; margin-right: 9px; opacity: .9;
+}
+.notizia-sep { margin: 0 7px; color: hsl(210 8% 35%); }
+.notizia-link { text-decoration: none; }
+.notizia-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+@keyframes scorri-notizie { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .fascia-notizie { overflow-x: auto; scrollbar-width: none; }
+  .fascia-notizie-nastro { animation: none; }
+  .fascia-notizie-copia[aria-hidden="true"] { display: none; }
+}
