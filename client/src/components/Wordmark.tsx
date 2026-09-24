@@ -1,17 +1,16 @@
 /**
  * Il nome del sito, scritto sempre allo stesso modo ovunque compaia.
  *
- * Le lettere sono disegnate a mano in SVG nello stile del carattere "Robotic"
- * scelto per il logo: tratto unico e sottile, forme geometriche, un punto
- * colorato dentro le lettere chiuse (le due P e la C). Non si carica un font
- * perche' quel carattere e' un'immagine di catalogo, non un file utilizzabile:
- * disegnare le dieci lettere che servono costa meno, pesa meno di un font
- * e resta nitido a qualunque dimensione.
+ * Le lettere sono disegnate a mano in SVG in stile fantascienza, alla maniera
+ * delle scritte di Star Wars: tratti larghi e squadrati, A a punta senza
+ * traversa. Non si usa il carattere originale dei film perche' non e' libero
+ * per un sito pubblico; disegnare le dieci lettere che servono pesa meno di un
+ * font e resta nitido a qualunque dimensione.
  *
- * Lettere bianche con un contorno nero sottile; i punti sono nell'azzurro del
- * sito. Il contorno e' fatto con un filtro che "allarga" la forma e la dipinge
- * di nero sotto le lettere: cosi' circonda anche le estremita' dei tratti e i
- * punti, cosa che un semplice tratto nero piu' spesso non farebbe.
+ * Lettere bianche con contorno nero sottile. Il contorno e' fatto con un filtro
+ * che allarga la forma e la dipinge di nero sotto le lettere, cosi' circonda
+ * anche i terminali dei tratti. Al passaggio del cursore ogni lettera, da sola,
+ * si colora dell'azzurro del sito.
  */
 
 import { useId } from "react";
@@ -29,22 +28,24 @@ type Props = {
   weight?: number;
 };
 
-const BIANCO = "hsl(210 20% 98%)";
-const AZZURRO = "hsl(183 100% 48%)";
 
-// Ogni lettera: larghezza, tracciato (linee e archi, altezza 5-95) e, per le
-// lettere chiuse, il centro del punto azzurro.
-type Lettera = { w: number; d: string; punto?: [number, number] };
+// Ogni lettera e' disegnata su un'altezza di 100, con tratti spessi 18 e
+// terminali tagliati netti, nello stile delle scritte dei film di fantascienza
+// (la A a punta senza traversa, la S squadrata con gli angoli appena smussati).
+// "linea" si disegna col tratto, "pieno" si riempie: la A e' una forma piena
+// perche' le sue gambe oblique devono finire in piano sulla riga di base.
+type Lettera = { w: number; linea?: string; pieno?: string };
 
-const S: Lettera = { w: 56, d: "M56 5 H24 A21.25 21.25 0 0 0 24 47.5 H32 A23.75 23.75 0 0 1 32 95 H0" };
-const T: Lettera = { w: 56, d: "M0 5 H56 M28 5 V95" };
-const A: Lettera = { w: 64, d: "M0 95 L32 5 L64 95" };
-const I: Lettera = { w: 0, d: "M0 5 V95" };
-const P: Lettera = { w: 48, d: "M0 95 V5 H25 A23 23 0 0 1 25 51 H0", punto: [24, 28] };
-const C: Lettera = { w: 78, d: "M77 18 A45 45 0 1 0 77 82", punto: [45, 50] };
+const TRATTO = 18;
+const S: Lettera = { w: 64, linea: "M64 9 H18 Q9 9 9 18 V41 Q9 50 18 50 H46 Q55 50 55 59 V82 Q55 91 46 91 H0" };
+const T: Lettera = { w: 66, linea: "M0 9 H66 M33 18 V100" };
+const A: Lettera = { w: 76, pieno: "M0 100 L30 0 H46 L76 100 H56 L38 36 L20 100 Z" };
+const I: Lettera = { w: 18, linea: "M9 0 V100" };
+const P: Lettera = { w: 58, linea: "M9 100 V9 H40 Q49 9 49 18 V43 Q49 52 40 52 H18" };
+const C: Lettera = { w: 60, linea: "M60 9 H18 Q9 9 9 18 V82 Q9 91 18 91 H60" };
 
 const PAROLA = [S, T, A, T, I, P, P, I, C, A];
-const SPAZIO = 22;
+const SPAZIO = 13;
 
 function disponi() {
   let x = 0;
@@ -57,7 +58,7 @@ function disponi() {
 }
 
 const { pezzi: PEZZI, larghezza: LARGHEZZA } = disponi();
-const MARGINE = 9;
+const MARGINE = 6;
 
 export default function Wordmark({
   size = 16,
@@ -67,12 +68,9 @@ export default function Wordmark({
 }: Props) {
   const id = useId().replace(/:/g, "");
   const imgSize = logoSize ?? Math.round(size * 1.9);
-  // Il tratto si ingrossa un poco quando il nome e' piccolo, altrimenti
-  // nell'intestazione diventerebbe un filo invisibile.
-  const tratto = size < 24 ? 10 : 8;
   const vbW = LARGHEZZA + MARGINE * 2;
-  const vbH = 90 + MARGINE * 2;
-  const altezza = Math.round(size * (vbH / 90));
+  const vbH = 100 + MARGINE * 2;
+  const altezza = Math.round(size * (vbH / 100));
   const larghezza = Math.round(altezza * (vbW / vbH));
 
   return (
@@ -96,7 +94,7 @@ export default function Wordmark({
         aria-label="StatIppica"
         width={larghezza}
         height={altezza}
-        viewBox={`${-MARGINE} ${5 - MARGINE} ${vbW} ${vbH}`}
+        viewBox={`${-MARGINE} ${-MARGINE} ${vbW} ${vbH}`}
         // Sui telefoni il nome grande della home non ci starebbe: si restringe
         // fino allo spazio disponibile, mantenendo le proporzioni.
         style={{ display: "block", flexShrink: 1, minWidth: 0, maxWidth: "100%", height: "auto", overflow: "visible" }}
@@ -104,7 +102,7 @@ export default function Wordmark({
         <title>StatIppica</title>
         <defs>
           <filter id={`contorno-${id}`} x="-5%" y="-20%" width="110%" height="140%">
-            <feMorphology in="SourceAlpha" operator="dilate" radius="2.6" result="largo" />
+            <feMorphology in="SourceAlpha" operator="dilate" radius="2.4" result="largo" />
             <feFlood floodColor="#000" />
             <feComposite in2="largo" operator="in" result="nero" />
             <feMerge>
@@ -113,12 +111,19 @@ export default function Wordmark({
             </feMerge>
           </filter>
         </defs>
+        {/* Ogni lettera e' un gruppo a se': al passaggio del cursore si
+            colora d'azzurro e si alza di poco (vedi .wordmark-lettera nel
+            foglio di stile). Il rettangolo trasparente fa da area sensibile,
+            altrimenti il cursore "cadrebbe" negli spazi vuoti dentro la lettera. */}
         <g filter={`url(#contorno-${id})`}>
           {PEZZI.map((l, i) => (
             <g key={i} transform={`translate(${l.x} 0)`}>
-              <path d={l.d} fill="none" stroke={BIANCO} strokeWidth={tratto}
-                    strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit={10} />
-              {l.punto && <circle cx={l.punto[0]} cy={l.punto[1]} r={tratto * 0.72} fill={AZZURRO} />}
+              <g className="wordmark-lettera">
+                <rect x={-SPAZIO / 2} y={-MARGINE} width={l.w + SPAZIO} height={100 + MARGINE * 2} fill="transparent" />
+                {l.linea && <path d={l.linea} fill="none" stroke="currentColor" strokeWidth={TRATTO}
+                                  strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit={10} />}
+                {l.pieno && <path d={l.pieno} fill="currentColor" />}
+              </g>
             </g>
           ))}
         </g>

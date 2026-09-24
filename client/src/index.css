@@ -374,3 +374,22 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
 @media (prefers-reduced-motion: reduce) {
   .riquadro-home, .riquadro-home:hover { transition: none; transform: none; }
 }
+
+
+/* Nome del sito: ogni lettera si colora d'azzurro quando ci passa sopra il
+   cursore, e si alza di un soffio. transform-box serve perche' il movimento
+   sia misurato sulla lettera e non sull'intero disegno. */
+.wordmark-lettera {
+  color: hsl(210 20% 98%);
+  transform-box: fill-box;
+  transition: color .22s ease, transform .22s cubic-bezier(.2,.8,.2,1), filter .22s ease;
+}
+.wordmark-lettera:hover {
+  color: hsl(183 100% 50%);
+  transform: translateY(-5%);
+  filter: drop-shadow(0 0 6px hsl(183 100% 50% / 0.55));
+}
+@media (prefers-reduced-motion: reduce) {
+  .wordmark-lettera { transition: color .01s; }
+  .wordmark-lettera:hover { transform: none; }
+}
