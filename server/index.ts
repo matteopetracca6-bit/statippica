@@ -5,7 +5,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "node:http";
 import { existsSync, createReadStream, createWriteStream, statSync,
-         readFileSync, writeFileSync } from "node:fs";
+         readFileSync, writeFileSync, renameSync, rmSync, openSync, readSync, closeSync } from "node:fs";
 import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
 import path from "node:path";
@@ -138,49 +138,108 @@ async function assicuraArchivio(): Promise<void> {
     }
   }
 
-  // 2) La strada normale: scaricarlo dal rilascio e riaprirlo mentre arriva,
-  //    senza tenerlo tutto in memoria (il piano gratuito ha 512 MB).
-  console.log(`[ARCHIVIO] Scarico l'archivio da ${INDIRIZZO_ARCHIVIO}`);
-  const inizio = Date.now();
-  try {
-    const risposta = await fetch(INDIRIZZO_ARCHIVIO, { redirect: "follow" });
-    if (!risposta.ok || !risposta.body) {
-      throw new Error(`risposta ${risposta.status}`);
-    }
-    await pipeline(
-      // @ts-expect-error il corpo della risposta e' uno stream leggibile
-      risposta.body,
-      createGunzip(),
-      createWriteStream(aperto),
-    );
-  } catch (e) {
-    console.error(
-      "[ARCHIVIO] Scaricamento non riuscito. Il sito non ha dati da mostrare.",
-      e,
-    );
-    return;
-  }
+  // 2) La strada normale: scaricarlo dal rilascio.
+  await scaricaArchivio(aperto);
+}
 
-  if (!archivioSembraBuono(aperto)) {
-    console.error(
-      "[ARCHIVIO] Quello scaricato e' troppo piccolo per essere l'archivio vero.",
-    );
-    return;
-  }
+const attesa = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-  // Annotare la targa della copia appena presa: al prossimo avvio serve per
-  // capire se nel frattempo ne e' uscita una nuova.
+/** Vero se il file comincia con la firma di un archivio SQLite. */
+function eUnArchivio(percorso: string): boolean {
   try {
-    const t = await targaPubblicata();
-    if (t) writeFileSync(aperto + ".targa", t, "utf8");
+    const fd = openSync(percorso, "r");
+    const buf = Buffer.alloc(16);
+    readSync(fd, buf, 0, 16, 0);
+    closeSync(fd);
+    return buf.toString("latin1").startsWith("SQLite format 3");
   } catch {
-    /* se non riesce, al prossimo avvio riscarichera': nessun danno */
+    return false;
   }
+}
 
-  console.log(
-    `[ARCHIVIO] Pronto: ${(statSync(aperto).size / 1048576).toFixed(1)} MB ` +
-      `in ${((Date.now() - inizio) / 1000).toFixed(1)}s`,
-  );
+/**
+ * Scarica l'archivio pubblicato e lo mette al posto di quello in uso.
+ *
+ * PERCHE' COSI'. Il 26/09 il sito rispondeva "unable to open database file" a
+ * ogni richiesta pur con un archivio pubblicato sano. Al riavvio lo
+ * scaricamento era fallito una volta sola (un intoppo di rete con GitHub), e
+ * il vecchio codice si arrendeva al primo tentativo: il sito partiva senza
+ * dati e restava cosi' fino al riavvio successivo, cioe' per ore.
+ *
+ * Ora:
+ *  - si riprova fino a cinque volte, aspettando sempre di piu' fra un
+ *    tentativo e l'altro;
+ *  - si scarica in un file a parte e lo si sostituisce solo quando e'
+ *    completo e controllato. Uno scaricamento interrotto non rovina piu'
+ *    l'archivio che il sito sta usando;
+ *  - anche a sito acceso, ogni venti minuti si controlla se l'archivio manca
+ *    o se ne e' uscito uno nuovo (vedi sotto, dopo l'avvio).
+ *
+ * Il cambio e' sicuro anche con il sito in funzione: ogni richiesta apre
+ * l'archivio da capo, quindi quelle gia' partite finiscono sul vecchio file e
+ * le successive trovano il nuovo.
+ */
+async function scaricaArchivio(aperto: string): Promise<boolean> {
+  const provvisorio = aperto + ".nuovo";
+  const pause = [0, 5_000, 15_000, 45_000, 90_000];
+  for (let i = 0; i < pause.length; i++) {
+    if (pause[i]) await attesa(pause[i]);
+    const inizio = Date.now();
+    console.log(`[ARCHIVIO] Scarico l'archivio (tentativo ${i + 1} di ${pause.length})`);
+    try {
+      const targa = await targaPubblicata();
+      const risposta = await fetch(INDIRIZZO_ARCHIVIO, { redirect: "follow", signal: AbortSignal.timeout(5 * 60_000) });
+      if (!risposta.ok || !risposta.body) throw new Error(`risposta ${risposta.status}`);
+      await pipeline(
+        // @ts-expect-error il corpo della risposta e' uno stream leggibile
+        risposta.body,
+        createGunzip(),
+        createWriteStream(provvisorio),
+      );
+      if (!archivioSembraBuono(provvisorio) || !eUnArchivio(provvisorio)) {
+        throw new Error("il file scaricato non e' un archivio completo");
+      }
+      renameSync(provvisorio, aperto);
+      if (targa) writeFileSync(aperto + ".targa", targa, "utf8");
+      console.log(
+        `[ARCHIVIO] Pronto: ${(statSync(aperto).size / 1048576).toFixed(1)} MB ` +
+          `in ${((Date.now() - inizio) / 1000).toFixed(1)}s`,
+      );
+      return true;
+    } catch (e) {
+      console.warn(`[ARCHIVIO] Tentativo ${i + 1} non riuscito:`, (e as Error)?.message ?? e);
+      try { rmSync(provvisorio, { force: true }); } catch { /* niente */ }
+    }
+  }
+  console.error("[ARCHIVIO] Scaricamento non riuscito dopo tutti i tentativi: riprovo fra venti minuti.");
+  return false;
+}
+
+/**
+ * Controllo a sito acceso, ogni venti minuti: se l'archivio manca lo
+ * riprende, se ne e' uscito uno piu' nuovo lo sostituisce. Cosi' un intoppo
+ * all'avvio si ripara da solo e l'aggiornamento notturno arriva al sito anche
+ * se nessuno lo riavvia.
+ */
+let controlloInCorso = false;
+async function controllaArchivio(): Promise<void> {
+  if (controlloInCorso) return;
+  controlloInCorso = true;
+  try {
+    const aperto = path.resolve(process.cwd(), "data.db");
+    if (!archivioSembraBuono(aperto)) {
+      console.warn("[ARCHIVIO] Il sito e' senza archivio: lo riprendo.");
+      await scaricaArchivio(aperto);
+      return;
+    }
+    const sua = await targaPubblicata();
+    if (sua && sua !== targaSalvata(aperto)) {
+      console.log("[ARCHIVIO] E' uscito un archivio piu' recente: lo sostituisco.");
+      await scaricaArchivio(aperto);
+    }
+  } finally {
+    controlloInCorso = false;
+  }
 }
 
 const app = express();
@@ -281,6 +340,10 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+
+      if (process.env.NODE_ENV === "production") {
+        setInterval(() => { controllaArchivio().catch(() => {}); }, 20 * 60 * 1000);
+      }
 
       // Keep-alive: ping self every 2 minutes to prevent sandbox idle shutdown
       if (process.env.NODE_ENV === "production") {
