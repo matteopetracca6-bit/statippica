@@ -65,19 +65,31 @@ async function statoGitHub(): Promise<any> {
     chiedi("/actions/workflows/nightly-maintenance.yml/runs?per_page=5&status=completed"),
   ]);
   const asset = rilascio?.assets?.find((a: any) => a.name === "data.db.gz");
+  // Se le domande a GitHub sono esaurite (succede dal servizio su Render, che
+  // condivide l'indirizzo con molti altri siti), la data di pubblicazione si
+  // legge comunque dall'intestazione del file stesso, che non ha limiti.
+  let pubblicato: string | null = asset?.updated_at ?? null;
+  if (!pubblicato) {
+    try {
+      const r = await fetch(`https://github.com/${REPO_PUBBLICO}/releases/download/archivio/data.db.gz`,
+        { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(5000) });
+      const lm = r.headers.get("last-modified");
+      if (lm) pubblicato = new Date(lm).toISOString();
+    } catch { /* resta sconosciuta */ }
+  }
   const ultimo = (x: any) => {
     const run = x?.workflow_runs?.[0];
     return run ? { esito: run.conclusion, quando: run.updated_at } : null;
   };
   const dati = {
-    archivio_pubblicato: asset?.updated_at ?? null,
+    archivio_pubblicato: pubblicato,
     notturno_risultati: ultimo(risultati),
     notturno_manutenzione: ultimo(manutenzione),
     github_raggiungibile: !!(rilascio || risultati),
   };
-  // Se GitHub non ha risposto non si mette in cache il vuoto: al prossimo
-  // accesso si riprova.
-  if (dati.github_raggiungibile) cacheGitHub = { quando: Date.now(), dati };
+  // Anche la risposta mancata si tiene per quindici minuti: riprovare a ogni
+  // visita consumerebbe le poche domande concesse e allungherebbe l'attesa.
+  cacheGitHub = { quando: Date.now(), dati };
   return dati;
 }
 

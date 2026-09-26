@@ -125,7 +125,7 @@ export default function MetodoPage() {
               <Notturno nome="Manutenzione notturna dell'archivio" run={st?.notturno_manutenzione} />
               {!st?.github_raggiungibile && (
                 <div style={{ fontSize: "12px", color: DIM }}>
-                  Al momento GitHub non risponde, quindi le date di pubblicazione non sono disponibili. I dati dell'archivio restano validi.
+                  Al momento GitHub non dice com'e' andato ogni lavoro notturno. La data di pubblicazione qui sopra e' quella del file dell'archivio, e i dati restano validi.
                 </div>
               )}
             </div>
