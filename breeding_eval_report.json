@@ -1,8 +1,8 @@
 {
-  "n_samples": 1632,
-  "n_samples_before_target_filter": 2253,
-  "n_family_groups": 115,
-  "poor_prevalence": 0.256,
+  "n_samples": 219,
+  "n_samples_before_target_filter": 380,
+  "n_family_groups": 38,
+  "poor_prevalence": 0.26,
   "feature_coverage": {
     "s_time": 1.0,
     "s_earn": 1.0,
@@ -14,8 +14,8 @@
     "m_win": 1.0,
     "m_score": 1.0,
     "m_races": 1.0,
-    "ds_time": 0.472,
-    "ss_time": 0.321
+    "ds_time": 0.005,
+    "ss_time": 0.0
   },
   "features_used": [
     "s_time",
@@ -27,55 +27,56 @@
     "m_earn",
     "m_win",
     "m_score",
-    "m_races",
+    "m_races"
+  ],
+  "dropped_features_low_coverage": [
     "ds_time",
     "ss_time"
   ],
-  "dropped_features_low_coverage": [],
   "baselines": {
     "target_mean": {
-      "mae": 17.845,
-      "rmse": 21.091,
+      "mae": 14.359,
+      "rmse": 16.827,
       "r2": 0.0
     },
     "mid_parent_score": {
-      "mae": 25.069,
-      "rmse": 30.513,
-      "r2": -1.0929
+      "mae": 19.603,
+      "rmse": 23.508,
+      "r2": -0.9516
     }
   },
   "regression_oof_by_family": {
     "gb_150_d3": {
-      "mae": 18.045,
-      "rmse": 21.537,
-      "r2": -0.0427
+      "mae": 14.764,
+      "rmse": 18.409,
+      "r2": -0.1968
     },
     "gb_60_d2": {
-      "mae": 17.575,
-      "rmse": 20.845,
-      "r2": 0.0232
+      "mae": 14.289,
+      "rmse": 17.539,
+      "r2": -0.0864
     },
     "ridge_a10": {
-      "mae": 17.661,
-      "rmse": 20.926,
-      "r2": 0.0157
+      "mae": 14.923,
+      "rmse": 18.042,
+      "r2": -0.1496
     }
   },
   "regression_temporal_holdout": {
     "split_year": 2021,
-    "n_train": 1132,
-    "n_test": 500,
-    "mae": 18.203,
-    "rmse": 21.653,
-    "r2": -0.3602
+    "n_train": 82,
+    "n_test": 137,
+    "mae": 15.9,
+    "rmse": 19.306,
+    "r2": -0.577
   },
   "classification_oof_by_family": {
-    "auc": 0.5961,
-    "pr_auc": 0.3476,
-    "pr_auc_baseline_prevalence": 0.2555,
-    "brier": 0.1941
+    "auc": 0.5987,
+    "pr_auc": 0.3408,
+    "pr_auc_baseline_prevalence": 0.2603,
+    "brier": 0.239
   },
-  "trained_at": "2026-09-20T09:25:40.076221+00:00",
+  "trained_at": "2026-09-27T10:07:47.216927+00:00",
   "min_child_races": 10,
   "features": [
     "s_time",
@@ -87,23 +88,24 @@
     "m_earn",
     "m_win",
     "m_score",
-    "m_races",
-    "ds_time",
-    "ss_time"
+    "m_races"
   ],
   "validation_status": "experimental",
   "is_decision_support_ready": false,
+  "tetto_teorico_r2": 0.15,
+  "segnale_misurato_r2": 0.036,
+  "quota_del_tetto_raggiunta": -0.576,
   "validation_criteria": {
-    "min_r2_decision": 0.2,
+    "min_r2_decision": 0.08,
     "min_auc_decision": 0.65,
     "min_samples_decision": 500,
-    "min_r2_experimental": 0.0,
+    "min_r2_experimental": 0.03,
     "min_auc_experimental": 0.55,
     "cv_scheme": "GroupKFold(5) per stallone + holdout temporale"
   },
   "methodology_notice": "Validazione out-of-fold con GroupKFold per stallone (nessuna famiglia condivisa fra train e validation) piu' holdout temporale per anno di nascita del figlio. Gli output non sono supporto decisionale finche' validation_status non e' 'decision_support_ready'.",
   "components": {
-    "score_regressor_beats_mean_baseline": true,
+    "score_regressor_beats_mean_baseline": false,
     "score_regressor_usable": false,
     "poor_classifier_usable": false
   }
