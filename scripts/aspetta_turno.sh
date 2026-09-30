@@ -39,12 +39,31 @@ if ! echo "$MIO_PERCORSO" | grep -qE "$FAMIGLIA"; then
 fi
 echo "== Aspetto il turno (partito alle $MIA_PARTENZA) =="
 
+# Chi e' in corso prima di me. Si leggono gli ultimi lavori SENZA il filtro
+# "in corso" di GitHub e si guarda lo stato di ciascuno: il 30/09 quel filtro
+# ha omesso per un momento un lavoro ancora aperto, e chi aspettava e' partito
+# troppo presto (il suo lavoro e' stato poi coperto da quello dell'altro).
+# Stampa i lavori della famiglia partiti prima di me e non ancora finiti.
+# Se GitHub non risponde stampa un segnaposto: meglio aspettare che partire
+# alla cieca.
+prima_di_me() {
+  local grezzo
+  if ! grezzo=$(gh api "repos/$REPO/actions/runs?per_page=100" \
+      -q ".workflow_runs[] | select(.id != $MIO and .status != \"completed\") | [.id, .path, .run_started_at, .name] | @tsv" 2>/dev/null); then
+    printf "x\tx\tx\t(GitHub non risponde)\n"; return
+  fi
+  echo "$grezzo" | grep -E "$FAMIGLIA" \
+    | awk -F'\t' -v t="$MIA_PARTENZA" -v mio="$MIO" '$3 < t || ($3 == t && $1 < mio)' || true
+}
+
 INIZIO=$(date +%s)
 while true; do
-  PRIMA_DI_ME=$(gh api "repos/$REPO/actions/runs?status=in_progress&per_page=100" \
-    -q ".workflow_runs[] | select(.id != $MIO) | [.id, .path, .run_started_at, .name] | @tsv" 2>/dev/null \
-    | grep -E "$FAMIGLIA" \
-    | awk -F'\t' -v t="$MIA_PARTENZA" -v mio="$MIO" '$3 < t || ($3 == t && $1 < mio)')
+  PRIMA_DI_ME=$(prima_di_me)
+  if [ -z "$PRIMA_DI_ME" ]; then
+    # Conferma: deve risultare libero due volte di fila, a mezzo minuto.
+    sleep 30
+    PRIMA_DI_ME=$(prima_di_me)
+  fi
   if [ -z "$PRIMA_DI_ME" ]; then
     echo "   nessun altro lavoro in corso: tocca a me."
     exit 0

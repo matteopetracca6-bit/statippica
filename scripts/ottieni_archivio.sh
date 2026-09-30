@@ -34,6 +34,10 @@ echo "== Procuro l'archivio =="
 ottieni() {
   # 1) La strada normale: il rilascio.
   echo "-> Scarico dal rilascio: $INDIRIZZO"
+  # La "targa" della copia che si scarica (la data in cui e' stata
+  # pubblicata). pubblica_archivio.sh la ricontrolla alla fine: se nel
+  # frattempo qualcun altro ha pubblicato, non si copre il suo lavoro.
+  curl -sIL -m 60 "$INDIRIZZO" | tr -d '\r' | grep -i '^last-modified:' | tail -1 > .archivio_targa || true
   if curl -fsSL --retry 3 --retry-delay 5 -m 600 -o /tmp/archivio.gz "$INDIRIZZO"; then
     local byte; byte=$(stat -c%s /tmp/archivio.gz 2>/dev/null || echo 0)
     echo "   scaricati $byte byte"

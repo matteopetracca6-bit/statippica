@@ -38,3 +38,4 @@ data.db
 
 # Segno lasciato da ottieni_archivio.sh: quante gare aveva l'archivio di partenza.
 .archivio_iniziale
+.archivio_targa

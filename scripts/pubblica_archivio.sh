@@ -55,6 +55,16 @@ echo "   gare: $GARE (all'inizio del lavoro: $GARE_INIZIALI)"
 SOGLIA=$(( GARE_INIZIALI - GARE_INIZIALI / 200 ))
 [ "$GARE" -ge "$SOGLIA" ] || [ "${CONSENTI_CALO:-}" = "1" ] || errore "le gare sono scese da $GARE_INIZIALI a $GARE: il lavoro ne ha perse."
 
+# 4b. Nessuno ha pubblicato mentre lavoravo? Se la copia pubblicata non e'
+#     piu' quella da cui sono partito, pubblicare cancellerebbe il lavoro di
+#     chi l'ha pubblicata. E' la rete di sicurezza sotto aspetta_turno.sh.
+if [ -s .archivio_targa ]; then
+  ORA=$(curl -sIL -m 60 "$BASE/data.db.gz" | tr -d '\r' | grep -i '^last-modified:' | tail -1)
+  if [ -n "$ORA" ] && [ "$ORA" != "$(cat .archivio_targa)" ] && [ "${CONSENTI_CALO:-}" != "1" ]; then
+    errore "mentre lavoravo un altro lavoro ha pubblicato l'archivio ($(cat .archivio_targa) -> $ORA): pubblicando cancellerei il suo lavoro. Va rifatto questo lavoro."
+  fi
+fi
+
 # La copia compressa va rifatta se manca o se e' piu' vecchia dell'archivio.
 if [ ! -f data.db.gz ] || [ data.db -nt data.db.gz ]; then
   gzip -9 -c data.db > data.db.gz
