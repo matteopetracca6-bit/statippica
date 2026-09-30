@@ -1,0 +1,143 @@
+name: StatIppica — Sentinella (controlla sito, archivio e notturni)
+
+# PERCHE' ESISTE. Dal 28 al 30/09/2026 il sito e' rimasto senza dati per due
+# giorni e nessuno se n'e' accorto finche' non l'ha aperto a mano: l'archivio
+# pubblicato era un file vuoto e i notturni, giustamente, si fermavano. Ogni
+# pezzo faceva il suo dovere, ma nessuno guardava l'insieme.
+#
+# Ogni due ore la sentinella controlla:
+#  1. l'archivio pubblicato: si scarica, si apre, ha le sue gare? Se no, e la
+#     scorta e' buona, rimette la scorta al suo posto da sola;
+#  2. il sito: risponde con i dati? Se no, chiede a Render di ripartire;
+#  3. i notturni: l'ultimo riuscito e' di meno di due giorni fa?
+#  4. i buchi: ci sono giornate recenti quasi vuote nell'archivio?
+#
+# Se qualcosa non va, il lavoro FALLISCE: GitHub manda allora un'email al
+# proprietario del progetto. E' l'allarme: un lavoro verde vuol dire che
+# tutto e' a posto, uno rosso che c'e' da guardare (il motivo e' scritto in
+# chiaro nel riepilogo).
+
+on:
+  schedule:
+    - cron: "15 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write # serve per rimettere la scorta al posto dell'archivio rovinato
+  actions: read   # serve per leggere l'esito dei notturni
+
+jobs:
+  controlla:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 1. L'archivio pubblicato e' buono?
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -uo pipefail
+          BASE="https://github.com/$GITHUB_REPOSITORY/releases/download/archivio"
+          conta() { python3 -c "import sqlite3,sys;print(sqlite3.connect(sys.argv[1]).execute('select count(*) from races').fetchone()[0])" "$1" 2>/dev/null || echo 0; }
+          prova() { # $1 = nome del file nel rilascio
+            rm -f /tmp/a.gz /tmp/a.db
+            curl -fsSL --retry 3 --retry-delay 10 -m 600 -o /tmp/a.gz "$BASE/$1" || { echo 0; return; }
+            gunzip -c /tmp/a.gz > /tmp/a.db 2>/dev/null || { echo 0; return; }
+            conta /tmp/a.db
+          }
+          GARE=$(prova data.db.gz)
+          echo "Archivio pubblicato: $GARE gare"
+          if [ "$GARE" -ge 500000 ]; then
+            cp /tmp/a.db /tmp/archivio.db
+            echo "OK: archivio pubblicato buono ($GARE gare)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "::error::l'archivio pubblicato non e' buono ($GARE gare). Provo la scorta."
+          SCORTA=$(prova data.db.precedente.gz)
+          echo "Scorta: $SCORTA gare"
+          if [ "$SCORTA" -ge 500000 ]; then
+            cp /tmp/a.gz /tmp/data.db.gz
+            gh release upload archivio /tmp/data.db.gz --repo "$GITHUB_REPOSITORY" --clobber
+            cp /tmp/a.db /tmp/archivio.db
+            echo "ALLARME: l'archivio pubblicato era rovinato ($GARE gare). Rimessa la scorta ($SCORTA gare): i dati sono quelli della pubblicazione precedente. Va capito quale lavoro l'ha rovinato." >> "$GITHUB_STEP_SUMMARY"
+            touch /tmp/allarme
+            exit 0
+          fi
+          echo "ALLARME GRAVE: archivio e scorta rovinati. Serve un ripristino a mano." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: 2. Il sito risponde con i dati?
+        run: |
+          set -uo pipefail
+          SITO="https://statippica.onrender.com/api/stats"
+          leggi() { curl -s -m 150 "$SITO" | python3 -c "import json,sys;print(json.load(sys.stdin).get('totalRaces',0))" 2>/dev/null || echo 0; }
+          # Il piano gratuito di Render addormenta il sito: il primo accesso
+          # lo sveglia e puo' metterci un paio di minuti.
+          for i in 1 2 3; do G=$(leggi); [ "$G" -ge 500000 ] && break; sleep 60; done
+          if [ "$G" -ge 500000 ]; then
+            echo "OK: il sito risponde ($G gare)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "::error::il sito non risponde con i dati. Chiedo a Render di ripartire."
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 200; echo
+          sleep 600
+          G=$(leggi)
+          if [ "$G" -ge 500000 ]; then
+            echo "ALLARME: il sito era senza dati; ripartito da solo ($G gare)." >> "$GITHUB_STEP_SUMMARY"
+            touch /tmp/allarme
+            exit 0
+          fi
+          echo "ALLARME GRAVE: il sito resta senza dati anche dopo la ripartenza." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: 3. I notturni sono riusciti di recente?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          for F in nightly-results.yml nightly-maintenance.yml; do
+            ULTIMO=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$F/runs?status=success&per_page=1" -q '.workflow_runs[0].updated_at' 2>/dev/null)
+            ORE=$(python3 -c "import datetime as d,sys;t=sys.argv[1];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(t.replace('Z','+00:00'))).total_seconds()//3600) if t else 9999)" "$ULTIMO")
+            echo "$F: ultimo riuscito $ULTIMO ($ORE ore fa)"
+            if [ "$ORE" -gt 48 ]; then
+              echo "ALLARME: $F non riesce da $ORE ore (ultimo riuscito: $ULTIMO)." >> "$GITHUB_STEP_SUMMARY"
+              touch /tmp/allarme
+            else
+              echo "OK: $F riuscito $ORE ore fa" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+      - name: 4. Ci sono giornate recenti vuote?
+        run: |
+          set -uo pipefail
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import sqlite3, datetime as d
+          c = sqlite3.connect("/tmp/archivio.db")
+          oggi = d.date.today()
+          # Solo le giornate con almeno un convegno italiano contano: nei
+          # giorni senza corse in Italia l'archivio ha solo gare all'estero.
+          buchi = []
+          for k in range(3, 22):
+              g = (oggi - d.timedelta(days=k)).isoformat()
+              n = c.execute("SELECT COUNT(*) FROM races WHERE race_date=? AND track<>'ESTERO'", (g,)).fetchone()[0]
+              if n < 40:
+                  buchi.append(f"{g} ({n} gare)")
+          if buchi:
+              print("Giornate con poche gare italiane (il notturno dei risultati prova a recuperarle da solo ogni notte; se restano, vanno guardate): " + ", ".join(buchi))
+          else:
+              print("OK: nessuna giornata vuota nelle ultime tre settimane")
+          PY
+
+      - name: Esito
+        run: |
+          if [ -f /tmp/allarme ]; then
+            echo "::error::La sentinella ha trovato qualcosa da guardare: vedi il riepilogo."
+            exit 1
+          fi
+          echo "Tutto a posto."
