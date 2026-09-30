@@ -79,9 +79,17 @@ fi
 # Caricamento
 gh release upload archivio data.db.gz --repo "$REPO" --clobber
 
-# 6. Verifica: si riscarica e si confronta
-sleep 5
-curl -fsSL --retry 3 --retry-delay 10 -m 600 -o /tmp/verifica.gz "$BASE/data.db.gz"
-[ "$(stat -c%s /tmp/verifica.gz)" = "$BYTE" ] || { echo "::error::quello che si scarica non e' quello che ho caricato."; exit 1; }
+# 6. Verifica: si riscarica e si confronta. L'indirizzo pubblico passa da una
+#    rete di copie che per qualche secondo puo' ancora dare la versione di
+#    prima (il 30/09 la prima verifica, dopo 5 secondi, l'ha data): si
+#    riprova per un paio di minuti prima di dare l'allarme.
+OK=0
+for i in 1 2 3 4 5 6; do
+  sleep 20
+  if curl -fsSL --retry 3 --retry-delay 10 -m 600 -o /tmp/verifica.gz "$BASE/data.db.gz" \
+     && [ "$(stat -c%s /tmp/verifica.gz)" = "$BYTE" ]; then OK=1; break; fi
+  echo "   la copia scaricata non e' ancora quella nuova, riprovo ($i)"
+done
 rm -f /tmp/verifica.gz
+[ "$OK" = 1 ] || { echo "::error::dopo due minuti si scarica ancora una copia diversa da quella caricata."; exit 1; }
 echo "== Pubblicato: $GARE gare, $BYTE byte =="
