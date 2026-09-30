@@ -27,6 +27,8 @@ jobs:
         # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e
         # pubblicare al posto di quello vero. La logica sta in un solo script
         # perche' la usano tutti e quattro i lavori automatici.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
       - name: Controlla che le soglie coincidano
         # Le soglie stanno in due posti (chi addestra e il sito). Se divergono

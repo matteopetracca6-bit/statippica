@@ -181,14 +181,24 @@ function eUnArchivio(percorso: string): boolean {
  */
 async function scaricaArchivio(aperto: string): Promise<boolean> {
   const provvisorio = aperto + ".nuovo";
-  const pause = [0, 5_000, 15_000, 45_000, 90_000];
+  // L'ultimo tentativo va sulla SCORTA, la copia pubblicata prima di quella
+  // attuale (la mette da parte ogni lavoro prima di pubblicare, solo se e'
+  // buona). Il 28/09 la copia principale era un file vuoto: con la scorta il
+  // sito sarebbe rimasto su, con i dati del giorno prima.
+  const SCORTA = INDIRIZZO_ARCHIVIO.replace(/data\.db\.gz$/, "data.db.precedente.gz");
+  const pause = [0, 5_000, 15_000, 45_000, 90_000, 0];
   for (let i = 0; i < pause.length; i++) {
     if (pause[i]) await attesa(pause[i]);
     const inizio = Date.now();
-    console.log(`[ARCHIVIO] Scarico l'archivio (tentativo ${i + 1} di ${pause.length})`);
+    const daScorta = i === pause.length - 1;
+    const indirizzo = daScorta ? SCORTA : INDIRIZZO_ARCHIVIO;
+    console.log(`[ARCHIVIO] Scarico ${daScorta ? "la scorta" : "l'archivio"} (tentativo ${i + 1} di ${pause.length})`);
     try {
+      // Anche usando la scorta si salva la targa della copia principale:
+      // cosi' si riprova la principale appena ne esce una nuova, e non a
+      // ogni controllo.
       const targa = await targaPubblicata();
-      const risposta = await fetch(INDIRIZZO_ARCHIVIO, { redirect: "follow", signal: AbortSignal.timeout(5 * 60_000) });
+      const risposta = await fetch(indirizzo, { redirect: "follow", signal: AbortSignal.timeout(5 * 60_000) });
       if (!risposta.ok || !risposta.body) throw new Error(`risposta ${risposta.status}`);
       await pipeline(
         // @ts-expect-error il corpo della risposta e' uno stream leggibile

@@ -25,6 +25,10 @@ INDIRIZZO="https://github.com/$REPO/releases/download/archivio/data.db.gz"
 BYTE_MINIMI=20000000    # un archivio vero compresso sta sopra i 25 MB
 GARE_MINIME=500000      # a settembre 2026 sono oltre 613.000
 
+# Prima di tutto il turno: se un altro lavoro sta gia' lavorando sull'archivio,
+# si aspetta che finisca e si parte dalla sua copia, non da quella di prima.
+bash "$(dirname "$0")/aspetta_turno.sh" || exit 1
+
 echo "== Procuro l'archivio =="
 
 ottieni() {
@@ -41,7 +45,20 @@ ottieni() {
     echo "   scaricamento non riuscito"
   fi
 
-  # 2) La riserva: una copia dentro il progetto, se per qualche motivo c'e'
+  # 2) La scorta nel rilascio: la copia pubblicata prima dell'ultima. La
+  #    mette da parte pubblica_archivio.sh, solo quando e' buona. Serve se la
+  #    copia principale risulta rovinata, come il 28/09/2026.
+  echo "-> Provo la scorta: ${INDIRIZZO%.gz}.precedente.gz"
+  if curl -fsSL --retry 3 --retry-delay 5 -m 600 -o /tmp/archivio.gz "${INDIRIZZO%.db.gz}.db.precedente.gz"; then
+    local byte2; byte2=$(stat -c%s /tmp/archivio.gz 2>/dev/null || echo 0)
+    echo "   scaricati $byte2 byte"
+    if [ "$byte2" -ge "$BYTE_MINIMI" ] && gunzip -c /tmp/archivio.gz > data.db 2>/dev/null; then
+      echo "::warning::uso la scorta: la copia principale dell'archivio non era buona."
+      return 0
+    fi
+  fi
+
+  # 3) La riserva: una copia dentro il progetto, se per qualche motivo c'e'
   #    ancora (durante il passaggio, o se qualcuno la rimette a mano).
   if [ -f data.db.gz ]; then
     echo "-> Uso la copia di riserva nel progetto"
@@ -68,5 +85,9 @@ if [ "$GARE" -lt "$GARE_MINIME" ]; then
   rm -f data.db
   exit 1
 fi
+
+# Il segno per pubblica_archivio.sh: da dove si parte. Alla fine il lavoro non
+# potra' pubblicare un archivio con meno gare di cosi'.
+echo "$GARE" > .archivio_iniziale
 
 echo "== Pronto: $GARE gare =="

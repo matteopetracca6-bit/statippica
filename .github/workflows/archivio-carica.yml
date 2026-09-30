@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: write # serve per creare il rilascio e caricarci dentro un file
+  actions: read # serve per vedere se un altro lavoro sta gia' pubblicando
 
 jobs:
   carica:
@@ -115,8 +116,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
         run: |
           set -euo pipefail
-          gh release upload archivio data.db.gz \
-            --repo "$GITHUB_REPOSITORY" --clobber
+          gunzip -c data.db.gz > data.db
+          ORIGINE_A_MANO=1 bash scripts/pubblica_archivio.sh
           echo "Caricato."
 
       - name: Verifica che sia davvero scaricabile

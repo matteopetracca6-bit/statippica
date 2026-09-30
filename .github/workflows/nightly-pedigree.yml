@@ -31,7 +31,7 @@ jobs:
   fill-pedigree:
     name: Esegui fill_pedigree.py
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -49,6 +49,8 @@ jobs:
       # fine lo pubblicava al posto di quello vero. Ora lo scarica e lo
       # controlla come tutti gli altri lavori, e si ferma se non va.
       - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
       - name: Esegui fill_pedigree.py
         env:

@@ -22,12 +22,13 @@ on:
 
 permissions:
   contents: write # serve per pubblicare l'archivio corretto nel rilascio
+  actions: read # serve per vedere se un altro lavoro sta gia' pubblicando
 
 jobs:
   allinea:
     runs-on: ubuntu-latest
     name: Riallinea i totali e pubblica
-    timeout-minutes: 60
+    timeout-minutes: 360
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -41,6 +42,8 @@ jobs:
         run: pip install requests beautifulsoup4
 
       - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
 
       - name: Fotografia dei campioni storici, prima
@@ -115,8 +118,7 @@ jobs:
           fi
           gzip -9 -c data.db > data.db.gz
           ls -l data.db.gz
-          gh release upload archivio data.db.gz \
-            --repo "$GITHUB_REPOSITORY" --clobber
+          bash scripts/pubblica_archivio.sh
           echo "Archivio corretto pubblicato."
 
       - name: Chiedi a Render di ripubblicare il sito

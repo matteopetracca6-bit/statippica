@@ -1482,6 +1482,48 @@ def _fetch_all_hris_convegni() -> list[dict]:
     return convegni
 
 
+def _convegni_dei_giorni_scoperti(conn: sqlite3.Connection, giorni: int = 21) -> list[dict]:
+    """Cerca i convegni dei giorni passati che nell'archivio mancano del tutto.
+
+    PERCHE' SERVE. La pagina dei risultati di Trottoweb elenca solo gli
+    ultimi tre giorni circa. Se i notturni si fermano per piu' di tre giorni
+    (e' successo dal 28 al 30/09/2026), le giornate uscite da quella pagina
+    non venivano piu' recuperate da nessuno: restavano buchi per sempre.
+
+    COME. Per ogni giorno delle ultime tre settimane con meno di 40 gare in
+    archivio (un giorno normale ne ha 120-200), si chiede a Trottoweb la
+    pagina dei risultati di ogni ippodromo. Le pagine esistono anche per i
+    giorni vecchi: la pagina dei tre giorni e' solo un elenco di collegamenti.
+    Nei giorni normali non si chiede nulla, quindi il costo e' zero finche'
+    non c'e' un buco.
+    """
+    oggi = datetime.utcnow().date()
+    trovati = []
+    for k in range(2, giorni + 1):   # ieri e oggi li copre gia' la pagina normale
+        giorno = (oggi - timedelta(days=k)).isoformat()
+        n = conn.execute("SELECT COUNT(*) FROM races WHERE race_date = ?",
+                         (giorno,)).fetchone()[0]
+        if n >= 40:
+            continue
+        print(f"[RESULTS] {giorno}: solo {n} gare in archivio, cerco i convegni...", file=sys.stderr)
+        gia_chiesti = set()
+        for sigla, ippodromo in TRACK_CODE_MAP.items():
+            # la tabella ha anche sigle alternative per lo stesso ippodromo:
+            # basta chiederlo una volta. L'estero non ha pagina.
+            if sigla == "ES" or ippodromo in gia_chiesti:
+                continue
+            gia_chiesti.add(ippodromo)
+            url = ("https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php?"
+                   f"data={giorno}&sigla={sigla}&ippodromo={requests.utils.quote(ippodromo)}"
+                   "&flag_ris_u=1&note_giorno=")
+            soup = fetch_url(url)
+            if soup and _parse_hris_page(soup, giorno, ippodromo, sigla):
+                print(f"  trovato {giorno} {ippodromo}", file=sys.stderr)
+                trovati.append({"data": giorno, "sigla": sigla, "ippodromo": ippodromo,
+                                "note_giorno": "", "url": url})
+    return trovati
+
+
 def _get_missing_convegni(conn: sqlite3.Connection) -> list[dict]:
     """
     Confronta convegni disponibili su Trottoweb con quelli nel DB.
@@ -1489,6 +1531,12 @@ def _get_missing_convegni(conn: sqlite3.Connection) -> list[dict]:
     Restituisce solo i convegni assenti o incompleti.
     """
     all_convegni = _fetch_all_hris_convegni()
+    # Si aggiungono i convegni dei giorni rimasti scoperti, che la pagina dei
+    # risultati non elenca piu'. Senza doppioni.
+    visti = {(c["data"], c["sigla"]) for c in all_convegni}
+    for c in _convegni_dei_giorni_scoperti(conn):
+        if (c["data"], c["sigla"]) not in visti:
+            all_convegni.append(c); visti.add((c["data"], c["sigla"]))
     if not all_convegni:
         return []
 
@@ -3184,17 +3232,18 @@ def pubblica_archivio_nel_rilascio() -> bool:
             capture_output=True, text=True, env=amb
         )
 
+    # Il caricamento vero passa dallo script comune a tutti i lavori, che
+    # controlla da dove viene l'archivio, che sia integro, che non abbia perso
+    # gare, e mette da parte la copia di prima come scorta.
     mb = os.path.getsize("data.db.gz") / 1048576
     print(f"[RILASCIO] Carico l'archivio ({mb:.1f} MB)...", file=sys.stderr)
-    r = subprocess.run(
-        ["gh", "release", "upload", TAG_ARCHIVIO, "data.db.gz",
-         "--repo", repo, "--clobber"],
-        capture_output=True, text=True, env=amb
-    )
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", "pubblica_archivio.sh")
+    r = subprocess.run(["bash", script], env=dict(amb, GITHUB_REPOSITORY=repo))
     if r.returncode != 0:
-        print(f"[RILASCIO] ERRORE nel caricamento: {r.stderr.strip()}",
-              file=sys.stderr)
-        return False
+        # Un rifiuto dei controlli deve far fallire il lavoro, non passare
+        # come un avviso: e' l'unico modo perche' qualcuno se ne accorga.
+        print("[RILASCIO] BLOCCATO dai controlli: archivio non pubblicato.", file=sys.stderr)
+        sys.exit(1)
 
     print("[RILASCIO] Archivio pubblicato. Indirizzo fisso:", file=sys.stderr)
     print(f"[RILASCIO]   https://github.com/{repo}/releases/download/"

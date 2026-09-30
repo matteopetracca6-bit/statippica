@@ -35,3 +35,6 @@ data.db.gz
 .gz); il file aperto viene
 # ricreato al momento del deploy e resta solo in locale.
 data.db
+
+# Segno lasciato da ottieni_archivio.sh: quante gare aveva l'archivio di partenza.
+.archivio_iniziale

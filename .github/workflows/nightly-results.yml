@@ -13,7 +13,7 @@ jobs:
   nightly-results:
     name: Esegui nightly_update.py (mode=results)
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -30,6 +30,8 @@ jobs:
         # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e
         # pubblicare al posto di quello vero. La logica sta in un solo script
         # perche' la usano tutti e quattro i lavori automatici.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
       - name: Esegui nightly_update.py (results)
         env:
