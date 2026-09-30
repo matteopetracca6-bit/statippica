@@ -43,6 +43,13 @@ jobs:
           python-version: "3.11"
       - name: Installa dipendenze
         run: pip install requests beautifulsoup4
+      # MANCAVA, ED E' COSI' CHE IL 28/09 IL SITO E' RIMASTO SENZA DATI.
+      # Dopo che l'archivio e' uscito dal progetto, questo lavoro non se lo
+      # procurava piu': partiva su un archivio vuoto creato da sqlite3 e alla
+      # fine lo pubblicava al posto di quello vero. Ora lo scarica e lo
+      # controlla come tutti gli altri lavori, e si ferma se non va.
+      - name: Procura l'archivio
+        run: bash scripts/ottieni_archivio.sh
       - name: Esegui fill_pedigree.py
         env:
           DB_PATH: data.db

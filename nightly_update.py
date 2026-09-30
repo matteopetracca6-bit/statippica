@@ -3098,6 +3098,11 @@ def _update_horse_career_stats(conn: sqlite3.Connection, horse_name: str):
 # ─────────────────────────────────────────────
 TAG_ARCHIVIO = "archivio"
 
+# Sotto questo numero di gare un archivio non e' quello vero (a settembre 2026
+# sono oltre 616.000) e non va pubblicato: vedi pubblica_archivio_nel_rilascio.
+GARE_MINIME_PUBBLICAZIONE = int(os.environ.get("GARE_MINIME_PUBBLICAZIONE", "500000"))
+
+
 def pubblica_archivio_nel_rilascio() -> bool:
     """Carica data.db.gz in un rilascio fisso, sostituendo la copia precedente.
 
@@ -3115,6 +3120,32 @@ def pubblica_archivio_nel_rilascio() -> bool:
     if not os.path.exists("data.db.gz"):
         print("[RILASCIO] data.db.gz non c'e', salto.", file=sys.stderr)
         return False
+
+    # ULTIMA DIFESA: non si pubblica mai un archivio piu' piccolo del vero.
+    #
+    # Il 28/09 il lavoro sulla genealogia degli stalloni esteri e' partito
+    # senza scaricare l'archivio: sqlite3 ne ha creato uno vuoto, il lavoro
+    # l'ha riempito con poche righe e l'ha pubblicato (2.309 byte) al posto di
+    # quello vero. Il sito e' rimasto senza dati e i notturni successivi, che
+    # giustamente rifiutano un archivio cosi', si sono fermati.
+    #
+    # Lo script che procura l'archivio controlla gia' all'INGRESSO, ma solo
+    # per i lavori che lo usano. Questo controllo sta all'USCITA, nell'unico
+    # punto da cui passa ogni pubblicazione: vale per tutti i lavori, anche
+    # per quelli che verranno scritti in futuro.
+    try:
+        import sqlite3 as _sq
+        _c = _sq.connect("data.db")
+        _gare = _c.execute("SELECT COUNT(*) FROM races").fetchone()[0]
+        _c.close()
+    except Exception as _e:
+        _gare = 0
+        print(f"[RILASCIO] L'archivio non si apre: {_e}", file=sys.stderr)
+    if _gare < GARE_MINIME_PUBBLICAZIONE:
+        print(f"[RILASCIO] BLOCCATO: l'archivio ha {_gare} gare, ne servono almeno "
+              f"{GARE_MINIME_PUBBLICAZIONE}. Non lo pubblico: sostituirebbe "
+              "quello buono con uno incompleto.", file=sys.stderr)
+        sys.exit(1)
 
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:

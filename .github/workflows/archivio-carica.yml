@@ -16,6 +16,10 @@ on:
         description: "Perche' lo stai caricando"
         required: false
         default: "caricamento a mano"
+      ramo:
+        description: "Prendi data.db.gz da questo ramo (per rimettere una copia buona)"
+        required: false
+        default: ""
 
 permissions:
   contents: write # serve per creare il rilascio e caricarci dentro un file
@@ -41,7 +45,14 @@ jobs:
         run: |
           set -uo pipefail
           IND="https://github.com/$GITHUB_REPOSITORY/releases/download/archivio/data.db.gz"
-          if curl -fsSL --retry 2 -m 600 -o data.db.gz "$IND"; then
+          RAMO="${{ inputs.ramo }}"
+          # 0. Una copia buona messa a mano in un ramo apposta: serve quando
+          #    il rilascio contiene un archivio rovinato (e' successo il 28/09).
+          if [ -n "$RAMO" ]; then
+            git fetch origin "$RAMO"
+            git show "origin/$RAMO:data.db.gz" > data.db.gz
+            echo "Presa dal ramo $RAMO ($(stat -c%s data.db.gz) byte)."
+          elif curl -fsSL --retry 2 -m 600 -o data.db.gz "$IND"; then
             echo "Partito dal rilascio ($(stat -c%s data.db.gz) byte)."
           else
             echo "Il rilascio non risponde: cerco l'ultima copia nella cronologia."
