@@ -247,13 +247,18 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
 
   // Figli osservati, per voto. Si contano tutte le annate con un voto
   // (fino al 2021: dopo, troppo giovani per aver debuttato tutti), e chi non ha mai corso a parte.
-  const figli = (col: "sire" | "dam", nome: string) => db.prepare(`
+  // La madre sta nella tabella dei cavalli, non in quella dei voti: si uniscono.
+  const figli = (col: "sire" | "dam", nome: string) => db.prepare(col === "sire" ? `
     SELECT CASE WHEN rating_mode = 'performance' THEN grade ELSE 'NON_CORSO' END g, COUNT(*) n
       FROM horse_ratings
-     WHERE ${col} = ? AND birth_year BETWEEN 2012 AND 2021
+     WHERE sire = ? AND birth_year BETWEEN 2012 AND 2021
        AND COALESCE(horse_class, 'athlete') = 'athlete'
-     GROUP BY 1
-  `).all(nome) as { g: string; n: number }[];
+     GROUP BY 1` : `
+    SELECT CASE WHEN r.rating_mode = 'performance' THEN r.grade ELSE 'NON_CORSO' END g, COUNT(*) n
+      FROM horse_ratings r JOIN horses h ON h.name = r.name AND h.birth_year = r.birth_year
+     WHERE h.dam = ? AND r.birth_year BETWEEN 2012 AND 2021
+       AND COALESCE(r.horse_class, 'athlete') = 'athlete'
+     GROUP BY 1`).all(nome) as { g: string; n: number }[];
   const conta: Record<string, number> = {};
   let nPadre = 0, nMadre = 0;
   for (const r of figli("sire", padre)) { conta[r.g] = (conta[r.g] ?? 0) + r.n; nPadre += r.n; }
@@ -318,4 +323,151 @@ export function ipotesiCorrenti(db: Database.Database) {
     cavalli_mai_corsi: b.nonCorsi,
     fonti: FONTI,
   };
+}
+
+// ── VENDERE O FAR CORRERE ──────────────────────────────────────────────────
+// La decisione arriva all'asta yearling (circa 18 mesi). A quel punto
+// allevamento e monta sono gia' spesi: non contano piu', valgono per tutte e
+// due le scelte. Si confronta:
+//   VENDERE  = il prezzo incassato oggi
+//   TENERE   = premi netti attesi - allenamento da qui in avanti
+//              (12 mesi prima del debutto + 12 mesi per ogni stagione)
+// Le probabilita' di ogni voto vengono dai figli dello stallone (e della
+// fattrice), come per l'incrocio.
+
+interface Vendita { puledro: string; padre: string; prezzo: number }
+let cacheAste: { quando: number; righe: Vendita[] } | null = null;
+function venditeAste(): Vendita[] {
+  if (cacheAste && Date.now() - cacheAste.quando < 60 * 60_000) return cacheAste.righe;
+  let righe: Vendita[] = [];
+  try {
+    const f = path.resolve(process.cwd(), "aste_yearling.csv");
+    const testo = fs.readFileSync(f, "utf8").replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
+    const campi = (r: string) => {
+      const out: string[] = []; let cur = "", dentro = false;
+      for (const ch of r) {
+        if (ch === '"') dentro = !dentro;
+        else if (ch === "," && !dentro) { out.push(cur); cur = ""; }
+        else cur += ch;
+      }
+      out.push(cur); return out;
+    };
+    const i = campi(testo[0]);
+    const iP = i.indexOf("prezzo_eur"), iV = i.indexOf("venduto"), iPad = i.indexOf("padre"), iN = i.indexOf("puledro");
+    righe = testo.slice(1).map(campi)
+      .filter(c => c[iV] === "si" && Number(c[iP]) > 0)
+      .map(c => ({ puledro: c[iN].trim().toUpperCase(), padre: c[iPad].trim().toUpperCase(), prezzo: Number(c[iP]) }));
+  } catch { /* file assente: nessun riferimento d'asta */ }
+  cacheAste = { quando: Date.now(), righe };
+  return righe;
+}
+
+/** Probabilita' di ogni voto (e di "non corre") per un figlio di padre x madre. */
+function probabilitaFiglio(db: Database.Database, padre: string, madre: string | null) {
+  const b = datiBase(db);
+  // La madre sta nella tabella dei cavalli, non in quella dei voti: si uniscono.
+  const figli = (col: "sire" | "dam", nome: string) => db.prepare(col === "sire" ? `
+    SELECT CASE WHEN rating_mode = 'performance' THEN grade ELSE 'NON_CORSO' END g, COUNT(*) n
+      FROM horse_ratings
+     WHERE sire = ? AND birth_year BETWEEN 2012 AND 2021
+       AND COALESCE(horse_class, 'athlete') = 'athlete'
+     GROUP BY 1` : `
+    SELECT CASE WHEN r.rating_mode = 'performance' THEN r.grade ELSE 'NON_CORSO' END g, COUNT(*) n
+      FROM horse_ratings r JOIN horses h ON h.name = r.name AND h.birth_year = r.birth_year
+     WHERE h.dam = ? AND r.birth_year BETWEEN 2012 AND 2021
+       AND COALESCE(r.horse_class, 'athlete') = 'athlete'
+     GROUP BY 1`).all(nome) as { g: string; n: number }[];
+  const conta: Record<string, number> = {};
+  let nPadre = 0, nMadre = 0;
+  for (const r of figli("sire", padre)) { conta[r.g] = (conta[r.g] ?? 0) + r.n; nPadre += r.n; }
+  if (madre) for (const r of figli("dam", madre)) { conta[r.g] = (conta[r.g] ?? 0) + r.n; nMadre += r.n; }
+  const n = nPadre + nMadre;
+  const pop: Record<string, number> = {};
+  const totPop = b.corsi + b.nonCorsi;
+  for (const v of ORDINE_VOTI) pop[v] = (b.perVoto[v]?.length ?? 0) / totPop;
+  pop.NON_CORSO = b.nonCorsi / totPop;
+  const k = IPOTESI.k_prior;
+  const prob: Record<string, number> = {};
+  for (const g of [...ORDINE_VOTI, "NON_CORSO"]) prob[g] = ((conta[g] ?? 0) + k * pop[g]) / (n + k);
+  return { prob, nPadre, nMadre, affidabilita: Math.round(100 * n / (n + k)) / 100 };
+}
+
+function riepilogoPrezzi(p: number[]) {
+  if (!p.length) return null;
+  const s = [...p].sort((a, b) => a - b);
+  return { n: s.length, mediana: Math.round(mediana(s)), minimo: s[0], massimo: s[s.length - 1] };
+}
+
+export function valutaVendita(db: Database.Database, padre: string, madre: string | null,
+                              mensile: number, prezzoDato: number | null, puledro: string | null = null) {
+  const b = datiBase(db);
+  const { prob, nPadre, nMadre, affidabilita } = probabilitaFiglio(db, padre, madre);
+  const aste = venditeAste();
+  const venditaVera = puledro ? aste.find(a => a.puledro === puledro) ?? null : null;
+  const astePadre = riepilogoPrezzi(aste.filter(a => a.padre === padre).map(a => a.prezzo));
+  const asteTutte = riepilogoPrezzi(aste.map(a => a.prezzo));
+  // Il prezzo non si inventa: o lo scrive l'utente, o e' quello pagato davvero
+  // per questo puledro all'asta. Le aste del padre restano solo un riferimento.
+  const prezzo = prezzoDato ?? venditaVera?.prezzo ?? null;
+  const prezzoDa = prezzoDato != null ? "tu" : venditaVera ? "asta" : null;
+
+  // Tenere: per ogni cavallo osservato di ogni voto, premi - allenamento da qui.
+  const daQui = (s: number) => 12 * mensile * (s + 1);
+  const costoNonCorso = 12 * mensile;   // un anno di allenamento, poi si ferma
+  let valore = 0, guadagno = 0, costo = 0, pSupera = 0, pPositivo = 0;
+  const esiti = ORDINE_VOTI.filter(v => b.perVoto[v]?.length).map(v => {
+    const c = b.perVoto[v];
+    const netti = c.map(x => x.e - daQui(x.s));
+    const p = prob[v];
+    valore += p * media(netti);
+    guadagno += p * media(c.map(x => x.e));
+    costo += p * media(c.map(x => daQui(x.s)));
+    if (prezzo != null) pSupera += p * netti.filter(u => u > prezzo).length / c.length;
+    pPositivo += p * netti.filter(u => u > 0).length / c.length;
+    return { voto: v, p: Math.round(1000 * p) / 10, netto_medio: Math.round(media(netti)) };
+  });
+  valore += prob.NON_CORSO * -costoNonCorso;
+  costo += prob.NON_CORSO * costoNonCorso;
+  if (prezzo != null && -costoNonCorso > prezzo) pSupera += prob.NON_CORSO;
+
+  const differenza = prezzo != null ? prezzo - valore : null;
+  // Entro il 10% del costo atteso da qui: le due scelte si equivalgono.
+  const decisione = differenza == null ? null
+    : Math.abs(differenza) <= IPOTESI.fascia_pareggio * costo ? "indifferente"
+    : differenza > 0 ? "vendere" : "tenere";
+  return {
+    padre, madre, mensile,
+    figli_osservati: { padre: nPadre, madre: nMadre }, affidabilita,
+    prezzo: prezzo != null ? Math.round(prezzo) : null, prezzo_da: prezzoDa,
+    aste_padre: astePadre, aste_tutte: asteTutte,
+    tenere: {
+      valore_atteso: Math.round(valore),
+      guadagno_atteso: Math.round(guadagno),
+      costo_da_qui: Math.round(costo),
+      prob_non_corre: Math.round(1000 * prob.NON_CORSO) / 10,
+      prob_ripaga_allenamento: Math.round(1000 * pPositivo) / 10,
+      prob_batte_prezzo: prezzo != null ? Math.round(1000 * pSupera) / 10 : null,
+    },
+    // Sotto questo prezzo conviene tenerlo (se il valore atteso e' positivo).
+    prezzo_minimo: Math.max(0, Math.round(valore)),
+    differenza: differenza != null ? Math.round(differenza) : null,
+    decisione,
+    esiti,
+  };
+}
+
+/** Per gli stalloni con almeno 3 figli venduti all'asta: quanto paga il
+ *  mercato contro quanto rende, in media, tenerne uno. */
+export function mercatoStalloni(db: Database.Database, mensile: number) {
+  const aste = venditeAste();
+  const perPadre = new Map<string, number[]>();
+  for (const a of aste) perPadre.set(a.padre, [...(perPadre.get(a.padre) ?? []), a.prezzo]);
+  return [...perPadre.entries()].filter(([, p]) => p.length >= 3).map(([padre, p]) => {
+    const r = valutaVendita(db, padre, null, mensile, mediana(p));
+    return {
+      padre, venduti: p.length, prezzo_mediano: Math.round(mediana(p)),
+      valore_tenere: r.tenere.valore_atteso, differenza: r.differenza,
+      prob_batte_prezzo: r.tenere.prob_batte_prezzo, figli: r.figli_osservati.padre, affidabilita: r.affidabilita,
+    };
+  }).sort((a, b) => (a.differenza ?? 0) - (b.differenza ?? 0));
 }

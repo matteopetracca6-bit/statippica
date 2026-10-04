@@ -21,6 +21,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Scale } from "lucide-react";
 import GradeBadge from "../components/GradeBadge";
 import NameSelect from "../components/NameSelect";
+import VendereOCorrere, { MercatoStalloni } from "../components/VendereOCorrere";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
@@ -336,6 +337,17 @@ export default function PareggioPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* VENDERE O FAR CORRERE */}
+      <div id="vendere" style={{ ...CARD, marginBottom: "18px" }}>
+        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un puledro all'asta: vendere o far correre?</h2>
+        <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
+          All'asta yearling, verso i 18 mesi, l'allevatore sceglie: incassare subito o tenere il puledro e pagarne l'allenamento.
+          Allevamento e monta sono ormai spesi e non cambiano la scelta: si confronta il prezzo con quello che il puledro rende in pista, meno l'allenamento.
+        </p>
+        <VendereOCorrere mensile={mensile} />
+        <MercatoStalloni mensile={mensile} />
       </div>
 
       <Spiegazione titolo="Come è fatto il conto, e cosa non contiene">

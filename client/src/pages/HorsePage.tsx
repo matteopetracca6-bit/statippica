@@ -1,4 +1,5 @@
 import { PareggioCavallo } from "../components/PareggioScheda";
+import VendereOCorrere from "../components/VendereOCorrere";
 import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
 import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
@@ -402,6 +403,11 @@ export default function HorsePage() {
 
       {/* Punto di pareggio: ha ripagato quello che e' costato? */}
       <PareggioCavallo nome={horse.name} anno={horse.birth_year} />
+
+      {/* Puledro giovane che non ha ancora corso: venderlo all'asta o tenerlo? */}
+      {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 4 && (
+        <VendereOCorrere nome={horse.name} anno={horse.birth_year} inScheda />
+      )}
 
       {/* Le due letture del voto, e quanto quel voto sia gia' definitivo.
 

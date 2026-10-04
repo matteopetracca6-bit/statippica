@@ -24,7 +24,7 @@ import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo } from "./careerValue";
 import { affidabilitaVoto } from "./gradeStability";
-import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti } from "./pareggio";
+import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni } from "./pareggio";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -168,6 +168,47 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
       const monta = req.query.monta != null && req.query.monta !== "" ? numero(req.query.monta, NaN, 0, 500_000) : null;
       res.json({ mensile, ...valutaIncrocio(db, padre, madre, mensile, Number.isFinite(monta as number) ? monta : null) });
+    } finally {
+      db.close();
+    }
+  });
+
+  // Vendere all'asta yearling o tenerlo e farlo correre. Con ?nome=&anno= si
+  // prendono padre e madre del cavallo; altrimenti ?padre=&madre=.
+  app.get("/api/pareggio/vendita", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const prezzo = req.query.prezzo != null && req.query.prezzo !== "" ? numero(req.query.prezzo, NaN, 0, 5_000_000) : null;
+      let padre = String(req.query.padre ?? "").trim().toUpperCase();
+      let madre = String(req.query.madre ?? "").trim().toUpperCase() || null;
+      let puledro: string | null = null;
+      const nome = String(req.query.nome ?? "").trim().toUpperCase();
+      if (nome) {
+        const anno = numero(req.query.anno, 0, 1990, 2100) || null;
+        const h = db.prepare(`SELECT name, sire, dam FROM horses WHERE name = ? ${anno ? "AND birth_year = ?" : ""}
+                              ORDER BY birth_year DESC LIMIT 1`).get(...(anno ? [nome, anno] : [nome])) as any;
+        if (!h) return res.status(404).json({ message: "cavallo non trovato" });
+        padre = String(h.sire ?? "").toUpperCase(); madre = h.dam ? String(h.dam).toUpperCase() : null; puledro = h.name;
+      }
+      if (!padre) return res.status(400).json({ message: "manca lo stallone" });
+      res.json({ nome: puledro, ...valutaVendita(db, padre, madre, mensile, Number.isFinite(prezzo as number) ? prezzo : null, puledro) });
+    } finally {
+      db.close();
+    }
+  });
+  const cacheMercato = new Map<number, { quando: number; dati: any }>();
+  app.get("/api/pareggio/mercato", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const c = cacheMercato.get(mensile);
+      if (c && Date.now() - c.quando < 60 * 60 * 1000) return res.json(c.dati);
+      const dati = { mensile, stalloni: mercatoStalloni(db, mensile) };
+      cacheMercato.set(mensile, { quando: Date.now(), dati });
+      res.json(dati);
     } finally {
       db.close();
     }

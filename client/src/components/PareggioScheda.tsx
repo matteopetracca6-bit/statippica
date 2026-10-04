@@ -5,7 +5,7 @@
  * conviene tenerlo un altro anno? Nella scheda di uno stallone: quanto rende
  * in media un suo figlio dopo i costi, e la monta massima che ha senso pagare.
  * Le ipotesi sono quelle tipiche della scheda Punto di pareggio (1.200 euro al
- * mese, allevamento fino ai 2 anni con monta mediana): li' si possono cambiare.
+ * mese, monta dal catalogo o scritta dall'utente): li' si possono cambiare.
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
