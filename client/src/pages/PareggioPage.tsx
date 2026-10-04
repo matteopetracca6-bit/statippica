@@ -82,11 +82,13 @@ export default function PareggioPage() {
   // Prima lettura: servono le ipotesi (monta mediana, prezzo d'asta mediano).
   const { data: prime } = useQuery<Base>({ queryKey: ["/api/pareggio", "prime"], queryFn: () => get("/api/pareggio") });
   useEffect(() => {
-    if (prime && monta == null) setMonta(prime.ipotesi.monta_mediana);
     if (prime && prezzo == null) setPrezzo(prime.ipotesi.asta_mediana ?? 20000);
   }, [prime]);
 
   const allev = prime?.ipotesi.allevamento_fino_2_anni ?? 14800;
+  // La monta non si inventa: finche' l'utente non la scrive, i conti che ne
+  // dipendono restano vuoti.
+  const manca = modo === "allevo" && monta == null;
   const ingresso = modo === "allevo" ? allev + (monta ?? 0) : (prezzo ?? 0);
 
   const { data, isLoading, error } = useQuery<Base>({
@@ -99,8 +101,8 @@ export default function PareggioPage() {
   // Un cavallo
   const [cavallo, setCavallo] = useState<{ nome: string; anno?: number | null } | null>(null);
   const { data: cv, isFetching: cvCarica } = useQuery<any>({
-    queryKey: ["/api/pareggio/cavallo", cavallo?.nome, cavallo?.anno, mensile, ingresso],
-    queryFn: () => get(`/api/pareggio/cavallo?nome=${encodeURIComponent(cavallo!.nome)}&anno=${cavallo!.anno ?? ""}&mensile=${mensile}&ingresso=${ingresso}`),
+    queryKey: ["/api/pareggio/cavallo", cavallo?.nome, cavallo?.anno, mensile, manca ? null : ingresso],
+    queryFn: () => get(`/api/pareggio/cavallo?nome=${encodeURIComponent(cavallo!.nome)}&anno=${cavallo!.anno ?? ""}&mensile=${mensile}&ingresso=${manca ? "" : ingresso}`),
     enabled: !!cavallo,
   });
 
@@ -164,9 +166,10 @@ export default function PareggioPage() {
           </div>
           {modo === "allevo" ? (
             <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px", color: MUTED }}>
-              Prezzo della monta (mediana: {euro(ip.monta_mediana)})
-              <input type="number" min={0} step={500} value={monta ?? ""} style={inputStile}
-                     onChange={e => setMonta(Math.max(0, Number(e.target.value)))} />
+              Prezzo della monta
+              <input type="number" min={0} step={500} value={monta ?? ""} placeholder="scrivi il prezzo" style={inputStile}
+                     aria-label="Prezzo della monta in euro"
+                     onChange={e => setMonta(e.target.value === "" ? null : Math.max(0, Number(e.target.value)))} />
             </label>
           ) : (
             <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px", color: MUTED }}>
@@ -176,8 +179,10 @@ export default function PareggioPage() {
             </label>
           )}
           <div style={{ fontSize: "12.5px", color: MUTED, paddingBottom: "6px" }}>
-            Costo fino ai 2 anni: <b style={{ color: "hsl(210 10% 92%)" }}>{euro(ingresso)}</b>
-            {modo === "allevo" && <> (allevamento {euro(allev)} + monta)</>}
+            {manca
+              ? <>Costo fino ai 2 anni: allevamento {euro(allev)} + la monta che scrivi</>
+              : <>Costo fino ai 2 anni: <b style={{ color: "hsl(210 10% 92%)" }}>{euro(ingresso)}</b>
+                {modo === "allevo" && <> (allevamento {euro(allev)} + monta)</>}</>}
           </div>
         </div>
       </div>
@@ -186,6 +191,13 @@ export default function PareggioPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", marginBottom: "18px" }}>
         <Riquadro titolo="Soglia annuale" valore={euro(data.soglie.annuale)}
           nota="Per un cavallo già in corsa: conviene tenerlo solo se in un anno vince almeno questo. Le spese passate non contano più." />
+        {manca ? (
+          <div style={{ gridColumn: "span 2", minWidth: 0, fontSize: "13px", lineHeight: 1.6, color: "hsl(45 90% 62%)",
+                        background: "hsl(45 90% 55% / 0.08)", border: "1px solid hsl(45 90% 55% / 0.3)", borderRadius: "12px", padding: "14px 16px" }}>
+            Scrivi il prezzo della monta qui sopra: servono a calcolare la soglia di carriera, il voto di pareggio e la tabella voto per voto.
+            In alternativa scegli «Lo compro all'asta».
+          </div>
+        ) : <>
         <Riquadro titolo={`Soglia di carriera (${data.soglie.stagioni_ipotizzate} stagioni)`} valore={euro(data.soglie.carriera)}
           nota="Quanto deve vincere in tutta la carriera per ripagare l'ingresso, l'anno prima del debutto e gli anni di corsa." />
         <Riquadro titolo="Voto di pareggio" colore={data.voto_di_pareggio ? COLORE_ESITO.pareggio : COLORE_ESITO.perdita}
@@ -193,10 +205,11 @@ export default function PareggioPage() {
           nota={data.voto_di_pareggio
             ? `Con queste ipotesi, solo dal voto ${data.voto_di_pareggio} in su il cavallo tipico non è in perdita.`
             : "Con queste ipotesi nessun voto, nel caso tipico, ripaga i costi."} />
+        </>}
       </div>
 
       {/* TABELLA PER VOTO */}
-      <div style={{ ...CARD, marginBottom: "18px", overflowX: "auto" }}>
+      {!manca && <div style={{ ...CARD, marginBottom: "18px", overflowX: "auto" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Voto per voto</h2>
         <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
           Il cavallo tipico di ogni voto, con il costo calcolato sulle sue stagioni reali. "Pareggio" vuol dire
@@ -226,7 +239,7 @@ export default function PareggioPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: "14px", marginBottom: "18px" }}>
         {/* UN CAVALLO */}
@@ -257,11 +270,14 @@ export default function PareggioPage() {
               </div>
               <div style={{ background: "hsl(220 12% 8%)", border: BORDER, borderRadius: "10px", padding: "10px 12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                  <b style={{ fontSize: "13px" }}>Bilancio della carriera</b><Esito e={cv.carriera.esito} />
+                  <b style={{ fontSize: "13px" }}>Bilancio della carriera</b>{cv.carriera && <Esito e={cv.carriera.esito} />}
                 </div>
                 <div style={{ fontSize: "12.5px", color: MUTED, marginTop: "4px", lineHeight: 1.6 }}>
-                  Costo stimato {euro(cv.carriera.speso_stimato)}, bilancio {euro(cv.carriera.bilancio)}.
-                  {cv.carriera.mancano_per_pareggio > 0 && <> Per arrivare in pari dovrebbe vincere ancora {euro(cv.carriera.mancano_per_pareggio)}.</>}
+                  {cv.carriera ? <>
+                    Costo stimato {euro(cv.carriera.speso_stimato)}, bilancio {euro(cv.carriera.bilancio)}
+                    {manca && cv.monta != null && <> (con la monta del padre dal catalogo, {euro(cv.monta)})</>}.
+                    {cv.carriera.mancano_per_pareggio > 0 && <> Per arrivare in pari dovrebbe vincere ancora {euro(cv.carriera.mancano_per_pareggio)}.</>}
+                  </> : <>La monta del padre non è nel catalogo: scrivila nel campo «Prezzo della monta» in alto per avere il bilancio.</>}
                 </div>
               </div>
             </div>
