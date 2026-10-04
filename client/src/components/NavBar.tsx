@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
-import { Home as HomeIcon, ChevronLeft, ChevronRight, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked } from "lucide-react";
+import { Home as HomeIcon, ChevronLeft, ChevronRight, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale } from "lucide-react";
 
 /**
  * Le schede del sito, nell'ordine in cui compaiono nel menu.
@@ -22,11 +22,12 @@ const SCHEDE: { href: string; label: string; icon: typeof HomeIcon; colore: stri
   { href: "/validazione", label: "Verifica", icon: FlaskConical, colore: "hsl(183 70% 52%)" },
   { href: "/compare", label: "Comparazione", icon: GitCompare, colore: "hsl(30 80% 55%)" },
   { href: "/pedigree", label: "Pedigree", icon: Network, colore: "hsl(220 60% 60%)" },
-  { href: "/trend", label: "Trend", icon: TrendingUp, colore: "hsl(160 60% 50%)" },
   { href: "/qualifiche", label: "Qualifiche", icon: Award, colore: "hsl(280 60% 62%)" },
   { href: "/allevamento", label: "Allevamento", icon: Building2, colore: "hsl(20 70% 58%)" },
   { href: "/guidatori", label: "Guidatori", icon: Users, colore: "hsl(200 70% 58%)" },
-  { href: "/ippodromi", label: "Ippodromi", icon: MapPin, colore: "hsl(95 55% 52%)" },
+  // Ippodromi e trend sono un'unica scheda con due linguette.
+  { href: "/ippodromi", label: "Ippodromi e trend", icon: MapPin, colore: "hsl(95 55% 52%)" },
+  { href: "/pareggio", label: "Pareggio", icon: Scale, colore: "hsl(160 60% 50%)" },
   { href: "/metodo", label: "Metodo e dati", icon: BookMarked, colore: "hsl(40 40% 72%)" },
   { href: "/calendario", label: "Calendario", icon: Calendar, colore: "hsl(0 60% 55%)" },
 ];
@@ -40,7 +41,8 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/allevamento") return percorso.startsWith("/allevam");
   if (href === "/validazione") return percorso.startsWith("/validazione");
   if (href === "/guidatori") return percorso.startsWith("/guidator");
-  if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste");
+  if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend");
+  if (href === "/pareggio") return percorso.startsWith("/pareggio") || percorso.startsWith("/break-even");
   if (href === "/metodo") return percorso.startsWith("/metodo");
   if (href === "/advisor") return percorso.startsWith("/advisor");
   return percorso === href;

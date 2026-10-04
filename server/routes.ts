@@ -24,6 +24,7 @@ import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo } from "./careerValue";
 import { affidabilitaVoto } from "./gradeStability";
+import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti } from "./pareggio";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -116,6 +117,58 @@ function gradeColor(grade: string): string {
 }
 
 export function registerRoutes(httpServer: Server, app: Express) {
+  // ──────────────────────────────────────────────
+  // PUNTO DI PAREGGIO (vedi server/pareggio.ts)
+  // Parametri comuni: mensile (costo al mese), ingresso (costo fino ai 2 anni).
+  // ──────────────────────────────────────────────
+  const numero = (v: unknown, def: number, min: number, max: number) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= min && n <= max ? n : def;
+  };
+  app.get("/api/pareggio", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const ingresso = numero(req.query.ingresso, ip.allevamento_fino_2_anni + ip.monta_mediana, 0, 2_000_000);
+      res.json({ ipotesi: ip, mensile, ingresso, soglie: soglie(mensile, ingresso), ...tabellaVoti(db, mensile, ingresso) });
+    } catch (e) {
+      res.status(500).json({ message: (e as Error).message });
+    } finally {
+      db.close();
+    }
+  });
+  app.get("/api/pareggio/cavallo", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const nome = String(req.query.nome ?? "").trim().toUpperCase();
+      if (!nome) return res.status(400).json({ message: "manca il nome" });
+      const anno = numero(req.query.anno, 0, 1990, 2100) || null;
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const ingresso = numero(req.query.ingresso, ip.allevamento_fino_2_anni + ip.monta_mediana, 0, 2_000_000);
+      const r = valutaCavallo(db, nome, anno, mensile, ingresso);
+      if (!r) return res.status(404).json({ message: "cavallo non trovato" });
+      res.json({ mensile, ingresso, ...r });
+    } finally {
+      db.close();
+    }
+  });
+  app.get("/api/pareggio/incrocio", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const padre = String(req.query.padre ?? "").trim().toUpperCase();
+      if (!padre) return res.status(400).json({ message: "manca lo stallone" });
+      const madre = String(req.query.madre ?? "").trim().toUpperCase() || null;
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const monta = req.query.monta != null && req.query.monta !== "" ? numero(req.query.monta, NaN, 0, 500_000) : null;
+      res.json({ mensile, ...valutaIncrocio(db, padre, madre, mensile, Number.isFinite(monta as number) ? monta : null) });
+    } finally {
+      db.close();
+    }
+  });
+
   // ──────────────────────────────────────────────
   // GET /api/notizie
   // Le voci della fascia che scorre in alto nella home: i vincitori dell'ultima

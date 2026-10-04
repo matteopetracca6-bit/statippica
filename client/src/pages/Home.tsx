@@ -9,7 +9,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
-  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked } from "lucide-react";
+  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked, Scale } from "lucide-react";
 
 interface Stats {
   totalHorses: number;
@@ -180,14 +180,14 @@ export default function Home() {
               <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(280 60% 60%)" />
               <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
               <NavCard href="/calendario" icon={Calendar} title="Calendario" desc="Prossime gare in programma con iscritti, voti e stima probabilita di vittoria" color="hsl(0 60% 55%)" />
-              <NavCard href="/trend" icon={Activity} title="Trend" desc="Andamenti temporali: distribuzione rating, guadagni e gare per anno" color="hsl(160 60% 50%)" />
               <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico completo fino a 5 generazioni, con consanguineita e incroci ripetuti" color="hsl(220 60% 60%)" />
               <NavCard href="/qualifiche" icon={Sparkles} title="Qualifiche" desc="Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" color="hsl(280 60% 62%)" />
               <NavCard href="/allevamento" icon={Warehouse} title="Allevamento" desc="Allevatori e stazioni di monta in un'unica scheda, con la qualita media della produzione" color="hsl(20 70% 58%)" />
               <NavCard href="/validazione" icon={FlaskConical} title="Verifica Advisor" desc="La prova che il consiglio di accoppiamento funziona: test su puledri mai visti e fonti scientifiche" color="hsl(183 70% 52%)" />
               <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
               <NavCard href="/guidatori" icon={Users} title="Guidatori" desc="Chi porta i cavalli a rendere piu' del loro solito, a parita' di cavallo e di numero di partenza" color="hsl(200 70% 58%)" />
-              <NavCard href="/ippodromi" icon={MapPin} title="Ippodromi" desc="Le 26 piste italiane e quanto pesa partire dentro o fuori su ciascuna" color="hsl(95 55% 52%)" />
+              <NavCard href="/ippodromi" icon={MapPin} title="Ippodromi e trend" desc="Le 26 piste italiane, quanto pesa partire dentro o fuori, e come cambiano voti, guadagni e gare negli anni" color="hsl(95 55% 52%)" />
+              <NavCard href="/pareggio" icon={Scale} title="Punto di pareggio" desc="Quanto deve vincere un cavallo per ripagarsi: perdita, pareggio o profitto per voto, per cavallo e per incrocio" color="hsl(160 60% 50%)" />
               <NavCard href="/metodo" icon={BookMarked} title="Metodo e dati" desc="Da dove vengono i numeri, come si calcola ogni voto, cosa non se ne puo' concludere e quando si e' aggiornato l'archivio" color="hsl(40 40% 72%)" />
             </div>
           </div>

@@ -1,3 +1,5 @@
+import IppodromiTrendPage from "./pages/IppodromiTrendPage";
+import PareggioPage from "./pages/PareggioPage";
 import { Switch, Route, Router } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -57,7 +59,7 @@ export default function App() {
               <Route path="/stalloni" component={StallionDirectoryPage} />
               <Route path="/allevamento" component={AllevamentoHubPage} />
               <Route path="/allevamenti" component={AllevamentoHubPage} />
-              <Route path="/trend" component={TrendsPage} />
+              <Route path="/trend" component={IppodromiTrendPage} />
               <Route path="/pedigree" component={PedigreePage} />
               <Route path="/cavalli" component={LeaderboardPage} />
               <Route path="/fattrici" component={MaresPage} />
@@ -67,9 +69,11 @@ export default function App() {
                   plurale, perche' e' l'errore di battitura piu' probabile. */}
               <Route path="/guidatori" component={DriversPage} />
               <Route path="/guidatore/:name" component={DriverPage} />
-              <Route path="/ippodromi" component={TracksPage} />
+              <Route path="/ippodromi" component={IppodromiTrendPage} />
+              <Route path="/pareggio" component={PareggioPage} />
+              <Route path="/break-even" component={PareggioPage} />
               <Route path="/ippodromo/:code" component={TrackPage} />
-              <Route path="/piste" component={TracksPage} />
+              <Route path="/piste" component={IppodromiTrendPage} />
               <Route path="/metodo" component={MetodoPage} />
               <Route path="/metodo-e-dati" component={MetodoPage} />
               <Route path="/qualifiche" component={QualifichePage} />
