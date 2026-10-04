@@ -69,7 +69,7 @@ export default function RiquadroRating() {
       {isLoading || !data ? (
         <div className="skeleton" style={{ height: "120px", borderRadius: "8px" }} />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "8px 28px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {data.voti.map(v => (
             <button key={v.voto} onClick={() => apri(v.voto)} title={`Vedi i dati dei cavalli ${v.voto}`}
               style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px",
@@ -77,7 +77,7 @@ export default function RiquadroRating() {
                        background: scelto === v.voto ? "hsl(220 10% 15%)" : "transparent" }}>
               <span style={{ width: "32px", flexShrink: 0 }}><GradeBadge grade={v.voto} size="sm" /></span>
               <span style={{ flex: 1, height: "22px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden", position: "relative" }}>
-                <span style={{ display: "block", height: "100%", width: `${Math.max(v.pct * 4, 2)}%`, maxWidth: "100%", background: GRADE_COLORS[v.voto], borderRadius: "4px" }} />
+                <span style={{ display: "block", height: "100%", width: `${Math.max(v.pct / Math.max(...data.voti.map(x => x.pct)) * 100, 1)}%`, background: GRADE_COLORS[v.voto], borderRadius: "4px" }} />
                 <span className="tabular" style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", fontWeight: 700, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
                   {v.n.toLocaleString("it-IT")} ({v.pct.toLocaleString("it-IT")}%)
                 </span>
