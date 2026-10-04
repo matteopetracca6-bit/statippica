@@ -78,6 +78,7 @@ export default function App() {
               <Route path="/metodo-e-dati" component={MetodoPage} />
               <Route path="/qualifiche" component={QualifichePage} />
               <Route path="/allevatori" component={AllevamentoHubPage} />
+              <Route path="/allevatore/:name" component={AllevamentoHubPage} />
               <Route component={NotFound} />
             </Switch>
             </ErrorBoundary>

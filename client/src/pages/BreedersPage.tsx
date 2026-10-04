@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -58,12 +58,16 @@ function eur(v: number | null | undefined): string {
 }
 
 export default function BreedersPage({ embedded = false }: { embedded?: boolean } = {}) {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  // La ricerca in alto apre un allevatore con /allevatore/NOME.
+  const nomeDaIndirizzo = location.startsWith("/allevatore/")
+    ? decodeURIComponent(location.slice("/allevatore/".length)) : null;
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
   const [minHorses, setMinHorses] = useState(2);
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(nomeDaIndirizzo);
+  useEffect(() => { if (nomeDaIndirizzo) setSelected(nomeDaIndirizzo); }, [nomeDaIndirizzo]);
 
   const params = new URLSearchParams({
     limit: String(PAGE),

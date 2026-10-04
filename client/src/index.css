@@ -352,7 +352,8 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
   display: flex; flex-direction: column; gap: 10px;
   background: hsl(220 12% 10%);
   border: 1px solid hsl(220 10% 16%);
-  border-radius: 14px; padding: 18px 20px;
+  /* Qualche pixel in piu' di altezza: i riquadri erano un po' schiacciati. */
+  border-radius: 14px; padding: 23px 20px;
   text-decoration: none; cursor: pointer;
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
 }

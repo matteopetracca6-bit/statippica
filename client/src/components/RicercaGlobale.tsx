@@ -14,20 +14,39 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Search, X, Clock, Trophy, BookOpen, Heart, Users, MapPin, CornerDownLeft } from "lucide-react";
+import { Search, X, Clock, Trophy, BookOpen, Heart, Users, MapPin, CornerDownLeft, Warehouse, LayoutGrid } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "./GradeBadge";
 
 interface Voce {
-  tipo: "cavallo" | "stallone" | "fattrice" | "guidatore" | "ippodromo";
+  tipo: "cavallo" | "stallone" | "fattrice" | "guidatore" | "ippodromo" | "allevatore" | "pagina";
   titolo: string;
   sotto?: string;
   grade?: string | null;
   href: string;
 }
 
-const ICONE = { cavallo: Trophy, stallone: BookOpen, fattrice: Heart, guidatore: Users, ippodromo: MapPin };
-const NOMI_GRUPPO = { cavallo: "Cavalli", stallone: "Stalloni", fattrice: "Fattrici", guidatore: "Guidatori", ippodromo: "Ippodromi" };
+const ICONE = { cavallo: Trophy, stallone: BookOpen, fattrice: Heart, guidatore: Users, ippodromo: MapPin, allevatore: Warehouse, pagina: LayoutGrid };
+const NOMI_GRUPPO = { cavallo: "Cavalli", stallone: "Stalloni", fattrice: "Fattrici", guidatore: "Guidatori", ippodromo: "Ippodromi", allevatore: "Allevatori", pagina: "Pagine del sito" };
+
+// Le pagine del sito, con le parole con cui le si cerca: scrivendo
+// "break even" o "costi" si arriva al punto di pareggio.
+const PAGINE: { titolo: string; href: string; sotto: string; parole: string }[] = [
+  { titolo: "Cavalli e classifica", href: "/leaderboard", sotto: "tutti i cavalli valutati", parole: "classifica cavalli voti rating leaderboard" },
+  { titolo: "Catalogo stalloni", href: "/stalloni", sotto: "prezzi di monta e confronto", parole: "stalloni catalogo monta prezzo confronto" },
+  { titolo: "Fattrici", href: "/fattrici", sotto: "valutate sui figli", parole: "fattrici madri" },
+  { titolo: "Advisor", href: "/advisor", sotto: "simula un accoppiamento", parole: "advisor accoppiamento incrocio monta simula" },
+  { titolo: "Verifica Advisor", href: "/validazione", sotto: "la prova che il consiglio funziona", parole: "verifica validazione prova" },
+  { titolo: "Comparazione", href: "/compare", sotto: "due cavalli a confronto", parole: "comparazione confronto confronta" },
+  { titolo: "Pedigree", href: "/pedigree", sotto: "albero a 5 generazioni", parole: "pedigree genealogia albero consanguineita inbreeding" },
+  { titolo: "Calendario", href: "/calendario", sotto: "le prossime corse", parole: "calendario corse programma prossime" },
+  { titolo: "Qualifiche", href: "/qualifiche", sotto: "i giovani prima del debutto", parole: "qualifiche qualificati giovani debutto" },
+  { titolo: "Allevamento", href: "/allevamento", sotto: "allevatori e stazioni di monta", parole: "allevamento allevatori stazioni" },
+  { titolo: "Guidatori", href: "/guidatori", sotto: "chi fa rendere di piu' i cavalli", parole: "guidatori driver" },
+  { titolo: "Ippodromi e trend", href: "/ippodromi", sotto: "piste e andamenti negli anni", parole: "ippodromi piste trend andamenti numero partenza" },
+  { titolo: "Punto di pareggio", href: "/pareggio", sotto: "perdita, pareggio o profitto", parole: "pareggio break even costi utile profitto perdita soldi economia" },
+  { titolo: "Metodo e dati", href: "/metodo", sotto: "come si calcolano i voti", parole: "metodo dati fonti come funziona voto" },
+];
 const CHIAVE_RECENTI = "statippica-recenti";
 
 // ─── Schede viste di recente ─────────────────────────────────────────────
@@ -119,12 +138,18 @@ export default function RicercaGlobale({ aperta, onChiudi }: { aperta: boolean; 
             sotto: `${x.n_gare.toLocaleString("it-IT")} gare`, href: `/guidatore/${e(x.name)}` })),
           ...d.ippodromi.map((x: any) => ({ tipo: "ippodromo", titolo: x.name,
             sotto: `${x.n_gare.toLocaleString("it-IT")} gare`, href: `/ippodromo/${e(x.code)}` })),
+          ...(d.allevatori ?? []).map((x: any) => ({ tipo: "allevatore", titolo: x.name,
+            sotto: x.n_cavalli === 1 ? "1 cavallo allevato" : `${x.n_cavalli} cavalli allevati`, href: `/allevatore/${e(x.name)}` })),
+          ...PAGINE.filter(pg => {
+            const t = q.toLowerCase();
+            return pg.titolo.toLowerCase().includes(t) || pg.parole.split(" ").some(w => w.startsWith(t)) || pg.parole.includes(t);
+          }).slice(0, 3).map(pg => ({ tipo: "pagina", titolo: pg.titolo, sotto: pg.sotto, href: pg.href })),
         ];
         // Prima i gruppi dove un nome COMINCIA con il testo scritto: cercando
         // "napoli" si vuole l'ippodromo, non il cavallo FORZA NAPOLI che per
         // caso viene prima nell'ordine fisso dei gruppi.
         const Q = q.toUpperCase();
-        const ordine = ["cavallo", "stallone", "fattrice", "guidatore", "ippodromo"];
+        const ordine = ["cavallo", "stallone", "fattrice", "guidatore", "ippodromo", "allevatore", "pagina"];
         const inizia = (t: string) => voci.some(v => v.tipo === t && v.titolo.toUpperCase().startsWith(Q));
         const gruppi = [...ordine].sort((a, b) => Number(inizia(b)) - Number(inizia(a)));
         voci.sort((a, b) => gruppi.indexOf(a.tipo) - gruppi.indexOf(b.tipo));
@@ -173,7 +198,7 @@ export default function RicercaGlobale({ aperta, onChiudi }: { aperta: boolean; 
             value={testo}
             onChange={e => setTesto(e.target.value)}
             onKeyDown={tasto}
-            placeholder="Nome di un cavallo, stallone, fattrice, guidatore o ippodromo"
+            placeholder="Cavallo, stallone, fattrice, guidatore, ippodromo, allevatore o pagina"
             data-testid="campo-ricerca-globale"
             style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "hsl(210 10% 90%)", fontSize: "15px", minWidth: 0 }}
           />

@@ -1,3 +1,4 @@
+import { PareggioCavallo } from "../components/PareggioScheda";
 import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
 import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
@@ -398,6 +399,9 @@ export default function HorsePage() {
           serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
           questo dice cosa gli resta. */}
       <ValoreResiduo v={horse.valore_carriera} />
+
+      {/* Punto di pareggio: ha ripagato quello che e' costato? */}
+      <PareggioCavallo nome={horse.name} anno={horse.birth_year} />
 
       {/* Le due letture del voto, e quanto quel voto sia gia' definitivo.
 

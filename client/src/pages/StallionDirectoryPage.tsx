@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, MapPin, Euro, Filter, ArrowUpDown } from "lucide-react";
+import ConfrontoStalloni from "../components/ConfrontoStalloni";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
 
@@ -190,6 +191,9 @@ export default function StallionDirectoryPage() {
           </div>
         ))}
       </div>
+
+      {/* Confronto sul prezzo della monta */}
+      <ConfrontoStalloni />
 
       {/* Filters */}
       <div style={{

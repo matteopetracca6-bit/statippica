@@ -169,6 +169,44 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // Confronto fra stalloni nel catalogo: per ogni stallone con prezzo di monta
+  // e almeno 5 figli osservati, l'utile atteso di un suo figlio (fattrice
+  // qualunque) e la monta massima che lo porterebbe in pari.
+  const cacheStalloniPareggio = new Map<number, { quando: number; dati: any }>();
+  app.get("/api/pareggio/stalloni", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const c = cacheStalloniPareggio.get(mensile);
+      if (c && Date.now() - c.quando < 60 * 60 * 1000) return res.json(c.dati);
+      const stalloni = db.prepare(`
+        SELECT s.name, s.stud_fee_eur fee, srs.grade
+        FROM stallions s
+        LEFT JOIN stallion_rating_stats srs ON srs.sire = s.name
+        WHERE s.stud_fee_eur > 0
+      `).all() as any[];
+      const righe = stalloni.map(s => {
+        const r = valutaIncrocio(db, s.name, null, mensile, null) as any;
+        return {
+          nome: s.name, voto: s.grade ?? null, monta: Math.round(s.fee), figli: r.figli_osservati.padre,
+          affidabilita: r.affidabilita, utile_atteso: r.utile_atteso, prob_profitto: r.prob_profitto,
+          monta_massima: r.monta_massima_di_pareggio, esito: r.esito,
+          // Quanto vale un figlio prima della monta: utile atteso + monta pagata.
+          valore_prima_della_monta: r.utile_atteso + Math.round(s.fee),
+          guadagno_atteso: r.utile_atteso + r.costo_atteso,
+          costo_atteso: r.costo_atteso,
+        };
+      }).filter(r => r.figli >= 5)
+        .sort((a, b) => b.utile_atteso - a.utile_atteso);
+      const dati = { mensile, stalloni: righe };
+      cacheStalloniPareggio.set(mensile, { quando: Date.now(), dati });
+      res.json(dati);
+    } finally {
+      db.close();
+    }
+  });
+
   // ──────────────────────────────────────────────
   // GET /api/notizie
   // Le voci della fascia che scorre in alto nella home: i vincitori dell'ultima
@@ -311,7 +349,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   app.get("/api/search/all", (req, res) => {
     const q = (req.query.q as string || "").trim();
-    if (q.length < 2) return res.json({ cavalli: [], stalloni: [], fattrici: [], guidatori: [], ippodromi: [] });
+    if (q.length < 2) return res.json({ cavalli: [], stalloni: [], fattrici: [], guidatori: [], ippodromi: [], allevatori: [] });
     const db = getDb();
     const Q = q.toUpperCase();
     // Chi comincia con il testo viene prima di chi lo contiene soltanto:
@@ -343,7 +381,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT track AS code, nome AS name, n_gare
         FROM track_stats WHERE UPPER(nome) LIKE ? OR track LIKE ?
         ORDER BY n_gare DESC LIMIT 3`).all(dentro, dentro), [] as any[]) : [];
-      res.json({ cavalli, stalloni, fattrici, guidatori, ippodromi });
+      // Allevatori: dalla seconda fonte, con quanti cavalli hanno allevato.
+      const allevatori = vpTableExists(db, "vp_horse_breeder") ? prova(() => db.prepare(`
+        SELECT breeder_name AS name, COUNT(DISTINCT horse_name) AS n_cavalli
+        FROM vp_horse_breeder WHERE breeder_name != '' AND UPPER(breeder_name) LIKE ?
+        GROUP BY breeder_name
+        ORDER BY UPPER(breeder_name) LIKE ? DESC, n_cavalli DESC LIMIT 3`).all(dentro, inizio), [] as any[]) : [];
+      res.json({ cavalli, stalloni, fattrici, guidatori, ippodromi, allevatori });
     } finally {
       db.close();
     }
