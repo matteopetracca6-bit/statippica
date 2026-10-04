@@ -1,35 +1,44 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
-import { Home as HomeIcon, ChevronLeft, ChevronRight, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Home as HomeIcon, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale } from "lucide-react";
 
 /**
- * Le schede del sito, nell'ordine in cui compaiono nel menu.
+ * IL MENU, RAGGRUPPATO.
  *
- * Prima esistevano solo come riquadri nella home: per passare dalla
- * classifica all'advisor bisognava tornare indietro. Ora sono sempre
- * raggiungibili dalla barra in alto.
+ * Le schede erano 15 in fila: su computer le ultime uscivano dallo schermo e
+ * sul telefono se ne vedevano tre per volta. Ora sono Home piu' cinque
+ * gruppi; ognuno apre una tendina con le sue pagine e una riga di
+ * spiegazione. Ogni pagina tiene il colore del suo riquadro nella home.
  */
-// Ogni scheda ha lo stesso colore del suo riquadro nella home: quando e'
-// aperta (o ci passa sopra il cursore) la voce del menu prende quel colore,
-// cosi' si riconosce a colpo d'occhio dove ci si trova.
-const SCHEDE: { href: string; label: string; icon: typeof HomeIcon; colore: string }[] = [
-  // Cavalli e Leaderboard erano la stessa tabella con filtri diversi: sono
-  // un'unica voce, con dentro tutti i filtri di entrambe.
-  { href: "/leaderboard", label: "Cavalli e classifica", icon: Trophy, colore: "hsl(51 80% 55%)" },
-  { href: "/stalloni", label: "Stalloni", icon: BookOpen, colore: "hsl(120 60% 50%)" },
-  { href: "/fattrici", label: "Fattrici", icon: Heart, colore: "hsl(330 70% 58%)" },
-  { href: "/advisor", label: "Advisor", icon: Sparkles, colore: "hsl(280 60% 60%)" },
-  { href: "/validazione", label: "Verifica", icon: FlaskConical, colore: "hsl(183 70% 52%)" },
-  { href: "/compare", label: "Comparazione", icon: GitCompare, colore: "hsl(30 80% 55%)" },
-  { href: "/pedigree", label: "Pedigree", icon: Network, colore: "hsl(220 60% 60%)" },
-  { href: "/qualifiche", label: "Qualifiche", icon: Award, colore: "hsl(280 60% 62%)" },
-  { href: "/allevamento", label: "Allevamento", icon: Building2, colore: "hsl(20 70% 58%)" },
-  { href: "/guidatori", label: "Guidatori", icon: Users, colore: "hsl(200 70% 58%)" },
-  // Ippodromi e trend sono un'unica scheda con due linguette.
-  { href: "/ippodromi", label: "Ippodromi e trend", icon: MapPin, colore: "hsl(95 55% 52%)" },
-  { href: "/pareggio", label: "Pareggio", icon: Scale, colore: "hsl(160 60% 50%)" },
-  { href: "/metodo", label: "Metodo e dati", icon: BookMarked, colore: "hsl(40 40% 72%)" },
-  { href: "/calendario", label: "Calendario", icon: Calendar, colore: "hsl(0 60% 55%)" },
+type Scheda = { href: string; label: string; nota: string; icon: typeof HomeIcon; colore: string };
+type Gruppo = { nome: string; icon: typeof HomeIcon; colore: string; schede: Scheda[] };
+
+const GRUPPI: Gruppo[] = [
+  { nome: "Cavalli", icon: Trophy, colore: "hsl(51 80% 55%)", schede: [
+    { href: "/leaderboard", label: "Cavalli e classifica", nota: "Tutti i cavalli valutati, con voti e filtri", icon: Trophy, colore: "hsl(51 80% 55%)" },
+    { href: "/qualifiche", label: "Qualifiche", nota: "Il primo tempo ufficiale dei giovani", icon: Award, colore: "hsl(280 60% 62%)" },
+    { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(30 80% 55%)" },
+    { href: "/pedigree", label: "Pedigree", nota: "Albero genealogico fino a 5 generazioni", icon: Network, colore: "hsl(220 60% 60%)" },
+  ] },
+  { nome: "Allevamento", icon: Building2, colore: "hsl(120 60% 50%)", schede: [
+    { href: "/stalloni", label: "Stalloni", nota: "Catalogo, prezzi di monta e confronto", icon: BookOpen, colore: "hsl(120 60% 50%)" },
+    { href: "/fattrici", label: "Fattrici", nota: "Fattrici valutate sui figli", icon: Heart, colore: "hsl(330 70% 58%)" },
+    { href: "/allevamento", label: "Allevatori e stazioni di monta", nota: "Chi alleva e dove stanno gli stalloni", icon: Building2, colore: "hsl(20 70% 58%)" },
+    { href: "/advisor", label: "Advisor", nota: "Scegli l'accoppiamento per una fattrice", icon: Sparkles, colore: "hsl(280 60% 60%)" },
+  ] },
+  { nome: "Economia", icon: Scale, colore: "hsl(160 60% 50%)", schede: [
+    { href: "/pareggio", label: "Punto di pareggio", nota: "Costi, vendere o far correre, quanto pesa ogni costo", icon: Scale, colore: "hsl(160 60% 50%)" },
+  ] },
+  { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)", schede: [
+    { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)" },
+    { href: "/ippodromi", label: "Ippodromi e trend", nota: "Le piste italiane e i numeri negli anni", icon: MapPin, colore: "hsl(95 55% 52%)" },
+    { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(200 70% 58%)" },
+  ] },
+  { nome: "Metodo", icon: BookMarked, colore: "hsl(40 40% 72%)", schede: [
+    { href: "/metodo", label: "Metodo e dati", nota: "Da dove vengono i numeri e come si leggono", icon: BookMarked, colore: "hsl(40 40% 72%)" },
+    { href: "/validazione", label: "Verifica Advisor", nota: "La prova che il consiglio funziona", icon: FlaskConical, colore: "hsl(183 70% 52%)" },
+  ] },
 ];
 
 /** Vero quando la scheda indicata e' quella aperta adesso. */
@@ -37,8 +46,7 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/leaderboard") return percorso.startsWith("/leaderboard") || percorso.startsWith("/cavalli") || percorso.startsWith("/horse");
   if (href === "/stalloni") return percorso.startsWith("/stalloni") || percorso.startsWith("/stallion");
   if (href === "/fattrici") return percorso.startsWith("/fattric");
-  if (href === "/cavalli") return percorso.startsWith("/cavalli") || percorso.startsWith("/horse");
-  if (href === "/allevamento") return percorso.startsWith("/allevam");
+  if (href === "/allevamento") return percorso.startsWith("/allevam") || percorso.startsWith("/allevator");
   if (href === "/validazione") return percorso.startsWith("/validazione");
   if (href === "/guidatori") return percorso.startsWith("/guidator");
   if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend");
@@ -47,6 +55,7 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/advisor") return percorso.startsWith("/advisor");
   return percorso === href;
 }
+const gruppoAttivo = (percorso: string) => GRUPPI.find(g => g.schede.some(sc => isAttiva(percorso, sc.href)))?.nome ?? null;
 
 // Trasparenza dentro un colore hsl(...): "hsl(51 80% 55%)" -> "hsl(51 80% 55% / 0.15)".
 function trasparente(colore: string, alfa: number) {
@@ -89,18 +98,24 @@ export default function NavBar() {
     navigazioneConFrecce.current = null;
   }, [percorso]);
 
-  // Sui telefoni la fila delle voci scorre di lato: la voce della scheda
-  // aperta viene portata in vista, altrimenti il suo colore resterebbe
-  // fuori dallo schermo.
+  // Tendina aperta (computer) e pannello a tutto schermo (telefono).
+  const [aperto, setAperto] = useState<string | null>(null);
+  const [pannello, setPannello] = useState(false);
+  const chiudiTimer = useRef<number | null>(null);
+  const barra = useRef<HTMLDivElement>(null);
+  useEffect(() => { setAperto(null); setPannello(false); }, [percorso]);
   useEffect(() => {
-    const voce = document.querySelector<HTMLElement>(".nav-schede .voce-menu.attiva");
-    const fila = voce?.parentElement?.closest<HTMLElement>(".nav-schede");
-    if (!voce || !fila) return;
-    const v = voce.getBoundingClientRect(), f = fila.getBoundingClientRect();
-    if (v.left < f.left || v.right > f.right) {
-      fila.scrollBy({ left: (v.left + v.width / 2) - (f.left + f.width / 2), behavior: "smooth" });
-    }
-  }, [percorso]);
+    const fuori = (e: MouseEvent) => { if (barra.current && !barra.current.contains(e.target as Node)) setAperto(null); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setAperto(null); setPannello(false); } };
+    document.addEventListener("mousedown", fuori); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", fuori); document.removeEventListener("keydown", esc); };
+  }, []);
+  const apri = (nome: string) => { if (chiudiTimer.current) window.clearTimeout(chiudiTimer.current); setAperto(nome); };
+  const chiudiPiano = () => { chiudiTimer.current = window.setTimeout(() => setAperto(null), 180); };
+  const attivo = gruppoAttivo(percorso);
+  const varColore = (c: string) => ({
+    "--colore-voce": c, "--colore-voce-fondo": trasparente(c, 0.14), "--colore-voce-bordo": trasparente(c, 0.45),
+  } as React.CSSProperties);
 
   const vaiIndietro = () => { navigazioneConFrecce.current = "indietro"; window.history.back(); };
   const vaiAvanti = () => { navigazioneConFrecce.current = "avanti"; window.history.forward(); };
@@ -154,48 +169,78 @@ export default function NavBar() {
 
       <div style={{ width: "1px", height: "20px", background: "hsl(220 10% 16%)", flexShrink: 0 }} />
 
-      {/* Schede. Su schermi stretti la fila scorre lateralmente invece
-          di andare a capo e far crescere la barra in altezza. */}
-      <div
-        className="nav-schede"
-        style={{
-          display: "flex", gap: "2px", alignItems: "center",
-          overflowX: "auto", overflowY: "hidden",
-          scrollbarWidth: "none", flex: 1, minWidth: 0,
-        }}
-      >
+      {/* Home e i cinque gruppi */}
+      <div ref={barra} className="nav-gruppi">
         <Link href="/">
-          <a
-            data-testid="nav-home"
-            className={`voce-menu${percorso === "/" ? " attiva" : ""}`}
-            style={{ "--colore-voce": "hsl(183 85% 62%)", "--colore-voce-fondo": "hsl(183 60% 30% / 0.16)", "--colore-voce-bordo": "hsl(183 85% 62% / 0.4)" } as React.CSSProperties}
-          >
-            <HomeIcon size={13} />
-            Home
+          <a data-testid="nav-home" className={`voce-menu${percorso === "/" ? " attiva" : ""}`} style={varColore("hsl(183 85% 62%)")}>
+            <HomeIcon size={13} /> Home
           </a>
         </Link>
-
-        {SCHEDE.map(({ href, label, icon: Icona, colore }) => {
-          const attiva = isAttiva(percorso, href);
+        {GRUPPI.map(g => {
+          const Icona = g.icon;
           return (
-            <Link key={href} href={href}>
-              <a
-                data-testid={`nav-${label.toLowerCase()}`}
-                className={`voce-menu${attiva ? " attiva" : ""}`}
-                aria-current={attiva ? "page" : undefined}
-                style={{
-                  "--colore-voce": colore,
-                  "--colore-voce-fondo": trasparente(colore, 0.14),
-                  "--colore-voce-bordo": trasparente(colore, 0.45),
-                } as React.CSSProperties}
+            <div key={g.nome} className="gruppo-menu" onMouseEnter={() => apri(g.nome)} onMouseLeave={chiudiPiano}>
+              <button
+                className={`voce-menu${attivo === g.nome ? " attiva" : ""}${aperto === g.nome ? " aperta" : ""}`}
+                style={varColore(g.colore)} aria-haspopup="true" aria-expanded={aperto === g.nome}
+                data-testid={`nav-gruppo-${g.nome.toLowerCase()}`}
+                onClick={() => apri(g.nome)}
               >
-                <Icona size={13} />
-                {label}
-              </a>
-            </Link>
+                <Icona size={13} /> {g.nome} <ChevronDown size={12} className="freccia-gruppo" />
+              </button>
+              {aperto === g.nome && (
+                <div className="tendina-menu" role="menu">
+                  {g.schede.map(sc => <VoceScheda key={sc.href} sc={sc} attiva={isAttiva(percorso, sc.href)} />)}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
+
+      {/* Telefono: un pulsante apre il pannello con tutti i gruppi */}
+      <button className="bottone-pannello" aria-label="Apri il menu" aria-expanded={pannello} onClick={() => setPannello(true)}>
+        <Menu size={16} /> Menu
+        {attivo && <span className="gruppo-corrente">· {attivo}</span>}
+      </button>
+      {/* Il pannello va sopra tutto, anche sopra la testata col logo: per
+          questo si appende direttamente alla pagina. */}
+      {pannello && createPortal(
+        <div className="pannello-menu" role="dialog" aria-label="Menu del sito">
+          <div className="pannello-testa">
+            <span>Menu</span>
+            <button aria-label="Chiudi il menu" onClick={() => setPannello(false)}><X size={18} /></button>
+          </div>
+          <Link href="/">
+            <a className={`voce-scheda${percorso === "/" ? " attiva" : ""}`} style={varColore("hsl(183 85% 62%)")}>
+              <HomeIcon size={15} /><span><b>Home</b></span>
+            </a>
+          </Link>
+          {GRUPPI.map(g => (
+            <div key={g.nome} className="pannello-gruppo">
+              <div className="pannello-titolo" style={{ color: g.colore }}>{g.nome}</div>
+              {g.schede.map(sc => <VoceScheda key={sc.href} sc={sc} attiva={isAttiva(percorso, sc.href)} />)}
+            </div>
+          ))}
+        </div>,
+        document.body,
+      )}
     </nav>
+  );
+}
+
+
+/** Una pagina dentro la tendina o il pannello: nome, icona e una riga di spiegazione. */
+function VoceScheda({ sc, attiva }: { sc: Scheda; attiva: boolean }) {
+  const Icona = sc.icon;
+  return (
+    <Link href={sc.href}>
+      <a role="menuitem" className={`voce-scheda${attiva ? " attiva" : ""}`} aria-current={attiva ? "page" : undefined}
+         data-testid={`nav-${sc.label.toLowerCase()}`}
+         style={{ "--colore-voce": sc.colore, "--colore-voce-fondo": trasparente(sc.colore, 0.12) } as React.CSSProperties}>
+        <Icona size={15} />
+        <span><b>{sc.label}</b><small>{sc.nota}</small></span>
+      </a>
+    </Link>
   );
 }
