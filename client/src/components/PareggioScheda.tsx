@@ -14,8 +14,8 @@ import { Scale } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 const MUTED = "hsl(210 8% 50%)";
-const COLORE: Record<string, string> = { profitto: "hsl(145 60% 50%)", pareggio: "hsl(45 90% 58%)", perdita: "hsl(0 65% 62%)" };
-const NOME: Record<string, string> = { profitto: "In utile", pareggio: "In pari", perdita: "In perdita" };
+import { ESITO_COLORE as COLORE, ESITO_NOME as NOME } from "@/lib/esiti";
+import LegendaEsiti from "./LegendaEsiti";
 const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 
 const pannello: React.CSSProperties = {
@@ -119,6 +119,7 @@ export function PareggioCavallo({ nome, anno }: { nome: string; anno: number }) 
         {d.ingresso != null && <>, {euro(d.ingresso)} fino ai 2 anni (allevamento più monta di {euro(d.monta ?? 0)}{d.monta_da_catalogo ? ", dal catalogo" : ", indicata da te"})</>}.
         {" "}Non conta rivendita né valore da riproduttore.
       </div>
+      <LegendaEsiti style={{ marginTop: "8px" }} />
     </div>
   );
 }
@@ -155,6 +156,7 @@ export function PareggioStallone({ nome }: { nome: string }) {
       <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "10px" }}>
         Ipotesi: {euro(d.mensile)} al mese, fattrice qualunque. Con una fattrice precisa il conto cambia: provalo nella scheda Punto di pareggio.
       </div>
+      <LegendaEsiti style={{ marginTop: "8px" }} />
     </div>
   );
 }

@@ -513,3 +513,67 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
   .riga-momento { flex-wrap: wrap; row-gap: 2px !important; }
   .momento-dati { width: 100%; padding-left: 74px; }
 }
+
+/* ── Indice delle sezioni nelle pagine lunghe ───────────────────────────── */
+.indice-sezioni {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  padding: 10px 0; margin: 0 0 18px;
+  background: linear-gradient(hsl(var(--background)) 80%, hsl(var(--background) / 0));
+}
+.indice-sezioni::-webkit-scrollbar { display: none; }
+.indice-sezioni button {
+  flex-shrink: 0; white-space: nowrap; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: hsl(210 8% 60%);
+  background: hsl(220 12% 11%); border: 1px solid hsl(220 10% 18%);
+  border-radius: 999px; padding: 5px 12px; transition: all .15s;
+}
+.indice-sezioni button:hover { color: hsl(210 10% 90%); border-color: hsl(220 10% 28%); }
+.indice-sezioni button.attiva { color: hsl(183 90% 60%); border-color: hsl(183 70% 45% / 0.5); background: hsl(183 70% 45% / 0.1); }
+[id] { scroll-margin-top: 64px; }
+
+/* ── Tabelle più leggibili ──────────────────────────────────────────────── */
+/* Righe alternate e riga sotto il mouse: si usa un velo (background-image)
+   cosi' la prima colonna ferma del telefono tiene il suo fondo pieno. */
+table tbody tr:nth-child(even) > td { background-image: linear-gradient(hsl(210 20% 100% / 0.022), hsl(210 20% 100% / 0.022)); }
+table tbody tr:hover > td { background-image: linear-gradient(hsl(183 60% 50% / 0.07), hsl(183 60% 50% / 0.07)); }
+/* Sul telefono la prima colonna (il nome) resta ferma quando si scorre di lato. */
+@media (max-width: 760px) {
+  table th:first-child, table td:first-child {
+    position: sticky; left: 0; z-index: 1;
+    background-color: hsl(220 12% 10%);
+    box-shadow: 6px 0 8px -6px hsl(0 0% 0% / 0.6);
+  }
+}
+
+/* ── Intestazione del cavallo ───────────────────────────────────────────── */
+.testata-cavallo {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, hsl(220 14% 12%), hsl(220 12% 9%));
+  border: 1px solid hsl(220 10% 17%); border-radius: 14px;
+  padding: 20px 22px; margin-bottom: 22px;
+}
+.testata-cavallo::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--colore-voto, hsl(183 70% 45%));
+}
+.testata-alto { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.testata-dati {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid hsl(220 10% 17%);
+}
+.testata-dati > div { padding: 0 14px; border-left: 1px solid hsl(220 10% 17%); }
+.testata-dati > div:first-child { padding-left: 0; border-left: none; }
+.testata-dati .valore { font-size: 20px; font-weight: 800; color: hsl(210 10% 92%); line-height: 1.2; font-variant-numeric: tabular-nums; }
+.testata-dati .sotto { font-size: 11px; color: hsl(183 80% 55%); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.testata-dati .etichetta { font-size: 11px; color: hsl(210 8% 48%); margin-top: 3px; }
+@media (max-width: 560px) {
+  .testata-dati { grid-template-columns: repeat(3, 1fr); row-gap: 14px; }
+  .testata-dati > div:nth-child(3n+1) { padding-left: 0; border-left: none; }
+}
+
+/* ── Riga per i riquadri vuoti ──────────────────────────────────────────── */
+.riga-vuota {
+  display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: hsl(210 8% 46%);
+  background: hsl(220 12% 10%); border: 1px dashed hsl(220 10% 18%); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 14px;
+}

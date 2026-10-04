@@ -1,5 +1,6 @@
 import { PareggioCavallo } from "../components/PareggioScheda";
 import VendereOCorrere from "../components/VendereOCorrere";
+import IndiceSezioni from "../components/IndiceSezioni";
 import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
 import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
@@ -155,6 +156,12 @@ function PercentileBar({ label, value }: { label: string; value: number | null }
     </div>
   );
 }
+
+// Colore della striscia a sinistra dell'intestazione: quello del voto.
+const COLORE_VOTO: Record<string, string> = {
+  SSS: "hsl(51 100% 55%)", SS: "hsl(0 0% 80%)", S: "hsl(30 80% 60%)", A: "hsl(183 70% 50%)",
+  B: "hsl(100 50% 50%)", C: "hsl(25 60% 50%)", D: "hsl(40 5% 45%)", E: "hsl(40 4% 35%)", F: "hsl(40 3% 28%)",
+};
 
 function NavArrow({ direction, neighbor, onClick }: {
   direction: "prev" | "next";
@@ -341,30 +348,66 @@ export default function HorsePage() {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", marginBottom: "24px", flexWrap: "wrap" }}>
-        <GradeBadge grade={horse.grade ?? "N/A"} size="lg" />
-        <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.03em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "20px" }}>{getFlag(horse.country, horse.name)}</span>
-            {horse.name}
-          </h1>
-          <div style={{ fontSize: "13px", color: "hsl(210 8% 52%)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <span>{horse.birth_year}</span>
-            <span>·</span>
-            <span>{SEX_LABEL[horse.sex] ?? horse.sex}</span>
-            {horse.country && <><span>·</span><span>{horse.country}</span></>}
-            <span>·</span>
-            <span>Rating: {MODE_LABEL}</span>
-            {horse.score != null && <><span>·</span><span className="tabular">Score {horse.score.toFixed(1)}</span></>}
+      {/* Intestazione: chi e' e cosa ha fatto, tutto in una fascia */}
+      <div className="testata-cavallo" style={{ ["--colore-voto" as any]: COLORE_VOTO[horse.grade ?? ""] ?? "hsl(220 10% 30%)" }}>
+        <div className="testata-alto">
+          <GradeBadge grade={horse.grade ?? "N/A"} size="lg" />
+          <div style={{ flex: 1, minWidth: "200px" }}>
+            <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 95%)", letterSpacing: "0.03em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "20px" }}>{getFlag(horse.country, horse.name)}</span>
+              {horse.name}
+            </h1>
+            <div style={{ fontSize: "13px", color: "hsl(210 8% 55%)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <span>{horse.birth_year}</span>
+              <span>·</span>
+              <span>{SEX_LABEL[horse.sex] ?? horse.sex}</span>
+              {horse.country && <><span>·</span><span>{horse.country}</span></>}
+              <span>·</span>
+              <span>Rating: {MODE_LABEL}</span>
+              {horse.score != null && <><span>·</span><span className="tabular">Score {horse.score.toFixed(1)}</span></>}
+            </div>
+            {horse.pedigree?.sire && (
+              <div style={{ fontSize: "12.5px", color: "hsl(210 8% 50%)", marginTop: "6px" }}>
+                {horse.pedigree.sire}{horse.pedigree.dam ? <> × {horse.pedigree.dam}</> : null}
+              </div>
+            )}
           </div>
+          <MantoSesso coat={horse.coat_color} sex={horse.sex} />
         </div>
-        <MantoSesso coat={horse.coat_color} sex={horse.sex} />
+        <div className="testata-dati">
+          <div><div className="valore">{horse.career_races ?? "—"}</div><div className="etichetta">Corse</div></div>
+          <div>
+            <div className="valore">{horse.career_wins ?? "—"}</div>
+            {horse.win_rate != null && horse.career_races ? <div className="sotto">{horse.win_rate.toFixed(1)}% vinte</div> : null}
+            <div className="etichetta">Vittorie</div>
+          </div>
+          <div><div className="valore">{horse.career_places ?? "—"}</div><div className="etichetta">Piazzamenti</div></div>
+          <div>
+            <div className="valore" style={{ color: horse.career_earnings ? "hsl(51 90% 62%)" : undefined }}>
+              {horse.career_earnings != null ? `€${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"}
+            </div>
+            <div className="etichetta">Guadagni</div>
+          </div>
+          <div><div className="valore">{horse.record_career ? formatRecord(horse.record_career) : "—"}</div><div className="etichetta">Record al km</div></div>
+        </div>
       </div>
+
+      <IndiceSezioni voci={[
+        { id: "sez-genealogia", testo: "Genealogia" },
+        { id: "sez-valore", testo: "Quanto può guadagnare" },
+        { id: "sez-pareggio", testo: "Pareggio" },
+        { id: "sez-vendere", testo: "Vendere o correre" },
+        { id: "sez-voto", testo: "Il voto" },
+        { id: "sez-dove", testo: "Dove ha corso" },
+        { id: "sez-percentili", testo: "Percentili" },
+        { id: "sez-anni", testo: "Anno per anno" },
+        { id: "sez-gare", testo: "Ultime gare" },
+        { id: "sez-ippodromi", testo: "Migliori gare e piste" },
+      ]} />
 
       {/* Genealogy */}
       {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (
-        <div style={panelStyle}>
+        <div id="sez-genealogia" style={panelStyle}>
           <div style={panelTitle}>Genealogia (clicca per navigare)</div>
           <div className="genealogia-griglia" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
@@ -386,27 +429,18 @@ export default function HorsePage() {
       {/* Consanguineita' dalla seconda fonte: compare solo se l'abbiamo */}
       <InbreedingPanel horseName={horse.name} />
 
-      {/* Stats grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", marginBottom: "22px" }}>
-        <Stat label="Corse totali" value={horse.career_races ?? "—"} />
-        <Stat label="Vittorie" value={horse.career_wins ?? "—"} sub={horse.win_rate != null ? `${horse.win_rate.toFixed(1)}% win rate` : undefined} />
-        <Stat label="Piazzamenti" value={horse.career_places ?? "—"} />
-        <Stat label="Guadagni" value={horse.career_earnings != null ? `€${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
-        {horse.record_career && <Stat label="Record km" value={formatRecord(horse.record_career)} />}
-      </div>
-
       {/* Valore residuo: quanto puo' ancora guadagnare.
           Va subito sotto i guadagni di carriera, perche' e' la lettura che
           serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
           questo dice cosa gli resta. */}
-      <ValoreResiduo v={horse.valore_carriera} />
+      <section id="sez-valore"><ValoreResiduo v={horse.valore_carriera} /></section>
 
       {/* Punto di pareggio: ha ripagato quello che e' costato? */}
-      <PareggioCavallo nome={horse.name} anno={horse.birth_year} />
+      <section id="sez-pareggio"><PareggioCavallo nome={horse.name} anno={horse.birth_year} /></section>
 
       {/* Puledro giovane che non ha ancora corso: venderlo all'asta o tenerlo? */}
       {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 4 && (
-        <VendereOCorrere nome={horse.name} anno={horse.birth_year} inScheda />
+        <section id="sez-vendere"><VendereOCorrere nome={horse.name} anno={horse.birth_year} inScheda /></section>
       )}
 
       {/* Le due letture del voto, e quanto quel voto sia gia' definitivo.
@@ -419,7 +453,7 @@ export default function HorsePage() {
           anni resta ferma in meno di un caso su tre. */}
       {horse.rating_mode === "performance" &&
         (horse.grade_annata || horse.affidabilita_voto?.disponibile) && (
-        <div style={panelStyle}>
+        <div id="sez-voto" style={panelStyle}>
           <div style={panelTitle}>Come leggere questo voto</div>
 
           {/* Tre dati su una riga sola: le due letture del voto e quanto
@@ -517,7 +551,7 @@ export default function HorsePage() {
           gare fuori confine ma non dice quale paese, percio' si puo' dividere
           Italia da estero e non oltre. */}
       {(horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0 && (
-        <div style={panelStyle}>
+        <div id="sez-dove" style={panelStyle}>
           <div style={panelTitle}>Dove ha corso</div>
           {/* Aggiunto il premio medio per gara: e' il dato che spiega da solo
               perche' la divisione conta, e prima stava solo nella prosa. */}
@@ -582,7 +616,7 @@ export default function HorsePage() {
 
       {/* Percentile bars */}
       {horse.rating_mode === "performance" && (
-        <div style={panelStyle}>
+        <div id="sez-percentili" style={panelStyle}>
           <div style={panelTitle}>Percentili generazione {horse.birth_year}</div>
           <PercentileBar label="Guadagni" value={horse.earn_percentile} />
           <PercentileBar label="Miglior tempo" value={horse.time_percentile} />
@@ -631,7 +665,7 @@ export default function HorsePage() {
 
       {/* Year-by-year breakdown */}
       {stats?.yearlyStats && stats.yearlyStats.length > 0 && (
-        <div style={panelStyle}>
+        <div id="sez-anni" style={panelStyle}>
           <div style={panelTitle}>Carriera anno per anno</div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
@@ -660,9 +694,19 @@ export default function HorsePage() {
         </div>
       )}
 
+      {/* Riquadri vuoti: una riga sola invece di un pannello grande */}
+      {(!horse.races?.length || !horse.siblings?.length) && (
+        <div className="riga-vuota">
+          {!horse.races?.length && <span>Nessuna gara in archivio.</span>}
+          {!horse.races?.length && !horse.siblings?.length && <span>·</span>}
+          {!horse.siblings?.length && <span>Nessun fratellastro trovato.</span>}
+        </div>
+      )}
+      {(horse.races?.length || horse.siblings?.length) ? (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
+        {horse.races?.length ? (<>
         {/* Last races */}
-        <div style={panelStyle}>
+        <div id="sez-gare" style={panelStyle}>
           <div style={panelTitle}>Ultime gare</div>
           {horse.races?.length ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -704,11 +748,11 @@ export default function HorsePage() {
                 </div>
               ))}
             </div>
-          ) : (
-            <div style={{ fontSize: "13px", color: "hsl(210 8% 40%)" }}>Nessuna gara in archivio.</div>
-          )}
+          ) : null}
         </div>
 
+        </>) : null}
+        {horse.siblings?.length ? (<>
         {/* Siblings */}
         <div style={panelStyle}>
           <div style={panelTitle}>Fratellastri top (stesso padre)</div>
@@ -733,15 +777,15 @@ export default function HorsePage() {
                 </Link>
               ))}
             </div>
-          ) : (
-            <div style={{ fontSize: "13px", color: "hsl(210 8% 40%)" }}>Nessun fratellastro trovato.</div>
-          )}
+          ) : null}
         </div>
+        </>) : null}
       </div>
+      ) : null}
 
       {/* Track stats + Best races */}
       {stats && (stats.bestRaces.length > 0 || stats.trackStats.length > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginTop: "0" }}>
+        <div id="sez-ippodromi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginTop: "0" }}>
           {/* Best races */}
           {stats.bestRaces.length > 0 && (
             <div style={panelStyle}>

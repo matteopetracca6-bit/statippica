@@ -21,7 +21,10 @@ import { apiRequest } from "@/lib/queryClient";
 import NameSelect from "./NameSelect";
 
 const MUTED = "hsl(210 8% 50%)";
-const VERDE = "hsl(145 60% 50%)", GIALLO = "hsl(45 90% 58%)", ROSSO = "hsl(0 65% 62%)", BLU = "hsl(200 75% 60%)";
+import { ESITO_COLORE } from "@/lib/esiti";
+import LegendaEsiti from "./LegendaEsiti";
+// Stessi colori dei risultati in tutto il sito; il blu e' solo per i pulsanti.
+const VERDE = ESITO_COLORE.profitto, GIALLO = ESITO_COLORE.pareggio, ROSSO = ESITO_COLORE.perdita, BLU = "hsl(200 75% 60%)";
 const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const pct = (n: number) => n.toLocaleString("it-IT") + "%";
 
@@ -139,6 +142,7 @@ export default function VendereOCorrere({ nome, anno, mensile = 1200, inScheda =
         {d.madre && d.figli_osservati.madre > 0 && <> e {d.figli_osservati.madre} di {d.madre}</>} (affidabilità {Math.round(d.affidabilita * 100)}%).
         È una media storica, non una previsione sul singolo puledro.
       </div>
+      <LegendaEsiti style={{ marginTop: "8px" }} />
     </>
   ) : null;
 

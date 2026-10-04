@@ -31,9 +31,9 @@ const BORDER = "1px solid hsl(220 10% 18%)";
 const CARD: React.CSSProperties = {
   background: "hsl(220 12% 10%)", border: BORDER, borderRadius: "12px", padding: "18px 20px",
 };
-const COLORE_ESITO: Record<string, string> = {
-  profitto: "hsl(145 60% 50%)", pareggio: "hsl(45 90% 58%)", perdita: "hsl(0 65% 60%)",
-};
+import { ESITO_COLORE as COLORE_ESITO } from "@/lib/esiti";
+import LegendaEsiti from "../components/LegendaEsiti";
+import IndiceSezioni from "../components/IndiceSezioni";
 const ETICHETTA: Record<string, string> = { profitto: "Profitto", pareggio: "Pareggio", perdita: "Perdita" };
 
 const euro = (n: number) => (n < 0 ? "\u2212" : "") + "\u20ac" + Math.abs(Math.round(n)).toLocaleString("it-IT");
@@ -145,8 +145,18 @@ export default function PareggioPage() {
         carriera quasi completa. Si legge come una media storica, non come la previsione su un singolo cavallo.
       </p>
 
+      <IndiceSezioni voci={[
+        { id: "sez-ipotesi", testo: "Le tue ipotesi" },
+        { id: "sez-soglie", testo: "Soglie" },
+        { id: "sez-voti", testo: "Voto per voto" },
+        { id: "sez-cavallo", testo: "Un cavallo" },
+        { id: "sez-incrocio", testo: "Un incrocio" },
+        { id: "vendere", testo: "Vendere o far correre" },
+        { id: "sez-metodo", testo: "Come è fatto il conto" },
+      ]} />
+
       {/* IPOTESI */}
-      <div style={{ ...CARD, marginBottom: "18px" }}>
+      <div id="sez-ipotesi" style={{ ...CARD, marginBottom: "18px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 12px" }}>Le tue ipotesi</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "22px", alignItems: "flex-end" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px", color: MUTED, minWidth: "260px" }}>
@@ -186,10 +196,11 @@ export default function PareggioPage() {
                 {modo === "allevo" && <> (allevamento {euro(allev)} + monta)</>}</>}
           </div>
         </div>
+        <LegendaEsiti style={{ marginTop: "14px" }} />
       </div>
 
       {/* LE TRE SOGLIE */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", marginBottom: "18px" }}>
+      <div id="sez-soglie" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", marginBottom: "18px" }}>
         <Riquadro titolo="Soglia annuale" valore={euro(data.soglie.annuale)}
           nota="Per un cavallo già in corsa: conviene tenerlo solo se in un anno vince almeno questo. Le spese passate non contano più." />
         {manca ? (
@@ -210,12 +221,13 @@ export default function PareggioPage() {
       </div>
 
       {/* TABELLA PER VOTO */}
-      {!manca && <div style={{ ...CARD, marginBottom: "18px", overflowX: "auto" }}>
+      {!manca && <div id="sez-voti" style={{ ...CARD, marginBottom: "18px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Voto per voto</h2>
         <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
           Il cavallo tipico di ogni voto, con il costo calcolato sulle sue stagioni reali. "Pareggio" vuol dire
           entro il {Math.round(ip.fascia_pareggio * 100)}% del costo, sopra o sotto.
         </p>
+        <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", fontVariantNumeric: "tabular-nums", minWidth: "760px" }}>
           <thead>
             <tr style={{ color: MUTED, fontSize: "11.5px", textAlign: "right" }}>
@@ -240,11 +252,12 @@ export default function PareggioPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: "14px", marginBottom: "18px" }}>
         {/* UN CAVALLO */}
-        <div style={CARD}>
+        <div id="sez-cavallo" style={CARD}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un cavallo: tenerlo o fermarlo?</h2>
           <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
             Confronta quello che ha vinto negli ultimi 12 mesi con quanto costa in un anno, e fa il bilancio della carriera fin qui.
@@ -286,7 +299,7 @@ export default function PareggioPage() {
         </div>
 
         {/* UN INCROCIO */}
-        <div style={CARD}>
+        <div id="sez-incrocio" style={CARD}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un incrocio: conviene farlo?</h2>
           <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
             Pesa ogni esito possibile del puledro, dal voto SSS al "non corre mai", con quanto è successo ai figli
@@ -350,7 +363,7 @@ export default function PareggioPage() {
         <MercatoStalloni mensile={mensile} />
       </div>
 
-      <Spiegazione titolo="Come è fatto il conto, e cosa non contiene">
+      <div id="sez-metodo"><Spiegazione titolo="Come è fatto il conto, e cosa non contiene">
         <p>Il costo di un cavallo è: costo fino ai 2 anni (allevamento più monta, oppure prezzo d'acquisto),
         più 12 mesi di allenamento prima del debutto, più 12 mesi per ogni stagione di corse. Il ricavo è il premio
         netto vinto, cioè la quota del proprietario: nella circolare ministeriale al proprietario vanno 42,5 parti
@@ -364,7 +377,7 @@ export default function PareggioPage() {
         <ul style={{ paddingLeft: "18px", marginTop: "8px" }}>
           {ip.fonti.map(f => <li key={f.url}><a href={f.url} target="_blank" rel="noreferrer">{f.nome}</a></li>)}
         </ul>
-      </Spiegazione>
+      </Spiegazione></div>
 
       <CollegamentiCorrelati voci={[
         { href: "/advisor", titolo: "Advisor", descrizione: "Scegli l'accoppiamento migliore per una fattrice" },
