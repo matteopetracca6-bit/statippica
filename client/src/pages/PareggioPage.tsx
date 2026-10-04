@@ -34,6 +34,7 @@ const CARD: React.CSSProperties = {
 import { ESITO_COLORE as COLORE_ESITO } from "@/lib/esiti";
 import LegendaEsiti from "../components/LegendaEsiti";
 import IndiceSezioni from "../components/IndiceSezioni";
+import PesoCosti from "../components/PesoCosti";
 const ETICHETTA: Record<string, string> = { profitto: "Profitto", pareggio: "Pareggio", perdita: "Perdita" };
 
 const euro = (n: number) => (n < 0 ? "\u2212" : "") + "\u20ac" + Math.abs(Math.round(n)).toLocaleString("it-IT");
@@ -149,6 +150,7 @@ export default function PareggioPage() {
         { id: "sez-ipotesi", testo: "Le tue ipotesi" },
         { id: "sez-soglie", testo: "Soglie" },
         { id: "sez-voti", testo: "Voto per voto" },
+        { id: "sez-pesi", testo: "Quanto pesa ogni costo" },
         { id: "sez-cavallo", testo: "Un cavallo" },
         { id: "sez-incrocio", testo: "Un incrocio" },
         { id: "vendere", testo: "Vendere o far correre" },
@@ -254,6 +256,15 @@ export default function PareggioPage() {
         </table>
         </div>
       </div>}
+
+      {/* QUANTO PESA OGNI COSTO */}
+      <div id="sez-pesi" style={{ ...CARD, marginBottom: "18px" }}>
+        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Quanto pesa ogni costo</h2>
+        <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
+          Con le tue ipotesi, quale voce sposta di più il risultato di un cavallo qualunque: dove conviene risparmiare, e cosa servirebbe per andare in pari.
+        </p>
+        <PesoCosti mensile={mensile} monta={modo === "allevo" ? monta : undefined} prezzo={modo === "compro" ? prezzo : undefined} />
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: "14px", marginBottom: "18px" }}>
         {/* UN CAVALLO */}

@@ -24,7 +24,7 @@ import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo } from "./careerValue";
 import { affidabilitaVoto } from "./gradeStability";
-import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni } from "./pareggio";
+import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -194,6 +194,26 @@ export function registerRoutes(httpServer: Server, app: Express) {
       }
       if (!padre) return res.status(400).json({ message: "manca lo stallone" });
       res.json({ nome: puledro, ...valutaVendita(db, padre, madre, mensile, Number.isFinite(prezzo as number) ? prezzo : null, puledro) });
+    } finally {
+      db.close();
+    }
+  });
+  // Quanto pesa ogni costo: con ?monta= (lo allevo io) o ?prezzo= (lo compro).
+  app.get("/api/pareggio/sensibilita", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const vuoto = (v: unknown) => v == null || v === "";
+      if (!vuoto(req.query.prezzo)) {
+        const prezzo = numero(req.query.prezzo, NaN, 0, 5_000_000);
+        if (!Number.isFinite(prezzo)) return res.status(400).json({ message: "prezzo non valido" });
+        return res.json(sensibilita(db, mensile, { prezzo }));
+      }
+      if (vuoto(req.query.monta)) return res.status(400).json({ message: "manca la monta" });
+      const monta = numero(req.query.monta, NaN, 0, 500_000);
+      if (!Number.isFinite(monta)) return res.status(400).json({ message: "monta non valida" });
+      res.json(sensibilita(db, mensile, { allevamento: ip.allevamento_fino_2_anni, monta }));
     } finally {
       db.close();
     }

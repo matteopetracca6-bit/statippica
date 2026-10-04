@@ -471,3 +471,48 @@ export function mercatoStalloni(db: Database.Database, mensile: number) {
     };
   }).sort((a, b) => (a.differenza ?? 0) - (b.differenza ?? 0));
 }
+
+// ── QUANTO PESA OGNI COSTO (analisi di sensibilita') ───────────────────────
+// Il conto e' quello del punto di pareggio, fatto sul cavallo "qualunque":
+// tutti i nati 2014-19, compresi quelli che non hanno mai corso. Utile medio
+//   = premi medi - (ingresso + 12 x mensile x (stagioni + 1))
+// e per chi non corre: - (ingresso + 12 x mensile).
+// Il conto e' lineare, quindi l'effetto di ogni voce e' esatto: si muove una
+// voce del 20% e si guarda di quanto si sposta l'utile medio.
+export function sensibilita(db: Database.Database, mensile: number,
+                            ingresso: { allevamento: number; monta: number } | { prezzo: number }) {
+  const b = datiBase(db);
+  const tutti: Carriera[] = Object.values(b.perVoto).flat();
+  const n = tutti.length + b.nonCorsi;
+  const premi = tutti.reduce((t, x) => t + x.e, 0) / n;
+  // Mesi di allenamento medi per cavallo: (stagioni + 1) anni per chi corre, 1 per chi non corre.
+  const anni = (tutti.reduce((t, x) => t + x.s + 1, 0) + b.nonCorsi) / n;
+  const allenamento = 12 * mensile * anni;
+  const voci: { chiave: string; nome: string; valore: number; ricavo: boolean }[] = [
+    { chiave: "premi", nome: "Premi vinti", valore: premi, ricavo: true },
+    { chiave: "mensile", nome: "Allenamento e mantenimento", valore: allenamento, ricavo: false },
+  ];
+  if ("prezzo" in ingresso) voci.push({ chiave: "prezzo", nome: "Prezzo d'acquisto all'asta", valore: ingresso.prezzo, ricavo: false });
+  else {
+    voci.push({ chiave: "allevamento", nome: "Allevamento fino ai 2 anni", valore: ingresso.allevamento, ricavo: false });
+    voci.push({ chiave: "monta", nome: "Monta", valore: ingresso.monta, ricavo: false });
+  }
+  const costo = voci.filter(v => !v.ricavo).reduce((t, v) => t + v.valore, 0);
+  const utile = premi - costo;
+  const PASSO = 0.2;
+  return {
+    mensile, cavalli: n, anni_medi_di_allenamento: Math.round(anni * 10) / 10,
+    utile_medio: Math.round(utile), premi_medi: Math.round(premi), costo_medio: Math.round(costo),
+    passo: PASSO,
+    voci: voci.map(v => ({
+      chiave: v.chiave, nome: v.nome, ricavo: v.ricavo,
+      valore: Math.round(v.valore),
+      quota_del_costo: v.ricavo ? null : Math.round(1000 * v.valore / costo) / 10,
+      // Effetto sull'utile medio se la voce sale o scende del 20%.
+      effetto: Math.round(PASSO * v.valore),
+      // Di quanto dovrebbe cambiare da sola per arrivare in pari (in %):
+      // i premi devono salire, i costi scendere. Oltre il 100% di calo non basta nemmeno azzerarla.
+      per_il_pareggio: utile >= 0 ? 0 : Math.round(1000 * (-utile) / v.valore) / 10,
+    })).sort((a, b) => b.effetto - a.effetto),
+  };
+}
