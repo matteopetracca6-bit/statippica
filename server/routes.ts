@@ -1147,6 +1147,78 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // GET /api/momento — "Cavalli del momento" della home.
+  // Non esiste uno storico dei voti, quindi il momento si legge dalle corse:
+  //  - in forma: chi ha fatto meglio negli ultimi 30 giorni (dalla data
+  //    dell'ultima corsa in archivio, non da oggi, cosi' un buco nei dati non
+  //    svuota il riquadro), almeno 2 corse;
+  //  - record personale: chi nel periodo ha corso piu' veloce di quanto avesse
+  //    mai fatto prima, con almeno 5 corse cronometrate alle spalle.
+  // Con giovani=1 si guardano solo i cavalli di 2 e 3 anni.
+  const cacheMomento = new Map<string, { quando: number; dati: any }>();
+  app.get("/api/momento", (req, res) => {
+    try {
+      const giovani = req.query.giovani === "1";
+      const chiave = giovani ? "g" : "t";
+      const c = cacheMomento.get(chiave);
+      if (c && Date.now() - c.quando < 30 * 60 * 1000) return res.json(c.dati);
+      const db = getDb();
+      const ultima = (db.prepare("SELECT MAX(race_date) d FROM races").get() as any)?.d;
+      if (!ultima) return res.json({ dal: null, al: null, in_forma: [], record: [] });
+      const dal = (db.prepare("SELECT date(?, '-30 days') d").get(ultima) as any).d;
+      const annoUltima = parseInt(String(ultima).slice(0, 4));
+      // Il cavallo si riconosce dal nome; l'annata e il voto si prendono dalla
+      // scheda con piu' corse, per non confondere gli omonimi vecchi.
+      const scheda = db.prepare(`
+        SELECT h.birth_year, h.sex, hr.grade
+        FROM horses h
+        LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year AND hr.rating_mode = 'performance'
+        WHERE h.name = ? ORDER BY h.career_races DESC, h.birth_year DESC LIMIT 1
+      `);
+      const recenti = db.prepare(`
+        SELECT horse_name, COUNT(*) corse,
+               SUM(placement = 1) vittorie,
+               SUM(placement BETWEEN 1 AND 3) piazzati,
+               SUM(COALESCE(prize_net, 0)) premi,
+               MIN(CASE WHEN time_km BETWEEN 8 AND 25 THEN time_km END) miglior_tempo,
+               MAX(race_date) ultima_corsa
+        FROM races
+        WHERE race_date > ? AND race_date <= ?
+        GROUP BY horse_name
+        HAVING corse >= 2
+      `).all(dal, ultima) as any[];
+      const prima = db.prepare(`
+        SELECT MIN(time_km) t, COUNT(*) n FROM races
+        WHERE horse_name = ? AND race_date <= ? AND time_km BETWEEN 8 AND 25
+      `);
+      const righe = recenti.map(r => {
+        const sc = scheda.get(r.horse_name) as any;
+        return { ...r, anno: sc?.birth_year ?? null, sesso: sc?.sex ?? null, voto: sc?.grade ?? null };
+      }).filter(r => !giovani || (r.anno && annoUltima - r.anno <= 3 && annoUltima - r.anno >= 2));
+      const in_forma = [...righe]
+        .sort((a, b) => b.vittorie - a.vittorie || b.piazzati - a.piazzati || a.corse - b.corse || b.premi - a.premi)
+        .slice(0, 10)
+        .map(r => ({ nome: r.horse_name, anno: r.anno, voto: r.voto, corse: r.corse, vittorie: r.vittorie,
+                     piazzati: r.piazzati, premi: Math.round(r.premi), ultima_corsa: r.ultima_corsa }));
+      const record = righe
+        .filter(r => r.miglior_tempo != null)
+        .map(r => {
+          const p = prima.get(r.horse_name, dal) as any;
+          return { r, prima: p?.t ?? null, n: p?.n ?? 0 };
+        })
+        .filter(x => x.prima != null && x.n >= 5 && x.r.miglior_tempo < x.prima)
+        .sort((a, b) => (b.prima - b.r.miglior_tempo) - (a.prima - a.r.miglior_tempo))
+        .slice(0, 10)
+        .map(x => ({ nome: x.r.horse_name, anno: x.r.anno, voto: x.r.voto, tempo: x.r.miglior_tempo,
+                     tempo_prima: x.prima, miglioramento: Math.round((x.prima - x.r.miglior_tempo) * 10) / 10 }));
+      const dati = { dal, al: ultima, cavalli_in_corsa: righe.length, in_forma, record };
+      cacheMomento.set(chiave, { quando: Date.now(), dati });
+      res.json(dati);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // GET /api/rating-voti — per ogni lettera, i numeri tipici dei cavalli che
   // l'hanno presa. Serve al riquadro "Rating" della home: aperto, spiega come
   // si fa il voto e mostra cosa vuol dire in pratica ogni lettera.

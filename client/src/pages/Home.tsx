@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import HorseSearchBar from "../components/HorseSearchBar";
 import Wordmark from "../components/Wordmark";
 import GradeBadge from "../components/GradeBadge";
+import CavalliDelMomento from "../components/CavalliDelMomento";
 import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { getFlag } from "@/lib/flags";
@@ -228,6 +229,11 @@ export default function Home() {
       {/* ─── RATING: riquadro largo, si apre al clic ─── */}
       <div className="page-shell">
         <RiquadroRating />
+      </div>
+
+      {/* ─── CAVALLI DEL MOMENTO ─── */}
+      <div className="page-shell">
+        <CavalliDelMomento />
       </div>
 
       {/* ─── TOP STALLONI + CAMPIONE PER GENERAZIONE ─── */}

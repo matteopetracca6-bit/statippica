@@ -506,3 +506,9 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
 
 /* Scheda cavallo: su schermo stretto il riquadro manto e sesso va a capo a sinistra. */
 @media (max-width: 640px) { .manto-sesso { margin-left: 0 !important; } }
+
+/* Cavalli del momento: su schermo stretto i numeri vanno sotto al nome. */
+@media (max-width: 560px) {
+  .riga-momento { flex-wrap: wrap; row-gap: 2px !important; }
+  .momento-dati { width: 100%; padding-left: 74px; }
+}
