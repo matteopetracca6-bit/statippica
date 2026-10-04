@@ -54,7 +54,7 @@ export default function LeaderboardPage() {
   const urlParams = new URLSearchParams(location.split("?")[1] ?? "");
   
   const [year, setYear] = useState<string>(urlParams.get("year") ?? "");
-  const [grade, setGrade] = useState<string>("");
+  const [grade, setGrade] = useState<string>(urlParams.get("grade") ?? "");
   const [sireFilter, setSireFilter] = useState<string>("");
   const [mode, setMode] = useState<string>("performance");
   const [sort, setSort] = useState<string>("score");

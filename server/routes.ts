@@ -1147,6 +1147,64 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // GET /api/rating-voti — per ogni lettera, i numeri tipici dei cavalli che
+  // l'hanno presa. Serve al riquadro "Rating" della home: aperto, spiega come
+  // si fa il voto e mostra cosa vuol dire in pratica ogni lettera.
+  let cacheVoti: { quando: number; dati: any } | null = null;
+  app.get("/api/rating-voti", (_req, res) => {
+    try {
+      if (cacheVoti && Date.now() - cacheVoti.quando < 60 * 60 * 1000) return res.json(cacheVoti.dati);
+      const db = getDb();
+      const righe = db.prepare(`
+        SELECT name, birth_year, grade, score, career_earnings, career_races, career_wins,
+               win_rate, stagioni_corse, record_career
+        FROM horse_ratings
+        WHERE rating_mode = 'performance' AND COALESCE(horse_class, 'athlete') = 'athlete'
+      `).all() as any[];
+      const mediana = (v: number[]) => {
+        const a = v.filter(x => x != null && !isNaN(x)).sort((x, y) => x - y);
+        if (!a.length) return null;
+        const m = Math.floor(a.length / 2);
+        return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+      };
+      const ORDINE = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+      const QUOTA: Record<string, string> = {
+        SSS: "l'1% migliore", SS: "dall'1% al 5%", S: "dal 5% al 10%", A: "dal 10% al 25%",
+        B: "dal 25% al 40%", C: "dal 40% al 60%", D: "dal 60% al 75%", E: "dal 75% al 90%", F: "l'ultimo 10%",
+      };
+      const tot = righe.length;
+      const voti = ORDINE.map(g => {
+        const r = righe.filter(x => x.grade === g);
+        if (!r.length) return null;
+        const punteggi = r.map(x => x.score).sort((a, b) => a - b);
+        // Record al km: solo valori plausibili (secondi oltre il minuto).
+        const rec = mediana(r.map(x => parseFloat(x.record_career)).filter(x => x >= 8 && x <= 25));
+        const sm = mediana(punteggi);
+        const esempio = [...r].sort((a, b) => Math.abs(a.score - sm!) - Math.abs(b.score - sm!))[0];
+        const migliore = [...r].sort((a, b) => b.score - a.score)[0];
+        return {
+          voto: g, quota: QUOTA[g], n: r.length, pct: Math.round(r.length / tot * 1000) / 10,
+          punteggio_min: Math.round(punteggi[0] * 10) / 10,
+          punteggio_max: Math.round(punteggi[punteggi.length - 1] * 10) / 10,
+          guadagno_mediano: Math.round(mediana(r.map(x => x.career_earnings || 0)) ?? 0),
+          gare_mediane: Math.round(mediana(r.map(x => x.career_races || 0)) ?? 0),
+          vittorie_mediane: Math.round(mediana(r.map(x => x.career_wins || 0)) ?? 0),
+          vittorie_pct: Math.round((r.reduce((a, x) => a + (x.career_wins || 0), 0) /
+                         Math.max(1, r.reduce((a, x) => a + (x.career_races || 0), 0))) * 1000) / 10,
+          stagioni_mediane: Math.round(mediana(r.map(x => x.stagioni_corse || 0)) ?? 0),
+          record_mediano: rec != null ? Math.round(rec * 10) / 10 : null,
+          esempio: esempio ? { nome: esempio.name, anno: esempio.birth_year } : null,
+          migliore: migliore ? { nome: migliore.name, anno: migliore.birth_year } : null,
+        };
+      }).filter(Boolean);
+      const dati = { totale: tot, voti };
+      cacheVoti = { quando: Date.now(), dati };
+      res.json(dati);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get("/api/stats", (_req, res) => {
     const db = getDb();
     try {
@@ -1171,7 +1229,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         GROUP BY birth_year
         HAVING score = MAX(score)
         ORDER BY birth_year DESC
-        LIMIT 5
+        LIMIT 10
       `).all() as any[];
       res.json({ totalHorses, totalRaces, totalStallions, totalBreeders, gradeDist, topByYear });
     } finally {

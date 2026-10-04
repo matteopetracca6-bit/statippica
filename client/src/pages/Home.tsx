@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import HorseSearchBar from "../components/HorseSearchBar";
 import Wordmark from "../components/Wordmark";
 import GradeBadge from "../components/GradeBadge";
+import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { getFlag } from "@/lib/flags";
 import {
@@ -114,18 +115,13 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: topRaces } = useQuery<TopRaces>({
-    queryKey: ["/api/top-races"],
-    queryFn: async () => { const r = await apiRequest("GET", "/api/top-races?limit=5"); return r.json(); },
-    staleTime: 5 * 60 * 1000,
-  });
 
   const totalPerf = stats?.gradeDist.reduce((s, g) => s + g.cnt, 0) ?? 1;
   const orderedGrades = GRADE_ORDER.map(g => ({ grade: g, cnt: stats?.gradeDist.find(d => d.grade === g)?.cnt ?? 0 }));
 
-  // Top stallions by final_score (take top 6 with offspring data)
+  // Top stallions by final_score (i primi 10 con figli in archivio)
   const topStallions = stallions
-    ? stallions.filter(s => s.final_score != null && s.n_figli_totali && s.n_figli_totali > 0).slice(0, 6)
+    ? stallions.filter(s => s.final_score != null && s.n_figli_totali && s.n_figli_totali > 0).slice(0, 10)
     : [];
 
   return (
@@ -229,52 +225,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── MAIN GRID: Grade distribution + Top stallions ─── */}
+      {/* ─── RATING: riquadro largo, si apre al clic ─── */}
       <div className="page-shell">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <RiquadroRating />
+      </div>
 
-          {/* Grade distribution — proper bar chart */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "14px", padding: "22px 24px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "18px" }}>
-              <Activity size={16} style={{ color: "hsl(183 60% 55%)" }} />
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Distribuzione Rating
-              </span>
-            </div>
-            {isLoading ? (
-              <div className="skeleton" style={{ height: "180px", borderRadius: "8px" }} />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {orderedGrades.filter(g => g.cnt > 0).map(({ grade, cnt }) => {
-                  const pct = (cnt / totalPerf) * 100;
-                  return (
-                    <div key={grade} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <div style={{ width: "32px", flexShrink: 0 }}>
-                        <GradeBadge grade={grade} size="sm" />
-                      </div>
-                      <div style={{ flex: 1, height: "22px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden", position: "relative" }}>
-                        <div style={{
-                          height: "100%", width: `${Math.max(pct, 1)}%`,
-                          background: GRADE_COLORS[grade],
-                          borderRadius: "4px", transition: "width 0.8s cubic-bezier(0.16,1,0.3,1)",
-                        }} />
-                        <span className="tabular" style={{
-                          position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)",
-                          fontSize: "11px", fontWeight: 700, color: "#fff",
-                          textShadow: "0 1px 3px rgba(0,0,0,0.6)",
-                        }}>
-                          {cnt.toLocaleString("it-IT")} ({pct.toFixed(1)}%)
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+      {/* ─── TOP STALLONI + CAMPIONE PER GENERAZIONE ─── */}
+      <div className="page-shell">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))", gap: "16px" }}>
 
           {/* Top stallions */}
           <div style={{
@@ -330,12 +288,6 @@ export default function Home() {
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* ─── CHAMPIONS + TOP EARNERS ─── */}
-      <div className="page-shell">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
           {/* Champion per generation */}
           <div style={{
@@ -350,11 +302,11 @@ export default function Home() {
             </div>
             {isLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {[1,2,3,4,5].map(i => <div key={i} className="skeleton" style={{ height: "32px", borderRadius: "6px" }} />)}
+                {[1,2,3,4,5,6,7,8,9,10].map(i => <div key={i} className="skeleton" style={{ height: "32px", borderRadius: "6px" }} />)}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                {stats?.topByYear.slice(0, 6).map((h, i) => (
+                {stats?.topByYear.slice(0, 10).map((h, i) => (
                   <Link key={h.birth_year} href={`/horse/${encodeURIComponent(h.name)}/${h.birth_year}`}>
                     <a style={{
                       display: "flex", alignItems: "center", gap: "10px",
@@ -382,104 +334,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Top earners */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "14px", padding: "22px 24px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <Coins size={16} style={{ color: "hsl(100 60% 50%)" }} />
-                <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  Top vincitori
-                </span>
-              </div>
-              
-            </div>
-            {!topRaces ? (
-              <div className="skeleton" style={{ height: "160px", borderRadius: "8px" }} />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                {topRaces.dominantHorses?.slice(0, 6).map((h, i) => (
-                  <Link key={h.horse_name} href={`/horse/${encodeURIComponent(h.horse_name)}/0`}>
-                    <a style={{
-                      display: "flex", alignItems: "center", gap: "10px",
-                      padding: "8px 12px", borderRadius: "8px", textDecoration: "none",
-                      transition: "background 0.15s",
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 14%)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "none"}
-                    >
-                      <span className="tabular" style={{ fontSize: "12px", color: i < 3 ? "hsl(51 80% 55%)" : "hsl(210 8% 35%)", fontWeight: 700, minWidth: "20px" }}>{i + 1}</span>
-                      <span style={{ fontSize: "16px" }}>{getFlag(h.country, h.horse_name)}</span>
-                      <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 85%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {h.horse_name}
-                      </span>
-                      <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 48%)" }}>{h.n_races} gare</span>
-                      <span className="tabular" style={{ fontSize: "11px", color: h.win_rate >= 30 ? "hsl(120 60% 50%)" : "hsl(210 8% 48%)", fontWeight: 600, minWidth: "36px", textAlign: "right" }}>
-                        {h.win_rate.toFixed(0)}%
-                      </span>
-                      <span className="tabular" style={{ fontSize: "12px", color: "hsl(51 70% 55%)", fontWeight: 600, minWidth: "56px", textAlign: "right" }}>
-                        €{(h.total_earnings / 1000).toFixed(0)}k
-                      </span>
-                    </a>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-
-      {/* ─── TOP PRIZE RACES ─── */}
-      <div className="page-shell">
-        <div style={{
-          background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-          borderRadius: "14px", padding: "22px 24px",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Award size={16} style={{ color: "hsl(0 60% 55%)" }} />
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Gare con montepremi piu alto
-              </span>
-            </div>
-            
-          </div>
-          {!topRaces ? (
-            <div className="skeleton" style={{ height: "120px", borderRadius: "8px" }} />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              {topRaces.topPrize?.slice(0, 5).map((r, i) => (
-                <Link key={i} href={`/horse/${encodeURIComponent(r.horse_name)}/0`}>
-                  <a style={{
-                    display: "flex", alignItems: "center", gap: "10px",
-                    padding: "8px 12px", borderRadius: "8px", textDecoration: "none",
-                    transition: "background 0.15s",
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 14%)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}
-                  >
-                    <span className="tabular" style={{ fontSize: "12px", color: i === 0 ? "hsl(0 60% 55%)" : "hsl(210 8% 35%)", fontWeight: 700, minWidth: "20px" }}>{i + 1}</span>
-                    <span style={{ fontSize: "16px" }}>{getFlag(r.country, r.horse_name)}</span>
-                    <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 85%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {r.horse_name}
-                    </span>
-                    <span style={{ fontSize: "11px", color: "hsl(210 8% 45%)", display: "flex", alignItems: "center", gap: "3px" }}>
-                      <MapPin size={11} /> {r.track || "—"}
-                    </span>
-                    <span style={{ fontSize: "11px", color: "hsl(210 8% 45%)", display: "flex", alignItems: "center", gap: "3px" }}>
-                      <Clock size={11} /> {r.race_date || "—"}
-                    </span>
-                    <span className="tabular" style={{ fontSize: "14px", fontWeight: 700, color: "hsl(0 60% 55%)", minWidth: "70px", textAlign: "right" }}>
-                      €{r.prize_net?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}
-                    </span>
-                  </a>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
