@@ -385,7 +385,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const db = getDb();
     try {
       const horse = db.prepare(`
-        SELECT h.name, h.birth_year, h.sex, h.country, h.sire, h.dam,
+        SELECT h.name, h.birth_year, h.sex, h.coat_color, h.country, h.sire, h.dam,
                h.career_races, h.career_wins, h.career_places, h.career_earnings, h.record_career,
                h.record_short, h.record_long,
                hr.grade, hr.score, hr.earn_percentile, hr.time_percentile,

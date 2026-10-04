@@ -503,3 +503,6 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
   .fascia-notizie-nastro { animation: none; }
   .fascia-notizie-copia[aria-hidden="true"] { display: none; }
 }
+
+/* Scheda cavallo: su schermo stretto il riquadro manto e sesso va a capo a sinistra. */
+@media (max-width: 640px) { .manto-sesso { margin-left: 0 !important; } }

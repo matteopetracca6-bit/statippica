@@ -1,3 +1,4 @@
+import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
 import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ interface HorseData {
   name: string;
   birth_year: number;
   sex: string;
+  coat_color?: string | null;
   country: string;
   sire: string;
   dam: string;
@@ -305,7 +307,7 @@ export default function HorsePage() {
     </div>
   );
 
-  const SEX_LABEL: Record<string, string> = { M: "Maschio", F: "Femmina" };
+  const SEX_LABEL: Record<string, string> = { M: "Maschio", F: "Femmina", C: "Castrone" };
   // Tre scale diverse, e vanno chiamate per nome: confonderle era il difetto
   // che portava Varenne (46 corse, 41 vittorie, nessuna gara in archivio) a
   // comparire come un grado A qualunque accanto ai cavalli in attivita'.
@@ -355,6 +357,7 @@ export default function HorsePage() {
             {horse.score != null && <><span>·</span><span className="tabular">Score {horse.score.toFixed(1)}</span></>}
           </div>
         </div>
+        <MantoSesso coat={horse.coat_color} sex={horse.sex} />
       </div>
 
       {/* Genealogy */}
