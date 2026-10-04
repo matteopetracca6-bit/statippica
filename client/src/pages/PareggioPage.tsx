@@ -291,15 +291,20 @@ export default function PareggioPage() {
                 <div style={{ fontSize: "13px" }}>
                   <b>{inc.padre}</b>{inc.madre ? <> × <b>{inc.madre}</b></> : null}
                   <div style={{ color: MUTED, fontSize: "12px" }}>
-                    Monta {euro(inc.monta)}{inc.monta_da_catalogo ? " (catalogo)" : " (indicata da te o mediana)"} · figli osservati:
+                    {inc.monta != null ? <>Monta {euro(inc.monta)}{inc.monta_da_catalogo ? " (catalogo)" : " (indicata da te)"}</> : <span style={{ color: "hsl(45 90% 62%)" }}>Monta non nel catalogo: scrivila nel campo sopra</span>} · figli osservati:
                     {" "}{inc.figli_osservati.padre} del padre{inc.madre ? `, ${inc.figli_osservati.madre} della madre` : ""} · affidabilità {Math.round(inc.affidabilita * 100)}%
                   </div>
                 </div>
                 <Esito e={inc.esito} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
-                <Riquadro titolo="Utile atteso" valore={euro(inc.utile_atteso)} colore={COLORE_ESITO[inc.esito]} nota={`su un costo atteso di ${euro(inc.costo_atteso)}`} />
-                <Riquadro titolo="Prob. di profitto" valore={`${inc.prob_profitto.toLocaleString("it-IT")}%`} nota="quota di puledri che si ripagano" />
+                {inc.utile_atteso != null ? <>
+                  <Riquadro titolo="Utile atteso" valore={euro(inc.utile_atteso)} colore={COLORE_ESITO[inc.esito]} nota={`su un costo atteso di ${euro(inc.costo_atteso)}`} />
+                  <Riquadro titolo="Prob. di profitto" valore={`${inc.prob_profitto.toLocaleString("it-IT")}%`} nota="quota di puledri che si ripagano" />
+                </> : <>
+                  <Riquadro titolo="Vinto in media da un figlio" valore={euro(inc.guadagno_atteso)} nota="non dipende dalla monta" />
+                  <Riquadro titolo="Utile atteso" valore="—" nota="serve il prezzo della monta" />
+                </>}
                 <Riquadro titolo="Monta massima" valore={inc.monta_massima_di_pareggio > 0 ? euro(inc.monta_massima_di_pareggio) : "nessuna"}
                   nota={inc.monta_massima_di_pareggio > 0 ? "prezzo della monta che porta l'utile atteso a zero" : "non va in pari neanche con la monta gratis"} />
               </div>

@@ -180,7 +180,7 @@ export function soglie(mensile: number, ingresso: number, stagioni = 5) {
 
 /** Un cavallo preciso: tenerlo o fermarlo, e com'e' messo il suo bilancio. */
 export function valutaCavallo(db: Database.Database, nome: string, anno: number | null,
-                              mensile: number, ingresso: number) {
+                              mensile: number, ingressoDato: number | null, montaData: number | null = null) {
   const h = db.prepare(`
     SELECT name, birth_year, grade, rating_mode, COALESCE(career_earnings, 0) e,
            COALESCE(stagioni_corse, 0) s, COALESCE(career_races, 0) gare, sire
@@ -193,12 +193,22 @@ export function valutaCavallo(db: Database.Database, nome: string, anno: number 
     SELECT COALESCE(SUM(prize_net), 0) g, COUNT(*) n, MAX(race_date) ultima
       FROM races WHERE horse_name = ? AND race_date >= date('now', '-365 day')
   `).get(h.name) as any);
+  // Costo fino ai 2 anni: se non e' dato, allevamento + la monta del padre
+  // dal catalogo; se il padre non c'e' nel catalogo serve che la monta la
+  // indichi l'utente, altrimenti il bilancio di carriera non si fa.
+  const feePadre = h.sire ? (db.prepare(`SELECT stud_fee_eur f FROM stallions WHERE name = ?`).get(h.sire) as any)?.f : null;
+  const montaPadre = montaData ?? (feePadre > 0 ? feePadre : null);
+  const ingresso = ingressoDato ?? (montaPadre != null ? IPOTESI.allevamento_fino_2_anni + montaPadre : null);
   const costoAnno = 12 * mensile;
-  const speso = costoCarriera(ingresso, mensile, h.s);
-  const bilancio = h.e - speso;
-  const tab = tabellaVoti(db, mensile, ingresso).voti.find(v => v.voto === h.grade);
+  const speso = ingresso != null ? costoCarriera(ingresso, mensile, h.s) : null;
+  const bilancio = speso != null ? h.e - speso : null;
+  const tab = ingresso != null ? tabellaVoti(db, mensile, ingresso).voti.find(v => v.voto === h.grade) : undefined;
   return {
-    nome: h.name, anno: h.birth_year, voto: h.grade,
+    nome: h.name, anno: h.birth_year, voto: h.grade, padre: h.sire ?? null,
+    ingresso: ingresso != null ? Math.round(ingresso) : null,
+    monta: ingressoDato != null ? null : (montaPadre != null ? Math.round(montaPadre) : null),
+    monta_da_catalogo: ingressoDato == null && montaData == null && feePadre > 0,
+    monta_sconosciuta: ingresso == null,
     voto_da_corsa: h.rating_mode === "performance",
     gare: h.gare, stagioni: h.s, guadagni_carriera: Math.round(h.e),
     ultimi_12_mesi: { guadagni: Math.round(ultimi12.g), gare: ultimi12.n, ultima_gara: ultimi12.ultima },
@@ -211,7 +221,7 @@ export function valutaCavallo(db: Database.Database, nome: string, anno: number 
       esito: ultimi12.n === 0 ? null : esito(ultimi12.g - costoAnno, costoAnno),
     },
     // Decisione 2: il bilancio di tutta la carriera fin qui.
-    carriera: {
+    carriera: speso == null || bilancio == null ? null : {
       speso_stimato: Math.round(speso),
       bilancio: Math.round(bilancio),
       esito: esito(bilancio, speso),
@@ -227,7 +237,11 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
                                mensile: number, montaOverride: number | null) {
   const b = datiBase(db);
   const s = db.prepare(`SELECT name, stud_fee_eur f FROM stallions WHERE name = ?`).get(padre) as any;
-  const monta = montaOverride ?? (s?.f > 0 ? s.f : null) ?? b.montaMediana;
+  // Se la monta non e' nel catalogo e non la indica l'utente, non la si
+  // inventa: si calcola con monta zero cio' che non dipende dal prezzo
+  // (guadagno atteso, monta massima) e il resto resta vuoto.
+  const montaNota = montaOverride ?? (s?.f > 0 ? s.f : null);
+  const monta = montaNota ?? 0;
   const montaDaCatalogo = montaOverride == null && s?.f > 0;
   const ingresso = IPOTESI.allevamento_fino_2_anni + monta;
 
@@ -273,17 +287,20 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
     return t + x.p * media(c.map(y => costoCarriera(ingresso, mensile, y.s)));
   }, 0) + prob.NON_CORSO * costoNonCorso;
 
+  const ignoto = montaNota == null;
   return {
-    padre, madre, monta: Math.round(monta), monta_da_catalogo: montaDaCatalogo,
-    ingresso: Math.round(ingresso),
+    padre, madre, monta: ignoto ? null : Math.round(monta), monta_da_catalogo: montaDaCatalogo,
+    monta_sconosciuta: ignoto,
+    ingresso: ignoto ? null : Math.round(ingresso),
+    guadagno_atteso: Math.round(utileAtteso + costoAtteso),
     figli_osservati: { padre: nPadre, madre: nMadre },
     affidabilita: Math.round(100 * n / (n + k)) / 100,
     probabilita: [...esiti.map(x => ({ voto: x.voto, p: Math.round(1000 * x.p) / 10 })),
                   { voto: "Non corre", p: Math.round(1000 * prob.NON_CORSO) / 10 }],
-    costo_atteso: Math.round(costoAtteso),
-    utile_atteso: Math.round(utileAtteso),
-    prob_profitto: Math.round(1000 * probProfitto) / 10,
-    esito: esito(utileAtteso, costoAtteso),
+    costo_atteso: ignoto ? null : Math.round(costoAtteso),
+    utile_atteso: ignoto ? null : Math.round(utileAtteso),
+    prob_profitto: ignoto ? null : Math.round(1000 * probProfitto) / 10,
+    esito: ignoto ? null : esito(utileAtteso, costoAtteso),
     // La monta pesa euro per euro su ogni esito: il prezzo che azzera
     // l'utile atteso e' quello attuale piu' l'utile atteso.
     monta_massima_di_pareggio: Math.round(monta + utileAtteso),

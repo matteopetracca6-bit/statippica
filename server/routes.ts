@@ -146,10 +146,14 @@ export function registerRoutes(httpServer: Server, app: Express) {
       if (!nome) return res.status(400).json({ message: "manca il nome" });
       const anno = numero(req.query.anno, 0, 1990, 2100) || null;
       const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
-      const ingresso = numero(req.query.ingresso, ip.allevamento_fino_2_anni + ip.monta_mediana, 0, 2_000_000);
-      const r = valutaCavallo(db, nome, anno, mensile, ingresso);
+      // L'ingresso arriva gia' fatto dalla scheda Punto di pareggio; dalla
+      // scheda del cavallo arriva al massimo la monta, se l'utente la indica.
+      const ingresso = req.query.ingresso != null && req.query.ingresso !== "" ? numero(req.query.ingresso, NaN, 0, 2_000_000) : null;
+      const monta = req.query.monta != null && req.query.monta !== "" ? numero(req.query.monta, NaN, 0, 500_000) : null;
+      const r = valutaCavallo(db, nome, anno, mensile,
+        Number.isFinite(ingresso as number) ? ingresso : null, Number.isFinite(monta as number) ? monta : null);
       if (!r) return res.status(404).json({ message: "cavallo non trovato" });
-      res.json({ mensile, ingresso, ...r });
+      res.json({ mensile, ...r });
     } finally {
       db.close();
     }
