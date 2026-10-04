@@ -379,7 +379,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/horse/:name/:year
   // ──────────────────────────────────────────────
-  app.get("/api/horse/:name/:year", (req, res) => {
+  app.get("/api/horse/:name/:year", async (req, res) => {
     const name = decodeURIComponent(req.params.name).toUpperCase();
     const year = parseInt(req.params.year);
     const db = getDb();
@@ -457,13 +457,26 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // anziane non compaiono nell'archivio corse.
       const vp = vpAncestorMap(db, name);
 
+      // Stesso albero della pagina Pedigree (genealogia propria di padre e
+      // madre compresa). Se la fonte non ha ancora la genealogia la si chiede,
+      // ma senza far aspettare la scheda piu' di qualche secondo.
+      await Promise.race([completaGenealogia(db, name), new Promise(r => setTimeout(r, 4000))]);
+      const { tree: alberoIntero } = alberoGenealogico(db, name);
+      const nome = (x: any) => (x && x.name) || null;
+      // L'albero cerca il cavallo per nome: con un omonimo di un'altra annata
+      // i genitori potrebbero essere diversi, e allora non lo si usa.
+      const stesso = (a: any, b: any) => !b || !a || String(a).trim().toUpperCase() === String(b).trim().toUpperCase();
+      const albero = alberoIntero ? {
+        sire: stesso(nome(alberoIntero.sire), horse.sire) ? alberoIntero.sire : null,
+        dam:  stesso(nome(alberoIntero.dam),  horse.dam)  ? alberoIntero.dam  : null,
+      } : null;
       const pedigree = {
-        sire:      horse.sire || vp.get("p") || null,
-        dam:       horse.dam  || vp.get("m") || null,
-        sire_sire: pedigreeRow?.sire_sire || pedigreeRow?.sire_unire_sire || spSire?.sire || vp.get("pp") || null,
-        sire_dam:  pedigreeRow?.sire_dam  || pedigreeRow?.sire_unire_dam  || spSire?.dam  || vp.get("mp") || null,
-        dam_sire:  pedigreeRow?.dam_sire  || pedigreeRow?.dam_unire_sire  || spDam?.sire  || vp.get("pm") || null,
-        dam_dam:   pedigreeRow?.dam_dam   || pedigreeRow?.dam_unire_dam   || spDam?.dam   || vp.get("mm") || null,
+        sire:      horse.sire || nome(albero?.sire) || vp.get("p") || null,
+        dam:       horse.dam  || nome(albero?.dam)  || vp.get("m") || null,
+        sire_sire: nome(albero?.sire?.sire) || pedigreeRow?.sire_sire || pedigreeRow?.sire_unire_sire || spSire?.sire || vp.get("pp") || null,
+        sire_dam:  nome(albero?.sire?.dam)  || pedigreeRow?.sire_dam  || pedigreeRow?.sire_unire_dam  || spSire?.dam  || vp.get("mp") || null,
+        dam_sire:  nome(albero?.dam?.sire)  || pedigreeRow?.dam_sire  || pedigreeRow?.dam_unire_sire  || spDam?.sire  || vp.get("pm") || null,
+        dam_dam:   nome(albero?.dam?.dam)   || pedigreeRow?.dam_dam   || pedigreeRow?.dam_unire_dam   || spDam?.dam   || vp.get("mm") || null,
       };
 
       /* Valore residuo di carriera.
@@ -1542,6 +1555,107 @@ export function registerRoutes(httpServer: Server, app: Express) {
     } finally { db.close(); }
   });
 
+  /**
+   * Albero genealogico di un cavallo, lo stesso per la pagina Pedigree e per
+   * la scheda del singolo cavallo. Prima la scheda ricostruiva i nonni per
+   * conto suo, senza guardare la genealogia propria del padre e della madre:
+   * per circa un cavallo su dieci mostrava caselle vuote che nella pagina
+   * Pedigree erano piene.
+   */
+  function alberoGenealogico(db: any, name: string): { tree: any; vp: Map<string, string>; MAX_GEN: number } {
+    // Build pedigree tree recursively (4 generations)
+    // I nomi nell'archivio sono gia' maiuscoli e senza spazi ai bordi, quindi
+    // il confronto diretto usa l'indice: ripulirli con UPPER/TRIM obbligava
+    // a leggere tutti i 23.000 cavalli per ogni casella dell'albero.
+    const horseStmt = db.prepare(`
+      SELECT name, birth_year, sire, dam, sex, country, career_earnings, career_wins, career_races
+      FROM horses WHERE name = ? ORDER BY birth_year DESC LIMIT 1
+    `);
+    const horseCache = new Map<string, any>();
+
+    function getHorse(n: string): any {
+      if (!n) return null;
+      const key = n.trim().toUpperCase();
+      if (horseCache.has(key)) return horseCache.get(key);
+      const h = (horseStmt.get(key) as any)
+        || { name: key, birth_year: null, sire: null, dam: null, missing: true };
+      horseCache.set(key, h);
+      return h;
+    }
+
+    // La seconda fonte conosce cinque generazioni per ogni cavallo, anche
+    // estero: la usiamo per riempire i rami che l'archivio corse non ha.
+    // Il percorso si legge da destra a sinistra (vedi vpAncestorMap), quindi
+    // la catena di passi va rovesciata prima di cercarla.
+    const vp = vpAncestorMap(db, name);
+    const MAX_GEN = 5;
+
+    // Se del soggetto non abbiamo l'albero della fonte, spesso ce l'abbiamo
+    // di un suo antenato: in quel caso da li' in poi il ramo si ricostruisce
+    // lo stesso, chiedendo a ogni casella chi sono i suoi genitori.
+    const mapCache = new Map<string, Map<string, string>>();
+    function mapOf(n: string): Map<string, string> {
+      const key = n.trim().toUpperCase();
+      let m = mapCache.get(key);
+      if (!m) { m = vpAncestorMap(db, key); mapCache.set(key, m); }
+      return m;
+    }
+    mapCache.set(name, vp);
+
+    /**
+     * `srcName` e' il cavallo la cui genealogia stiamo usando per riempire
+     * i buchi, `srcChain` il percorso da lui fino a questa casella. Se per
+     * la casella corrente la fonte ha una sua genealogia, da li' in poi si
+     * usa quella: cosi' l'albero si completa anche quando del soggetto di
+     * partenza non sappiamo nulla ma di suo nonno si'.
+     */
+    function buildTree(n: string, depth: number, chain: string, srcName: string, srcChain: string): any {
+      if (depth > MAX_GEN || !n) return null;
+      const h = getHorse(n);
+      if (!h) return null;
+
+      const own = mapOf(h.name || n);
+      let useName = srcName, useChain = srcChain;
+      if (own.size > 0) { useName = (h.name || n); useChain = ""; }
+      const srcMap = useName === name ? vp : mapOf(useName);
+
+      const sireName = h.sire || srcMap.get(vpPath(useChain + "p")) || null;
+      const damName  = h.dam  || srcMap.get(vpPath(useChain + "m")) || null;
+      return {
+        name: h.name,
+        birth_year: h.birth_year,
+        sex: h.sex ?? (depth > 0 ? (chain.slice(-1) === "p" ? "M" : "F") : null),
+        country: h.country,
+        career_earnings: h.career_earnings,
+        career_wins: h.career_wins,
+        career_races: h.career_races,
+        sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p") : null,
+        dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m") : null,
+        missing: h.missing || false,
+        from_source: !!h.missing,
+      };
+    }
+
+    const tree = buildTree(name, 0, "", name, "");
+    if (!tree) return { tree: null, vp, MAX_GEN };
+    if (!tree.sire && vp.get("p")) tree.sire = buildTree(vp.get("p")!, 1, "p", name, "p");
+    if (!tree.dam && vp.get("m")) tree.dam = buildTree(vp.get("m")!, 1, "m", name, "m");
+    return { tree, vp, MAX_GEN };
+  }
+
+  /** Chiede alla fonte la genealogia del cavallo e dei genitori, se manca. */
+  async function completaGenealogia(db: any, name: string) {
+    try {
+      await ensureGenealogy(DB_PATH, name);
+      const parents = db.prepare(
+        "SELECT sire, dam FROM horses WHERE name = ? ORDER BY birth_year DESC LIMIT 1"
+      ).get(name) as any;
+      for (const parent of [parents?.sire, parents?.dam]) {
+        if (parent) { try { await ensureGenealogy(DB_PATH, parent); } catch { /* si prosegue */ } }
+      }
+    } catch { /* si prosegue lo stesso */ }
+  }
+
   // ──────────────────────────────────────────────
   // GET /api/pedigree/:name — albero genealogico 4 generazioni + inbreeding
   // ──────────────────────────────────────────────
@@ -1549,100 +1663,14 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const name = decodeURIComponent(req.params.name).toUpperCase().trim();
     const db = getDb();
     try {
-      // Se di questo cavallo non abbiamo ancora l'albero della seconda fonte,
-      // proviamo a chiederlo adesso: e' l'unico modo per avere il pedigree
-      // completo di un soggetto prima che ci arrivi la pipeline notturna.
-      try {
-        await ensureGenealogy(DB_PATH, name);
-        // Se del soggetto la fonte non sa nulla, proviamo con i suoi genitori:
-        // basta l'albero del padre o della madre per completare mezzo pedigree.
-        const parents = db.prepare(
-          "SELECT sire, dam FROM horses WHERE name = ? ORDER BY birth_year DESC LIMIT 1"
-        ).get(name) as any;
-        for (const parent of [parents?.sire, parents?.dam]) {
-          if (parent) { try { await ensureGenealogy(DB_PATH, parent); } catch { /* si prosegue */ } }
-        }
-      } catch { /* si prosegue lo stesso */ }
+      // Se di questo cavallo (o dei genitori) manca l'albero della seconda
+      // fonte, proviamo a chiederlo adesso.
+      await completaGenealogia(db, name);
 
-      // Build pedigree tree recursively (4 generations)
-      // I nomi nell'archivio sono gia' maiuscoli e senza spazi ai bordi, quindi
-      // il confronto diretto usa l'indice: ripulirli con UPPER/TRIM obbligava
-      // a leggere tutti i 23.000 cavalli per ogni casella dell'albero.
-      const horseStmt = db.prepare(`
-        SELECT name, birth_year, sire, dam, sex, country, career_earnings, career_wins, career_races
-        FROM horses WHERE name = ? ORDER BY birth_year DESC LIMIT 1
-      `);
-      const horseCache = new Map<string, any>();
-
-      function getHorse(n: string): any {
-        if (!n) return null;
-        const key = n.trim().toUpperCase();
-        if (horseCache.has(key)) return horseCache.get(key);
-        const h = (horseStmt.get(key) as any)
-          || { name: key, birth_year: null, sire: null, dam: null, missing: true };
-        horseCache.set(key, h);
-        return h;
-      }
-
-      // La seconda fonte conosce cinque generazioni per ogni cavallo, anche
-      // estero: la usiamo per riempire i rami che l'archivio corse non ha.
-      // Il percorso si legge da destra a sinistra (vedi vpAncestorMap), quindi
-      // la catena di passi va rovesciata prima di cercarla.
-      const vp = vpAncestorMap(db, name);
-      const MAX_GEN = 5;
-
-      // Se del soggetto non abbiamo l'albero della fonte, spesso ce l'abbiamo
-      // di un suo antenato: in quel caso da li' in poi il ramo si ricostruisce
-      // lo stesso, chiedendo a ogni casella chi sono i suoi genitori.
-      const mapCache = new Map<string, Map<string, string>>();
-      function mapOf(n: string): Map<string, string> {
-        const key = n.trim().toUpperCase();
-        let m = mapCache.get(key);
-        if (!m) { m = vpAncestorMap(db, key); mapCache.set(key, m); }
-        return m;
-      }
-      mapCache.set(name, vp);
-
-      /**
-       * `srcName` e' il cavallo la cui genealogia stiamo usando per riempire
-       * i buchi, `srcChain` il percorso da lui fino a questa casella. Se per
-       * la casella corrente la fonte ha una sua genealogia, da li' in poi si
-       * usa quella: cosi' l'albero si completa anche quando del soggetto di
-       * partenza non sappiamo nulla ma di suo nonno si'.
-       */
-      function buildTree(n: string, depth: number, chain: string, srcName: string, srcChain: string): any {
-        if (depth > MAX_GEN || !n) return null;
-        const h = getHorse(n);
-        if (!h) return null;
-
-        const own = mapOf(h.name || n);
-        let useName = srcName, useChain = srcChain;
-        if (own.size > 0) { useName = (h.name || n); useChain = ""; }
-        const srcMap = useName === name ? vp : mapOf(useName);
-
-        const sireName = h.sire || srcMap.get(vpPath(useChain + "p")) || null;
-        const damName  = h.dam  || srcMap.get(vpPath(useChain + "m")) || null;
-        return {
-          name: h.name,
-          birth_year: h.birth_year,
-          sex: h.sex ?? (depth > 0 ? (chain.slice(-1) === "p" ? "M" : "F") : null),
-          country: h.country,
-          career_earnings: h.career_earnings,
-          career_wins: h.career_wins,
-          career_races: h.career_races,
-          sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p") : null,
-          dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m") : null,
-          missing: h.missing || false,
-          from_source: !!h.missing,
-        };
-      }
-
-      const tree = buildTree(name, 0, "", name, "");
+      const { tree, vp, MAX_GEN } = alberoGenealogico(db, name);
       if (!tree) {
         return res.status(404).json({ error: "Cavallo non trovato" });
       }
-      if (!tree.sire && vp.get("p")) tree.sire = buildTree(vp.get("p")!, 1, "p", name, "p");
-      if (!tree.dam && vp.get("m")) tree.dam = buildTree(vp.get("m")!, 1, "m", name, "m");
 
       // Compute inbreeding coefficient (Wright's formula)
       // Walk sire side and dam side separately, collecting ancestors with generation depth
