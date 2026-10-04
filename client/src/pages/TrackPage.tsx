@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { ArrowLeft } from "lucide-react";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
+import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 40%)";
@@ -86,25 +87,17 @@ export default function TrackPage() {
           <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
             Il numero di partenza su questa pista
           </div>
-          <div style={{ display: "flex", gap: "6px", alignItems: "flex-end", height: "140px", marginBottom: "8px" }}>
-            {t.partenze.map((p: any) => (
-              <div key={p.start_pos} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
-                <div className="tabular" style={{ fontSize: "10.5px", fontWeight: 700, color: "hsl(210 10% 78%)" }}>
-                  {p.pct_primi_tre.toFixed(0)}%
-                </div>
-                <div style={{
-                  width: "100%",
-                  height: `${Math.max(3, (p.pct_primi_tre / maxPrimi) * 100)}px`,
-                  background: p.start_pos <= 5 ? "hsl(183 70% 45%)" : p.start_pos <= 8 ? "hsl(45 75% 50%)" : "hsl(15 70% 50%)",
-                  borderRadius: "3px 3px 0 0",
-                }} />
-                <div style={{ fontSize: "10.5px", color: DIM, fontWeight: 600 }}>{p.start_pos}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize: "11px", color: DIM, textAlign: "center" }}>
-            quota di piazzamenti nei primi tre, per numero di partenza
-          </div>
+          <GraficoColonne
+            altezza={150}
+            formatoGuida={v => `${v.toFixed(0)}%`}
+            nomeAsse="quota di piazzamenti nei primi tre, per numero di partenza"
+            dati={t.partenze.map((p: any) => ({
+              chiave: p.start_pos, etichetta: String(p.start_pos), valore: p.pct_primi_tre,
+              testo: `${p.pct_primi_tre.toFixed(0)}%`,
+              colore: p.start_pos <= 5 ? COLORI_GRAFICO.quantita : p.start_pos <= 8 ? COLORI_GRAFICO.medio : COLORI_GRAFICO.scarso,
+              scheda: [{ testo: `Numero ${p.start_pos}` }, { testo: `${p.pct_primi_tre.toFixed(1).replace(".", ",")}% nei primi tre` }],
+            }))}
+          />
           {t.vantaggio_interno != null && (
             <div style={{ marginTop: "12px", fontSize: "12.5px", color: MUTED, lineHeight: 1.65 }}>
               Su questa pista partire dai primi tre numeri vale{" "}
@@ -172,17 +165,15 @@ export default function TrackPage() {
           <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
             Gare all'anno
           </div>
-          <div style={{ display: "flex", gap: "4px", alignItems: "flex-end", height: "80px" }}>
-            {t.anni.map((a: any) => {
-              const max = Math.max(...t.anni.map((x: any) => x.n_gare), 1);
-              return (
-                <div key={a.anno} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                  <div style={{ width: "100%", height: `${Math.max(2, (a.n_gare / max) * 58)}px`, background: "hsl(183 60% 38%)", borderRadius: "2px 2px 0 0" }} />
-                  <div style={{ fontSize: "9px", color: DIM }}>{String(a.anno).slice(2)}</div>
-                </div>
-              );
-            })}
-          </div>
+          <GraficoColonne
+            altezza={120}
+            formatoGuida={v => Math.round(v).toLocaleString("it-IT")}
+            dati={t.anni.map((a: any) => ({
+              chiave: a.anno, etichetta: `'${String(a.anno).slice(2)}`, valore: a.n_gare,
+              testo: String(a.n_gare),
+              scheda: [{ testo: String(a.anno) }, { testo: `${a.n_gare} gare` }],
+            }))}
+          />
         </div>
       )}
     </div>

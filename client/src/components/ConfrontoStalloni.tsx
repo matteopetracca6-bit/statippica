@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { STILE_SCHEDA } from "./GraficoColonne";
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, ZAxis } from "recharts";
 import { Scale, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -79,7 +80,7 @@ export default function ConfrontoStalloni() {
               <div style={{ height: "320px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
-                    <CartesianGrid stroke="hsl(220 10% 16%)" />
+                    <CartesianGrid stroke="hsl(220 10% 18%)" strokeDasharray="3 3" />
                     <XAxis type="number" dataKey="monta" scale="log" domain={[800, 40000]} ticks={[1000, 2000, 3000, 5000, 10000, 20000, 35000]} allowDataOverflow tickFormatter={k}
                       stroke={MUTED} fontSize={11} name="Monta"
                       label={{ value: "Prezzo della monta (scala logaritmica)", position: "insideBottom", offset: -18, fill: MUTED, fontSize: 11 }} />
@@ -90,7 +91,7 @@ export default function ConfrontoStalloni() {
                       const r = payload?.[0]?.payload as Riga | undefined;
                       if (!r) return null;
                       return (
-                        <div style={{ background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 22%)", borderRadius: "8px", padding: "8px 10px", fontSize: "12px", color: "hsl(210 10% 88%)" }}>
+                        <div style={STILE_SCHEDA}>
                           <b>{r.nome}</b><br />Monta {euro(r.monta)} · {r.figli} figli<br />
                           Vinto da un figlio {euro(r.guadagno_atteso)}<br />Utile atteso {euro(r.utile_atteso)} · in utile {r.prob_profitto}%
                         </div>

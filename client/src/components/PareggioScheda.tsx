@@ -7,6 +7,7 @@
  * Le ipotesi sono quelle tipiche della scheda Punto di pareggio (1.200 euro al
  * mese, monta dal catalogo o scritta dall'utente): li' si possono cambiare.
  */
+import Sagoma from "./Sagoma";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -74,7 +75,8 @@ export function PareggioCavallo({ nome, anno }: { nome: string; anno: number }) 
     staleTime: 30 * 60 * 1000,
     placeholderData: (prev: any) => prev,
   });
-  if (!d || d.message) return null;
+  if (!d) return <Sagoma cornice />;
+  if (d.message) return null;
   const chiedi = (d.monta_sconosciuta || montaScritta !== "") && !d.monta_da_catalogo;
   const campo = chiedi ? <CampoMonta valore={montaScritta} onChange={setMontaScritta} chi={d.padre ? `${d.padre} (il padre)` : "suo padre"} /> : null;
   if (!d.gare) {
@@ -133,7 +135,8 @@ export function PareggioStallone({ nome }: { nome: string }) {
     staleTime: 30 * 60 * 1000,
     placeholderData: (prev: any) => prev,
   });
-  if (!d || d.message || !d.figli_osservati?.padre) return null;
+  if (!d) return <Sagoma cornice />;
+  if (d.message || !d.figli_osservati?.padre) return null;
   const guadagno = d.guadagno_atteso;
   const chiedi = (d.monta_sconosciuta || montaScritta !== "") && !d.monta_da_catalogo;
   return (

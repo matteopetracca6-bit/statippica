@@ -7,6 +7,7 @@
  * dove vanno i soldi, e di quanto dovrebbe cambiare ogni voce da sola per
  * arrivare in pari.
  */
+import Sagoma from "./Sagoma";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ESITO_COLORE, coloreSegno } from "@/lib/esiti";
@@ -32,7 +33,7 @@ export default function PesoCosti({ mensile, monta, prezzo }: { mensile: number;
   if (!qs) {
     return <p style={{ fontSize: "12.5px", color: ESITO_COLORE.pareggio, margin: 0 }}>Scrivi il prezzo della monta in «Le tue ipotesi» per vedere quanto pesa ogni costo.</p>;
   }
-  if (!d || (d as any).message) return <p style={{ fontSize: "12.5px", color: MUTED, margin: 0 }}>Calcolo...</p>;
+  if (!d || (d as any).message) return <Sagoma riquadri={3} righe={5} />;
 
   const costi = d.voci.filter(v => !v.ricavo).sort((a, b) => b.valore - a.valore);
   const max = Math.max(...d.voci.map(v => v.effetto), 1);

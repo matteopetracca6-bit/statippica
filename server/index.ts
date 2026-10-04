@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express, { Response, NextFunction } from 'express';
 import type { Request } from 'express';
+import { attivaPuntoMigliaia } from "../shared/migliaia";
+attivaPuntoMigliaia();
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "node:http";

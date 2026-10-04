@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getFlag } from "@/lib/flags";
 import GradeBadge from "../components/GradeBadge";
+import { COLORE_VOTO } from "@/lib/coloreVoto";
 import { ArrowLeft, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatRecord } from "@/lib/record";
 
@@ -362,45 +363,75 @@ export default function StallionPage() {
 
       {!isSearch && !isLoading && stallion && (
         <>
-          {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "6px", flexWrap: "wrap" }}>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "hsl(210 10% 94%)", letterSpacing: "0.04em", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-              {getFlag(stallion.nationality, stallion.sire)} {stallion.sire}
-            </h1>
-            {stallion.grade && (
-              <GradeBadge grade={stallion.grade} size="lg" />
-            )}
-          </div>
-          <div style={{ fontSize: "13px", color: "hsl(210 8% 50%)", marginBottom: "24px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <span>{stallion.n_figli_totali} prodotti totali</span>
-            <span>·</span>
-            <span>{stallion.n_in_corsa} in corsa</span>
-            {stallion.stud?.stud_fee_eur ? (
-              <>
-                <span>·</span>
-                <span style={{ color: "hsl(51 80% 60%)" }}>Monta €{stallion.stud.stud_fee_eur.toLocaleString("it-IT")}</span>
-              </>
-            ) : stallion.stud?.stud_status === "free" ? (
-              <>
-                <span>·</span>
-                <span style={{ color: "hsl(150 45% 55%)" }}>Monta gratuita</span>
-              </>
-            ) : stallion.stud?.stud_status === "da_concordare" ? (
-              <>
-                <span>·</span>
-                <span style={{ color: "hsl(40 70% 55%)" }}>Monta da concordare</span>
-              </>
-            ) : null}
-            {stallion.stud?.stud_farm && (
-              <>
-                <span>·</span>
-                <span>{stallion.stud.stud_farm}</span>
-              </>
-            )}
-            {stallion.no_offspring_data && (
-              <span style={{ color: "hsl(40 60% 55%)" }}>· Dati prodotti non ancora disponibili</span>
-            )}
-          </div>
+          {/* Intestazione, uguale a quella della scheda cavallo: striscia
+              col colore del voto, nome, e una fila di numeri chiave. */}
+          {(() => {
+            const migliore = [...(stallion.children ?? [])].sort((a, b) => (b.career_earnings ?? 0) - (a.career_earnings ?? 0))[0];
+            const st = stallion.stud;
+            const monta = st?.stud_fee_eur
+              ? { testo: `€${st.stud_fee_eur.toLocaleString("it-IT")}`, colore: "hsl(51 90% 62%)" }
+              : st?.stud_status === "free" ? { testo: "gratuita", colore: "hsl(150 45% 55%)" }
+                : st?.stud_status === "da_concordare" ? { testo: "da concordare", colore: "hsl(40 70% 55%)" }
+                  : { testo: "non in catalogo", colore: "hsl(210 8% 55%)" };
+            const euro = (n?: number | null) => (n != null ? `€${Math.round(n).toLocaleString("it-IT")}` : "—");
+            return (
+              <div className="testata-cavallo" style={{ ["--colore-voto" as any]: COLORE_VOTO[stallion.grade ?? ""] ?? "hsl(220 10% 30%)" }}>
+                <div className="testata-alto">
+                  {stallion.grade && <GradeBadge grade={stallion.grade} size="lg" />}
+                  <div style={{ flex: 1, minWidth: "200px" }}>
+                    <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 95%)", letterSpacing: "0.03em", margin: "0 0 4px", display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "20px" }}>{getFlag(stallion.nationality, stallion.sire)}</span>
+                      {stallion.sire}
+                    </h1>
+                    <div style={{ fontSize: "13px", color: "hsl(210 8% 55%)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      <span>Stallone</span>
+                      {st?.stud_farm && <><span>·</span><span>{st.stud_farm}</span></>}
+                      {stallion.final_score != null && <><span>·</span><span className="tabular">Score {stallion.final_score.toFixed(1)}</span></>}
+                      {stallion.affidabilita_txt && <><span>·</span><span>affidabilità {stallion.affidabilita_txt}</span></>}
+                    </div>
+                    {stallion.pedigree?.sire && (
+                      <div style={{ fontSize: "12.5px", color: "hsl(210 8% 50%)", marginTop: "6px" }}>
+                        {stallion.pedigree.sire}{stallion.pedigree.dam ? <> × {stallion.pedigree.dam}</> : null}
+                      </div>
+                    )}
+                    {stallion.no_offspring_data && (
+                      <div style={{ fontSize: "12.5px", color: "hsl(40 60% 55%)", marginTop: "6px" }}>Dati dei figli non ancora disponibili</div>
+                    )}
+                  </div>
+                </div>
+                <div className="testata-dati">
+                  <div>
+                    <div className="valore">{stallion.n_figli_totali ?? "—"}</div>
+                    {stallion.n_in_corsa != null && <div className="sotto">{stallion.n_in_corsa} in corsa</div>}
+                    <div className="etichetta">Figli</div>
+                  </div>
+                  <div>
+                    <div className="valore" style={{ color: "hsl(51 90% 62%)" }}>{euro(stallion.avg_earnings)}</div>
+                    <div className="etichetta">Guadagno medio di un figlio</div>
+                  </div>
+                  <div>
+                    <div className="valore">{stallion.avg_win_rate != null ? `${stallion.avg_win_rate.toFixed(1).replace(".", ",")}%` : "—"}</div>
+                    <div className="etichetta">Corse vinte dai figli</div>
+                  </div>
+                  <div>
+                    {migliore ? (
+                      <Link href={`/horse/${encodeURIComponent(migliore.name)}/${migliore.birth_year}`}>
+                        <a style={{ textDecoration: "none" }}>
+                          <div className="valore" style={{ fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{migliore.name}</div>
+                          <div className="sotto">{euro(migliore.career_earnings)}</div>
+                        </a>
+                      </Link>
+                    ) : <div className="valore">—</div>}
+                    <div className="etichetta">Figlio migliore</div>
+                  </div>
+                  <div>
+                    <div className="valore" style={{ color: monta.colore, fontSize: st?.stud_fee_eur ? undefined : "15px" }}>{monta.testo}</div>
+                    <div className="etichetta">Monta</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Scheda monta: dati del catalogo stalloni della stagione */}
           {stallion.stud && (stallion.stud.stud_farm_address || stallion.stud.record_1600

@@ -7,6 +7,7 @@ import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getFlag, KNOWN_STALLION_NATIONALITY, COUNTRY_FLAG } from "@/lib/flags";
+import { COLORE_VOTO } from "@/lib/coloreVoto";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin } from "lucide-react";
@@ -157,11 +158,6 @@ function PercentileBar({ label, value }: { label: string; value: number | null }
   );
 }
 
-// Colore della striscia a sinistra dell'intestazione: quello del voto.
-const COLORE_VOTO: Record<string, string> = {
-  SSS: "hsl(51 100% 55%)", SS: "hsl(0 0% 80%)", S: "hsl(30 80% 60%)", A: "hsl(183 70% 50%)",
-  B: "hsl(100 50% 50%)", C: "hsl(25 60% 50%)", D: "hsl(40 5% 45%)", E: "hsl(40 4% 35%)", F: "hsl(40 3% 28%)",
-};
 
 function NavArrow({ direction, neighbor, onClick }: {
   direction: "prev" | "next";

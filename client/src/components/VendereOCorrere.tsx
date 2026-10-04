@@ -13,6 +13,7 @@
  * davvero all'asta per quel puledro. Le aste dei figli del padre sono solo
  * un riferimento, da usare con un clic.
  */
+import Sagoma from "./Sagoma";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -80,6 +81,7 @@ export default function VendereOCorrere({ nome, anno, mensile = 1200, inScheda =
     staleTime: 30 * 60 * 1000,
     placeholderData: (prev: any) => prev,
   });
+  if (inScheda && !d && (!!nome || !!padre)) return <Sagoma cornice />;
   if (inScheda && (!d || (d as any).message)) return null;
 
   const t = d?.tenere;

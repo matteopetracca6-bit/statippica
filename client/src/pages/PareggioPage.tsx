@@ -15,10 +15,12 @@
  * Tutti i conti stanno sul server (server/pareggio.ts): qui si scelgono le
  * ipotesi e si leggono i risultati.
  */
+import Sagoma from "../components/Sagoma";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Scale } from "lucide-react";
+import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 import GradeBadge from "../components/GradeBadge";
 import NameSelect from "../components/NameSelect";
 import VendereOCorrere, { MercatoStalloni } from "../components/VendereOCorrere";
@@ -275,7 +277,7 @@ export default function PareggioPage() {
           </p>
           <NameSelect value={cavallo?.nome ?? ""} endpoint="/api/search/horse" placeholder="Scegli un cavallo"
                       onChange={(nome, o) => setCavallo(nome ? { nome, anno: o?.birth_year ?? null } : null)} />
-          {cvCarica && <p style={{ color: MUTED, fontSize: "12.5px" }}>Calcolo...</p>}
+          {cvCarica && <Sagoma riquadri={3} />}
           {cv && !cvCarica && (
             <div style={{ marginTop: "14px", display: "grid", gap: "10px" }}>
               <div style={{ fontSize: "13px", color: "hsl(210 10% 88%)" }}>
@@ -325,7 +327,7 @@ export default function PareggioPage() {
                      onChange={e => setMontaIncrocio(e.target.value)} />
             </label>
           </div>
-          {incCarica && <p style={{ color: MUTED, fontSize: "12.5px" }}>Calcolo...</p>}
+          {incCarica && <Sagoma riquadri={3} grafico={110} />}
           {inc && !incCarica && (
             <div style={{ marginTop: "14px", display: "grid", gap: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
@@ -349,14 +351,18 @@ export default function PareggioPage() {
                 <Riquadro titolo="Monta massima" valore={inc.monta_massima_di_pareggio > 0 ? euro(inc.monta_massima_di_pareggio) : "nessuna"}
                   nota={inc.monta_massima_di_pareggio > 0 ? "prezzo della monta che porta l'utile atteso a zero" : "non va in pari neanche con la monta gratis"} />
               </div>
-              <div style={{ display: "flex", gap: "3px", alignItems: "flex-end", height: "70px" }}>
-                {inc.probabilita.map((p: any) => (
-                  <div key={p.voto} style={{ flex: 1, textAlign: "center" }} title={`${p.voto}: ${p.p}%`}>
-                    <div style={{ height: `${Math.max(2, p.p * 2.2)}px`, background: p.voto === "Non corre" ? "hsl(0 0% 35%)" : "hsl(160 60% 45%)", borderRadius: "3px 3px 0 0" }} />
-                    <div style={{ fontSize: "10px", color: MUTED, marginTop: "3px" }}>{p.voto === "Non corre" ? "no" : p.voto}</div>
-                    <div style={{ fontSize: "10px", color: "hsl(210 10% 80%)" }}>{Math.round(p.p)}%</div>
-                  </div>
-                ))}
+              <div style={{ marginTop: "14px" }}>
+                <GraficoColonne
+                  altezza={130}
+                  colore={COLORI_GRAFICO.buono}
+                  nomeAsse="probabilità del voto del puledro · grigio: non arriva a correre"
+                  dati={inc.probabilita.map((p: any) => ({
+                    chiave: p.voto, etichetta: p.voto === "Non corre" ? "no" : p.voto, valore: p.p,
+                    testo: `${Math.round(p.p)}%`,
+                    colore: p.voto === "Non corre" ? COLORI_GRAFICO.spento : undefined,
+                    scheda: [{ testo: p.voto === "Non corre" ? "Non corre" : `Voto ${p.voto}` }, { testo: `${p.p.toLocaleString("it-IT")}% dei puledri` }],
+                  }))}
+                />
               </div>
             </div>
           )}

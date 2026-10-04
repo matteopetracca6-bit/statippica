@@ -12,6 +12,7 @@ import { ArrowLeft, MapPin } from "lucide-react";
 import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
+import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 40%)";
@@ -143,20 +144,17 @@ export default function DriverPage() {
           <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
             Andamento negli anni
           </div>
-          <div style={{ display: "flex", gap: "5px", alignItems: "flex-end", height: "90px", marginBottom: "8px" }}>
-            {d.anni.map((a: any) => {
-              const max = Math.max(...d.anni.map((x: any) => x.pct_primi_tre || 0), 1);
-              return (
-                <div key={a.anno} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                  <div style={{ fontSize: "9.5px", color: MUTED }}>{(a.pct_primi_tre ?? 0).toFixed(0)}%</div>
-                  <div style={{
-                    width: "100%", height: `${Math.max(3, ((a.pct_primi_tre || 0) / max) * 62)}px`,
-                    background: "hsl(183 70% 42%)", borderRadius: "3px 3px 0 0",
-                  }} />
-                  <div style={{ fontSize: "9.5px", color: DIM }}>{String(a.anno).slice(2)}</div>
-                </div>
-              );
-            })}
+          <div style={{ marginBottom: "8px" }}>
+            <GraficoColonne
+              altezza={130}
+              formatoGuida={v => `${v.toFixed(0)}%`}
+              dati={d.anni.map((a: any) => ({
+                chiave: a.anno, etichetta: `'${String(a.anno).slice(2)}`, valore: a.pct_primi_tre || 0,
+                testo: `${(a.pct_primi_tre ?? 0).toFixed(0)}%`,
+                scheda: [{ testo: String(a.anno) }, { testo: `${(a.pct_primi_tre ?? 0).toFixed(1).replace(".", ",")}% nei primi tre` },
+                  ...(a.n_gare != null ? [{ testo: `${a.n_gare} gare` }] : [])],
+              }))}
+            />
           </div>
           <div style={{ fontSize: "11px", color: DIM }}>
             Quota di gare chiuse nei primi tre, anno per anno. Solo gli anni con almeno

@@ -17,6 +17,7 @@ import { MapPin, Search, X } from "lucide-react";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 
 interface Track {
   track: string;
@@ -120,27 +121,18 @@ export default function TracksPage() {
             e' successo.
           </p>
 
-          <div style={{ display: "flex", gap: "6px", alignItems: "flex-end", height: "160px", marginBottom: "10px" }}>
-            {data.partenze.map(p => {
-              const h = (p.pct_primi_tre / maxPrimi) * 118;
-              // Il colore cambia dove il vantaggio finisce: dal sesto numero in
-              // poi la quota crolla, e si vede meglio se il grafico lo dice.
-              const col = p.start_pos <= 5 ? "hsl(183 70% 45%)"
-                : p.start_pos <= 8 ? "hsl(45 75% 50%)"
-                  : "hsl(15 70% 50%)";
-              return (
-                <div key={p.start_pos} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
-                  <div className="tabular" style={{ fontSize: "11px", fontWeight: 700, color: "hsl(210 10% 80%)" }}>
-                    {p.pct_primi_tre.toFixed(0)}%
-                  </div>
-                  <div style={{ width: "100%", height: `${Math.max(3, h)}px`, background: col, borderRadius: "3px 3px 0 0" }} />
-                  <div style={{ fontSize: "11px", color: DIM, fontWeight: 600 }}>{p.start_pos}</div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ fontSize: "11px", color: DIM, textAlign: "center", marginBottom: "12px" }}>
-            numero di partenza
+          <div style={{ marginBottom: "12px" }}>
+            <GraficoColonne
+              altezza={170}
+              formatoGuida={v => `${v.toFixed(0)}%`}
+              nomeAsse="numero di partenza · azzurro fino al 5, giallo fino all'8, arancio oltre"
+              dati={data.partenze.map((p: any) => ({
+                chiave: p.start_pos, etichetta: String(p.start_pos), valore: p.pct_primi_tre,
+                testo: `${p.pct_primi_tre.toFixed(0)}%`,
+                colore: p.start_pos <= 5 ? COLORI_GRAFICO.quantita : p.start_pos <= 8 ? COLORI_GRAFICO.medio : COLORI_GRAFICO.scarso,
+                scheda: [{ testo: `Numero ${p.start_pos}` }, { testo: `${p.pct_primi_tre.toFixed(1).replace(".", ",")}% nei primi tre` }],
+              }))}
+            />
           </div>
 
           <Spiegazione titolo="Come si legge, e cosa NON dice" compatta>

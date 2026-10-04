@@ -3,6 +3,7 @@ import { apiRequest } from "@/lib/queryClient";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { useState, useMemo } from "react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const GRADE_COLORS: Record<string, string> = {
@@ -242,60 +243,27 @@ export default function TrendsPage() {
                 devono correre, non perche&apos; il settore stia calando. Sono confrontabili fra
                 loro solo le colonne piene, cioe&apos; le annate che hanno concluso la carriera.
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
-                {data.earningsByYear.map((yr, idxAnno) => (
-                  <div
-                    key={yr.birth_year}
-                    onMouseEnter={() => setHoveredBar(`earn-${yr.birth_year}`)}
-                    onMouseLeave={() => setHoveredBar(null)}
-                    style={{
-                      flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
-                      gap: "4px", minWidth: 0, cursor: "pointer", position: "relative",
-                      opacity: hoveredBar && hoveredBar !== `earn-${yr.birth_year}` ? 0.4 : 1,
-                      transition: "opacity 0.2s",
-                    }}
-                  >
-                    {/* Tooltip */}
-                    {hoveredBar === `earn-${yr.birth_year}` && (
-                      <div style={{
-                        position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)",
-                        background: "hsl(220 14% 8%)", border: "1px solid hsl(220 10% 20%)",
-                        borderRadius: "8px", padding: "8px 12px", fontSize: "11px", whiteSpace: "nowrap",
-                        zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-                      }}>
-                        <div style={{ fontWeight: 700, color: "hsl(210 10% 85%)", marginBottom: "4px" }}>{yr.birth_year}</div>
-                        <div style={{ color: "hsl(51 70% 55%)" }}>€{fmt(yr.avg_earnings)} medi</div>
-                        <div style={{ color: "hsl(210 8% 55%)" }}>{yr.n_horses} cavalli</div>
-                        <div style={{ color: "hsl(210 8% 55%)" }}>{fmt(yr.avg_races)} gare medie</div>
-                        <div style={{ color: "hsl(100 50% 55%)" }}>{yr.avg_win_rate}% win rate</div>
-                        {yr.carriera_conclusa === false && (
-                          <div style={{ color: "hsl(51 60% 60%)", marginTop: "4px" }}>
-                            carriera non conclusa: {yr.eta} anni
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <span className="tabular" style={{ fontSize: "10px", color: "hsl(51 70% 55%)", fontWeight: 700 }}>
-                      €{fmtK(yr.avg_earnings)}
-                    </span>
-                    <div className="barra-su" style={{
-                      animationDelay: `${Math.min(idxAnno, 14) * 45}ms`,
-                      width: "100%", height: `${(yr.avg_earnings / maxEarnings) * 200}px`,
-                      // Colonna piena = carriera conclusa, quindi confrontabile.
-                      // Colonna a tratteggio = annata ancora in corsa.
-                      background: yr.carriera_conclusa === false
-                        ? "repeating-linear-gradient(135deg, hsl(51 40% 40%) 0 5px, transparent 5px 10px)"
-                        : hoveredBar === `earn-${yr.birth_year}`
-                          ? "linear-gradient(180deg, hsl(51 90% 60%), hsl(30 80% 50%))"
-                          : "linear-gradient(180deg, hsl(51 80% 55%), hsl(30 70% 45%))",
-                      border: yr.carriera_conclusa === false ? "1px solid hsl(51 40% 35%)" : "none",
-                      borderRadius: "4px 4px 0 0",
-                      transition: "background 0.2s, height 0.4s ease",
-                    }} />
-                    <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yr.birth_year}</span>
-                  </div>
-                ))}
-              </div>
+              <GraficoColonne
+                altezza={260}
+                colore={COLORI_GRAFICO.euro}
+                formatoGuida={v => `€${fmtK(v)}`}
+                nomeAsse="anno di nascita · a righe le annate che stanno ancora correndo"
+                dati={data.earningsByYear.map(yr => ({
+                  chiave: yr.birth_year,
+                  etichetta: String(yr.birth_year),
+                  valore: yr.avg_earnings,
+                  testo: `€${fmtK(yr.avg_earnings)}`,
+                  tratteggio: yr.carriera_conclusa === false,
+                  scheda: [
+                    { testo: String(yr.birth_year) },
+                    { testo: `€${fmt(yr.avg_earnings)} medi`, colore: COLORI_GRAFICO.euro },
+                    { testo: `${fmt(yr.n_horses)} cavalli` },
+                    { testo: `${fmt(yr.avg_races)} gare medie` },
+                    { testo: `${String(yr.avg_win_rate).replace(".", ",")}% vittorie` },
+                    ...(yr.carriera_conclusa === false ? [{ testo: `carriera non conclusa: ${yr.eta} anni`, colore: COLORI_GRAFICO.medio }] : []),
+                  ],
+                }))}
+              />
             </div>
           )}
 
@@ -308,49 +276,25 @@ export default function TrendsPage() {
               <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Gare e cavalli per anno
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "260px", padding: "0 4px" }}>
-                {data.racesPerYear.map((yr, idxAnno) => (
-                  <div
-                    key={yr.year}
-                    onMouseEnter={() => setHoveredBar(`race-${yr.year}`)}
-                    onMouseLeave={() => setHoveredBar(null)}
-                    style={{
-                      flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
-                      gap: "4px", minWidth: 0, cursor: "pointer", position: "relative",
-                      opacity: hoveredBar && hoveredBar !== `race-${yr.year}` ? 0.4 : 1,
-                      transition: "opacity 0.2s",
-                    }}
-                  >
-                    {hoveredBar === `race-${yr.year}` && (
-                      <div style={{
-                        position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)",
-                        background: "hsl(220 14% 8%)", border: "1px solid hsl(220 10% 20%)",
-                        borderRadius: "8px", padding: "8px 12px", fontSize: "11px", whiteSpace: "nowrap",
-                        zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-                      }}>
-                        <div style={{ fontWeight: 700, color: "hsl(210 10% 85%)", marginBottom: "4px" }}>{yr.year}</div>
-                        <div style={{ color: "hsl(183 80% 55%)" }}>{fmtK(yr.n_races)} gare</div>
-                        <div style={{ color: "hsl(210 8% 55%)" }}>{fmtK(yr.n_horses)} cavalli</div>
-                        <div style={{ color: "hsl(51 70% 55%)" }}>€{fmtK(yr.avg_prize)} premio medio</div>
-                        <div style={{ color: "hsl(51 70% 55%)" }}>€{fmtK(yr.total_prize)} totale</div>
-                      </div>
-                    )}
-                    <span className="tabular" style={{ fontSize: "10px", color: "hsl(183 80% 55%)", fontWeight: 700 }}>
-                      {fmtK(yr.n_races)}
-                    </span>
-                    <div className="barra-su" style={{
-                      animationDelay: `${Math.min(idxAnno, 14) * 45}ms`,
-                      width: "100%", height: `${(yr.n_races / maxRaces) * 200}px`,
-                      background: hoveredBar === `race-${yr.year}`
-                        ? "linear-gradient(180deg, hsl(183 90% 55%), hsl(183 70% 40%))"
-                        : "linear-gradient(180deg, hsl(183 80% 50%), hsl(183 60% 35%))",
-                      borderRadius: "4px 4px 0 0",
-                      transition: "background 0.2s",
-                    }} />
-                    <span className="tabular" style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>{yr.year}</span>
-                  </div>
-                ))}
-              </div>
+              <GraficoColonne
+                altezza={260}
+                colore={COLORI_GRAFICO.quantita}
+                formatoGuida={v => fmtK(v)}
+                nomeAsse="anno delle corse"
+                dati={data.racesPerYear.map(yr => ({
+                  chiave: yr.year,
+                  etichetta: String(yr.year),
+                  valore: yr.n_races,
+                  testo: fmtK(yr.n_races),
+                  scheda: [
+                    { testo: String(yr.year) },
+                    { testo: `${fmt(yr.n_races)} gare`, colore: COLORI_GRAFICO.quantita },
+                    { testo: `${fmt(yr.n_horses)} cavalli` },
+                    { testo: `€${fmt(yr.avg_prize)} premio medio`, colore: COLORI_GRAFICO.euro },
+                    { testo: `€${fmtK(yr.total_prize)} in totale`, colore: COLORI_GRAFICO.euro },
+                  ],
+                }))}
+              />
             </div>
           )}
 
