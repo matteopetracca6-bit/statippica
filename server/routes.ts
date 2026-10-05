@@ -13,6 +13,7 @@ const ONLY_ATHLETES = "COALESCE(hr.horse_class, 'athlete') = 'athlete'";
 import type { Server } from "http";
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 import { predictBreeding, loadBreedingModel, getValidationInfo } from "./breeding";
 import { ensureGenealogy } from "./vpFetch";
 import {
@@ -2599,6 +2600,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // Come e' stato provato il pronostico dei primi tre (scritto dall'allenamento).
+  app.get("/api/pronostico/verifica", (_req, res) => {
+    const v = leggiVerificaTop3();
+    if (!v) return res.status(404).json({ message: "verifica non disponibile" });
+    res.json(v);
+  });
+
   // ──────────────────────────────────────────────
   // GET /api/calendar — upcoming races with ratings and win estimates
   // ──────────────────────────────────────────────
@@ -2612,6 +2620,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       if (!tableExists) {
         return res.json({ races: [], note: "Nessuna gara in calendario. Lo script di aggiornamento non ha ancora girato." });
       }
+
+      const haPronostico = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pronostico_top3'").get();
+      const verifica = leggiVerificaTop3();
 
       // Fetch upcoming race events (grouped by track + date)
       const events = db.prepare(`
@@ -2646,8 +2657,26 @@ export function registerRoutes(httpServer: Server, app: Express) {
           if (e.score == null) e.win_estimate = 0;
         });
 
-        // Sort by win estimate descending
-        entries.sort((a, b) => (b.win_estimate || 0) - (a.win_estimate || 0));
+        // Probabilita' dei primi tre (modello XGBoost, calcolata ogni notte
+        // dalla fase 3g). Se la tabella non c'e' ancora resta la stima vecchia.
+        // Con tre partenti o meno arrivano tutti nei primi tre: niente stima.
+        if (haPronostico && entries.length > 3) {
+          const righe = db.prepare(`SELECT horse_name, prob, affidabile, n_corse, motivi
+                                      FROM pronostico_top3 WHERE track = ? AND race_date = ? AND race_time = ?`)
+            .all(ev.track, ev.race_date, ev.race_time) as any[];
+          const perNome = new Map(righe.map(r => [r.horse_name, r]));
+          entries.forEach(e => {
+            const r = perNome.get(e.horse_name);
+            if (!r) return;
+            let motivi: any[] = [];
+            try { motivi = JSON.parse(r.motivi || "[]"); } catch { motivi = []; }
+            e.top3 = { prob: Math.round(r.prob * 1000) / 10, affidabile: !!r.affidabile, n_corse: r.n_corse, motivi };
+          });
+        }
+
+        // In cima chi ha piu' probabilita' di arrivare nei primi tre; senza
+        // pronostico, l'ordine della stima vecchia.
+        entries.sort((a, b) => (b.top3?.prob ?? -1) - (a.top3?.prob ?? -1) || (b.win_estimate || 0) - (a.win_estimate || 0));
 
         return {
           track: ev.track,
@@ -2658,7 +2687,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
         };
       }).filter(ev => ev.n_runners > 0);
 
-      res.json({ races: result, total: result.length });
+      res.json({
+        races: result, total: result.length,
+        pronostico: haPronostico && verifica ? {
+          verificato: !!verifica.supera_i_metodi_semplici,
+          nome: verifica.nome,
+        } : null,
+      });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally {
@@ -3133,4 +3168,16 @@ export function registerRoutes(httpServer: Server, app: Express) {
     } finally { db.close(); }
   });
 
+}
+
+
+// Risultati della prova del pronostico dei primi tre (modelli/top3_verifica.json).
+let _verificaTop3: any | undefined;
+function leggiVerificaTop3(): any | null {
+  if (_verificaTop3 !== undefined) return _verificaTop3;
+  _verificaTop3 = null;
+  for (const p of [path.resolve(process.cwd(), "modelli", "top3_verifica.json"), path.resolve(process.cwd(), "..", "modelli", "top3_verifica.json")]) {
+    try { _verificaTop3 = JSON.parse(fs.readFileSync(p, "utf-8")); break; } catch { /* prossimo */ }
+  }
+  return _verificaTop3;
 }

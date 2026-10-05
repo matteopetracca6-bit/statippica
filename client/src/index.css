@@ -307,6 +307,8 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
     grid-column: 1 / -1;
     min-width: 0 !important;
   }
+  .riga-pronostico .cella-vuota { display: none; }
+  .riga-pronostico .poco-affidabile { grid-column: 1 / -1; justify-self: start; }
 }
 
 /* Anteprima del podio nell'intestazione di una gara: tre nomi di cavallo
@@ -645,3 +647,40 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .grafico-etichetta { color: hsl(210 8% 48%); line-height: 14px; white-space: nowrap; font-weight: 600; }
 .grafico-scheda { position: absolute; bottom: calc(100% + 4px); z-index: 20; pointer-events: none; }
 .grafico-asse { font-size: 11px; color: hsl(210 8% 45%); text-align: center; margin-top: 6px; }
+
+/* ── Pronostico dei primi tre nel calendario ───────────────────────────── */
+.motivi-pronostico { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.motivo { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; line-height: 1.6; }
+.motivo.pro { color: hsl(150 50% 62%); background: hsl(150 50% 40% / 0.12); }
+.motivo.contro { color: hsl(10 65% 66%); background: hsl(10 60% 45% / 0.12); }
+.poco-affidabile { font-size: 10px; color: hsl(40 60% 60%); border: 1px dashed hsl(40 50% 40%); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+.verifica-pronostico { margin-top: 20px; background: hsl(220 12% 10%); border: 1px solid hsl(220 10% 16%); border-radius: 14px; overflow: hidden; }
+.verifica-testa { width: 100%; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 20px; background: none; border: none;
+  cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 700; color: hsl(210 10% 88%); text-align: left; }
+.verifica-sintesi { font-size: 12px; font-weight: 500; color: hsl(183 60% 58%); }
+.verifica-testo { font-size: 12.5px; color: hsl(210 8% 58%); line-height: 1.65; margin: 0 0 14px; max-width: 80ch; }
+.verifica-titolo { font-size: 13px; font-weight: 700; color: hsl(210 10% 85%); margin: 20px 0 6px; }
+.verifica-tabella > div:not(.nota-tabella) { display: grid; grid-template-columns: 1.3fr 1.6fr .8fr; gap: 12px; align-items: center;
+  padding: 9px 10px; border-bottom: 1px solid hsl(220 10% 15%); font-size: 12.5px; color: hsl(210 8% 70%); }
+.verifica-tabella .intestazione { font-size: 11px !important; color: hsl(210 8% 48%) !important; }
+.verifica-tabella .evid { color: hsl(210 10% 92%) !important; font-weight: 700; background: hsl(183 60% 40% / 0.08); border-radius: 8px; }
+.verifica-tabella small { display: block; font-size: 10.5px; color: hsl(40 50% 58%); font-weight: 400; margin-top: 2px; }
+.verifica-tabella .barretta { display: inline-block; width: 90px; height: 7px; border-radius: 4px; background: hsl(220 12% 7%); margin-right: 8px; vertical-align: middle; overflow: hidden; }
+.verifica-tabella .barretta span { display: block; height: 100%; background: hsl(183 70% 48%); border-radius: 4px; }
+.nota-tabella { font-size: 11px; color: hsl(210 8% 45%); padding: 8px 10px 0; }
+.verifica-fasce { display: flex; gap: 8px; align-items: flex-end; }
+.fascia { flex: 1; min-width: 0; text-align: center; }
+.fascia-barre { height: 120px; display: flex; gap: 3px; align-items: flex-end; justify-content: center; border-bottom: 1px solid hsl(220 10% 18%); }
+.fascia-barre span { width: 40%; border-radius: 3px 3px 0 0; }
+.b-stimato { background: hsl(183 70% 48%); }
+.b-reale { background: hsl(51 80% 55%); }
+.fascia-etichetta { font-size: 10.5px; color: hsl(210 8% 55%); margin-top: 4px; font-weight: 600; }
+.fascia-valori { font-size: 10px; color: hsl(210 8% 42%); }
+.legenda-fasce { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: hsl(210 8% 70%); margin-top: 10px; }
+.legenda-fasce i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+@media (max-width: 560px) {
+  .verifica-tabella > div:not(.nota-tabella) { grid-template-columns: 1fr 1fr; }
+  .verifica-tabella > div > span:nth-child(3) { display: none; }
+  .verifica-tabella .barretta { width: 50px; }
+  .fascia-valori { display: none; }
+}

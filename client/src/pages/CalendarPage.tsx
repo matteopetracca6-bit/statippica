@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import { getFlag } from "@/lib/flags";
 import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle, Medal } from "lucide-react";
+import VerificaPronostico from "../components/VerificaPronostico";
 
 interface CalendarEntry {
   horse_name: string;
@@ -21,6 +22,8 @@ interface CalendarEntry {
   sire: string | null;
   dam: string | null;
   win_estimate: number;
+  /** Probabilita' di arrivare nei primi tre (modello XGBoost). */
+  top3?: { prob: number; affidabile: boolean; n_corse: number; motivi: { testo: string; pro: boolean }[] };
 }
 
 interface RaceEvent {
@@ -35,7 +38,11 @@ interface CalendarResponse {
   races: RaceEvent[];
   total: number;
   note?: string;
+  pronostico?: { verificato: boolean; nome: string } | null;
 }
+
+/** Il numero da mostrare: la probabilita' dei primi tre se c'e', altrimenti la stima vecchia. */
+const stima = (e: CalendarEntry) => (e.top3 ? e.top3.prob : e.win_estimate);
 
 function formatDate(isoDate: string): string {
   const d = new Date(isoDate + "T00:00:00");
@@ -188,9 +195,9 @@ export default function CalendarPage() {
                               {e.horse_name}
                             </a>
                           </Link>
-                          <span className="tabular" style={{ fontSize: "10px", color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 50%)", fontWeight: 700 }}>
-                            {e.win_estimate.toFixed(0)}%
-                          </span>
+                          {(e.top3 || !data.pronostico) && (<span className="tabular" style={{ fontSize: "10px", color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 50%)", fontWeight: 700 }}>
+                            {stima(e).toFixed(0)}%
+                          </span>)}
                         </div>
                       ))}
                     </div>
@@ -213,10 +220,20 @@ export default function CalendarPage() {
                     <div style={{ padding: "12px 20px 8px", display: "flex", alignItems: "center", gap: "8px" }}>
                       <Trophy size={14} style={{ color: "hsl(51 80% 55%)" }} />
                       <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                        Podio stimato
+                        {data.pronostico ? "Probabilità di arrivare nei primi tre" : "Podio stimato"}
                       </span>
+                      {data.pronostico && !data.pronostico.verificato && (
+                        <span style={{ fontSize: "10.5px", fontWeight: 700, color: "hsl(40 70% 55%)", border: "1px solid hsl(40 60% 40%)", borderRadius: "5px", padding: "1px 6px" }}>
+                          sperimentale
+                        </span>
+                      )}
                     </div>
 
+                    {data.pronostico && race.n_runners <= 3 && (
+                      <div style={{ padding: "0 20px 8px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>
+                        Con {race.n_runners} partenti arrivano tutti nei primi tre, se finiscono la corsa: qui la stima non serve.
+                      </div>
+                    )}
                     {/* Entries table */}
                     <div style={{ padding: "0 8px 8px" }}>
                       {race.entries.map((entry, idx) => {
@@ -225,7 +242,7 @@ export default function CalendarPage() {
                         return (
                           <div key={`${entry.horse_name}-${idx}`} className="riga-pronostico" style={{
                             display: "grid",
-                            gridTemplateColumns: "28px 24px 1fr auto auto auto",
+                            gridTemplateColumns: data.pronostico ? "28px 24px 1fr auto auto auto auto" : "28px 24px 1fr auto auto auto",
                             alignItems: "center", gap: "12px",
                             padding: "10px 16px", borderRadius: "8px",
                             background: podiumBg,
@@ -265,8 +282,16 @@ export default function CalendarPage() {
                                 {entry.sire && <span>{entry.sire}</span>}
                                 {entry.birth_year && <span> · {entry.birth_year}</span>}
                                 {entry.career_races != null && <span> · {entry.career_races} gare</span>}
-                                {entry.win_rate != null && entry.win_rate > 0 && <span> · {entry.win_rate.toFixed(0)}% win</span>}
+                                {entry.win_rate != null && entry.win_rate > 0 && <span> · {entry.win_rate.toFixed(0)}% vinte</span>}
+                                {entry.start_pos != null && <span> · numero {entry.start_pos}</span>}
                               </div>
+                              {entry.top3 && entry.top3.motivi.length > 0 && (
+                                <div className="motivi-pronostico">
+                                  {entry.top3.motivi.map((m, k) => (
+                                    <span key={k} className={m.pro ? "motivo pro" : "motivo contro"}>{m.pro ? "+" : "−"} {m.testo}</span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
 
                             {/* Grade */}
@@ -286,7 +311,7 @@ export default function CalendarPage() {
                             <div className="barra-stima" style={{ minWidth: "100px", display: "flex", alignItems: "center", gap: "8px" }}>
                               <div style={{ flex: 1, height: "8px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden" }}>
                                 <div style={{
-                                  height: "100%", width: `${Math.min(entry.win_estimate * 2, 100)}%`,
+                                  height: "100%", width: `${Math.min(entry.top3 ? entry.top3.prob : data.pronostico ? 0 : entry.win_estimate * 2, 100)}%`,
                                   background: idx < 3 ? podiumColor : "hsl(183 60% 50%)",
                                   borderRadius: "4px", transition: "width 0.5s",
                                 }} />
@@ -295,9 +320,12 @@ export default function CalendarPage() {
                                 fontSize: "13px", fontWeight: 700, minWidth: "40px",
                                 color: idx < 3 ? podiumColor : "hsl(183 60% 55%)",
                               }}>
-                                {entry.win_estimate.toFixed(1)}%
+                                {entry.top3 || !data.pronostico ? `${stima(entry).toFixed(0)}%` : race.n_runners <= 3 ? "" : "—"}
                               </span>
                             </div>
+                            {data.pronostico && (entry.top3 && !entry.top3.affidabile
+                              ? <span className="poco-affidabile" title={`Solo ${entry.top3.n_corse} corse in archivio: la stima è debole`}>poche corse</span>
+                              : <span className="cella-vuota" />)}
                           </div>
                         );
                       })}
@@ -310,6 +338,8 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {data?.pronostico && <VerificaPronostico />}
+
       {/* Disclaimer */}
       {data && data.races.length > 0 && (
         <div style={{
@@ -318,7 +348,9 @@ export default function CalendarPage() {
           border: "1px solid hsl(220 10% 14%)",
         }}>
           <p style={{ fontSize: "11px", color: "hsl(210 8% 45%)", margin: 0, lineHeight: 1.6 }}>
-            Le probabilita di vittoria sono stime indicative basate sul punteggio StatIppica e non tengono conto di fattori come partenza, condizioni di pista, stato di forma recente e strategie di gara. Non costituiscono consiglio di scommessa.
+            {data.pronostico
+              ? "La percentuale è la probabilità di arrivare nei primi tre, stimata da un modello di apprendimento automatico (XGBoost) con quello che si sa prima della partenza: forma recente, premi, tempi, guidatore dell'ultima corsa, numero di partenza e confronto con gli avversari. In ogni corsa le percentuali sommano a tre, perché i posti sono tre. È una lettura statistica, non un consiglio di scommessa: non conosciamo le quote né lo stato del cavallo il giorno della gara."
+              : "Le probabilità di vittoria sono stime indicative basate sul punteggio StatIppica e non tengono conto di fattori come partenza, condizioni di pista, stato di forma recente e strategie di gara. Non costituiscono consiglio di scommessa."}
           </p>
         </div>
       )}

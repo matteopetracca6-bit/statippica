@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Installa dipendenze
-        run: pip install requests beautifulsoup4
+        run: pip install requests beautifulsoup4 numpy pandas  # numpy e pandas: pronostico dei primi tre
       - name: Procura l'archivio
         # Lo scarica dal rilascio e verifica il numero di gare. Se non torna,
         # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e

@@ -1,0 +1,240 @@
+{
+  "modello": {
+    "auc": 0.6905,
+    "log_loss": 0.5941,
+    "brier": 0.1981,
+    "tre_scelti_a_segno": 0.4802
+  },
+  "solo_partenza": {
+    "auc": 0.5718,
+    "log_loss": 0.6611,
+    "brier": 0.2238,
+    "tre_scelti_a_segno": 0.3738
+  },
+  "solo_forma": {
+    "auc": 0.6304,
+    "log_loss": 0.6248,
+    "brier": 0.2155,
+    "tre_scelti_a_segno": 0.4271
+  },
+  "voto_attuale": {
+    "auc": 0.6093,
+    "log_loss": 1.1907,
+    "brier": 0.2438,
+    "tre_scelti_a_segno": 0.4621
+  },
+  "campo_completo": {
+    "corse": 3590,
+    "modello": {
+      "auc": 0.7357,
+      "log_loss": 0.5508,
+      "brier": 0.1864,
+      "tre_scelti_a_segno": 0.5257
+    },
+    "modello_normalizzato": {
+      "auc": 0.7376,
+      "log_loss": 0.5605,
+      "brier": 0.1862,
+      "tre_scelti_a_segno": 0.5257
+    },
+    "solo_partenza": {
+      "auc": 0.6335,
+      "log_loss": 0.6096,
+      "brier": 0.2094,
+      "tre_scelti_a_segno": 0.3831
+    },
+    "voto_attuale": {
+      "auc": 0.7139,
+      "log_loss": 0.5679,
+      "brier": 0.1924,
+      "tre_scelti_a_segno": 0.4951
+    }
+  },
+  "fasce": [
+    {
+      "da": 0,
+      "a": 0.1,
+      "n": 3622,
+      "stimato": 0.061,
+      "reale": 0.059
+    },
+    {
+      "da": 0.1,
+      "a": 0.2,
+      "n": 6034,
+      "stimato": 0.151,
+      "reale": 0.152
+    },
+    {
+      "da": 0.2,
+      "a": 0.3,
+      "n": 6436,
+      "stimato": 0.25,
+      "reale": 0.249
+    },
+    {
+      "da": 0.3,
+      "a": 0.4,
+      "n": 5784,
+      "stimato": 0.349,
+      "reale": 0.344
+    },
+    {
+      "da": 0.4,
+      "a": 0.5,
+      "n": 4720,
+      "stimato": 0.448,
+      "reale": 0.456
+    },
+    {
+      "da": 0.5,
+      "a": 0.6,
+      "n": 3247,
+      "stimato": 0.546,
+      "reale": 0.543
+    },
+    {
+      "da": 0.6,
+      "a": 0.7,
+      "n": 1879,
+      "stimato": 0.643,
+      "reale": 0.647
+    },
+    {
+      "da": 0.7,
+      "a": 1,
+      "n": 1033,
+      "stimato": 0.783,
+      "reale": 0.718
+    }
+  ],
+  "peso_variabili": [
+    {
+      "variabile": "r_top3",
+      "peso": 0.2024
+    },
+    {
+      "variabile": "partenti",
+      "peso": 0.1224
+    },
+    {
+      "variabile": "h_ult_top3",
+      "peso": 0.0957
+    },
+    {
+      "variabile": "r_ult5_top3",
+      "peso": 0.0921
+    },
+    {
+      "variabile": "partenza",
+      "peso": 0.0484
+    },
+    {
+      "variabile": "r_tempo_migl",
+      "peso": 0.0431
+    },
+    {
+      "variabile": "r_premi_365",
+      "peso": 0.0392
+    },
+    {
+      "variabile": "s_tempo_migl",
+      "peso": 0.0384
+    },
+    {
+      "variabile": "s_premi_365",
+      "peso": 0.0316
+    },
+    {
+      "variabile": "h_vitt",
+      "peso": 0.0253
+    },
+    {
+      "variabile": "h_ult5_top3",
+      "peso": 0.0248
+    },
+    {
+      "variabile": "h_tempo_ult",
+      "peso": 0.0229
+    },
+    {
+      "variabile": "s_ult5_top3",
+      "peso": 0.0214
+    },
+    {
+      "variabile": "r_d_top3",
+      "peso": 0.0191
+    },
+    {
+      "variabile": "maschio",
+      "peso": 0.0188
+    },
+    {
+      "variabile": "h_pista_top3",
+      "peso": 0.0187
+    },
+    {
+      "variabile": "h_ult3_pos",
+      "peso": 0.0158
+    },
+    {
+      "variabile": "eta",
+      "peso": 0.0143
+    },
+    {
+      "variabile": "h_top3",
+      "peso": 0.0141
+    },
+    {
+      "variabile": "h_giorni",
+      "peso": 0.0139
+    },
+    {
+      "variabile": "h_gare_365",
+      "peso": 0.012
+    },
+    {
+      "variabile": "d_top3",
+      "peso": 0.0115
+    },
+    {
+      "variabile": "h_n",
+      "peso": 0.0113
+    },
+    {
+      "variabile": "d_n",
+      "peso": 0.0096
+    },
+    {
+      "variabile": "h_tempo_migl",
+      "peso": 0.0089
+    },
+    {
+      "variabile": "partenza_rel",
+      "peso": 0.0087
+    },
+    {
+      "variabile": "h_premi_365",
+      "peso": 0.008
+    },
+    {
+      "variabile": "h_pista_n",
+      "peso": 0.0074
+    }
+  ],
+  "supera_i_metodi_semplici": true,
+  "periodo_prova": {
+    "da": "2025-01-01",
+    "a": "2026-10-03",
+    "partenze": 99628,
+    "corse": 11521
+  },
+  "periodo_allenamento": {
+    "da": "2015-01-01",
+    "a": "2024-12-31",
+    "partenze": 484653
+  },
+  "alberi": 377,
+  "nome": "top3-xgb-v1",
+  "allenato_il": "2026-10-05"
+}
