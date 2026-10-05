@@ -725,3 +725,36 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .vc-riga .barretta { display: none; }
   .vc-data { min-width: 0; }
 }
+
+/* ── Tenere o fermare ───────────────────────────────────────────────────── */
+.tenere-sintesi { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 10px; }
+.tenere-conto { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; font-family: inherit; cursor: pointer;
+  background: hsl(220 12% 10%); border: 1px solid hsl(220 10% 18%); border-left: 3px solid var(--c); border-radius: 12px; padding: 12px 16px; }
+.tenere-conto.attivo { background: color-mix(in srgb, var(--c) 12%, hsl(220 12% 10%)); border-color: var(--c); }
+.tenere-conto .valore { font-size: 24px; font-weight: 800; color: var(--c); }
+.tenere-conto .etichetta { font-size: 12px; color: hsl(210 8% 62%); }
+.tenere-conto .quota { font-size: 11px; color: hsl(210 8% 46%); }
+.tabella-tenere { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tabella-tenere th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: hsl(210 8% 48%);
+  font-weight: 600; padding: 10px 12px; border-bottom: 1px solid hsl(220 10% 16%); white-space: nowrap; }
+.tabella-tenere td { padding: 8px 12px; border-bottom: 1px solid hsl(220 10% 13%); color: hsl(210 10% 80%); white-space: nowrap; }
+.tabella-tenere tr:hover td { background: hsl(220 10% 12%); }
+.tabella-tenere .num { text-align: right; }
+.tabella-tenere a.nome { color: hsl(210 10% 92%); font-weight: 700; text-decoration: none; }
+.tabella-tenere a.padre { color: hsl(210 8% 68%); text-decoration: none; }
+.tabella-tenere a:hover { color: hsl(183 70% 60%); }
+.barretta-tabella { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: hsl(220 12% 6%); overflow: hidden; }
+.barretta-tabella span { display: block; height: 100%; border-radius: 3px; }
+.striscia-esiti { display: inline-flex; width: 90px; height: 7px; border-radius: 4px; overflow: hidden; vertical-align: middle; background: hsl(220 12% 6%); }
+.striscia-esiti span { display: block; height: 100%; }
+.chip-filtro:disabled { opacity: .35; cursor: default; }
+@media (max-width: 720px) {
+  .tabella-tenere .nascondi-mobile { display: none; }
+  .tabella-tenere td, .tabella-tenere th { padding: 8px 8px; }
+  .barretta-tabella { width: 36px; }
+}
+
+/* ── Controllo mensile dei modelli ──────────────────────────────────────── */
+.controllo-mesi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.controllo-mese { background: hsl(220 12% 8%); border: 1px solid hsl(220 10% 16%); border-left: 3px solid var(--c); border-radius: 9px; padding: 8px 12px; font-size: 12px; color: hsl(210 8% 62%); min-width: 150px; }
+.controllo-mese b { color: hsl(210 10% 90%); }

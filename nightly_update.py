@@ -43,6 +43,7 @@ from bs4 import BeautifulSoup
 from fasi_guidatori_ippodromi import phase_driver_stats, phase_track_stats
 from pronostico_top3 import phase_pronostico_top3
 from stima_premi import phase_stima_premi
+from controllo_modelli import phase_controllo_modelli
 
 # Senza questo, l'output può restare "bloccato" in un buffer per minuti prima
 # di comparire nei log di GitHub Actions (non essendo un terminale interattivo,
@@ -847,10 +848,24 @@ def _parse_date(val: str) -> Optional[str]:
     return None
 
 def _parse_float(val: str) -> float:
+    """Importo in euro scritto all'italiana: "2.737,00", "418,20", "12.345".
+
+    Prima il punto delle migliaia non veniva tolto: "2.737,00" diventava
+    "2.737.00", che non e' un numero, e il premio finiva a zero. Cosi' ogni
+    premio da mille euro in su letto dalla scheda del cavallo spariva, cioe'
+    proprio le vittorie (caso TRUST OF LAW (B): 9 vittorie, quasi tutte a 0).
+    """
     if not val:
         return 0.0
     val = re.sub(r"[^\d,.]", "", str(val))
-    val = val.replace(",", ".")
+    if not val:
+        return 0.0
+    if "," in val:
+        # virgola = decimali, punti = migliaia
+        val = val.replace(".", "").replace(",", ".")
+    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", val):
+        # solo punti a gruppi di tre: sono migliaia ("12.345", "1.234.567")
+        val = val.replace(".", "")
     try:
         return float(val)
     except ValueError:
@@ -1871,6 +1886,47 @@ def phase_backfill_gaps(conn: sqlite3.Connection, batch_size: int = BACKFILL_BAT
 
     print(f"[BACKFILL] Cavalli controllati: {horses_backfilled}, gare colmate: {new_races_found}", file=sys.stderr)
     return horses_backfilled, new_races_found
+
+# ─────────────────────────────────────────────
+# FASE 2b-bis — PREMI A ZERO DA RILEGGERE
+# ─────────────────────────────────────────────
+RIPARA_PREMI_PER_NOTTE = int(os.environ.get("RIPARA_PREMI_PER_NOTTE", "700"))
+
+
+def phase_ripara_premi(conn: sqlite3.Connection, limite: int = RIPARA_PREMI_PER_NOTTE) -> int:
+    """Rilegge dalla scheda del cavallo chi ha piazzamenti (1°-3°) con premio
+    a zero. Fino a ottobre 2026 gli importi da mille euro in su ("2.737,00")
+    venivano letti come zero; ora _parse_float li legge bene e _insert_races
+    corregge le righe gia' presenti. Si comincia da chi ha corso di recente.
+    Ogni cavallo si rilegge al massimo una volta ogni 30 giorni: se il premio
+    resta a zero anche alla fonte, non si insiste."""
+    conn.execute("""CREATE TABLE IF NOT EXISTS riparazione_premi (
+        horse_name TEXT PRIMARY KEY, riletto_il TEXT, premi_corretti INTEGER)""")
+    soglia = (datetime.utcnow() - timedelta(days=30)).isoformat()
+    cavalli = [r[0] for r in conn.execute("""
+        SELECT r.horse_name FROM races r
+          LEFT JOIN riparazione_premi p ON p.horse_name = r.horse_name
+         WHERE r.placement BETWEEN 1 AND 3 AND COALESCE(r.prize_net, 0) = 0
+           AND r.race_date >= '2013-01-01'
+           AND (p.riletto_il IS NULL OR p.riletto_il < ?)
+         GROUP BY r.horse_name
+         ORDER BY MAX(r.race_date) DESC
+         LIMIT ?""", (soglia, limite)).fetchall()]
+    print(f"[PREMI A ZERO] cavalli da rileggere: {len(cavalli)}", file=sys.stderr)
+    totale = 0
+    for i, nome in enumerate(cavalli, 1):
+        prima = _PREMI_CORRETTI[0]
+        _fetch_and_insert_full_career(conn, nome)
+        corretti = _PREMI_CORRETTI[0] - prima
+        totale += corretti
+        conn.execute("INSERT OR REPLACE INTO riparazione_premi VALUES (?,?,?)",
+                     (nome, datetime.utcnow().isoformat(), corretti))
+        conn.commit()
+        if i % 50 == 0:
+            print(f"  ... {i}/{len(cavalli)} cavalli, {totale} premi corretti", file=sys.stderr)
+    print(f"[PREMI A ZERO] premi corretti: {totale} su {len(cavalli)} cavalli", file=sys.stderr)
+    return totale
+
 
 # ─────────────────────────────────────────────
 # FASE 2b2 — BACKFILL STORICO (gare pre-2019)
@@ -3020,6 +3076,10 @@ def _assegna_date_per_gruppo(conn: sqlite3.Connection, name: str, races: list[di
     return scritte
 
 
+# Quanti premi a zero sono stati corretti in questa notte (vedi _insert_races).
+_PREMI_CORRETTI = [0]
+
+
 def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
     inserted = 0
     for r in races:
@@ -3028,10 +3088,27 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
             # per (cavallo, data) — anche con race_code diverso, perché arrivata da
             # un'altra fonte (hRis.php vs cavAn.php) — non duplichiamo.
             already = conn.execute(
-                "SELECT 1 FROM races WHERE horse_name=? AND race_date=?",
+                "SELECT id, COALESCE(prize_net, 0) FROM races WHERE horse_name=? AND race_date=?",
                 (r.get("horse_name"), r.get("race_date"))
             ).fetchone()
             if already:
+                # Gara gia' presente: non si duplica, ma si correggono i premi
+                # rimasti a zero per l'errore di lettura degli importi da mille
+                # euro in su, e si completano i dati che mancano (numero della
+                # corsa, numero di partenza, partenti, guidatore).
+                nuovo = float(r.get("prize_net") or 0)
+                if already[1] == 0 and nuovo > 0:
+                    conn.execute("UPDATE races SET prize_net=?, prize_gross=? WHERE id=?",
+                                 (nuovo, float(r.get("prize_gross") or nuovo), already[0]))
+                    _PREMI_CORRETTI[0] += 1
+                conn.execute("""UPDATE races SET
+                                    race_number    = COALESCE(race_number, ?),
+                                    start_pos      = COALESCE(start_pos, ?),
+                                    total_starters = COALESCE(total_starters, ?),
+                                    driver         = COALESCE(NULLIF(driver, ''), ?)
+                                WHERE id=?""",
+                             (r.get("race_number"), r.get("start_pos"), r.get("total_starters"),
+                              r.get("driver") or None, already[0]))
                 continue
 
             # Stessa gara gia' presente ma senza data, arrivata dai risultati di
@@ -3065,13 +3142,15 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
             cursor = conn.execute("""
                 INSERT OR IGNORE INTO races
                     (horse_name, race_date, track, placement, placement_raw,
-                     time_km, distance, driver, prize_net, prize_gross, race_code)
-                VALUES (?,?,?,?,?, ?,?,?,?,?,?)
+                     time_km, distance, driver, prize_net, prize_gross, race_code,
+                     race_number, start_pos, total_starters)
+                VALUES (?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)
             """, (
                 r.get("horse_name"), r.get("race_date"), r.get("track"),
                 r.get("placement"), r.get("placement_raw"),
                 r.get("time_km"), r.get("distance"), r.get("driver"),
-                r.get("prize_net", 0), r.get("prize_gross", 0), r.get("race_code", "")
+                r.get("prize_net", 0), r.get("prize_gross", 0), r.get("race_code", ""),
+                r.get("race_number"), r.get("start_pos"), r.get("total_starters"),
             ))
             if cursor.rowcount > 0:
                 inserted += 1
@@ -4346,6 +4425,7 @@ def main():
         if mode in ("maintenance", "full"):
             u_updated, u_races = phase_update(conn)         # FASE 2: aggiorna cavalli attivi
             b_horses, b_races  = phase_backfill_gaps(conn)  # FASE 2b: colma buchi storici cavalli esistenti
+            phase_ripara_premi(conn)                        # FASE 2b-bis: premi da mille euro in su letti come zero
             h_horses, h_races  = phase_historical_backfill(conn)  # FASE 2b2: recupera gare pre-2019
             p_parents, p_races = phase_parents_coverage(conn)  # FASE 2c: fattrici/stalloni mancanti
             new_races          += u_races + b_races + h_races + p_races
@@ -4369,6 +4449,7 @@ def main():
         phase_track_stats(conn)         # FASE 3f: schede ippodromi e numeri di partenza
         phase_pronostico_top3(conn)     # FASE 3g: probabilita' dei primi tre per le gare in calendario
         phase_stima_premi(conn)  # FASE 3h: premi attesi nei prossimi 12 mesi
+        phase_controllo_modelli(conn)  # FASE 3i: controllo mensile dei modelli
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:

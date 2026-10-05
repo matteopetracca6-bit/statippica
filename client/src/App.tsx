@@ -1,5 +1,6 @@
 import IppodromiTrendPage from "./pages/IppodromiTrendPage";
 import PareggioPage from "./pages/PareggioPage";
+import TenerePage from "./pages/TenerePage";
 import { Switch, Route, Router } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -71,6 +72,7 @@ export default function App() {
               <Route path="/guidatore/:name" component={DriverPage} />
               <Route path="/ippodromi" component={IppodromiTrendPage} />
               <Route path="/pareggio" component={PareggioPage} />
+              <Route path="/tenere" component={TenerePage} />
               <Route path="/break-even" component={PareggioPage} />
               <Route path="/ippodromo/:code" component={TrackPage} />
               <Route path="/piste" component={IppodromiTrendPage} />

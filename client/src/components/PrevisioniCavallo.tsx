@@ -16,6 +16,45 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { TrendingUp, Flag, ChevronDown, Check, X } from "lucide-react";
 import { ESITO_COLORE } from "@/lib/esiti";
+import { probDaPercentili, esitoSaldo } from "@/lib/probCopre";
+import GraficoColonne from "./GraficoColonne";
+
+const COSTI_CURVA = [600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400];
+const migliaia = (n: number) => Math.round(n).toLocaleString("it-IT");
+
+/** A che costo mensile conviene ancora: probabilita' di coprire la spesa per
+ *  ogni costo, colorata con l'esito atteso a quel costo. */
+function CurvaCosti({ attesi, percentili, mensile }: { attesi: number; percentili: number[]; mensile: number }) {
+  const dati = COSTI_CURVA.map(c => {
+    const pr = probDaPercentili(percentili, 12 * c);
+    const saldo = attesi - 12 * c;
+    const es = esitoSaldo(saldo, 12 * c);
+    return {
+      chiave: c, etichetta: migliaia(c), valore: Math.round(pr.p * 100),
+      testo: pr.estremo === "sotto" ? "<5%" : pr.estremo === "sopra" ? ">95%" : `${Math.round(pr.p * 100)}%`,
+      colore: ESITO_COLORE[es],
+      scheda: [
+        { testo: `${euro(c)} al mese` },
+        { testo: `Coprire ${euro(12 * c)}: ${Math.round(pr.p * 100)}%` },
+        { testo: `Saldo atteso ${euro(saldo)}`, colore: ESITO_COLORE[es] },
+      ],
+    };
+  });
+  // Pareggio "in media": il costo a cui i premi attesi coprono la spesa.
+  const pareggioMedio = attesi / 12;
+  // Costo oltre il quale coprire la spesa diventa meno probabile che no.
+  const mezzo = percentili[9] / 12;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>A che costo conviene: probabilità di coprire la spesa, per costo al mese</div>
+      <GraficoColonne dati={dati} altezza={150} massimo={100} formatoGuida={v => `${Math.round(v)}%`} nomeAsse="Costo al mese (€)" />
+      <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginTop: 6 }}>
+        In media va in pari fino a <b style={{ color: "hsl(210 10% 88%)" }}>{euro(pareggioMedio)}</b> al mese.
+        {mezzo > 0 ? <> Sopra <b style={{ color: "hsl(210 10% 88%)" }}>{euro(mezzo)}</b> al mese è più facile che non copra la spesa.</> : <> È più facile che non copra la spesa a qualunque costo.</>}
+      </div>
+    </div>
+  );
+}
 
 const MUTED = "hsl(210 8% 52%)";
 const DIM = "hsl(210 8% 40%)";
@@ -155,6 +194,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
             </div>
           </div>
           <Motivi m={p.motivi} />
+          {p.simili?.percentili && <CurvaCosti attesi={p.attesi} percentili={p.simili.percentili} mensile={Number(mensile) || d.mensile} />}
 
           {v && (
             <div style={{ marginTop: 12 }}>

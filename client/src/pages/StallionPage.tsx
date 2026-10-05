@@ -1,4 +1,4 @@
-import { PareggioStallone } from "../components/PareggioScheda";
+import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
 import { useState } from "react";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -474,6 +474,7 @@ export default function StallionPage() {
 
           {/* Punto di pareggio della monta */}
           {!stallion.no_offspring_data && <PareggioStallone nome={stallionName.toUpperCase()} />}
+          <FigliInAttivita nome={stallionName.toUpperCase()} />
 
           {/* Rating card */}
           {!stallion.no_offspring_data && stallion.final_score != null && (

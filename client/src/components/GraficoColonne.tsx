@@ -41,8 +41,10 @@ export const STILE_SCHEDA: React.CSSProperties = {
 };
 
 export default function GraficoColonne({
-  dati, altezza = 160, colore = COLORI_GRAFICO.quantita, formatoGuida, nomeAsse, mostraTesti = true,
+  dati, altezza = 160, colore = COLORI_GRAFICO.quantita, formatoGuida, nomeAsse, mostraTesti = true, massimo,
 }: {
+  /** Valore in cima all'asse (per esempio 100 per le percentuali); se manca, il piu' alto. */
+  massimo?: number;
   dati: Colonna[];
   altezza?: number;
   colore?: string;
@@ -53,7 +55,7 @@ export default function GraficoColonne({
   mostraTesti?: boolean;
 }) {
   const [sopra, setSopra] = useState<string | number | null>(null);
-  const max = Math.max(...dati.map(d => d.valore), 0) || 1;
+  const max = massimo ?? (Math.max(...dati.map(d => d.valore), 0) || 1);
   const fitte = dati.length > 14;
   const altezzaBarre = altezza - 34; // spazio per il numero sopra e l'etichetta sotto
 

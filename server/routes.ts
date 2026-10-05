@@ -25,7 +25,7 @@ import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo } from "./careerValue";
 import { affidabilitaVoto } from "./gradeStability";
-import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi } from "./previsioni";
+import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
 import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
@@ -160,6 +160,41 @@ export function registerRoutes(httpServer: Server, app: Express) {
       db.close();
     }
   });
+  // Tenere o fermare: tutti i cavalli in attivita' con premi attesi ed esito.
+  app.get("/api/tenere", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const q = req.query as Record<string, string>;
+      res.json({ mensile, ...tenereElenco(db, {
+        costoAnno: 12 * mensile,
+        etaMin: q.eta_min ? Number(q.eta_min) : undefined, etaMax: q.eta_max ? Number(q.eta_max) : undefined,
+        padre: q.padre || undefined, sesso: q.sesso ? q.sesso.toUpperCase().slice(0, 1) : undefined,
+        esito: ["perdita", "pareggio", "profitto"].includes(q.esito) ? q.esito : undefined,
+        cerca: q.cerca?.trim() || undefined, ordina: q.ordina || undefined,
+        pagina: q.pagina ? Number(q.pagina) : 1,
+      }) });
+    } finally {
+      db.close();
+    }
+  });
+  app.get("/api/tenere/stalloni", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const minimo = numero(req.query.minimo, 5, 2, 100);
+      res.json({ mensile, ...tenereStalloni(db, 12 * mensile, minimo) });
+    } finally {
+      db.close();
+    }
+  });
+  app.get("/api/controllo-modelli", (_req, res) => {
+    const db = getDb();
+    try { res.json(controlloModelli(db)); } finally { db.close(); }
+  });
+
   // Previsioni sulla scheda del cavallo: prossima corsa (primi tre), stime
   // passate con l'arrivo, premi attesi nei prossimi 12 mesi.
   app.get("/api/horse/:name/:year/previsioni", (req, res) => {

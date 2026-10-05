@@ -166,3 +166,35 @@ export function PareggioStallone({ nome }: { nome: string }) {
     </div>
   );
 }
+
+/** Nella scheda dello stallone: i suoi figli che corrono oggi, e quanti hanno
+ *  buone probabilita' di coprire le spese nei prossimi 12 mesi (stima XGBoost).
+ *  Dato misurato sui figli in attivita', non una previsione dai genitori. */
+export function FigliInAttivita({ nome }: { nome: string }) {
+  const { data: d } = useQuery<any>({
+    queryKey: ["/api/tenere/stalloni", "1200", "1"],
+    queryFn: async () => (await apiRequest("GET", `/api/tenere/stalloni?minimo=2`)).json(),
+    staleTime: 30 * 60 * 1000,
+  });
+  const s = d?.stalloni?.find((x: any) => x.padre === nome);
+  if (!s) return null;
+  return (
+    <div style={pannello}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+        <Scale size={15} style={{ color: "hsl(145 55% 52%)" }} />
+        <span style={{ fontSize: "12px", fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>Figli in attività: prossimi 12 mesi</span>
+        <Link href="/tenere"><a style={{ marginLeft: "auto", fontSize: "11.5px", color: "hsl(145 55% 55%)", textDecoration: "none" }}>Tutti gli stalloni</a></Link>
+      </div>
+      <div style={griglia}>
+        <Blocco titolo="Figli che corrono oggi" valore={String(s.figli)} nota={<>Premi attesi a testa (mediana): {euro(s.attesi_mediani)}.</>} />
+        <Blocco titolo="Probabilità media di coprire le spese" valore={`${Math.round(s.prob_media)}%`}
+          nota={<>Con {euro(d.mensile)} al mese. {s.in_utile} in utile atteso, {s.in_pari} in pari, {s.in_perdita} in perdita.</>} />
+        <Blocco titolo="Saldo medio atteso" esito={s.saldo_medio >= 0 ? "profitto" : "perdita"} valore={euro(s.saldo_medio)}
+          nota={<>Il migliore: {s.migliore.nome}, {euro(s.migliore.attesi)} attesi.</>} />
+      </div>
+      <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "10px" }}>
+        Solo i figli che hanno corso nell'ultimo anno: chi ha smesso o non ha mai corso non c'è.
+      </div>
+    </div>
+  );
+}

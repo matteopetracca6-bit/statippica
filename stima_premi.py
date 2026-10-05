@@ -77,7 +77,8 @@ def _corse(conn):
     r["fuori"] = r["arrivo"].isna().astype(float)
     r["estero"] = (r["pista"] == "ESTERO").astype(float)
     r["pos"] = r["arrivo"].clip(upper=12).fillna(12)
-    r.loc[(r["tempo"] < 60) | (r["tempo"] > 120), "tempo"] = float("nan")
+    # Il tempo al km e' salvato senza il minuto: 14.7 vuol dire 1'14"7.
+    r.loc[(r["tempo"] < 9) | (r["tempo"] > 40), "tempo"] = float("nan")
     h = pd.read_sql_query("SELECT name AS cavallo, birth_year AS nato, sex AS sesso FROM horses", conn)
     return r.sort_values(["cavallo", "data"]), h
 

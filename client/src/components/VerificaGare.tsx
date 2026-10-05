@@ -33,6 +33,49 @@ function data(iso: string) {
 }
 const coloreSegno = (n: number, su: number) => (su === 0 ? DIM : n / su >= 2 / 3 ? "hsl(150 55% 55%)" : n / su >= 1 / 3 ? "hsl(45 75% 55%)" : "hsl(10 65% 60%)");
 
+const COLORE_STATO: Record<string, string> = {
+  "in linea": "hsl(150 55% 52%)", attenzione: "hsl(10 65% 60%)", "pochi dati": "hsl(210 8% 45%)", "in attesa": "hsl(45 70% 55%)",
+};
+const nomeMese = (m: string) => new Date(m + "-01T00:00:00").toLocaleDateString("it-IT", { month: "long", year: "numeric" });
+
+/** Controllo automatico mese per mese, rifatto ogni notte. */
+function ControlloMensile() {
+  const { data } = useQuery<{ mesi: any[] }>({ queryKey: ["/api/controllo-modelli"], staleTime: 30 * 60 * 1000 });
+  const mesi = data?.mesi ?? [];
+  const top3 = mesi.filter(m => m.modello === "primi_tre");
+  const premi = mesi.filter(m => m.modello === "premi_12_mesi");
+  const allarme = top3.find(m => m.stato === "attenzione");
+  return (
+    <div className="verifica-riquadro" style={{ marginBottom: 12, borderColor: allarme ? "hsl(10 60% 40%)" : undefined }}>
+      <div className="etichetta">Controllo mensile automatico</div>
+      {allarme && (
+        <div style={{ fontSize: 12.5, color: "hsl(10 70% 66%)", margin: "6px 0" }}>
+          Attenzione: a {nomeMese(allarme.mese)} il pronostico è andato peggio di quanto promesso dalla prova ({Math.round(allarme.quota_favoriti * 100)}% dei favoriti nei primi tre).
+        </div>
+      )}
+      {top3.length ? (
+        <div className="controllo-mesi">
+          {top3.map(m => (
+            <div key={m.mese} className="controllo-mese" style={{ ["--c" as any]: COLORE_STATO[m.stato] ?? "gray" }}>
+              <div><b style={{ textTransform: "capitalize" }}>{nomeMese(m.mese)}</b> · {m.corse} corse</div>
+              <div className="tabular">favoriti a segno <b>{Math.round(m.quota_favoriti * 100)}%</b> · a caso {Math.round(m.quota_a_caso * 100)}%</div>
+              <div style={{ color: COLORE_STATO[m.stato] }}>{m.stato}{m.riferimento ? ` (prova: ${Math.round(m.riferimento * 100)}%)` : ""}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="spiega" style={{ marginTop: 6 }}>Il primo mese si giudica quando ci sono almeno 40 corse con la stima del giorno e l'arrivo.</div>
+      )}
+      {premi.length > 0 && (
+        <div className="spiega" style={{ marginTop: 8 }}>
+          Premi dei prossimi 12 mesi: {premi[0].stato === "in attesa" ? premi[premi.length - 1].nota : `${premi[0].stato}, ${premi[0].nota}`}.
+        </div>
+      )}
+      <div className="nota">Solo le stime del giorno contano: favoriti a segno contro la scelta a caso e contro la prova fatta all'allenamento. Se scende di oltre 8 punti sotto la prova, compare un avviso.</div>
+    </div>
+  );
+}
+
 export default function VerificaGare() {
   const [giorni, setGiorni] = useState(14);
   const [aperta, setAperta] = useState<string | null>(null);
@@ -50,6 +93,7 @@ export default function VerificaGare() {
 
   return (
     <div>
+      <ControlloMensile />
       <div className="verifica-sintesi-griglia">
         {[{ s: sg, nome: "Stime del giorno", nota: "mostrate nel calendario prima della gara" },
           { s: sr, nome: "Stime ricostruite", nota: "calcolate dopo, con i soli dati di prima della gara" }].map(({ s, nome, nota }) => (

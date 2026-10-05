@@ -72,6 +72,7 @@ export function stimaPremiCavallo(db: Database.Database, nome: string, costoAnno
     simili: fascia ? {
       n: fascia.n, basso: fascia.percentili[4], mediano: fascia.percentili[9], alto: fascia.percentili[14],
       zero: fascia.zero,
+      percentili: fascia.percentili,
     } : null,
   };
 }
@@ -109,4 +110,91 @@ export function pronosticoCavallo(db: Database.Database, nome: string) {
     }));
   }
   return { prossima, storico };
+}
+
+// ── TENERE O FERMARE: tutti i cavalli in attivita' insieme ──────────────────
+
+const esitoSaldo = (saldo: number, costo: number) =>
+  Math.abs(saldo) <= 0.1 * costo ? "pareggio" : saldo > 0 ? "profitto" : "perdita";
+
+/** Ogni cavallo stimato, con probabilita' ed esito al costo dato. */
+function cavalliStimati(db: Database.Database, costoAnno: number) {
+  if (!tabella(db, "stima_premi")) return [];
+  const righe = db.prepare(`
+    SELECT s.horse_name nome, s.premi_attesi attesi, s.premi_ultimo_anno ultimo, s.corse_ultimo_anno corse,
+           s.eta, h.birth_year anno, h.sex sesso, h.sire padre,
+           (SELECT grade FROM horse_ratings r WHERE r.name = s.horse_name AND r.rating_mode = 'performance' LIMIT 1) voto
+      FROM stima_premi s LEFT JOIN horses h ON h.name = s.horse_name
+  `).all() as any[];
+  return righe.map(r => {
+    const f = fasciaDi(r.attesi);
+    const pr = f ? probDaPercentili(f.percentili, costoAnno) : null;
+    const saldo = r.attesi - costoAnno;
+    return {
+      nome: r.nome, anno: r.anno, eta: r.eta, sesso: r.sesso, padre: r.padre, voto: r.voto,
+      attesi: Math.round(r.attesi), ultimo: Math.round(r.ultimo), corse: r.corse,
+      prob: pr ? Math.round(pr.p * 1000) / 10 : null, estremo: pr?.estremo ?? null,
+      saldo: Math.round(saldo), esito: esitoSaldo(saldo, costoAnno),
+    };
+  });
+}
+
+export function tenereElenco(db: Database.Database, o: {
+  costoAnno: number; etaMin?: number; etaMax?: number; padre?: string; sesso?: string; esito?: string;
+  cerca?: string; ordina?: string; pagina?: number; perPagina?: number;
+}) {
+  let c = cavalliStimati(db, o.costoAnno);
+  if (o.etaMin) c = c.filter(x => x.eta != null && x.eta >= o.etaMin!);
+  if (o.etaMax) c = c.filter(x => x.eta != null && x.eta <= o.etaMax!);
+  if (o.padre) c = c.filter(x => x.padre === o.padre);
+  if (o.sesso) c = c.filter(x => (x.sesso ?? "").toUpperCase().startsWith(o.sesso!));
+  if (o.cerca) { const q = o.cerca.toUpperCase(); c = c.filter(x => x.nome.includes(q)); }
+  const conti = { perdita: 0, pareggio: 0, profitto: 0 } as Record<string, number>;
+  for (const x of c) conti[x.esito]++;
+  const totale = c.length;
+  const probMedia = totale ? c.reduce((s, x) => s + (x.prob ?? 0), 0) / totale : null;
+  if (o.esito) c = c.filter(x => x.esito === o.esito);
+  const ord = o.ordina ?? "prob";
+  const chiave: Record<string, (x: any) => number | string> = {
+    prob: x => -(x.prob ?? -1), attesi: x => -x.attesi, saldo: x => -x.saldo, eta: x => x.eta ?? 99, nome: x => x.nome,
+    peggiori: x => (x.prob ?? 101),
+  };
+  const k = chiave[ord] ?? chiave.prob;
+  c.sort((a, b) => { const A = k(a), B = k(b); return A < B ? -1 : A > B ? 1 : (b.attesi - a.attesi) || a.nome.localeCompare(b.nome); });
+  const per = o.perPagina ?? 50, pag = Math.max(1, o.pagina ?? 1);
+  return {
+    costo_anno: Math.round(o.costoAnno), totale, filtrati: c.length, conti,
+    prob_media: probMedia != null ? Math.round(probMedia * 10) / 10 : null,
+    pagina: pag, pagine: Math.max(1, Math.ceil(c.length / per)),
+    righe: c.slice((pag - 1) * per, pag * per),
+  };
+}
+
+/** Per stallone: quanti figli in attivita' hanno buone probabilita' di
+ *  coprire le spese nei prossimi 12 mesi. Dato misurato sui figli che
+ *  corrono, non una previsione dai genitori. */
+export function tenereStalloni(db: Database.Database, costoAnno: number, minimo = 5) {
+  const c = cavalliStimati(db, costoAnno);
+  const g = new Map<string, any[]>();
+  for (const x of c) if (x.padre) { if (!g.has(x.padre)) g.set(x.padre, []); g.get(x.padre)!.push(x); }
+  const med = (a: number[]) => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const out = Array.from(g.entries()).filter(([, f]) => f.length >= minimo).map(([padre, f]) => ({
+    padre, figli: f.length,
+    attesi_mediani: Math.round(med(f.map(x => x.attesi))),
+    prob_media: Math.round(10 * f.reduce((s, x) => s + (x.prob ?? 0), 0) / f.length) / 10,
+    quota_probabili: Math.round(1000 * f.filter(x => (x.prob ?? 0) >= 50).length / f.length) / 10,
+    in_utile: f.filter(x => x.esito === "profitto").length,
+    in_pari: f.filter(x => x.esito === "pareggio").length,
+    in_perdita: f.filter(x => x.esito === "perdita").length,
+    saldo_medio: Math.round(f.reduce((s, x) => s + x.saldo, 0) / f.length),
+    migliore: [...f].sort((a, b) => b.attesi - a.attesi)[0],
+  }));
+  out.sort((a, b) => b.prob_media - a.prob_media || b.figli - a.figli);
+  return { costo_anno: Math.round(costoAnno), minimo, stalloni: out };
+}
+
+// ── CONTROLLO DEI MODELLI ───────────────────────────────────────────────────
+export function controlloModelli(db: Database.Database) {
+  if (!tabella(db, "controllo_modelli")) return { mesi: [] };
+  return { mesi: db.prepare("SELECT * FROM controllo_modelli ORDER BY mese DESC, modello LIMIT 36").all() };
 }
