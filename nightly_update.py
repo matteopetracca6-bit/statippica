@@ -3410,7 +3410,7 @@ _TRACK_CODES = {
     "NAPOLI": "NA", "CESENA": "CE", "SIRACUSA": "SR", "TREVISO": "TV",
     "MONTECATINI": "MT", "CASARANO": "CS", "PALERMO": "PA", "MODENA": "MO",
     "FIRENZE": "FI", "BARI": "BA", "VARESE": "VA", "GARIGLIANO": "GA",
-    "PONTECAGNANO": "PA", "PADOVA": "PD", "VILLANOVA": "VI",
+    "PONTECAGNANO": "PC", "PADOVA": "PD", "VILLANOVA": "VI",  # era "PA" come Palermo: due piste con la stessa sigla
     "CASTELLUCCIO": "CT", "ANCONA": "AN", "TRIESTE": "TS",
     "FROSINONE": "FR", "SAN SEVERO": "SS",
 }

@@ -98,8 +98,8 @@ export default function VerificaPronostico() {
 
           <h4 className="verifica-titolo">Cosa pesa di più</h4>
           <p className="verifica-testo" style={{ marginBottom: 0 }}>
-            Più di tutto conta il confronto con gli avversari della stessa corsa (piazzamenti, forma, tempi e premi), poi quanti sono i partenti,
-            come è andata l'ultima corsa e il numero di partenza. Il guidatore pesa meno, anche perché nel calendario non è indicato e si usa
+            Pesano soprattutto la forma recente (le ultime cinque corse e l'ultima), il numero di partenza, quanti sono i partenti e il
+            confronto con gli avversari della stessa corsa su piazzamenti, tempi e premi. Il guidatore pesa meno, anche perché nel calendario non è indicato e si usa
             quello dell'ultima corsa. Per i cavalli con meno di cinque corse in archivio la stima è debole ed è segnata con «poche corse».
           </p>
         </div>

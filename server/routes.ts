@@ -2600,6 +2600,81 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // Verifica gara per gara: la stima confrontata con l'arrivo vero, per le
+  // corse gia' disputate. Le stime "del_giorno" sono quelle mostrate davvero
+  // nel calendario prima della gara; le "ricostruito" sono calcolate dopo, ma
+  // con i soli dati di prima della gara, per le corse precedenti all'arrivo
+  // del pronostico.
+  app.get("/api/calendar/verifica", (req, res) => {
+    const db = getDb();
+    try {
+      const giorni = Math.max(1, Math.min(30, parseInt(req.query.giorni as string) || 14));
+      const c = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pronostico_top3_storico'").get();
+      if (!c) return res.json({ corse: [], sintesi: null });
+      const righe = db.prepare(`
+        SELECT s.pista, s.race_date, s.corsa, s.horse_name, s.prob, s.affidabile, s.tipo,
+               r.placement AS arrivo, r.placement_raw AS arrivo_testo, h.birth_year
+          FROM pronostico_top3_storico s
+          LEFT JOIN races r ON r.horse_name = s.horse_name AND r.race_date = s.race_date AND r.track = s.pista
+          LEFT JOIN horses h ON h.name = s.horse_name
+         WHERE s.race_date < date('now') AND s.race_date >= date('now', ?)
+      `).all(`-${giorni} day`) as any[];
+
+      const gruppi = new Map<string, any[]>();
+      for (const r of righe) {
+        const k = `${r.race_date}|${r.pista}|${r.corsa}`;
+        if (!gruppi.has(k)) gruppi.set(k, []);
+        gruppi.get(k)!.push(r);
+      }
+      const corse: any[] = [];
+      const tot: Record<string, { corse: number; fav: number; fav_noti: number; segno: number; tutti_noti: number; tutti_segno: number }> = {};
+      for (const [, g] of Array.from(gruppi.entries())) {
+        g.sort((a, b) => b.prob - a.prob);
+        const tipo = g[0].tipo;
+        const noti = g.filter(e => e.arrivo != null || e.arrivo_testo != null);
+        if (!noti.length) continue; // risultati non ancora arrivati
+        // Le stime ricostruite valgono solo se l'archivio conosce abbastanza
+        // partenti: con tre o quattro cavalli "i tre favoriti" sono quasi tutti.
+        if (tipo === "ricostruito" && g.length < 6) continue;
+        const voci = g.map((e, i) => {
+          const noto = e.arrivo != null || e.arrivo_testo != null;
+          return {
+            horse_name: e.horse_name, birth_year: e.birth_year, prob: Math.round(e.prob * 1000) / 10,
+            favorito: i < 3, affidabile: !!e.affidabile,
+            arrivo: e.arrivo ?? null, arrivo_testo: noto ? (e.arrivo != null ? `${e.arrivo}°` : e.arrivo_testo) : null,
+            top3: noto ? (e.arrivo != null && e.arrivo >= 1 && e.arrivo <= 3) : null,
+          };
+        });
+        const fav = voci.filter(v => v.favorito);
+        const favNoti = fav.filter(v => v.top3 != null);
+        const segno = favNoti.filter(v => v.top3).length;
+        const m = String(g[0].corsa).match(/R?(\d+)$/);
+        corse.push({
+          race_date: g[0].race_date, pista: g[0].pista, tipo,
+          corsa: /^\d{1,2}:\d{2}/.test(g[0].corsa) ? g[0].corsa.slice(0, 5) : null,
+          numero: m && !/^\d{1,2}:\d{2}/.test(g[0].corsa) ? Number(m[1]) : null,
+          partenti: g.length, favoriti_noti: favNoti.length, favoriti_a_segno: segno, voci,
+        });
+        const t = (tot[tipo] ??= { corse: 0, fav: 0, fav_noti: 0, segno: 0, tutti_noti: 0, tutti_segno: 0 });
+        t.corse++; t.fav += fav.length; t.fav_noti += favNoti.length; t.segno += segno;
+        const tn = voci.filter(v => v.top3 != null);
+        t.tutti_noti += tn.length; t.tutti_segno += tn.filter(v => v.top3).length;
+      }
+      corse.sort((a, b) => (b.race_date.localeCompare(a.race_date)) || String(a.pista).localeCompare(String(b.pista)) || ((a.numero ?? 0) - (b.numero ?? 0)) || String(a.corsa ?? "").localeCompare(String(b.corsa ?? "")));
+      const sintesi = Object.fromEntries(Object.entries(tot).map(([k, t]) => [k, {
+        corse: t.corse,
+        favoriti_controllati: t.fav_noti,
+        quota_favoriti: t.fav_noti ? Math.round((t.segno / t.fav_noti) * 1000) / 10 : null,
+        quota_tutti: t.tutti_noti ? Math.round((t.tutti_segno / t.tutti_noti) * 1000) / 10 : null,
+      }]));
+      res.json({ giorni, corse, sintesi });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally {
+      db.close();
+    }
+  });
+
   // Come e' stato provato il pronostico dei primi tre (scritto dall'allenamento).
   app.get("/api/pronostico/verifica", (_req, res) => {
     const v = leggiVerificaTop3();

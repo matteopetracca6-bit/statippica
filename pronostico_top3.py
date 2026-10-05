@@ -76,12 +76,34 @@ def _storico(conn: sqlite3.Connection):
         """SELECT r.horse_name AS cavallo, r.race_date AS data, r.track AS pista,
                   r.race_number AS numero, r.driver AS guidatore,
                   r.placement AS arrivo, r.time_km AS tempo, r.start_pos AS partenza,
-                  r.total_starters AS partenti, r.prize_net AS premio
+                  r.total_starters AS partenti, r.prize_net AS premio, r.race_code AS codice
              FROM races r
-            WHERE r.race_date IS NOT NULL AND r.race_date >= '2013-01-01'""", conn)
+            WHERE r.race_date IS NOT NULL AND r.race_date >= '2013-01-01'
+              -- non partiti: non hanno corso, quindi non sono una partenza
+              AND COALESCE(LOWER(r.placement_raw), '') NOT IN ('nr', 'n.p.')""", conn)
+    # Quale corsa: dal 2026 la fonte non scrive piu' il numero della corsa ma
+    # un codice (2026-09-27_BO_R3). Senza questo, tutte le corse di un giorno
+    # sulla stessa pista finivano in un'unica "corsa" da 45 cavalli.
+    num = df["numero"].astype("Int64").astype(str)
+    df["numero"] = num.where(df["numero"].notna(), df["codice"].astype(str))
+    df = df.drop(columns=["codice"])
     df["gara"] = df["data"].astype(str) + "|" + df["pista"].fillna("").astype(str) + "|" + df["numero"].astype(str)
     df["futura"] = False
     return df
+
+
+# Il calendario scrive le piste con una sigla (BO), l'archivio delle corse col
+# nome intero (BOLOGNA). Senza questa tabella le variabili "su questa pista"
+# restavano vuote per ogni cavallo in calendario, e la verifica non trovava
+# l'arrivo. Le sigle sono quelle del lavoro notturno (_TRACK_CODES).
+PISTE = {
+    "BO": "BOLOGNA", "MI": "MILANO", "RM": "ROMA", "TO": "TORINO", "NA": "NAPOLI",
+    "CE": "CESENA", "SR": "SIRACUSA", "TV": "TREVISO", "MT": "MONTECATINI",
+    "CS": "CASARANO", "PA": "PALERMO", "PC": "PONTECAGNANO", "MO": "MODENA",
+    "FI": "FIRENZE", "BA": "BARI", "VA": "VARESE", "GA": "GARIGLIANO", "PD": "PADOVA",
+    "VI": "VILLANOVA", "CT": "CASTELLUCCIO", "AN": "ANCONA", "TS": "TRIESTE",
+    "FR": "FROSINONE", "SS": "SAN SEVERO",
+}
 
 
 def _calendario(conn: sqlite3.Connection):
@@ -89,10 +111,13 @@ def _calendario(conn: sqlite3.Connection):
     up = pd.read_sql_query(
         """SELECT horse_name AS cavallo, race_date AS data, track AS pista,
                   race_time AS ora, start_pos AS partenza
-             FROM upcoming_races WHERE race_date >= date('now', '-1 day')""", conn)
+             FROM upcoming_races WHERE race_date >= date('now')""", conn)
     if up.empty:
         return up
+    # Solo gare non ancora corse: per una gara di ieri l'arrivo potrebbe gia'
+    # essere nell'archivio, e la stima lo vedrebbe.
     up["gara"] = up["data"] + "|" + up["pista"].fillna("") + "|" + up["ora"].astype(str)
+    up["pista"] = up["pista"].map(lambda c: PISTE.get(str(c).upper(), c))
     # Nel calendario l'elenco dei partenti e' completo: il loro numero e' il campo.
     up["partenti"] = up.groupby("gara")["cavallo"].transform("count")
     up["numero"] = up["ora"]
@@ -143,6 +168,7 @@ def costruisci_variabili(conn: sqlite3.Connection, con_calendario: bool = False)
         df[c] = pd.to_numeric(df[c], errors="coerce")
     # Il campo noto: dove la fonte non lo scrive, almeno quanti ne conosciamo.
     df.loc[(df["partenti"] < 2) | (df["partenti"] > 24), "partenti"] = np.nan
+    df["_campo_noto"] = df["partenti"].notna()
     df.loc[(df["partenza"] < 1) | (df["partenza"] > 24), "partenza"] = np.nan
     conosciuti = df.groupby("gara")["cavallo"].transform("count")
     df["partenti"] = df["partenti"].fillna(conosciuti)
@@ -394,7 +420,9 @@ def allena():
     # Corse con il campo completo (tutti i partenti nell'archivio): li' si
     # puo' provare anche la versione normalizzata, che e' quella del calendario.
     cnt = te.groupby("gara")["cavallo"].transform("count")
-    pieno = (cnt >= te["partenti"]).to_numpy()
+    # Solo dove la fonte dice quanti erano i partenti: se il numero manca,
+    # quelli che conosciamo sembrerebbero "tutti" anche quando non lo sono.
+    pieno = ((cnt >= te["partenti"]) & te["_campo_noto"].astype(bool)).to_numpy()
     p_norm = normalizza_per_gara(p_mio[pieno], gare[pieno], te["partenti"].to_numpy()[pieno])
     ris["campo_completo"] = {
         "corse": int(pd.Series(gare[pieno]).nunique()),
@@ -475,6 +503,57 @@ def _motivi(riga) -> list[dict]:
     return [{"testo": m["testo"], "pro": m["pro"]} for m in out[:3]]
 
 
+def _crea_storico(conn):
+    conn.execute("""CREATE TABLE IF NOT EXISTS pronostico_top3_storico (
+        pista TEXT, race_date TEXT, corsa TEXT, horse_name TEXT,
+        prob REAL, prob_grezza REAL, affidabile INTEGER, n_corse INTEGER,
+        campo_completo INTEGER, tipo TEXT, modello TEXT, calcolato_il TEXT,
+        PRIMARY KEY (race_date, pista, horse_name))""")
+
+
+GIORNI_RICOSTRUITI = 30
+
+
+def _ricostruisci(conn, df, lettore, ora) -> int:
+    """Stime per le gare gia' corse degli ultimi 30 giorni che non hanno una
+    stima del giorno: calcolate adesso, ma con i soli dati di prima della
+    gara (le variabili sono costruite cosi'). Il modello e' allenato fino al
+    2024, quindi queste gare non le ha mai viste. Sono segnate "ricostruito",
+    e non sostituiscono mai una stima fatta davvero il giorno prima."""
+    import numpy as np
+    import pandas as pd
+    oggi = pd.Timestamp(datetime.now(timezone.utc).date())
+    sel = df[(~df["futura"].astype(bool)) & (df["data"] >= oggi - pd.Timedelta(days=GIORNI_RICOSTRUITI)) & (df["data"] < oggi)]
+    if sel.empty:
+        return 0
+    gia = pd.read_sql_query("SELECT race_date, pista, horse_name FROM pronostico_top3_storico", conn)
+    chiave = sel["data"].dt.strftime("%Y-%m-%d") + "|" + sel["pista"].astype(str) + "|" + sel["cavallo"]
+    presenti = set(gia["race_date"] + "|" + gia["pista"].astype(str) + "|" + gia["horse_name"])
+    sel = sel[~chiave.isin(presenti)]
+    if sel.empty:
+        return 0
+    grezza = lettore.probabilita(sel[VARIABILI].to_numpy(dtype="float32"))
+    # Si normalizza solo dove l'archivio conosce tutti i partenti; altrimenti
+    # la somma a tre ripartirebbe i posti fra una parte del campo soltanto.
+    conosciuti = sel.groupby("gara")["cavallo"].transform("count").to_numpy()
+    completo = (sel["_campo_noto"].to_numpy(dtype=bool)) & (conosciuti >= sel["partenti"].to_numpy())
+    prob = grezza.copy()
+    if completo.any():
+        prob[completo] = normalizza_per_gara(grezza[completo], sel["gara"].to_numpy()[completo],
+                                             sel["partenti"].to_numpy()[completo])
+    righe = []
+    for (_, r), pg, pn, cc in zip(sel.iterrows(), grezza, prob, completo):
+        ncorse = int(r["h_n"]) if r["h_n"] == r["h_n"] else 0
+        righe.append((r["pista"], r["data"].strftime("%Y-%m-%d"), str(r["numero"]), r["cavallo"],
+                      round(float(pn), 4), round(float(pg), 4), 1 if ncorse >= 5 else 0, ncorse,
+                      1 if cc else 0, NOME_MODELLO, ora))
+    conn.executemany("""INSERT OR IGNORE INTO pronostico_top3_storico
+                        (pista, race_date, corsa, horse_name, prob, prob_grezza, affidabile,
+                         n_corse, campo_completo, tipo, modello, calcolato_il)
+                        VALUES (?,?,?,?,?,?,?,?,?,'ricostruito',?,?)""", righe)
+    return len(righe)
+
+
 def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
     """Riscrive la tabella pronostico_top3 per le gare in calendario.
     Non deve mai far fallire il lavoro notturno: in caso di problemi lascia la
@@ -502,8 +581,10 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
             PRIMARY KEY (track, race_date, race_time, horse_name))""")
         conn.execute("DELETE FROM pronostico_top3")
         if fut.empty:
+            _crea_storico(conn)
+            n_ric = _ricostruisci(conn, df, Alberi(FILE_MODELLO), datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
             conn.commit()
-            return 0
+            return n_ric
         lettore = Alberi(FILE_MODELLO)
         grezza = lettore.probabilita(fut[VARIABILI].to_numpy(dtype="float32"))
         prob = normalizza_per_gara(grezza, fut["gara"].to_numpy(), fut["partenti"].to_numpy())
@@ -513,11 +594,27 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
         for (_, r), pg, pn in zip(fut.iterrows(), grezza, prob):
             d = r.to_dict()
             ncorse = int(d["h_n"]) if d["h_n"] == d["h_n"] else 0
-            righe.append((d["pista"], d["data"].strftime("%Y-%m-%d"), str(d["numero"]), d["cavallo"],
+            righe.append((d["gara"].split("|")[1], d["data"].strftime("%Y-%m-%d"), str(d["numero"]), d["cavallo"],
                           round(float(pn), 4), round(float(pg), 4), 1 if ncorse >= 5 else 0, ncorse,
                           json.dumps(_motivi(d), ensure_ascii=False), NOME_MODELLO, verificato, ora))
         conn.executemany("INSERT OR REPLACE INTO pronostico_top3 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", righe)
+        # Lo storico conserva la stima del giorno anche dopo la gara, quando il
+        # calendario la cancella: serve per verificarla con l'arrivo vero.
+        _crea_storico(conn)
+        storico = []
+        for (_, r), pg, pn in zip(fut.iterrows(), grezza, prob):
+            ncorse = int(r["h_n"]) if r["h_n"] == r["h_n"] else 0
+            storico.append((r["pista"], r["data"].strftime("%Y-%m-%d"), str(r["numero"]), r["cavallo"],
+                            round(float(pn), 4), round(float(pg), 4), 1 if ncorse >= 5 else 0, ncorse,
+                            NOME_MODELLO, ora))
+        conn.executemany("""INSERT OR REPLACE INTO pronostico_top3_storico
+                            (pista, race_date, corsa, horse_name, prob, prob_grezza, affidabile,
+                             n_corse, campo_completo, tipo, modello, calcolato_il)
+                            VALUES (?,?,?,?,?,?,?,?,1,'del_giorno',?,?)""", storico)
+        n_ric = _ricostruisci(conn, df, lettore, ora)
         conn.commit()
+        if n_ric:
+            print(f"[PRONOSTICO] ricostruite {n_ric} stime di gare gia' corse", file=sys.stderr)
         print(f"[PRONOSTICO] {len(righe)} stime per {fut['gara'].nunique()} corse", file=sys.stderr)
         return len(righe)
     except Exception as e:  # mai bloccare la notte per questo

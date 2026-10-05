@@ -5,6 +5,7 @@ import GradeBadge from "../components/GradeBadge";
 import { getFlag } from "@/lib/flags";
 import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle, Medal } from "lucide-react";
 import VerificaPronostico from "../components/VerificaPronostico";
+import VerificaGare from "../components/VerificaGare";
 
 interface CalendarEntry {
   horse_name: string;
@@ -59,7 +60,7 @@ function formatTime(time: string): string {
 const TRACK_NAMES: Record<string, string> = {
   BO: "Bologna", MI: "Milano", RM: "Roma", TO: "Torino",
   NA: "Napoli", CE: "Cesena", SR: "Siracusa", TV: "Treviso",
-  MT: "Montecatini", CS: "Casarano", PA: "Palermo", MO: "Modena",
+  MT: "Montecatini", CS: "Casarano", PA: "Palermo", PC: "Pontecagnano", MO: "Modena",
   FI: "Firenze", BA: "Bari", VA: "Varese", GA: "Garigliano",
   PD: "Padova", VI: "Villanova", CT: "Castelluccio", AN: "Ancona",
   TS: "Trieste", FR: "Frosinone", SS: "San Severo",
@@ -69,6 +70,8 @@ export default function CalendarPage() {
   const [data, setData] = useState<CalendarResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedRace, setExpandedRace] = useState<string | null>(null);
+  // Prossime gare oppure verifica delle gare gia' corse.
+  const [scheda, setScheda] = useState<"prossime" | "verifica">("prossime");
 
   // Era `useState(() => ...)`: funzionava per caso, perche' React esegue quella
   // funzione una volta sola per calcolare il valore iniziale. Il posto giusto
@@ -103,7 +106,12 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {loading ? (
+      <div className="schede-calendario">
+        <button className={`chip-filtro${scheda === "prossime" ? " attivo" : ""}`} onClick={() => setScheda("prossime")}>Prossime gare</button>
+        <button className={`chip-filtro${scheda === "verifica" ? " attivo" : ""}`} onClick={() => setScheda("verifica")}>Com'è andato il pronostico</button>
+      </div>
+
+      {scheda === "verifica" ? <VerificaGare /> : loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {[1, 2, 3].map(i => (
             <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "12px" }} />
@@ -338,10 +346,10 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {data?.pronostico && <VerificaPronostico />}
+      {scheda === "prossime" && data?.pronostico && <VerificaPronostico />}
 
       {/* Disclaimer */}
-      {data && data.races.length > 0 && (
+      {scheda === "prossime" && data && data.races.length > 0 && (
         <div style={{
           marginTop: "20px", padding: "14px 18px",
           background: "hsl(220 12% 8%)", borderRadius: "10px",

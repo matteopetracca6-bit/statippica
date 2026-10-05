@@ -684,3 +684,44 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .verifica-tabella .barretta { width: 50px; }
   .fascia-valori { display: none; }
 }
+
+/* ── Verifica gara per gara ─────────────────────────────────────────────── */
+.schede-calendario { display: flex; gap: 6px; margin: -8px 0 18px; }
+.chip-filtro { font-family: inherit; font-size: 12px; font-weight: 600; color: hsl(210 8% 62%); background: hsl(220 12% 11%);
+  border: 1px solid hsl(220 10% 18%); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.chip-filtro.attivo { color: hsl(183 80% 62%); border-color: hsl(183 60% 40%); background: hsl(183 60% 40% / 0.12); }
+.schede-calendario .chip-filtro { font-size: 13px; padding: 7px 15px; }
+.verifica-sintesi-griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 10px; }
+.verifica-riquadro { background: hsl(220 12% 10%); border: 1px solid hsl(220 10% 16%); border-radius: 12px; padding: 16px 18px; }
+.verifica-riquadro .etichetta { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: hsl(210 8% 50%); }
+.verifica-riquadro .valore { font-size: 26px; font-weight: 800; color: hsl(150 55% 58%); margin-top: 4px; }
+.verifica-riquadro .spiega { font-size: 12.5px; color: hsl(210 8% 62%); line-height: 1.55; }
+.verifica-riquadro .nota { font-size: 11px; color: hsl(210 8% 44%); margin-top: 8px; }
+.verifica-corsa { background: hsl(220 12% 10%); border: 1px solid hsl(220 10% 16%); border-radius: 12px; overflow: hidden; }
+.verifica-corsa-testa { width: 100%; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 11px 16px; background: none;
+  border: none; cursor: pointer; font-family: inherit; text-align: left; color: hsl(210 10% 85%); }
+.verifica-corsa-testa:hover { background: hsl(220 10% 12%); }
+.vc-data { font-size: 12px; color: hsl(210 8% 55%); min-width: 78px; }
+.vc-pista { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; }
+.vc-pista svg { color: hsl(183 60% 55%); }
+.vc-tipo { font-size: 10px; color: hsl(40 60% 60%); border: 1px dashed hsl(40 50% 40%); border-radius: 5px; padding: 0 6px; }
+.vc-segno { font-size: 12px; font-weight: 800; border: 1px solid; border-radius: 6px; padding: 1px 8px; }
+.vc-favoriti { display: flex; flex-wrap: wrap; gap: 4px; }
+.vc-favoriti span { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: hsl(220 10% 14%); color: hsl(210 8% 60%); }
+.vc-favoriti span.ok { color: hsl(150 50% 62%); background: hsl(150 50% 40% / 0.14); }
+.vc-favoriti span.no { color: hsl(10 60% 66%); background: hsl(10 60% 45% / 0.12); }
+.verifica-corsa-corpo { border-top: 1px solid hsl(220 10% 16%); padding: 8px 12px 12px; }
+.vc-riga { display: grid; grid-template-columns: 1.6fr 1.2fr .8fr 24px; gap: 10px; align-items: center; padding: 7px 8px; font-size: 12.5px;
+  color: hsl(210 8% 70%); border-radius: 7px; }
+.vc-riga.intest { font-size: 10.5px; color: hsl(210 8% 46%); text-transform: uppercase; letter-spacing: .05em; }
+.vc-riga.fav { background: hsl(183 60% 40% / 0.07); }
+.vc-riga a { color: hsl(210 10% 88%); text-decoration: none; font-weight: 600; }
+.vc-riga small { margin-left: 6px; font-size: 10px; color: hsl(183 60% 58%); }
+.vc-riga .barretta { display: inline-block; width: 70px; height: 6px; border-radius: 3px; background: hsl(220 12% 7%); margin-right: 7px; vertical-align: middle; overflow: hidden; }
+.vc-riga .barretta span { display: block; height: 100%; background: hsl(183 70% 48%); }
+.vc-nota { font-size: 11px; color: hsl(210 8% 46%); margin-top: 8px; padding: 0 8px; line-height: 1.5; }
+@media (max-width: 560px) {
+  .vc-riga { grid-template-columns: 1.4fr 1fr .9fr 18px; gap: 6px; }
+  .vc-riga .barretta { display: none; }
+  .vc-data { min-width: 0; }
+}
