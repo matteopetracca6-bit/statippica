@@ -25,6 +25,7 @@ import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo } from "./careerValue";
 import { affidabilitaVoto } from "./gradeStability";
+import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi } from "./previsioni";
 import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
@@ -155,6 +156,29 @@ export function registerRoutes(httpServer: Server, app: Express) {
         Number.isFinite(ingresso as number) ? ingresso : null, Number.isFinite(monta as number) ? monta : null);
       if (!r) return res.status(404).json({ message: "cavallo non trovato" });
       res.json({ mensile, ...r });
+    } finally {
+      db.close();
+    }
+  });
+  // Previsioni sulla scheda del cavallo: prossima corsa (primi tre), stime
+  // passate con l'arrivo, premi attesi nei prossimi 12 mesi.
+  app.get("/api/horse/:name/:year/previsioni", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const nome = decodeURIComponent(req.params.name).toUpperCase();
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const v = leggiVerificaPremi();
+      res.json({
+        mensile,
+        ...pronosticoCavallo(db, nome),
+        premi: stimaPremiCavallo(db, nome, 12 * mensile),
+        verifica_premi: v ? {
+          periodo: v.periodo_prova, modello: v.modello_misure, anno_prima: v.come_l_anno_prima,
+          per_eta: v.media_per_eta, supera: v.supera_i_metodi_semplici, soglia: v.costo_anno_riferimento,
+          medi_reali: v.premi_medi_reali, medi_stimati: v.premi_medi_stimati,
+        } : null,
+      });
     } finally {
       db.close();
     }

@@ -1,4 +1,5 @@
 import { PareggioCavallo } from "../components/PareggioScheda";
+import PrevisioniCavallo from "../components/PrevisioniCavallo";
 import VendereOCorrere from "../components/VendereOCorrere";
 import IndiceSezioni from "../components/IndiceSezioni";
 import MantoSesso from "../components/MantoSesso";
@@ -391,6 +392,7 @@ export default function HorsePage() {
       <IndiceSezioni voci={[
         { id: "sez-genealogia", testo: "Genealogia" },
         { id: "sez-valore", testo: "Quanto può guadagnare" },
+        { id: "sez-previsioni", testo: "Previsioni" },
         { id: "sez-pareggio", testo: "Pareggio" },
         { id: "sez-vendere", testo: "Vendere o correre" },
         { id: "sez-voto", testo: "Il voto" },
@@ -430,6 +432,9 @@ export default function HorsePage() {
           serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
           questo dice cosa gli resta. */}
       <section id="sez-valore"><ValoreResiduo v={horse.valore_carriera} /></section>
+
+      {/* Previsioni XGBoost: prossima corsa e premi dei prossimi 12 mesi. */}
+      <PrevisioniCavallo nome={horse.name} anno={horse.birth_year} />
 
       {/* Punto di pareggio: ha ripagato quello che e' costato? */}
       <section id="sez-pareggio"><PareggioCavallo nome={horse.name} anno={horse.birth_year} /></section>

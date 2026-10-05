@@ -264,7 +264,13 @@ class Alberi:
         lm = m["learner"]
         bs = lm["learner_model_param"]["base_score"].strip("[]")
         base = float(bs)
-        self.margine0 = math.log(base / (1 - base))
+        # Il punto di partenza dipende dal tipo di modello: probabilita' (sì/no)
+        # oppure importo in euro (tweedie, che lavora sul logaritmo).
+        self.obiettivo = lm.get("objective", {}).get("name", "binary:logistic")
+        if self.obiettivo.startswith("reg:tweedie"):
+            self.margine0 = math.log(base)
+        else:
+            self.margine0 = math.log(base / (1 - base))
         self.alberi = []
         for t in lm["gradient_booster"]["model"]["trees"]:
             self.alberi.append((
@@ -299,6 +305,10 @@ class Alberi:
     def probabilita(self, X):
         import numpy as np
         return 1.0 / (1.0 + np.exp(-self.margine(X)))
+
+    def importo(self, X):
+        import numpy as np
+        return np.exp(self.margine(X))
 
 
 def normalizza_per_gara(prob, gare, campo):

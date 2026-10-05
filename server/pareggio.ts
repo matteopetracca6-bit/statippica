@@ -29,6 +29,7 @@
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
+import { stimaPremiCavallo } from "./previsioni";
 
 export const IPOTESI = {
   /** Allevamento dalla monta ai 2 anni, monta esclusa: gestazione, parto,
@@ -200,6 +201,11 @@ export function valutaCavallo(db: Database.Database, nome: string, anno: number 
   const montaPadre = montaData ?? (feePadre > 0 ? feePadre : null);
   const ingresso = ingressoDato ?? (montaPadre != null ? IPOTESI.allevamento_fino_2_anni + montaPadre : null);
   const costoAnno = 12 * mensile;
+  // Premi dei prossimi 12 mesi: se c'e' la stima del modello si usa quella
+  // (sbaglia meno di "vincera' quanto l'anno scorso", vedi stima_premi.py),
+  // altrimenti si ripiega sui premi degli ultimi 12 mesi.
+  const stima = ultimi12.n > 0 ? stimaPremiCavallo(db, h.name, costoAnno) : null;
+  const rendimento = stima ? stima.attesi : ultimi12.g;
   const speso = ingresso != null ? costoCarriera(ingresso, mensile, h.s) : null;
   const bilancio = speso != null ? h.e - speso : null;
   const tab = ingresso != null ? tabellaVoti(db, mensile, ingresso).voti.find(v => v.voto === h.grade) : undefined;
@@ -216,9 +222,12 @@ export function valutaCavallo(db: Database.Database, nome: string, anno: number 
     // se in un anno rende almeno quanto costa in un anno.
     gestione: {
       costo_annuo: Math.round(costoAnno),
-      rendimento_annuo: Math.round(ultimi12.g),
-      differenza: Math.round(ultimi12.g - costoAnno),
-      esito: ultimi12.n === 0 ? null : esito(ultimi12.g - costoAnno, costoAnno),
+      rendimento_annuo: Math.round(rendimento),
+      fonte: stima ? "modello" : "ultimi_12_mesi",
+      prob_copre: stima?.prob_copre ?? null,
+      prob_estremo: stima?.prob_estremo ?? null,
+      differenza: Math.round(rendimento - costoAnno),
+      esito: ultimi12.n === 0 ? null : esito(rendimento - costoAnno, costoAnno),
     },
     // Decisione 2: il bilancio di tutta la carriera fin qui.
     carriera: speso == null || bilancio == null ? null : {

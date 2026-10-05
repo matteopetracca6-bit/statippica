@@ -42,6 +42,7 @@ from bs4 import BeautifulSoup
 # quattromila righe.
 from fasi_guidatori_ippodromi import phase_driver_stats, phase_track_stats
 from pronostico_top3 import phase_pronostico_top3
+from stima_premi import phase_stima_premi
 
 # Senza questo, l'output può restare "bloccato" in un buffer per minuti prima
 # di comparire nei log di GitHub Actions (non essendo un terminale interattivo,
@@ -4367,6 +4368,7 @@ def main():
         phase_driver_stats(conn)        # FASE 3e: rendimento guidatori
         phase_track_stats(conn)         # FASE 3f: schede ippodromi e numeri di partenza
         phase_pronostico_top3(conn)     # FASE 3g: probabilita' dei primi tre per le gare in calendario
+        phase_stima_premi(conn)  # FASE 3h: premi attesi nei prossimi 12 mesi
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:

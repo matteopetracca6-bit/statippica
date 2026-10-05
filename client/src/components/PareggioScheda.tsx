@@ -109,7 +109,10 @@ export function PareggioCavallo({ nome, anno }: { nome: string; anno: number }) 
         <Blocco titolo="Tenerlo un altro anno" esito={d.ultimi_12_mesi.gare ? d.gestione.esito : null}
           valore={d.ultimi_12_mesi.gare ? euro(d.gestione.differenza) : "—"}
           nota={d.ultimi_12_mesi.gare
-            ? <>Negli ultimi 12 mesi ha vinto {euro(d.gestione.rendimento_annuo)} in {d.ultimi_12_mesi.gare} gare; un anno costa {euro(d.gestione.costo_annuo)}. Le spese passate non contano più.</>
+            ? d.gestione.fonte === "modello"
+              ? <>Premi attesi nei prossimi 12 mesi: {euro(d.gestione.rendimento_annuo)} (negli ultimi 12 ne ha vinti {euro(d.ultimi_12_mesi.guadagni)}); un anno costa {euro(d.gestione.costo_annuo)}.
+                  {d.gestione.prob_copre != null && <> Probabilità di coprire la spesa: {d.gestione.prob_estremo === "sotto" ? "meno del 5" : d.gestione.prob_estremo === "sopra" ? "oltre il 95" : Math.round(d.gestione.prob_copre)}%.</>} Le spese passate non contano più.</>
+              : <>Negli ultimi 12 mesi ha vinto {euro(d.gestione.rendimento_annuo)} in {d.ultimi_12_mesi.gare} gare; un anno costa {euro(d.gestione.costo_annuo)}. Le spese passate non contano più.</>
             : <>Nessuna corsa negli ultimi 12 mesi: non c'è un rendimento recente da confrontare con il costo di {euro(d.gestione.costo_annuo)} l'anno.</>} />
         {d.tipico_del_voto && (
           <Blocco titolo={`Il tipico cavallo ${d.tipico_del_voto.voto}`} esito={d.tipico_del_voto.esito} valore={euro(d.tipico_del_voto.utile_mediano)}
