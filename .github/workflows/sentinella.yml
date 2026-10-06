@@ -102,7 +102,13 @@ jobs:
         run: |
           set -uo pipefail
           for F in nightly-results.yml nightly-maintenance.yml; do
-            ULTIMO=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$F/runs?status=success&per_page=1" -q '.workflow_runs[0].updated_at' 2>/dev/null)
+            # Si leggono le ultime 20 esecuzioni e si prende la piu' recente
+            # riuscita. Il filtro "status=success" dell'API a volte rispondeva
+            # con una lista vecchia di giorni (06/10/2026: dava il 26/09 mentre
+            # le notti dal 1 al 5/10 erano tutte riuscite) e faceva scattare
+            # un falso allarme.
+            ULTIMO=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$F/runs?per_page=20" \
+              -q '[.workflow_runs[] | select(.conclusion == "success")] | sort_by(.updated_at) | last | .updated_at // ""' 2>/dev/null)
             ORE=$(python3 -c "import datetime as d,sys;t=sys.argv[1];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(t.replace('Z','+00:00'))).total_seconds()//3600) if t else 9999)" "$ULTIMO")
             echo "$F: ultimo riuscito $ULTIMO ($ORE ore fa)"
             if [ "$ORE" -gt 48 ]; then
