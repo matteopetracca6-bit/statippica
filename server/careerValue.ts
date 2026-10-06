@@ -49,6 +49,8 @@ export interface RigaValoreResiduo {
   p25: number;
   p50: number | null;
   p75: number;
+  voto?: string | null;
+  n_simili?: number | null;
   prob_zero: number;
   anni_attesi: number;
   prossimi_anni: string;
@@ -158,6 +160,8 @@ export interface StimaCarriera {
   prob_zero?: number;
   /** Media (comprende i pochi che vanno molto bene). */
   residuo_medio?: number;
+  voto_gruppo?: string | null;
+  n_simili?: number | null;
 }
 
 const EURO = (v: number) =>
@@ -340,8 +344,12 @@ export function stimaDaGradini(
   const zero = r.prob_zero >= 0.05
     ? ` In ${Math.round(r.prob_zero * 100)} casi su 100 non vince piu' nulla.` : "";
   const spiegazione =
+    (r.voto && r.n_simili
+      ? `Confrontato con ${r.n_simili.toLocaleString("it-IT")} cavalli del passato con voto ` +
+        `${r.voto} alla stessa eta' e premi simili nell'ultimo anno. `
+      : "") +
     `Per tutto il resto della carriera, nel caso tipico circa ${EURO(tipico)}: ` +
-    `meta' dei cavalli simili ha vinto meno, meta' di piu'.${zero} ` +
+    `meta' di quei cavalli ha vinto meno, meta' di piu'.${zero} ` +
     `La media e' piu' alta, ${EURO(medio)}, perche' i pochi che vanno molto ` +
     `bene la tirano su. Nell'ultimo anno ha vinto ${EURO(r.premi_12_mesi)}; ` +
     `per i prossimi dodici mesi il modello dei premi dice in media ` +
@@ -374,5 +382,7 @@ export function stimaDaGradini(
     anni_dopo: r.anni_dopo,
     prob_zero: r.prob_zero,
     residuo_medio: medio,
+    voto_gruppo: r.voto ?? null,
+    n_simili: r.n_simili ?? null,
   };
 }

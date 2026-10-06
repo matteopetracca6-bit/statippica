@@ -44,6 +44,8 @@ export interface ValoreCarriera {
   anni_dopo?: number;
   prob_zero?: number;
   residuo_medio?: number;
+  voto_gruppo?: string | null;
+  n_simili?: number | null;
 }
 
 const MUTED = "hsl(210 8% 48%)";
@@ -107,7 +109,9 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
       </div>
       <div style={{ fontSize: "11px", color: DIM, marginBottom: "14px" }}>
         {nuova
-          ? "Prossimi 12 mesi dal modello dei premi, anni dopo da cavalli con la stessa età e gli stessi premi"
+          ? (v.voto_gruppo && v.n_simili
+              ? `Confrontato con ${v.n_simili.toLocaleString("it-IT")} cavalli del passato: voto ${v.voto_gruppo}, ${v.eta} anni, ${v.fascia} € nell'ultimo anno`
+              : "Confrontato con cavalli del passato con lo stesso voto, la stessa età e gli stessi premi")
           : `Su medie storiche dei cavalli con voto ${v.fascia} alla stessa eta'`}
       </div>
 
@@ -233,12 +237,11 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
       <Spiegazione titolo="Come si calcola questa stima">
         {nuova ? (<>
           <p style={{ margin: "0 0 8px" }}>
-            Il primo anno è la stima del modello dei premi, la stessa del riquadro
-            «Premi attesi nei prossimi 12 mesi». Per gli anni dopo si guarda come sono
-            andati, negli anni passati, i cavalli con la stessa età e gli stessi premi
-            nell&apos;ultimo anno e in quello prima: quanti hanno continuato a correre e
-            quanto hanno vinto. Se il modello vede il cavallo sopra o sotto i suoi simili,
-            la differenza conta in pieno il primo anno e poi si attenua anno dopo anno.
+            Si cercano i cavalli degli anni passati con lo stesso voto (com&apos;era allora,
+            ricostruito con le sole gare corse fino a quel momento), la stessa età e premi
+            simili nell&apos;ultimo anno, e si guarda quanto hanno vinto davvero negli anni
+            dopo e quanti hanno smesso. Il primo anno è la stima del modello dei premi, la
+            stessa del riquadro «Premi attesi nei prossimi 12 mesi».
           </p>
           <p style={{ margin: "0 0 8px" }}>
             La cifra grande è il caso tipico: metà dei cavalli simili ha vinto meno, metà
