@@ -37,6 +37,22 @@ export interface AnnoFuturo {
   su_dati_della_fascia: boolean;
 }
 
+/** Riga della tabella valore_residuo (valore_carriera.py, ogni notte). */
+export interface RigaValoreResiduo {
+  eta: number;
+  premi_12_mesi: number;
+  gradino: string;
+  primo_anno: number;
+  primo_anno_fonte: string;
+  anni_dopo: number;
+  residuo: number;
+  p25: number;
+  p75: number;
+  prob_zero: number;
+  anni_attesi: number;
+  prossimi_anni: string;
+}
+
 export interface VoceResiduo {
   cumulato_tipico_a_questa_eta: number;
   quota_futura_tipica: number;
@@ -133,6 +149,12 @@ export interface StimaCarriera {
   stima_solida: boolean;
   quota_su_dati_della_fascia: number;
   avvertenza?: string;
+  /** "gradini": stima nuova (eta' + premi dell'ultimo anno); "fascia_voto": vecchia. */
+  metodo?: "gradini" | "fascia_voto";
+  premi_12_mesi?: number;
+  primo_anno?: number;
+  anni_dopo?: number;
+  prob_zero?: number;
 }
 
 const EURO = (v: number) =>
@@ -263,11 +285,92 @@ export function stimaValoreResiduo(
     prossimi_anni: v.prossimi_anni,
     stima_solida: v.stima_solida,
     quota_su_dati_della_fascia: v.quota_su_dati_della_fascia,
+    metodo: "fascia_voto",
     avvertenza: v.stima_solida
       ? undefined
       : "A questa eta' i cavalli di questa fascia di voto osservati " +
         "nell'archivio sono pochi, quindi il conto si appoggia in parte a " +
         "cavalli di ogni livello: la cifra descrive il cavallo medio piu' " +
         "che questo specifico profilo.",
+  };
+}
+
+
+/**
+ * Stima nuova, calcolata di notte da valore_carriera.py.
+ *
+ * La vecchia tavola divideva i cavalli per voto FINALE: chi si era ritirato
+ * presto restava con un voto basso, e un giovane con voto basso veniva
+ * confrontato con cavalli che si erano fermati quasi subito. Risultato:
+ * "il meglio e' alle spalle" anche a chi aveva appena cominciato, e cifre
+ * molto lontane dai premi attesi dei prossimi dodici mesi.
+ *
+ * Ora: i prossimi dodici mesi vengono dal modello dei premi (lo stesso del
+ * riquadro "Premi attesi"), gli anni successivi da come sono andati negli
+ * anni passati i cavalli con la stessa eta' e gli stessi premi nell'ultimo
+ * anno (e in quello prima).
+ */
+export function stimaDaGradini(
+  r: RigaValoreResiduo,
+  giaGuadagnato: number,
+): StimaCarriera {
+  const residuo = Math.max(0, r.residuo);
+  const quota = residuo + giaGuadagnato > 0 ? residuo / (residuo + giaGuadagnato) : 0;
+  let anni: { eta: number; prob_attivo: number; atteso: number }[] = [];
+  try { anni = JSON.parse(r.prossimi_anni || "[]"); } catch { anni = []; }
+
+  let giudizio: Giudizio;
+  let titolo: string;
+  if (quota >= 0.6) { giudizio = "giovane"; titolo = "Il grosso deve ancora arrivare"; }
+  else if (quota >= 0.3) { giudizio = "nel_pieno"; titolo = "Nel pieno della carriera"; }
+  else if (quota >= 0.1) { giudizio = "in_calo"; titolo = "Il meglio e' alle spalle"; }
+  else { giudizio = "quasi_finito"; titolo = "Ha quasi finito la benzina"; }
+
+  const tendenza =
+    r.primo_anno >= r.premi_12_mesi * 1.15
+      ? "Il modello lo vede in crescita rispetto all'ultimo anno."
+      : r.primo_anno <= r.premi_12_mesi * 0.85
+        ? "Il modello lo vede in calo rispetto all'ultimo anno."
+        : "Il modello lo vede piu' o meno sui livelli dell'ultimo anno.";
+
+  const spiegazione =
+    `Nei prossimi dodici mesi ci si aspettano circa ${EURO(r.primo_anno)} ` +
+    `(nell'ultimo anno ne ha vinti ${EURO(r.premi_12_mesi)}). ${tendenza} ` +
+    `Negli anni successivi, guardando come sono andati i cavalli con la sua ` +
+    `eta' e i suoi premi, altri ${EURO(r.anni_dopo)} circa, con ` +
+    `${r.anni_attesi.toFixed(1).replace(".", ",")} stagioni ancora attese. ` +
+    (quota >= 0.6
+      ? "La parte piu' redditizia e' ancora davanti."
+      : quota >= 0.3
+        ? "Una parte importante della carriera e' ancora da correre."
+        : quota >= 0.1
+          ? "Resta un margine, ma minore di quanto ha gia' prodotto."
+          : "Chi lo compra oggi paga soprattutto quello che ha gia' fatto.");
+
+  return {
+    disponibile: true,
+    eta: r.eta,
+    fascia: r.gradino,
+    gia_guadagnato: giaGuadagnato,
+    residuo_mediano: residuo,
+    residuo_p25: r.p25,
+    residuo_p75: r.p75,
+    anni_attesi_ancora: r.anni_attesi,
+    quota_futura: Math.round(quota * 1000) / 1000,
+    tipico_a_questa_eta: 0,
+    rendimento_vs_pari: 1,
+    residuo_personalizzato: residuo,
+    giudizio, titolo, spiegazione,
+    prossimi_anni: anni.map(a => ({
+      eta: a.eta, prob_attivo: a.prob_attivo,
+      guadagno_mediano_anno: a.atteso, su_dati_della_fascia: true,
+    })),
+    stima_solida: true,
+    quota_su_dati_della_fascia: 1,
+    metodo: "gradini",
+    premi_12_mesi: r.premi_12_mesi,
+    primo_anno: r.primo_anno,
+    anni_dopo: r.anni_dopo,
+    prob_zero: r.prob_zero,
   };
 }

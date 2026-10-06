@@ -38,6 +38,11 @@ export interface ValoreCarriera {
   stima_solida: boolean;
   quota_su_dati_della_fascia: number;
   avvertenza?: string;
+  metodo?: "gradini" | "fascia_voto";
+  premi_12_mesi?: number;
+  primo_anno?: number;
+  anni_dopo?: number;
+  prob_zero?: number;
 }
 
 const MUTED = "hsl(210 8% 48%)";
@@ -83,6 +88,7 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
      tutta piena proprio quando ha appena cominciato. */
   const pctFatto = (1 - v.quota_futura) * 100;
   const scostamento = Math.abs(v.rendimento_vs_pari - 1) >= 0.15;
+  const nuova = v.metodo === "gradini";
 
   return (
     <div
@@ -99,7 +105,9 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
         </span>
       </div>
       <div style={{ fontSize: "11px", color: DIM, marginBottom: "14px" }}>
-        Su medie storiche dei cavalli con voto {v.fascia} alla stessa eta'
+        {nuova
+          ? "Prossimi 12 mesi dal modello dei premi, anni dopo da cavalli con la stessa età e gli stessi premi"
+          : `Su medie storiche dei cavalli con voto ${v.fascia} alla stessa eta'`}
       </div>
 
       <div style={{ fontSize: "17px", fontWeight: 800, color: colore, marginBottom: "12px" }}>
@@ -117,9 +125,11 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
           </div>
           <div style={{ fontSize: "11px", color: MUTED }}>ancora da incassare</div>
           <div className="tabular" style={{ fontSize: "10.5px", color: DIM, marginTop: "2px" }}>
-            {scostamento
-              ? `${euro(v.residuo_mediano)} per la sua fascia, riproporzionato`
-              : `fascia ${euro(v.residuo_p25)} – ${euro(v.residuo_p75)}`}
+            {nuova
+              ? `${euro(v.primo_anno ?? 0)} nei prossimi 12 mesi + ${euro(v.anni_dopo ?? 0)} dopo`
+              : scostamento
+                ? `${euro(v.residuo_mediano)} per la sua fascia, riproporzionato`
+                : `fascia ${euro(v.residuo_p25)} – ${euro(v.residuo_p75)}`}
           </div>
         </div>
         <div>
@@ -137,7 +147,9 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
           </div>
           <div style={{ fontSize: "11px", color: MUTED }}>della carriera resta</div>
           <div className="tabular" style={{ fontSize: "10.5px", color: DIM, marginTop: "2px" }}>
-            {v.rendimento_vs_pari.toFixed(2)}× rispetto ai pari
+            {nuova
+              ? `ha già vinto ${euro(v.gia_guadagnato)}`
+              : `${v.rendimento_vs_pari.toFixed(2)}× rispetto ai pari`}
           </div>
         </div>
       </div>
@@ -216,6 +228,25 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
           diverse ma erano entrambe "come si legge questo numero", e in chiaro
           occupavano piu' spazio del numero stesso. */}
       <Spiegazione titolo="Come si calcola questa stima">
+        {nuova ? (<>
+          <p style={{ margin: "0 0 8px" }}>
+            Il primo anno è la stima del modello dei premi, la stessa del riquadro
+            «Premi attesi nei prossimi 12 mesi». Per gli anni dopo si guarda come sono
+            andati, negli anni passati, i cavalli con la stessa età e gli stessi premi
+            nell&apos;ultimo anno e in quello prima: quanti hanno continuato a correre e
+            quanto hanno vinto. Se il modello vede il cavallo sopra o sotto i suoi simili,
+            la differenza conta in pieno il primo anno e poi si attenua anno dopo anno.
+          </p>
+          <p style={{ margin: "0 0 8px" }}>
+            Le cifre sono medie: pochi cavalli che vanno molto bene le tirano su. Nella
+            metà centrale dei casi simulati il totale sta fra {euro(v.residuo_p25)} e{" "}
+            {euro(v.residuo_p75)}
+            {(v.prob_zero ?? 0) >= 0.05 ? `; nel ${Math.round((v.prob_zero ?? 0) * 100)}% dei casi non vince più nulla` : ""}.
+          </p>
+          <p style={{ margin: 0 }}>
+            Infortuni, cambio di scuderia e qualità del guidatore non sono considerati.
+          </p>
+        </>) : (<>
         {v.prossimi_anni.length > 0 && (
           <p style={{ margin: "0 0 8px" }}>
             Il guadagno indicato per ogni eta&apos; e&apos; quello tipico di chi corre a
@@ -229,6 +260,7 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
           E&apos; una media storica per fascia di voto, non una previsione su questo animale:
           infortuni, cambio di scuderia e qualita&apos; del driver non sono considerati.
         </p>
+        </>)}
       </Spiegazione>
     </div>
   );

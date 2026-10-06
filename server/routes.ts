@@ -23,7 +23,7 @@ import {
 import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
 import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
-import { stimaValoreResiduo } from "./careerValue";
+import { stimaValoreResiduo, stimaDaGradini, type RigaValoreResiduo } from "./careerValue";
 import { affidabilitaVoto } from "./gradeStability";
 import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
 import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
@@ -676,6 +676,15 @@ export function registerRoutes(httpServer: Server, app: Express) {
         inAttivita,
         annoOggi,
       );
+      // Stima nuova (eta' + premi dell'ultimo anno, calcolata di notte):
+      // se c'e' sostituisce la vecchia tavola per fascia di voto.
+      if (inAttivita) {
+        let riga: RigaValoreResiduo | undefined;
+        try {
+          riga = db.prepare(`SELECT * FROM valore_residuo WHERE horse_name = ?`).get(name) as any;
+        } catch { riga = undefined; /* tabella non ancora creata */ }
+        if (riga) valoreCarriera = stimaDaGradini(riga, horse.career_earnings || 0);
+      }
       if (valoreCarriera && dateMancanti) {
         const motivo =
           "Le gare di questo cavallo sono in archivio senza data, quindi " +
