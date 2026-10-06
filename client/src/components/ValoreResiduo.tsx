@@ -43,6 +43,7 @@ export interface ValoreCarriera {
   primo_anno?: number;
   anni_dopo?: number;
   prob_zero?: number;
+  residuo_medio?: number;
 }
 
 const MUTED = "hsl(210 8% 48%)";
@@ -123,10 +124,12 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
           <div className="tabular" style={{ fontSize: "20px", fontWeight: 800, color: colore }}>
             {euro(v.residuo_personalizzato)}
           </div>
-          <div style={{ fontSize: "11px", color: MUTED }}>ancora da incassare</div>
+          <div style={{ fontSize: "11px", color: MUTED }}>
+            {nuova ? "ancora da incassare, caso tipico" : "ancora da incassare"}
+          </div>
           <div className="tabular" style={{ fontSize: "10.5px", color: DIM, marginTop: "2px" }}>
             {nuova
-              ? `${euro(v.primo_anno ?? 0)} nei prossimi 12 mesi + ${euro(v.anni_dopo ?? 0)} dopo`
+              ? `in media ${euro(v.residuo_medio ?? 0)}: pochi casi buoni alzano la media`
               : scostamento
                 ? `${euro(v.residuo_mediano)} per la sua fascia, riproporzionato`
                 : `fascia ${euro(v.residuo_p25)} – ${euro(v.residuo_p75)}`}
@@ -190,7 +193,7 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
             fontSize: "10.5px", color: DIM, textTransform: "uppercase",
             letterSpacing: "0.07em", fontWeight: 700, marginBottom: "7px",
           }}>
-            Anno per anno
+            {nuova ? "Anno per anno, in media" : "Anno per anno"}
           </div>
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {v.prossimi_anni.map(a => (
@@ -238,9 +241,10 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
             la differenza conta in pieno il primo anno e poi si attenua anno dopo anno.
           </p>
           <p style={{ margin: "0 0 8px" }}>
-            Le cifre sono medie: pochi cavalli che vanno molto bene le tirano su. Nella
-            metà centrale dei casi simulati il totale sta fra {euro(v.residuo_p25)} e{" "}
-            {euro(v.residuo_p75)}
+            La cifra grande è il caso tipico: metà dei cavalli simili ha vinto meno, metà
+            di più. Le cifre anno per anno sono medie, e pochi cavalli che vanno molto
+            bene le tirano su. Nella metà centrale dei casi il totale sta fra{" "}
+            {euro(v.residuo_p25)} e {euro(v.residuo_p75)}
             {(v.prob_zero ?? 0) >= 0.05 ? `; nel ${Math.round((v.prob_zero ?? 0) * 100)}% dei casi non vince più nulla` : ""}.
           </p>
           <p style={{ margin: 0 }}>

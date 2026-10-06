@@ -257,6 +257,7 @@ def stima(catena: Catena, eta: int, premi12: float, attesi_modello: float | None
         "anni_dopo": round(dopo),
         "residuo": round(primo + dopo),
         "p25": round(float(np.percentile(sim, 25))),
+        "p50": round(float(np.percentile(sim, 50))),
         "p75": round(float(np.percentile(sim, 75))),
         "prob_zero": round(float((sim <= 0).mean()), 3),
         "anni_attesi": round(sum(a["prob_attivo"] for a in anni), 1),
@@ -286,7 +287,7 @@ def phase_valore_residuo(conn: sqlite3.Connection, oggi: date | None = None) -> 
     conn.execute("""CREATE TABLE valore_residuo (
         horse_name TEXT PRIMARY KEY, eta INTEGER, premi_12_mesi REAL, gradino TEXT,
         primo_anno REAL, primo_anno_fonte TEXT, anni_dopo REAL, residuo REAL,
-        p25 REAL, p75 REAL, prob_zero REAL, anni_attesi REAL, prossimi_anni TEXT,
+        p25 REAL, p50 REAL, p75 REAL, prob_zero REAL, anni_attesi REAL, prossimi_anni TEXT,
         calcolato_il TEXT)""")
     adesso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     cache: dict[tuple[int, int], dict] = {}
@@ -304,9 +305,9 @@ def phase_valore_residuo(conn: sqlite3.Connection, oggi: date | None = None) -> 
         if not v:
             continue
         righe.append((x["nome"], eta, premi12, v["gradino"], v["primo_anno"], v["primo_anno_fonte"],
-                      v["anni_dopo"], v["residuo"], v["p25"], v["p75"], v["prob_zero"], v["anni_attesi"],
+                      v["anni_dopo"], v["residuo"], v["p25"], v["p50"], v["p75"], v["prob_zero"], v["anni_attesi"],
                       json.dumps(v["prossimi_anni"]), adesso))
-    conn.executemany("INSERT OR REPLACE INTO valore_residuo VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", righe)
+    conn.executemany("INSERT OR REPLACE INTO valore_residuo VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", righe)
     conn.commit()
     print(f"[VALORE RESIDUO] {len(righe)} cavalli", file=sys.stderr)
     return len(righe)

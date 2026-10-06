@@ -47,6 +47,7 @@ export interface RigaValoreResiduo {
   anni_dopo: number;
   residuo: number;
   p25: number;
+  p50: number | null;
   p75: number;
   prob_zero: number;
   anni_attesi: number;
@@ -155,6 +156,8 @@ export interface StimaCarriera {
   primo_anno?: number;
   anni_dopo?: number;
   prob_zero?: number;
+  /** Media (comprende i pochi che vanno molto bene). */
+  residuo_medio?: number;
 }
 
 const EURO = (v: number) =>
@@ -314,52 +317,50 @@ export function stimaDaGradini(
   r: RigaValoreResiduo,
   giaGuadagnato: number,
 ): StimaCarriera {
-  const residuo = Math.max(0, r.residuo);
-  const quota = residuo + giaGuadagnato > 0 ? residuo / (residuo + giaGuadagnato) : 0;
+  const medio = Math.max(0, r.residuo);
+  // Cifra principale: il caso TIPICO (mediana delle carriere simulate).
+  // La media e' tirata su dai pochi che vanno molto bene: per un cavallo
+  // modesto la mediana descrive meglio cosa aspettarsi.
+  const tipico = Math.max(0, r.p50 ?? medio);
+  const quota = tipico + giaGuadagnato > 0 ? tipico / (tipico + giaGuadagnato) : 0;
   let anni: { eta: number; prob_attivo: number; atteso: number }[] = [];
   try { anni = JSON.parse(r.prossimi_anni || "[]"); } catch { anni = []; }
 
   let giudizio: Giudizio;
   let titolo: string;
-  if (quota >= 0.6) { giudizio = "giovane"; titolo = "Il grosso deve ancora arrivare"; }
+  if (tipico <= 0 || r.prob_zero >= 0.5) {
+    giudizio = "quasi_finito"; titolo = "Probabilmente non vincera' piu' molto";
+  } else if (tipico < 5000) {
+    giudizio = "in_calo"; titolo = "Ancora qualche corsa, ma rende poco";
+  } else if (quota >= 0.6) { giudizio = "giovane"; titolo = "Il grosso deve ancora arrivare"; }
   else if (quota >= 0.3) { giudizio = "nel_pieno"; titolo = "Nel pieno della carriera"; }
   else if (quota >= 0.1) { giudizio = "in_calo"; titolo = "Il meglio e' alle spalle"; }
   else { giudizio = "quasi_finito"; titolo = "Ha quasi finito la benzina"; }
 
-  const tendenza =
-    r.primo_anno >= r.premi_12_mesi * 1.15
-      ? "Il modello lo vede in crescita rispetto all'ultimo anno."
-      : r.primo_anno <= r.premi_12_mesi * 0.85
-        ? "Il modello lo vede in calo rispetto all'ultimo anno."
-        : "Il modello lo vede piu' o meno sui livelli dell'ultimo anno.";
-
+  const zero = r.prob_zero >= 0.05
+    ? ` In ${Math.round(r.prob_zero * 100)} casi su 100 non vince piu' nulla.` : "";
   const spiegazione =
-    `Nei prossimi dodici mesi ci si aspettano circa ${EURO(r.primo_anno)} ` +
-    `(nell'ultimo anno ne ha vinti ${EURO(r.premi_12_mesi)}). ${tendenza} ` +
-    `Negli anni successivi, guardando come sono andati i cavalli con la sua ` +
-    `eta' e i suoi premi, altri ${EURO(r.anni_dopo)} circa, con ` +
-    `${r.anni_attesi.toFixed(1).replace(".", ",")} stagioni ancora attese. ` +
-    (quota >= 0.6
-      ? "La parte piu' redditizia e' ancora davanti."
-      : quota >= 0.3
-        ? "Una parte importante della carriera e' ancora da correre."
-        : quota >= 0.1
-          ? "Resta un margine, ma minore di quanto ha gia' prodotto."
-          : "Chi lo compra oggi paga soprattutto quello che ha gia' fatto.");
+    `Per tutto il resto della carriera, nel caso tipico circa ${EURO(tipico)}: ` +
+    `meta' dei cavalli simili ha vinto meno, meta' di piu'.${zero} ` +
+    `La media e' piu' alta, ${EURO(medio)}, perche' i pochi che vanno molto ` +
+    `bene la tirano su. Nell'ultimo anno ha vinto ${EURO(r.premi_12_mesi)}; ` +
+    `per i prossimi dodici mesi il modello dei premi dice in media ` +
+    `${EURO(r.primo_anno)}. Stagioni ancora attese: circa ` +
+    `${r.anni_attesi.toFixed(1).replace(".", ",")}.`;
 
   return {
     disponibile: true,
     eta: r.eta,
     fascia: r.gradino,
     gia_guadagnato: giaGuadagnato,
-    residuo_mediano: residuo,
+    residuo_mediano: tipico,
     residuo_p25: r.p25,
     residuo_p75: r.p75,
     anni_attesi_ancora: r.anni_attesi,
     quota_futura: Math.round(quota * 1000) / 1000,
     tipico_a_questa_eta: 0,
     rendimento_vs_pari: 1,
-    residuo_personalizzato: residuo,
+    residuo_personalizzato: tipico,
     giudizio, titolo, spiegazione,
     prossimi_anni: anni.map(a => ({
       eta: a.eta, prob_attivo: a.prob_attivo,
@@ -372,5 +373,6 @@ export function stimaDaGradini(
     primo_anno: r.primo_anno,
     anni_dopo: r.anni_dopo,
     prob_zero: r.prob_zero,
+    residuo_medio: medio,
   };
 }
