@@ -90,16 +90,27 @@ fi
 gh release upload archivio data.db.gz --repo "$REPO" --clobber
 
 # 6. Verifica: si riscarica e si confronta. L'indirizzo pubblico passa da una
-#    rete di copie che per qualche secondo puo' ancora dare la versione di
-#    prima (il 30/09 la prima verifica, dopo 5 secondi, l'ha data): si
-#    riprova per un paio di minuti prima di dare l'allarme.
+#    rete di copie che per qualche tempo puo' ancora dare la versione di
+#    prima: il 30/09 dopo 5 secondi, l'08/10 per piu' di due minuti (il
+#    caricamento era riuscito, ma la verifica ha dichiarato fallito il lavoro
+#    e il sito non e' stato fatto ripartire). Ora si riprova per sei minuti e,
+#    se la rete di copie e' ancora indietro, si chiede direttamente a GitHub
+#    la dimensione del file caricato: se coincide il caricamento e' riuscito.
 OK=0
-for i in 1 2 3 4 5 6; do
-  sleep 20
+for i in $(seq 1 12); do
+  sleep 30
   if curl -fsSL --retry 3 --retry-delay 10 -m 600 -o /tmp/verifica.gz "$BASE/data.db.gz" \
      && [ "$(stat -c%s /tmp/verifica.gz)" = "$BYTE" ]; then OK=1; break; fi
   echo "   la copia scaricata non e' ancora quella nuova, riprovo ($i)"
 done
 rm -f /tmp/verifica.gz
-[ "$OK" = 1 ] || { echo "::error::dopo due minuti si scarica ancora una copia diversa da quella caricata."; exit 1; }
+if [ "$OK" != 1 ]; then
+  SU_GITHUB=$(gh release view archivio --repo "$REPO" --json assets \
+    -q '.assets[] | select(.name == "data.db.gz") | .size' 2>/dev/null || echo 0)
+  if [ "$SU_GITHUB" = "$BYTE" ]; then
+    echo "::warning::la rete di copie da' ancora la versione di prima, ma GitHub conferma il file caricato ($BYTE byte): considero la pubblicazione riuscita."
+    OK=1
+  fi
+fi
+[ "$OK" = 1 ] || { echo "::error::dopo sei minuti si scarica ancora una copia diversa da quella caricata, e GitHub non conferma il file."; exit 1; }
 echo "== Pubblicato: $GARE gare, $BYTE byte =="
