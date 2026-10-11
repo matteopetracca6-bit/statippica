@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "../components/BandieraCavallo";
 import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle, Medal } from "lucide-react";
 import VerificaPronostico from "../components/VerificaPronostico";
 import VerificaGare from "../components/VerificaGare";
@@ -200,7 +200,7 @@ export default function CalendarPage() {
                           <Medal size={12} style={{ color: idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : "hsl(30 70% 50%)" }} />
                           <Link href={`/horse/${encodeURIComponent(e.horse_name)}/${e.birth_year || 0}`}>
                             <a style={{ fontSize: "11px", color: "hsl(210 10% 80%)", textDecoration: "none", fontWeight: 600 }} onClick={ev => ev.stopPropagation()}>
-                              {e.horse_name}
+                              <BandieraCavallo nome={e.horse_name} paese={e.country} solo_estero /> {e.horse_name}
                             </a>
                           </Link>
                           {(e.top3 || !data.pronostico) && (<span className="tabular" style={{ fontSize: "10px", color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 50%)", fontWeight: 700 }}>
@@ -283,7 +283,7 @@ export default function CalendarPage() {
                                   color: idx < 3 ? podiumColor : "hsl(210 10% 85%)",
                                   textDecoration: "none",
                                 }}>
-                                  {getFlag(entry.country, entry.horse_name)} {entry.horse_name}
+                                  <BandieraCavallo nome={entry.horse_name} paese={entry.country} /> {entry.horse_name}
                                 </a>
                               </Link>
                               <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "2px" }}>

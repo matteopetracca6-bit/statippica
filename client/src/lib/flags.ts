@@ -38,7 +38,8 @@ export const COUNTRY_FLAG: Record<string, string> = {
   A:   "🇺🇸",  // America (USA)
   S:   "🇸🇪",  // Svezia
   N:   "🇳🇴",  // Norvegia
-  D:   "🇩🇰",  // Danimarca
+  D:   "🇩🇪",  // Germania (sigla dei nomi esteri, es. FRAGOLINO ROSSO (D))
+  DK:  "🇩🇰",  // Danimarca
   SF:  "🇫🇮",  // Finlandia
   G:   "🇩🇪",  // Germania
 };
@@ -49,7 +50,7 @@ export const COUNTRY_NAME: Record<string, string> = {
   AUS: "Australia", NZL: "Nuova Zelanda", CAN: "Canada",
   NED: "Paesi Bassi", BEL: "Belgio", GBR: "Gran Bretagna", IRE: "Irlanda",
   I: "Italia", F: "Francia", A: "USA", S: "Svezia", N: "Norvegia",
-  D: "Danimarca", SF: "Finlandia", G: "Germania",
+  D: "Germania", DK: "Danimarca", SF: "Finlandia", G: "Germania",
 };
 
 /**

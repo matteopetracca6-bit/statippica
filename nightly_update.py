@@ -1144,9 +1144,12 @@ def _parse_cavan_page(soup: BeautifulSoup, horse_name: str) -> dict:
     horse_name = _normalize_name(horse_name)
     text = soup.get_text(" ", strip=True)
 
-    m = re.search(r"\b([mf])\.([ie])\.(\d{1,2})\b", text)
+    # m = maschio, f = femmina, c = castrone. Il castrone mancava: per lui
+    # non si leggevano ne' sesso ne' anno di nascita ne' genitori, e senza
+    # anno di nascita il voto non si calcola (Umberto Matto, 113 corse).
+    m = re.search(r"\b([mfc])\.([ie])\.(\d{1,2})\b", text)
     if m:
-        result["sex"] = "M" if m.group(1) == "m" else "F"
+        result["sex"] = {"m": "M", "f": "F", "c": "C"}[m.group(1)]
         result["country"] = "ITA" if m.group(2) == "i" else "EST"
         # L'età è "anni compiuti nella stagione corrente": approssimiamo l'anno di nascita
         # come anno_corrente - età. Può sbagliare di ±1 rispetto al vero anno solare di nascita.
@@ -1302,9 +1305,12 @@ def _parse_anagrafica_page(soup: BeautifulSoup, horse_name: str) -> dict:
     horse_name = _normalize_name(horse_name)
     text = soup.get_text(" ", strip=True)
 
-    m = re.search(r"\b([mf])\.([ie])\.(\d{1,2})\b", text)
+    # m = maschio, f = femmina, c = castrone. Il castrone mancava: per lui
+    # non si leggevano ne' sesso ne' anno di nascita ne' genitori, e senza
+    # anno di nascita il voto non si calcola (Umberto Matto, 113 corse).
+    m = re.search(r"\b([mfc])\.([ie])\.(\d{1,2})\b", text)
     if m:
-        result["sex"] = "M" if m.group(1) == "m" else "F"
+        result["sex"] = {"m": "M", "f": "F", "c": "C"}[m.group(1)]
         result["country"] = "ITA" if m.group(2) == "i" else "EST"
         result["birth_year"] = datetime.utcnow().year - int(m.group(3))
         # Dopo il marcatore sesso/eta' viene "PADRE / codice / MADRE" oppure
@@ -3629,6 +3635,36 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
     return entries
 
 
+def phase_completa_schede_senza_anno(conn: sqlite3.Connection, limite: int = 150) -> int:
+    """Rilegge la scheda dei cavalli che hanno corse ma non l'anno di nascita.
+
+    Erano soprattutto castroni (la scheda scrive "c.i.13" e il lettore
+    conosceva solo m e f) e cavalli arrivati dall'estero: senza anno di
+    nascita non prendono il voto. Prima quelli in calendario, poi gli altri.
+    """
+    righe = conn.execute("""
+        SELECT h.name FROM horses h
+        WHERE h.birth_year IS NULL AND COALESCE(h.career_races, 0) > 0
+          AND COALESCE(h.horse_class, 'athlete') = 'athlete'
+        ORDER BY EXISTS (SELECT 1 FROM upcoming_races u WHERE u.horse_name = h.name) DESC,
+                 h.career_races DESC
+        LIMIT ?""", (limite,)).fetchall()
+    sistemati = 0
+    for (nome,) in righe:
+        try:
+            _fetch_and_insert_full_career(conn, nome)
+        except sqlite3.IntegrityError as e:
+            print(f"  [SCHEDE] {nome}: {e}", file=sys.stderr)
+            continue
+        if conn.execute("SELECT birth_year FROM horses WHERE name = ?", (nome,)).fetchone()[0]:
+            sistemati += 1
+        time.sleep(0.3)
+    if righe:
+        print(f"  [SCHEDE] anno di nascita recuperato per {sistemati} cavalli su {len(righe)}",
+              file=sys.stderr)
+    return sistemati
+
+
 def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     """
     FASE 0b: Recupera i partenti delle prossime gare da Trottoweb (hPart.php).
@@ -4452,6 +4488,7 @@ def main():
 
         # FASE 0b: partenti gare future + recupero cavalli nuovi (sempre)
         up_horses, up_races = phase_fetch_upcoming_races(conn)
+        phase_completa_schede_senza_anno(conn)   # castroni e cavalli esteri senza anno
         new_horses += up_horses
         new_races  += up_races
 
