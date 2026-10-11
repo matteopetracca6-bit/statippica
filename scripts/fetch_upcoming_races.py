@@ -139,7 +139,7 @@ def parse_hpart_main(html: str) -> list:
             race_time = race_times[j].strip() if j < len(race_times) else ""
 
             row_pattern = re.compile(
-                r'<td class="num_part">(\d+)</td>.*?<td class="nome_cav"><a[^>]*>([^<]+)</a>',
+                r'<td class="num_part[a-z_]*"[^>]*>(\d+)</td>.*?<td class="nome_cav"><a[^>]*>([^<]+)</a>',
                 re.DOTALL | re.IGNORECASE
             )
             rows = row_pattern.findall(table_html)
@@ -184,7 +184,7 @@ def parse_hpart(html: str, track: str, race_date: str) -> list:
 
         # Parse rows: num_part, nome_cav (with <a>), driver (with <span>)
         row_pattern = re.compile(
-            r'<td class="num_part">(\d+)</td>.*?<td class="nome_cav"><a[^>]*>([^<]+)</a>',
+            r'<td class="num_part[a-z_]*"[^>]*>(\d+)</td>.*?<td class="nome_cav"><a[^>]*>([^<]+)</a>',
             re.DOTALL | re.IGNORECASE
         )
         rows = row_pattern.findall(table_html)

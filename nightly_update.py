@@ -3586,7 +3586,10 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
         n_tab += 1
 
         for tr in table.find_all("tr"):
-            td_num = tr.find("td", class_="num_part")
+            # Il numero ha classi diverse: num_part per la prima fila,
+            # num_part_r_s per la seconda fila (Derby di Torino 11/10: 5
+            # partenti su 13 saltati). Le accettiamo tutte.
+            td_num = tr.find("td", class_=lambda c: bool(c) and str(c).startswith("num_part"))
             td_name = tr.find("td", class_="nome_cav")
             if not td_num or not td_name:
                 continue
