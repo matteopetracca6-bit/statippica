@@ -3562,14 +3562,28 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
     if not track or not race_date:
         return []
 
+    n_tab = 1
     for table in soup.find_all("table", id="tabella_partenti"):
-        # Trova l'ora della gara: cercha il div ora_corsa piu vicino
+        # Trova l'ora della gara. La fonte colora l'orario con classi diverse
+        # (ora_corsa, ora_corsa_beige, ora_corsa_blue_beige, ora_corsa_orange
+        # e altre per le corse importanti): le accettiamo tutte. Se l'orario
+        # manca usiamo il numero della corsa, cosi' due corse non finiscono
+        # mai sotto la stessa chiave vuota (era il caso di Torino 11/10 con 44
+        # "partenti" in una sola corsa).
         race_time = ""
         parent = table.find_parent("div", id=True)
         if parent:
-            ora_div = parent.find("div", class_=["ora_corsa", "ora_corsa_beige"])
+            ora_div = parent.find(
+                "div", class_=lambda c: bool(c) and str(c).startswith("ora_corsa"))
             if ora_div:
                 race_time = ora_div.get_text(strip=True)
+            if not race_time:
+                num_div = parent.find("div", class_="numero_corsa")
+                num = num_div.get_text(strip=True) if num_div else ""
+                race_time = f"corsa {num}" if num else ""
+        if not race_time:
+            race_time = f"corsa {n_tab}"
+        n_tab += 1
 
         for tr in table.find_all("tr"):
             td_num = tr.find("td", class_="num_part")
@@ -3710,8 +3724,14 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
             print(f"    [cavAn] {name}: {inserted} gare inserite", file=sys.stderr)
         time.sleep(0.5)  # rispetto per la fonte
 
-    # 4) Inserisci i partenti in upcoming_races
+    # 4) Inserisci i partenti in upcoming_races. Per ogni giornata letta di
+    # nuovo si cancellano prima le righe vecchie: altrimenti un orario
+    # corretto lascerebbe in piedi la vecchia corsa "senza orario" o un
+    # cavallo spostato di corsa comparirebbe due volte.
     now = datetime.utcnow().isoformat()
+    for trk, rd in {(e["track"], e["race_date"]) for e in all_entries}:
+        conn.execute("DELETE FROM upcoming_races WHERE track = ? AND race_date = ?", (trk, rd))
+    conn.execute("DELETE FROM upcoming_races WHERE race_time = ''")
     inserted_races = 0
     for e in all_entries:
         cur = conn.execute(

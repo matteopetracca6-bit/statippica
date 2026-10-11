@@ -124,7 +124,7 @@ def parse_hpart_main(html: str) -> list:
         section_html = html[section["start"]:end]
 
         race_time_pattern = re.compile(
-            r'<div class="(?:ora_corsa|ora_corsa_beige)">([^<]+)</div>',
+            r'<div class="ora_corsa[a-z_]*">([^<]+)</div>',
             re.IGNORECASE
         )
         table_pattern = re.compile(
@@ -168,7 +168,7 @@ def parse_hpart(html: str, track: str, race_date: str) -> list:
 
     # Find all race sections
     race_time_pattern = re.compile(
-        r'<div class="(?:ora_corsa|ora_corsa_beige)">([^<]+)</div>',
+        r'<div class="ora_corsa[a-z_]*">([^<]+)</div>',
         re.IGNORECASE
     )
     table_pattern = re.compile(

@@ -621,6 +621,11 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
                             (pista, race_date, corsa, horse_name, prob, prob_grezza, affidabile,
                              n_corse, campo_completo, tipo, modello, calcolato_il)
                             VALUES (?,?,?,?,?,?,?,?,1,'del_giorno',?,?)""", storico)
+        # Le stime "del giorno" salvate senza orario appartengono a piu' corse
+        # fuse insieme per un errore di lettura del calendario (Bologna 08/10,
+        # Roma 09/10, Torino 11/10, Montecatini 12/10): non sono verificabili
+        # e falserebbero il controllo con gli arrivi, quindi si tolgono.
+        conn.execute("DELETE FROM pronostico_top3_storico WHERE corsa = '' AND tipo = 'del_giorno'")
         n_ric = _ricostruisci(conn, df, lettore, ora)
         conn.commit()
         if n_ric:
