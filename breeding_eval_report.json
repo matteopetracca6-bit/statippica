@@ -1,8 +1,8 @@
 {
-  "n_samples": 222,
-  "n_samples_before_target_filter": 385,
+  "n_samples": 230,
+  "n_samples_before_target_filter": 391,
   "n_family_groups": 38,
-  "poor_prevalence": 0.261,
+  "poor_prevalence": 0.265,
   "feature_coverage": {
     "s_time": 1.0,
     "s_earn": 1.0,
@@ -14,7 +14,7 @@
     "m_win": 1.0,
     "m_score": 1.0,
     "m_races": 1.0,
-    "ds_time": 0.005,
+    "ds_time": 0.004,
     "ss_time": 0.0
   },
   "features_used": [
@@ -35,48 +35,48 @@
   ],
   "baselines": {
     "target_mean": {
-      "mae": 14.346,
-      "rmse": 16.779,
+      "mae": 14.145,
+      "rmse": 16.729,
       "r2": 0.0
     },
     "mid_parent_score": {
-      "mae": 19.641,
-      "rmse": 23.506,
-      "r2": -0.9627
+      "mae": 19.587,
+      "rmse": 23.562,
+      "r2": -0.9837
     }
   },
   "regression_oof_by_family": {
     "gb_150_d3": {
-      "mae": 14.762,
-      "rmse": 17.783,
-      "r2": -0.1233
+      "mae": 14.692,
+      "rmse": 18.124,
+      "r2": -0.1738
     },
     "gb_60_d2": {
-      "mae": 13.73,
-      "rmse": 16.588,
-      "r2": 0.0226
+      "mae": 13.764,
+      "rmse": 16.663,
+      "r2": 0.0079
     },
     "ridge_a10": {
-      "mae": 14.8,
-      "rmse": 17.845,
-      "r2": -0.1311
+      "mae": 13.975,
+      "rmse": 16.903,
+      "r2": -0.021
     }
   },
   "regression_temporal_holdout": {
     "split_year": 2021,
     "n_train": 82,
-    "n_test": 140,
-    "mae": 16.178,
-    "rmse": 19.651,
-    "r2": -0.6495
+    "n_test": 148,
+    "mae": 16.426,
+    "rmse": 19.972,
+    "r2": -0.7043
   },
   "classification_oof_by_family": {
-    "auc": 0.5735,
-    "pr_auc": 0.382,
-    "pr_auc_baseline_prevalence": 0.2613,
-    "brier": 0.2344
+    "auc": 0.5007,
+    "pr_auc": 0.2987,
+    "pr_auc_baseline_prevalence": 0.2652,
+    "brier": 0.2408
   },
-  "trained_at": "2026-10-04T10:42:26.328617+00:00",
+  "trained_at": "2026-10-11T10:57:44.096300+00:00",
   "min_child_races": 10,
   "features": [
     "s_time",
@@ -90,11 +90,11 @@
     "m_score",
     "m_races"
   ],
-  "validation_status": "experimental",
+  "validation_status": "not_ready",
   "is_decision_support_ready": false,
   "tetto_teorico_r2": 0.15,
   "segnale_misurato_r2": 0.036,
-  "quota_del_tetto_raggiunta": 0.151,
+  "quota_del_tetto_raggiunta": 0.053,
   "validation_criteria": {
     "min_r2_decision": 0.08,
     "min_auc_decision": 0.65,
