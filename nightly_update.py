@@ -976,6 +976,21 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
     sire_norm = _normalize_name(data.get("sire"))
     dam_norm  = _normalize_name(data.get("dam"))
 
+    # Cavallo mai visto (tipico: arriva dall'estero per una corsa in Italia).
+    # Prima si salvavano le sue gare ma non la scheda: niente voto, niente
+    # padre e madre, e ogni notte lo si riscaricava da capo perche' risultava
+    # ancora sconosciuto. Ora si crea la scheda, poi l'aggiornamento sotto e il
+    # ricalcolo dei voti la completano come per tutti gli altri.
+    if not conn.execute("SELECT 1 FROM horses WHERE name = ?", (name,)).fetchone():
+        conn.execute("""
+            INSERT OR IGNORE INTO horses
+                (name, birth_year, sex, country, sire, dam, source, tw_found,
+                 horse_class, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?, 'trottoweb', 1, 'athlete', ?)
+        """, (name, data.get("birth_year") or birth_year, data.get("sex"),
+              data.get("country"), sire_norm, dam_norm, datetime.utcnow().isoformat()))
+        conn.commit()
+
     # Aggiorna il profilo solo per i campi che abbiamo effettivamente recuperato
     # (COALESCE mantiene il valore esistente se il nuovo è NULL)
     if any(k in data for k in ("sex", "country", "birth_year", "sire", "dam")):

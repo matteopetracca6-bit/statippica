@@ -189,6 +189,11 @@ def costruisci_variabili(conn: sqlite3.Connection, con_calendario: bool = False)
 
     # Cavallo: tutto spostato di una corsa, cosi' la riga vede solo il passato.
     df["h_n"] = g.cumcount().astype(float)
+    # Quante delle corse passate sono all'estero. Non entra nel modello: serve
+    # a dire a chi legge che la stima poggia su corse con avversari diversi.
+    _est = (df["pista"] == "ESTERO").astype(float)
+    df["h_n_estero"] = _est.groupby(df["cavallo"], sort=False).cumsum() - _est
+    df["h_ult_estero"] = _est.groupby(df["cavallo"], sort=False).shift()
     df["h_top3"] = _media_passata(df, "cavallo", "top3")
     df["h_vitt"] = _media_passata(df, "cavallo", "vitt")
     df["h_ult5_top3"] = _mobile_passata(df, "cavallo", "top3", 5)
@@ -501,6 +506,11 @@ def _motivi(riga) -> list[dict]:
                 elif v <= 0.1:
                     out.append({"testo": "su questa pista finora non ha reso", "pro": False, "forza": 0.3})
             continue
+        # "Guidatore" e' chi lo ha guidato nell'ultima corsa. Se era una corsa
+        # all'estero quel guidatore oggi quasi certamente non c'e', e le sue
+        # statistiche in archivio vengono da pochi cavalli venuti in Italia.
+        if var == "r_d_top3" and (riga.get("h_ult_estero") or 0) >= 1:
+            continue
         # Classifica nella corsa: 1 = il migliore del gruppo. Con meno di
         # quattro avversari noti "tra i migliori" non vuol dire niente.
         if (riga.get("_noti") or 0) < 4:
@@ -510,7 +520,20 @@ def _motivi(riga) -> list[dict]:
         elif v <= 0.25:
             out.append({"testo": f"{testo} tra i peggiori", "pro": False, "forza": 0.5 - v})
     out.sort(key=lambda m: -m["forza"])
-    return [{"testo": m["testo"], "pro": m["pro"]} for m in out[:3]]
+    out = [{"testo": m["testo"], "pro": m["pro"]} for m in out[:3]]
+    # Cavalli che hanno corso quasi solo all'estero (Fragolino Rosso a Torino
+    # 11/10: 16 corse, tutte fuori Italia). La stima usa quei risultati come
+    # se fossero italiani, ma gli avversari erano altri e spesso il numero di
+    # partenti non si conosce. Sul 2025-26 per questi cavalli la stima e'
+    # risultata piuttosto bassa che alta (41,6% stimato, 47,2% reale su 267
+    # partenze), quindi non la si taglia: la si segnala come prima voce.
+    n = riga.get("h_n") or 0
+    n_est = riga.get("h_n_estero") or 0
+    if n >= 3 and n_est / n >= 0.7:
+        quante = "tutte" if n_est == n else f"{int(n_est)} su {int(n)}"
+        out.insert(0, {"testo": f"corse {quante} all'estero: avversari non confrontabili",
+                       "pro": False})
+    return out[:4]
 
 
 def _crea_storico(conn):
