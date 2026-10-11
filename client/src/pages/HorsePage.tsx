@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import BandieraCavallo from "../components/BandieraCavallo";
 import { PareggioCavallo } from "../components/PareggioScheda";
 import PrevisioniCavallo from "../components/PrevisioniCavallo";
 import VendereOCorrere from "../components/VendereOCorrere";
@@ -276,6 +278,13 @@ export default function HorsePage() {
     enabled: !!name && year !== "0",
   });
 
+  // Scheda da stallone di un cavallo che corre ancora con la sigla del paese:
+  // si passa alla scheda da corsa, che e' quella completa.
+  const vaiA = (horse as any)?.redirect as { name: string; birth_year: number } | undefined;
+  useEffect(() => {
+    if (vaiA) navigate(`/horse/${encodeURIComponent(vaiA.name)}/${vaiA.birth_year}`, { replace: true });
+  }, [vaiA?.name, vaiA?.birth_year]);
+
   const { data: neighbors } = useQuery<Neighbors>({
     queryKey: ["/api/horse", name, year, "neighbors"],
     queryFn: async () => {
@@ -305,6 +314,10 @@ export default function HorsePage() {
         </div>
       </div>
     </div>
+  );
+
+  if (vaiA) return (
+    <div style={{ padding: "28px 32px", fontSize: "13px", color: "hsl(210 8% 55%)" }}>Apro la scheda da corsa di {vaiA.name}…</div>
   );
 
   if (error || !horse) return (
@@ -352,9 +365,18 @@ export default function HorsePage() {
           <GradeBadge grade={horse.grade ?? "N/A"} size="lg" />
           <div style={{ flex: 1, minWidth: "200px" }}>
             <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 95%)", letterSpacing: "0.03em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "20px" }}>{getFlag(horse.country, horse.name)}</span>
+              <BandieraCavallo nome={horse.name} paese={horse.country} />
               {horse.name}
             </h1>
+            {(horse as any).stallone_come && (
+              <div style={{ fontSize: "12.5px", marginBottom: "6px" }}>
+                <Link href={`/stallion/${encodeURIComponent((horse as any).stallone_come)}`}>
+                  <a style={{ color: "hsl(183 60% 55%)", textDecoration: "none" }}>
+                    Corre ancora ed è anche stallone da monta: vedi figli e statistiche da stallone →
+                  </a>
+                </Link>
+              </div>
+            )}
             <div style={{ fontSize: "13px", color: "hsl(210 8% 55%)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <span>{horse.birth_year}</span>
               <span>·</span>

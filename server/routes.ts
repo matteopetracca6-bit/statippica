@@ -488,6 +488,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
                                   AND hr.rating_mode = 'performance'
         WHERE h.name LIKE ?
+          ${vpTableExists(db, "cavalli_alias") ? "AND h.name NOT IN (SELECT alias FROM cavalli_alias)" : ""}
         ORDER BY h.name LIKE ? DESC, COALESCE(hr.score, -1) DESC
         LIMIT 6`).all(dentro, inizio), [] as any[]);
       const stalloni = prova(() => db.prepare(`
@@ -535,6 +536,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
                                   AND hr.rating_mode = 'performance'
         WHERE (? = '' OR h.name LIKE ?)
+          ${vpTableExists(db, "cavalli_alias") ? "AND h.name NOT IN (SELECT alias FROM cavalli_alias)" : ""}
         ORDER BY CASE WHEN ? = '' THEN -COALESCE(hr.score, -1) ELSE 0 END,
                  COALESCE(h.horse_class, 'athlete') = 'breeder', h.birth_year DESC
         LIMIT 20
@@ -553,6 +555,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const year = parseInt(req.params.year);
     const db = getDb();
     try {
+      // Stesso cavallo con due schede: quella da stallone (nome senza sigla,
+      // usata dai figli) e quella da corsa (con la sigla del paese). Chi apre
+      // la prima viene mandato alla seconda. Vedi phase_collega_stalloni_atleti.
+      if (vpTableExists(db, "cavalli_alias")) {
+        const al = db.prepare(`SELECT nome, anno FROM cavalli_alias WHERE alias = ?`).get(name) as any;
+        if (al) return res.json({ redirect: { name: al.nome, birth_year: al.anno } });
+      }
       const horse = db.prepare(`
         SELECT h.name, h.birth_year, h.sex, h.coat_color, h.country, h.sire, h.dam,
                h.career_races, h.career_wins, h.career_places, h.career_earnings, h.record_career,
@@ -584,6 +593,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const tot = db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) p
                               FROM races WHERE horse_name = ?`).get(name) as any;
       horse.career_top3 = tot?.n ? (tot.p ?? 0) : ((horse.career_wins ?? 0) + (horse.career_places ?? 0));
+      // E' anche stallone da monta? Allora la scheda porta alla pagina stallone.
+      horse.stallone_come = vpTableExists(db, "cavalli_alias")
+        ? ((db.prepare(`SELECT alias FROM cavalli_alias WHERE nome = ?`).get(name) as any)?.alias ?? null)
+        : null;
 
       // Last 20 races
       const races = db.prepare(`

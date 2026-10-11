@@ -3668,6 +3668,48 @@ def phase_completa_schede_senza_anno(conn: sqlite3.Connection, limite: int = 150
     return sistemati
 
 
+def phase_collega_stalloni_atleti(conn: sqlite3.Connection) -> int:
+    """Unisce la scheda da stallone e quella da corsa dello stesso cavallo.
+
+    Un cavallo estero che corre in Italia ha la sigla del paese nel nome
+    ("DON FANUCCI ZET (S)"), mentre i suoi figli italiani lo indicano come
+    padre senza sigla ("DON FANUCCI ZET"). Nascevano cosi' due schede: quella
+    da corsa, con le gare, e quella da stallone, vuota ma usata da figli,
+    pagina stallone e genealogie. La seconda non si puo' cancellare (i figli
+    perderebbero il padre, e la notte la ricreerebbe): si completa con anno,
+    sesso e genitori presi dalla prima e si scrive il collegamento in
+    cavalli_alias. Il sito mostra una scheda sola e manda li' chi apre l'altra.
+    Si collega solo se lo stallone non ha gare sue e l'anno coincide (o manca):
+    ARETHA FRANKLIN 2016 e ARETHA FRANKLIN (S) 2023 sono due cavalli diversi.
+    """
+    conn.execute("""CREATE TABLE IF NOT EXISTS cavalli_alias (
+        alias TEXT PRIMARY KEY, alias_anno INTEGER, nome TEXT, anno INTEGER)""")
+    coppie = conn.execute("""
+        SELECT b.rowid, b.name, b.birth_year, s.name, s.birth_year, s.sex, s.sire, s.dam
+        FROM horses s
+        JOIN horses b ON b.name = TRIM(SUBSTR(s.name, 1, INSTR(s.name, ' (') - 1))
+        WHERE s.name LIKE '% (%)' AND COALESCE(s.career_races, 0) > 0
+          AND NOT EXISTS (SELECT 1 FROM races r WHERE r.horse_name = b.name)
+          AND (b.birth_year IS NULL OR b.birth_year = s.birth_year)
+    """).fetchall()
+    conn.execute("DELETE FROM cavalli_alias")
+    for rid, base, anno_b, nome, anno, sesso, padre, madre in coppie:
+        try:
+            conn.execute("""UPDATE horses SET birth_year = COALESCE(birth_year, ?),
+                                sex = COALESCE(sex, ?), sire = COALESCE(NULLIF(sire, ''), ?),
+                                dam = COALESCE(NULLIF(dam, ''), ?)
+                            WHERE rowid = ?""", (anno, sesso, padre, madre, rid))
+        except sqlite3.IntegrityError:
+            pass
+        conn.execute("INSERT OR REPLACE INTO cavalli_alias VALUES (?, ?, ?, ?)",
+                     (base, anno_b if anno_b is not None else anno, nome, anno))
+    conn.commit()
+    if coppie:
+        print(f"  [ALIAS] stallone e scheda da corsa collegati per {len(coppie)} cavalli: "
+              + ", ".join(c[3] for c in coppie), file=sys.stderr)
+    return len(coppie)
+
+
 def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     """
     FASE 0b: Recupera i partenti delle prossime gare da Trottoweb (hPart.php).
@@ -4495,6 +4537,7 @@ def main():
         # FASE 0b: partenti gare future + recupero cavalli nuovi (sempre)
         up_horses, up_races = phase_fetch_upcoming_races(conn)
         phase_completa_schede_senza_anno(conn)   # castroni e cavalli esteri senza anno
+        phase_collega_stalloni_atleti(conn)      # stesso cavallo: scheda stallone + scheda da corsa
         new_horses += up_horses
         new_races  += up_races
 
