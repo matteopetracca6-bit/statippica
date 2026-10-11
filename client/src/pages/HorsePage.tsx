@@ -28,6 +28,7 @@ interface HorseData {
   career_races: number;
   career_wins: number;
   career_places: number;
+  career_top3?: number | null;
   career_earnings: number;
   record_career: string;
   record_short: string;
@@ -378,7 +379,11 @@ export default function HorsePage() {
             {horse.win_rate != null && horse.career_races ? <div className="sotto">{horse.win_rate.toFixed(1)}% vinte</div> : null}
             <div className="etichetta">Vittorie</div>
           </div>
-          <div><div className="valore">{horse.career_places ?? "—"}</div><div className="etichetta">Piazzamenti</div></div>
+          <div>
+            <div className="valore">{horse.career_top3 ?? "—"}</div>
+            {horse.career_top3 != null && horse.career_races ? <div className="sotto">{(horse.career_top3 / horse.career_races * 100).toFixed(1)}% nei primi 3</div> : null}
+            <div className="etichetta" title="Arrivi nei primi tre, vittorie comprese">Piazzamenti</div>
+          </div>
           <div>
             <div className="valore" style={{ color: horse.career_earnings ? "hsl(51 90% 62%)" : undefined }}>
               {horse.career_earnings != null ? `€${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"}

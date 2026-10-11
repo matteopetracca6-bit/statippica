@@ -298,7 +298,7 @@ export default function ComparePage() {
           <div>
             <StatRow label="Corse" v1={h1.career_races} v2={h2.career_races} better="higher" />
             <StatRow label="Vittorie" v1={h1.career_wins} v2={h2.career_wins} better="higher" />
-            <StatRow label="Piazzamenti" v1={h1.career_places} v2={h2.career_places} better="higher" />
+            <StatRow label="Piazzamenti (vittorie comprese)" v1={(h1.career_places ?? 0) + (h1.career_wins ?? 0)} v2={(h2.career_places ?? 0) + (h2.career_wins ?? 0)} better="higher" />
             <StatRow
               label="Win rate %"
               v1={winRatePct(h1)}

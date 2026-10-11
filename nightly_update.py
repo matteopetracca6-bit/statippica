@@ -3213,7 +3213,10 @@ def _update_horse_career_stats(conn: sqlite3.Connection, horse_name: str):
         SELECT
             COUNT(*) as n_races,
             SUM(CASE WHEN placement=1 THEN 1 ELSE 0 END) as wins,
-            SUM(COALESCE(prize_net, 0)) as earnings
+            SUM(COALESCE(prize_net, 0)) as earnings,
+            -- secondi e terzi (le vittorie sono a parte): mancava, e la
+            -- scheda restava con i piazzamenti a zero o vecchi
+            SUM(CASE WHEN placement IN (2,3) THEN 1 ELSE 0 END) as places
         FROM races
         WHERE horse_name=?
     """, (horse_name,)).fetchone()
@@ -3235,11 +3238,11 @@ def _update_horse_career_stats(conn: sqlite3.Connection, horse_name: str):
     if stats:
         conn.execute("""
             UPDATE horses SET
-                career_races=?, career_wins=?, career_earnings=?,
+                career_races=?, career_wins=?, career_earnings=?, career_places=?,
                 record_career=?, last_updated=?
             WHERE name=?
         """, (
-            stats[0] or 0, stats[1] or 0, stats[2] or 0.0,
+            stats[0] or 0, stats[1] or 0, stats[2] or 0.0, stats[3] or 0,
             best_time_str, datetime.utcnow().isoformat(), horse_name
         ))
         conn.commit()
@@ -4176,6 +4179,8 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
             WHERE COALESCE(h.horse_class, 'athlete') <> 'breeder'
             GROUP BY h.name, h.birth_year
             HAVING COALESCE(h.career_races, 0) != COUNT(r.id)
+                OR (COUNT(r.id) > 0 AND COALESCE(h.career_places, 0) !=
+                    SUM(CASE WHEN r.placement IN (2,3) THEN 1 ELSE 0 END))
         )
     """).fetchone()[0]
 
@@ -4198,7 +4203,8 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
                 GROUP BY r.horse_name
             ) sub
             WHERE horses.name = sub.horse_name
-              AND COALESCE(horses.career_races, 0) != sub.actual_races
+              AND (COALESCE(horses.career_races, 0) != sub.actual_races
+                   OR COALESCE(horses.career_places, 0) != sub.actual_places)
               AND COALESCE(horses.horse_class, 'athlete') <> 'breeder'
         """)
         # Also reset horses that had stats but have 0 races in the table

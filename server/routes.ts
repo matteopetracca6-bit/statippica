@@ -575,6 +575,16 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
       if (!horse) return res.status(404).json({ error: "Not found" });
 
+      // Piazzamenti = arrivi nei primi tre, vittorie comprese, contati dalle
+      // gare in archivio: e' la stessa regola delle tabelle per anno e per
+      // ippodromo piu' in basso nella scheda. Prima la testata mostrava il
+      // totale salvato nella scheda, che per 922 cavalli non era aggiornato
+      // (Don Fanucci Zet: 0 invece di 54). Solo per i cavalli senza gare in
+      // archivio (gli storici) resta il totale preso dalla fonte.
+      const tot = db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) p
+                              FROM races WHERE horse_name = ?`).get(name) as any;
+      horse.career_top3 = tot?.n ? (tot.p ?? 0) : ((horse.career_wins ?? 0) + (horse.career_places ?? 0));
+
       // Last 20 races
       const races = db.prepare(`
         SELECT race_date, track, placement, placement_raw, time_km,
