@@ -44,7 +44,15 @@ from fasi_guidatori_ippodromi import phase_driver_stats, phase_track_stats
 from pronostico_top3 import phase_pronostico_top3
 from stima_premi import phase_stima_premi
 from controllo_modelli import phase_controllo_modelli
-from valore_carriera import phase_valore_residuo
+
+
+def phase_valore_residuo(conn):
+    """Import ritardato: valore_carriera usa numpy e pandas, che non tutti i
+    lavori installano (per esempio la genealogia degli stalloni esteri, che
+    usa solo poche funzioni di questo file). Importandolo in cima, quei lavori
+    fallivano subito all'avvio."""
+    from valore_carriera import phase_valore_residuo as _fase
+    return _fase(conn)
 
 # Senza questo, l'output può restare "bloccato" in un buffer per minuti prima
 # di comparire nei log di GitHub Actions (non essendo un terminale interattivo,
