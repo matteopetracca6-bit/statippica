@@ -23,7 +23,8 @@ const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 42%)";
 
 type Voce = { horse_name: string; birth_year: number | null; prob: number; favorito: boolean; affidabile: boolean; arrivo: number | null; arrivo_testo: string | null; top3: boolean | null };
-type Corsa = { race_date: string; pista: string; tipo: string; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[] };
+type Mancante = { horse_name: string; birth_year: number | null; arrivo_testo: string | null; top3: boolean };
+type Corsa = { race_date: string; pista: string; tipo: string; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean };
 type Sintesi = { corse: number; favoriti_controllati: number; quota_favoriti: number | null; quota_tutti: number | null };
 
 const titolo = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
@@ -138,6 +139,7 @@ export default function VerificaGare() {
                   <span className="vc-data">{data(c.race_date)}</span>
                   <span className="vc-pista"><MapPin size={12} /> {titolo(c.pista)}{c.corsa ? ` · ${c.corsa}` : c.numero ? ` · corsa ${c.numero}` : ""}</span>
                   {c.tipo === "ricostruito" && <span className="vc-tipo">ricostruita</span>}
+                  {c.incompleto && <span className="vc-tipo" title="Il pronostico non aveva tutti i partenti: non conta nella media">incompleto</span>}
                   <span className="vc-segno tabular" style={{ color: col, borderColor: col }}>
                     {c.favoriti_noti ? `${c.favoriti_a_segno} su ${c.favoriti_noti}` : "—"}
                   </span>
@@ -166,6 +168,23 @@ export default function VerificaGare() {
                         <span>{v.top3 == null ? null : v.top3 ? <Check size={14} color="hsl(150 55% 55%)" /> : <X size={14} color="hsl(10 60% 55%)" />}</span>
                       </div>
                     ))}
+                    {(c.mancanti ?? []).map(m => (
+                      <div key={m.horse_name} className="vc-riga" style={{ opacity: 0.85 }}>
+                        <span>
+                          <Link href={`/horse/${encodeURIComponent(m.horse_name)}/${m.birth_year || 0}`}><a>{m.horse_name}</a></Link>
+                          <small style={{ color: "hsl(35 80% 60%)" }}>non nel pronostico</small>
+                        </span>
+                        <span className="tabular" style={{ color: DIM }}>—</span>
+                        <span className="tabular" style={{ color: m.top3 ? "hsl(150 55% 60%)" : MUTED }}>{m.arrivo_testo ?? "—"}</span>
+                        <span />
+                      </div>
+                    ))}
+                    {c.incompleto && (
+                      <div className="vc-nota" style={{ color: "hsl(35 80% 62%)" }}>
+                        Pronostico incompleto: {c.mancanti!.length === 1 ? "mancava 1 partente" : `mancavano ${c.mancanti!.length} partenti`}.
+                        Fino all'11 ottobre i cavalli accoppiati (stessa scuderia) non venivano letti dal calendario. Questa corsa non conta nella media.
+                      </div>
+                    )}
                     <div className="vc-nota">
                       {c.tipo === "ricostruito"
                         ? `Stima ricostruita: l'archivio conosce ${c.partenti} partenti di questa corsa, quindi il confronto è fra loro e le percentuali non sommano a tre.`

@@ -1452,12 +1452,25 @@ def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str
             dist_m  = re.match(r"(\d+)", str(dist_raw))
             distance = int(dist_m.group(1)) if dist_m else None
 
+            # Chi non e' classificato ha l'esito scritto nella colonna del
+            # tempo (r.p. = rottura prolungata, rit., dis., n.p.). Prima lo si
+            # buttava e la gara restava "nr", che il pronostico scambiava per
+            # "non partito": 2.802 corse del 2026, quasi tutte galoppate.
+            esito = time_raw.strip() if (time_raw and not re.match(r"\d", time_raw.strip())) else ""
+            num_p = re.match(r"(\d+)", td("num_part_u") or td("num_part"))
             results.append({
                 "name": horse_name, "placement": placement,
                 "time_km": time_km, "distance": distance,
                 "driver": driver, "prize": prize,
                 "race_code": race_code, "race_date": race_date, "track": track,
+                "esito": esito,
+                "start_pos": int(num_p.group(1)) if num_p else None,
             })
+        # Partenti della corsa: tutti quelli in tabella, non partiti esclusi.
+        corsa = [r for r in results if r["race_code"] == race_code]
+        n_part = sum(1 for r in corsa if r["esito"].lower() not in ("n.p.", "np", "n.p"))
+        for r in corsa:
+            r["total_starters"] = n_part or None
 
     return results
 
@@ -1671,7 +1684,9 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
                 "race_date":     h["race_date"],
                 "track":         h["track"],
                 "placement":     h["placement"],
-                "placement_raw": str(h["placement"]) if h["placement"] else "nr",
+                "placement_raw": str(h["placement"]) if h["placement"] else (h.get("esito") or "nr"),
+                "start_pos":     h.get("start_pos"),
+                "total_starters": h.get("total_starters"),
                 "time_km":       h["time_km"],
                 "distance":      h["distance"],
                 "driver":        h["driver"],
@@ -3123,6 +3138,12 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
                     conn.execute("UPDATE races SET prize_net=?, prize_gross=? WHERE id=?",
                                  (nuovo, float(r.get("prize_gross") or nuovo), already[0]))
                     _PREMI_CORRETTI[0] += 1
+                # Esito "nr" scritto da una vecchia lettura: se la nuova fonte
+                # dice com'e' andata (r.p., rit., ...), si corregge.
+                nuovo_esito = (r.get("placement_raw") or "").strip()
+                if nuovo_esito and nuovo_esito.lower() != "nr" and r.get("placement") is None:
+                    conn.execute("UPDATE races SET placement_raw=? WHERE id=? AND placement_raw='nr'",
+                                 (nuovo_esito, already[0]))
                 conn.execute("""UPDATE races SET
                                     race_number    = COALESCE(race_number, ?),
                                     start_pos      = COALESCE(start_pos, ?),
@@ -3610,9 +3631,10 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
         n_tab += 1
 
         for tr in table.find_all("tr"):
-            # Il numero ha classi diverse: num_part per la prima fila,
-            # num_part_r_s per la seconda fila (Derby di Torino 11/10: 5
-            # partenti su 13 saltati). Le accettiamo tutte.
+            # Il numero ha classi diverse: num_part per i cavalli singoli,
+            # num_part_r_s (con lo sfondo colorato) per i cavalli accoppiati,
+            # cioe' della stessa scuderia (Derby di Torino 11/10: 5 partenti
+            # su 13 saltati). Le accettiamo tutte.
             td_num = tr.find("td", class_=lambda c: bool(c) and str(c).startswith("num_part"))
             td_name = tr.find("td", class_="nome_cav")
             if not td_num or not td_name:
@@ -3708,6 +3730,61 @@ def phase_collega_stalloni_atleti(conn: sqlite3.Connection) -> int:
         print(f"  [ALIAS] stallone e scheda da corsa collegati per {len(coppie)} cavalli: "
               + ", ".join(c[3] for c in coppie), file=sys.stderr)
     return len(coppie)
+
+
+def phase_ripara_esiti_nr(conn: sqlite3.Connection, limite: int = 120) -> int:
+    """Rilegge i convegni con corse segnate "nr" e scrive l'esito vero.
+
+    "nr" lo scriveva il lettore dei risultati per ogni cavallo non
+    classificato, perdendo l'esito della fonte: Iliade Luis, Torino 10/10,
+    era "r.p." (rottura prolungata) ma risultava "nr", e il pronostico lo
+    toglieva dalla storia come se non fosse partito. Si corregge anche numero
+    di partenza e partenti, se mancano. Le righe che la fonte lascia senza
+    esito diventano "n.c." (non classificato), cosi' non si rileggono.
+    """
+    convegni = conn.execute("""
+        SELECT race_date, track, MIN(race_code) FROM races
+        WHERE placement_raw = 'nr' AND race_code LIKE '____-__-___%'
+        GROUP BY race_date, track ORDER BY race_date DESC LIMIT ?""", (limite,)).fetchall()
+    corrette = 0
+    for data, pista, codice in convegni:
+        m = re.match(r"\d{4}-\d{2}-\d{2}_([A-Z]+)_", codice or "")
+        if not m:
+            continue
+        url = ("https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php?"
+               f"data={data}&sigla={m.group(1)}&ippodromo={requests.utils.quote(pista)}"
+               "&flag_ris_u=1&note_giorno=")
+        soup = fetch_url(url)
+        if not soup:
+            continue
+        righe = _parse_hris_page(soup, data, pista, m.group(1))
+        if not righe:
+            continue
+        for h in righe:
+            if h["placement"]:
+                esito = None
+            else:
+                esito = h.get("esito") or "n.c."
+            cur = conn.execute("""
+                UPDATE races SET
+                    placement_raw  = CASE WHEN placement_raw = 'nr' AND ? IS NOT NULL THEN ? ELSE placement_raw END,
+                    start_pos      = COALESCE(start_pos, ?),
+                    total_starters = COALESCE(total_starters, ?)
+                WHERE horse_name = ? AND race_date = ? AND track = ?""",
+                (esito, esito, h.get("start_pos"), h.get("total_starters"),
+                 _normalize_name(h["name"]), data, pista))
+            if esito and cur.rowcount:
+                corrette += 1
+        # cio' che la pagina non elenca piu' resta senza esito noto
+        conn.execute("""UPDATE races SET placement_raw = 'n.c.'
+                        WHERE placement_raw = 'nr' AND race_date = ? AND track = ?""", (data, pista))
+        conn.commit()
+        time.sleep(0.3)
+    if convegni:
+        resto = conn.execute("SELECT COUNT(*) FROM races WHERE placement_raw = 'nr'").fetchone()[0]
+        print(f"  [ESITI] {len(convegni)} convegni riletti, {corrette} esiti corretti, "
+              f"{resto} 'nr' ancora da rileggere", file=sys.stderr)
+    return corrette
 
 
 def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
@@ -4538,6 +4615,7 @@ def main():
         up_horses, up_races = phase_fetch_upcoming_races(conn)
         phase_completa_schede_senza_anno(conn)   # castroni e cavalli esteri senza anno
         phase_collega_stalloni_atleti(conn)      # stesso cavallo: scheda stallone + scheda da corsa
+        phase_ripara_esiti_nr(conn)              # "nr" al posto di r.p./rit./... nei risultati 2026
         new_horses += up_horses
         new_races  += up_races
 

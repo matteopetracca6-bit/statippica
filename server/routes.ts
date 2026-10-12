@@ -2696,6 +2696,20 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // nel calendario prima della gara; le "ricostruito" sono calcolate dopo, ma
   // con i soli dati di prima della gara, per le corse precedenti all'arrivo
   // del pronostico.
+  // Esiti dei non classificati in parole semplici.
+  const esitoInParole = (t: any): string | null => {
+    const k = String(t ?? "").trim().toLowerCase();
+    if (!k) return null;
+    const m: Record<string, string> = {
+      "r.p.": "squalificato (galoppo)", "r.a.": "squalificato (galoppo in arrivo)",
+      "r.c.": "squalificato (galoppo)", "rit.": "ritirato", "rit..": "ritirato",
+      "dis.": "distanziato", "n.p.": "non partito", "np": "non partito",
+      "nr": "non classificato", "n.c.": "non classificato", "am.": "squalificato",
+      "amb.": "squalificato", "cad.": "caduto", "disq.": "squalificato",
+    };
+    return m[k] ?? String(t);
+  };
+
   app.get("/api/calendar/verifica", (req, res) => {
     const db = getDb();
     try {
@@ -2704,7 +2718,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       if (!c) return res.json({ corse: [], sintesi: null });
       const righe = db.prepare(`
         SELECT s.pista, s.race_date, s.corsa, s.horse_name, s.prob, s.affidabile, s.tipo,
-               r.placement AS arrivo, r.placement_raw AS arrivo_testo, h.birth_year
+               r.placement AS arrivo, r.placement_raw AS arrivo_testo, r.race_code AS codice, h.birth_year
           FROM pronostico_top3_storico s
           LEFT JOIN races r ON r.horse_name = s.horse_name AND r.race_date = s.race_date AND r.track = s.pista
           LEFT JOIN horses h ON h.name = s.horse_name
@@ -2727,15 +2741,38 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // Le stime ricostruite valgono solo se l'archivio conosce abbastanza
         // partenti: con tre o quattro cavalli "i tre favoriti" sono quasi tutti.
         if (tipo === "ricostruito" && g.length < 6) continue;
-        const voci = g.map((e, i) => {
+        // Non partito: non ha corso, quindi non conta. I favoriti sono i
+        // primi tre fra chi e' partito davvero (come per le scommesse).
+        const nonPartito = (e: any) => /^n\.?\s?p\.?$/i.test(String(e.arrivo_testo ?? "").trim());
+        let posFav = 0;
+        const voci = g.map((e) => {
           const noto = e.arrivo != null || e.arrivo_testo != null;
+          const np = nonPartito(e);
+          const favorito = !np && posFav++ < 3;
           return {
             horse_name: e.horse_name, birth_year: e.birth_year, prob: Math.round(e.prob * 1000) / 10,
-            favorito: i < 3, affidabile: !!e.affidabile,
-            arrivo: e.arrivo ?? null, arrivo_testo: noto ? (e.arrivo != null ? `${e.arrivo}°` : e.arrivo_testo) : null,
-            top3: noto ? (e.arrivo != null && e.arrivo >= 1 && e.arrivo <= 3) : null,
+            favorito, affidabile: !!e.affidabile,
+            arrivo: e.arrivo ?? null,
+            arrivo_testo: noto ? (e.arrivo != null ? `${e.arrivo}°` : esitoInParole(e.arrivo_testo)) : null,
+            top3: noto && !np ? (e.arrivo != null && e.arrivo >= 1 && e.arrivo <= 3) : null,
           };
         });
+        // Partenti dell'arrivo che il pronostico non aveva: fino all'11/10 i
+        // cavalli accoppiati (stessa scuderia) non venivano letti dal
+        // calendario, e una corsa poteva essere vinta da un cavallo mai
+        // stimato. Si mostrano e la corsa non entra nella media.
+        const codici = g.map(e => e.codice).filter(Boolean);
+        const codice = codici.sort((a: string, b: string) => codici.filter((x: string) => x === b).length - codici.filter((x: string) => x === a).length)[0];
+        const stimati = new Set(g.map(e => e.horse_name));
+        const mancanti = codice ? (db.prepare(`
+            SELECT r.horse_name, r.placement AS arrivo, r.placement_raw AS arrivo_testo, h.birth_year
+              FROM races r LEFT JOIN horses h ON h.name = r.horse_name
+             WHERE r.race_code = ? ORDER BY COALESCE(r.placement, 99)`).all(codice) as any[])
+            .filter(r => !stimati.has(r.horse_name) && !nonPartito(r))
+            .map(r => ({ horse_name: r.horse_name, birth_year: r.birth_year,
+                         arrivo_testo: r.arrivo != null ? `${r.arrivo}°` : esitoInParole(r.arrivo_testo),
+                         top3: r.arrivo != null && r.arrivo >= 1 && r.arrivo <= 3 }))
+          : [];
         const fav = voci.filter(v => v.favorito);
         const favNoti = fav.filter(v => v.top3 != null);
         const segno = favNoti.filter(v => v.top3).length;
@@ -2745,7 +2782,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
           corsa: /^\d{1,2}:\d{2}/.test(g[0].corsa) ? g[0].corsa.slice(0, 5) : null,
           numero: m && !/^\d{1,2}:\d{2}/.test(g[0].corsa) ? Number(m[1]) : null,
           partenti: g.length, favoriti_noti: favNoti.length, favoriti_a_segno: segno, voci,
+          mancanti, incompleto: mancanti.length > 0,
         });
+        if (mancanti.length > 0) continue; // pronostico fatto senza tutti i partenti: fuori dalla media
         const t = (tot[tipo] ??= { corse: 0, fav: 0, fav_noti: 0, segno: 0, tutti_noti: 0, tutti_segno: 0 });
         t.corse++; t.fav += fav.length; t.fav_noti += favNoti.length; t.segno += segno;
         const tn = voci.filter(v => v.top3 != null);
