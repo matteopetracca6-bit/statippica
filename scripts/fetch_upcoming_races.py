@@ -33,9 +33,11 @@ TRACK_CODES = {
     "NAPOLI": "NA", "CESENA": "CE", "SIRACUSA": "SR", "TREVISO": "TV",
     "MONTECATINI": "MT", "CASARANO": "CS", "PALERMO": "PA", "MODENA": "MO",
     "FIRENZE": "FI", "BARI": "BA", "VARESE": "VA", "GARIGLIANO": "GA",
-    "PONTECAGNANO": "PA", "PADOVA": "PD", "VILLANOVA": "VI",
+    "PONTECAGNANO": "PC", "PADOVA": "PD", "VILLANOVA": "VI",
     "CASTELLUCCIO": "CT", "ANCONA": "AN", "TRIESTE": "TS",
     "FROSINONE": "FR", "SAN SEVERO": "SS",
+    "MONTEGIORGIO": "MG", "AVERSA": "AV", "TARANTO": "TA", "FOLLONICA": "FO",
+    "CIVITANOVA": "CV", "FERRARA": "FE",
 }
 
 
@@ -69,7 +71,12 @@ def parse_date(text: str) -> str:
 
 def track_code(name: str) -> str:
     name = name.upper().strip()
-    return TRACK_CODES.get(name, name[:3] if name else "???")
+    # Pista nuova, non in tabella: si tiene il nome intero. Prima si
+    # prendevano le prime tre lettere, e Montegiorgio diventava "MON",
+    # che nessuno riconosceva (12/10/2026).
+    if name and name not in TRACK_CODES:
+        print(f"  [WARN] pista senza sigla: {name} (aggiungerla alla tabella)", file=sys.stderr)
+    return TRACK_CODES.get(name, name or "???")
 
 
 def strip_tags(html: str) -> str:

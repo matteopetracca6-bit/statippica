@@ -103,6 +103,9 @@ PISTE = {
     "FI": "FIRENZE", "BA": "BARI", "VA": "VARESE", "GA": "GARIGLIANO", "PD": "PADOVA",
     "VI": "VILLANOVA", "CT": "CASTELLUCCIO", "AN": "ANCONA", "TS": "TRIESTE",
     "FR": "FROSINONE", "SS": "SAN SEVERO",
+    "MG": "MONTEGIORGIO", "AV": "AVERSA", "TA": "TARANTO", "FO": "FOLLONICA",
+    "CV": "CIVITANOVA", "FE": "FERRARA",
+    "MON": "MONTEGIORGIO",  # sigla sbagliata del 12/10/2026 (prime tre lettere)
 }
 
 
@@ -536,6 +539,30 @@ def _motivi(riga) -> list[dict]:
     return out[:4]
 
 
+def _ripara_piste_storico(conn):
+    """Stime salvate con la pista scritta in sigla (BO, CS, RO, MON...) invece
+    che col nome dell'archivio: la verifica non trovava l'arrivo. Per ogni
+    corsa si guarda dove hanno corso davvero quel giorno i suoi cavalli e si
+    prende la pista della maggioranza. Cosi' si risolve anche CS, che nel
+    calendario e' Casarano ma in altre tabelle era Castelluccio."""
+    nomi = {r[0] for r in conn.execute("SELECT DISTINCT track FROM races WHERE race_date >= '2025-01-01'")}
+    corse = conn.execute("""SELECT DISTINCT race_date, pista, corsa FROM pronostico_top3_storico""").fetchall()
+    for data, pista, corsa in corse:
+        if pista in nomi:
+            continue
+        voti = conn.execute("""
+            SELECT r.track, COUNT(*) FROM pronostico_top3_storico s
+            JOIN races r ON r.horse_name = s.horse_name AND r.race_date = s.race_date
+            WHERE s.race_date = ? AND s.pista = ? AND s.corsa = ?
+            GROUP BY r.track ORDER BY 2 DESC""", (data, pista, corsa)).fetchall()
+        giusta = voti[0][0] if voti else PISTE.get(str(pista).upper())
+        if not giusta or giusta == pista:
+            continue
+        conn.execute("""UPDATE OR REPLACE pronostico_top3_storico SET pista = ?
+                        WHERE race_date = ? AND pista = ? AND corsa = ?""", (giusta, data, pista, corsa))
+    conn.commit()
+
+
 def _crea_storico(conn):
     conn.execute("""CREATE TABLE IF NOT EXISTS pronostico_top3_storico (
         pista TEXT, race_date TEXT, corsa TEXT, horse_name TEXT,
@@ -649,6 +676,7 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
         # Roma 09/10, Torino 11/10, Montecatini 12/10): non sono verificabili
         # e falserebbero il controllo con gli arrivi, quindi si tolgono.
         conn.execute("DELETE FROM pronostico_top3_storico WHERE corsa = '' AND tipo = 'del_giorno'")
+        _ripara_piste_storico(conn)
         n_ric = _ricostruisci(conn, df, lettore, ora)
         conn.commit()
         if n_ric:

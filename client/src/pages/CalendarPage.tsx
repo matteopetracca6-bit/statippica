@@ -64,6 +64,8 @@ const TRACK_NAMES: Record<string, string> = {
   FI: "Firenze", BA: "Bari", VA: "Varese", GA: "Garigliano",
   PD: "Padova", VI: "Villanova", CT: "Castelluccio", AN: "Ancona",
   TS: "Trieste", FR: "Frosinone", SS: "San Severo",
+  MG: "Montegiorgio", AV: "Aversa", TA: "Taranto", FO: "Follonica", CV: "Civitanova", FE: "Ferrara",
+  MON: "Montegiorgio",
 };
 
 export default function CalendarPage() {
@@ -136,7 +138,7 @@ export default function CalendarPage() {
             const key = raceKey(race);
             const expanded = expandedRace === key;
             const top3 = race.entries.slice(0, 3);
-            const trackName = TRACK_NAMES[race.track] || race.track;
+            const trackName = TRACK_NAMES[race.track] || (race.track.charAt(0) + race.track.slice(1).toLowerCase());
             return (
               <div key={key} style={{
                 background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",

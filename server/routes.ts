@@ -45,6 +45,8 @@ const NOMI_CALENDARIO: Record<string, string> = {
   GA: "GARIGLIANO", PD: "PADOVA", VI: "VILLANOVA", CT: "CASTELLUCCIO",
   TS: "TRIESTE", AV: "AVERSA", TA: "TARANTO", MG: "MONTEGIORGIO",
   FE: "FERRARA", FO: "FOLLONICA", CV: "CIVITANOVA", PC: "PONTECAGNANO",
+  BA: "BARI", VA: "VARESE", AN: "ANCONA", FR: "FROSINONE", SS: "SAN SEVERO",
+  MON: "MONTEGIORGIO", // vecchia sigla sbagliata (12/10/2026)
 };
 
 // Cache delle informazioni prese da GitHub per la pagina "Metodo e dati".

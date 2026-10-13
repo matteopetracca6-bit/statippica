@@ -64,6 +64,9 @@ const PISTE: Record<string, string> = {
   BO: "Bologna", MI: "Milano", RM: "Roma", TO: "Torino", NA: "Napoli", CE: "Cesena", SR: "Siracusa", TV: "Treviso",
   MT: "Montecatini", CS: "Casarano", PA: "Palermo", PC: "Pontecagnano", MO: "Modena", FI: "Firenze", PD: "Padova",
   VI: "Villanova", CT: "Castelluccio", GA: "Garigliano", TS: "Trieste",
+  BA: "Bari", VA: "Varese", AN: "Ancona", FR: "Frosinone", SS: "San Severo",
+  MG: "Montegiorgio", AV: "Aversa", TA: "Taranto", FO: "Follonica", CV: "Civitanova", FE: "Ferrara",
+  MON: "Montegiorgio",
 };
 const giorno = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
 
@@ -122,7 +125,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
           {d.prossima ? (
             <div style={{ ...riquadro, display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center" }}>
               <div style={{ minWidth: 150 }}>
-                <div style={{ fontSize: 12, color: MUTED }}>{giorno(d.prossima.data)} · {PISTE[d.prossima.pista] ?? d.prossima.pista} · {d.prossima.ora}</div>
+                <div style={{ fontSize: 12, color: MUTED }}>{giorno(d.prossima.data)} · {PISTE[d.prossima.pista] ?? titolo(d.prossima.pista)} · {d.prossima.ora}</div>
                 <div className="tabular" style={{ fontSize: 24, fontWeight: 800, color: "hsl(183 70% 60%)" }}>
                   {d.prossima.prob != null ? `${Math.round(d.prossima.prob)}%` : "—"}
                 </div>

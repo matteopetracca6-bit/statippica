@@ -3547,6 +3547,8 @@ _TRACK_CODES = {
     "PONTECAGNANO": "PC", "PADOVA": "PD", "VILLANOVA": "VI",  # era "PA" come Palermo: due piste con la stessa sigla
     "CASTELLUCCIO": "CT", "ANCONA": "AN", "TRIESTE": "TS",
     "FROSINONE": "FR", "SAN SEVERO": "SS",
+    "MONTEGIORGIO": "MG", "AVERSA": "AV", "TARANTO": "TA", "FOLLONICA": "FO",
+    "CIVITANOVA": "CV", "FERRARA": "FE",
 }
 
 
@@ -3572,7 +3574,12 @@ def _parse_date_it(text: str) -> str:
 
 def _track_code(name: str) -> str:
     name = name.upper().strip()
-    return _TRACK_CODES.get(name, name[:3] if name else "???")
+    # Pista nuova, non in tabella: si tiene il nome intero. Prima si
+    # prendevano le prime tre lettere, e Montegiorgio diventava "MON",
+    # che nessuno riconosceva (12/10/2026).
+    if name and name not in _TRACK_CODES:
+        print(f"  [WARN] pista senza sigla: {name} (aggiungerla alla tabella)", file=sys.stderr)
+    return _TRACK_CODES.get(name, name or "???")
 
 
 def _fetch_meetings_list() -> list:
