@@ -2720,7 +2720,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       if (!c) return res.json({ corse: [], sintesi: null });
       const righe = db.prepare(`
         SELECT s.pista, s.race_date, s.corsa, s.horse_name, s.prob, s.affidabile, s.tipo,
-               r.placement AS arrivo, r.placement_raw AS arrivo_testo, r.race_code AS codice, h.birth_year
+               r.placement AS arrivo,
+               COALESCE(r.placement_raw, ${vpTableExists(db, "partenti_ritirati") ? "(SELECT 'n.p.' FROM partenti_ritirati p WHERE p.horse_name = s.horse_name AND p.race_date = s.race_date LIMIT 1)" : "NULL"}) AS arrivo_testo,
+               r.race_code AS codice, h.birth_year
           FROM pronostico_top3_storico s
           LEFT JOIN races r ON r.horse_name = s.horse_name AND r.race_date = s.race_date AND r.track = s.pista
           LEFT JOIN horses h ON h.name = s.horse_name

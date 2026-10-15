@@ -1434,7 +1434,19 @@ def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str
                 return el.get_text(strip=True) if el else ""
 
             # nome_cav_u = con premi | nome_cav = senza premi
-            horse_name = _normalize_name(td("nome_cav_u") or td("nome_cav"))
+            # nome_cav_rit_u / nome_cav_rit = ritirato prima della partenza
+            # (nessun guidatore, "- - - - -"): non ha corso.
+            nome_rit = td("nome_cav_rit_u") or td("nome_cav_rit")
+            horse_name = _normalize_name(td("nome_cav_u") or td("nome_cav") or nome_rit)
+            if nome_rit and not (td("nome_cav_u") or td("nome_cav")):
+                if horse_name and len(horse_name) >= 2:
+                    results.append({
+                        "name": horse_name, "placement": None, "time_km": None,
+                        "distance": None, "driver": "", "prize": 0.0,
+                        "race_code": race_code, "race_date": race_date, "track": track,
+                        "esito": "n.p.", "start_pos": None, "ritirato": True,
+                    })
+                continue
             pos_raw    = td("piaz_u") or td("piaz")
             time_raw   = td("tempo_u") or td("tempo")
             dist_raw   = td("dist_cav_u") or td("dist_cav")
@@ -1661,6 +1673,58 @@ def _ensure_horse_in_db(conn: sqlite3.Connection, horse_name: str) -> tuple[bool
         return False, None
 
 
+def _salva_ritirati(conn: sqlite3.Connection, righe: list) -> int:
+    """Cavalli ritirati prima della partenza, letti dalla pagina dei
+    risultati. Non sono una gara (non entrano in races, cosi' non contano
+    nella carriera), ma la verifica dei pronostici deve sapere che non sono
+    partiti: prima risultavano "non in archivio" (Treviso 14/10: quattro)."""
+    conn.execute("""CREATE TABLE IF NOT EXISTS partenti_ritirati (
+        race_date TEXT, track TEXT, horse_name TEXT, race_code TEXT,
+        PRIMARY KEY (race_date, track, horse_name))""")
+    conn.executemany("INSERT OR IGNORE INTO partenti_ritirati VALUES (?, ?, ?, ?)",
+                     [(h["race_date"], h["track"], h["name"], h["race_code"]) for h in righe])
+    return len(righe)
+
+
+def phase_ritirati_recenti(conn: sqlite3.Connection, giorni: int = 30) -> int:
+    """Giornate gia' scaricate in cui alcuni cavalli del calendario non hanno
+    l'arrivo: si rilegge una volta la pagina dei risultati per segnare i
+    ritirati. Ogni giornata si rilegge una sola volta."""
+    try:
+        conn.execute("SELECT 1 FROM pronostico_top3_storico LIMIT 1")
+    except sqlite3.Error:
+        return 0
+    conn.execute("""CREATE TABLE IF NOT EXISTS risultati_ricontrollati (
+        race_date TEXT, track TEXT, PRIMARY KEY (race_date, track))""")
+    _salva_ritirati(conn, [])
+    giornate = conn.execute("""
+        SELECT s.race_date, s.pista, COUNT(*) FROM pronostico_top3_storico s
+        WHERE s.tipo = 'del_giorno' AND s.race_date >= date('now', ?) AND s.race_date < date('now')
+          AND NOT EXISTS (SELECT 1 FROM races r WHERE r.horse_name = s.horse_name AND r.race_date = s.race_date)
+          AND NOT EXISTS (SELECT 1 FROM partenti_ritirati p WHERE p.horse_name = s.horse_name AND p.race_date = s.race_date)
+          AND NOT EXISTS (SELECT 1 FROM risultati_ricontrollati c WHERE c.race_date = s.race_date AND c.track = s.pista)
+          AND (SELECT COUNT(*) FROM races r2 WHERE r2.race_date = s.race_date AND r2.track = s.pista) >= 20
+        GROUP BY s.race_date, s.pista""", (f"-{giorni} day",)).fetchall()
+    trovati = 0
+    for data, pista, _ in giornate:
+        codice = conn.execute("""SELECT race_code FROM races WHERE race_date = ? AND track = ?
+                                 AND race_code GLOB '????-??-??_*_*' LIMIT 1""", (data, pista)).fetchone()
+        m = re.match(r"\d{4}-\d{2}-\d{2}_([A-Z]+)_", (codice or [""])[0] or "")
+        if m:
+            url = ("https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php?"
+                   f"data={data}&sigla={m.group(1)}&ippodromo={requests.utils.quote(pista)}"
+                   "&flag_ris_u=1&note_giorno=")
+            soup = fetch_url(url)
+            if soup:
+                trovati += _salva_ritirati(conn, [h for h in _parse_hris_page(soup, data, pista, m.group(1))
+                                                  if h.get("ritirato")])
+        conn.execute("INSERT OR IGNORE INTO risultati_ricontrollati VALUES (?, ?)", (data, pista))
+        conn.commit()
+    if giornate:
+        print(f"  [RITIRATI] {len(giornate)} giornate ricontrollate, {trovati} ritirati segnati", file=sys.stderr)
+    return trovati
+
+
 def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
     """
     FASE 0 — Scarica i convegni mancanti da Trottoweb e li inserisce nel DB.
@@ -1691,6 +1755,8 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
 
         conv_races = 0
         conv_horses = 0
+        _salva_ritirati(conn, [h for h in rows if h.get("ritirato")])
+        rows = [h for h in rows if not h.get("ritirato")]
         for h in rows:
             name = h["name"]
             is_new, birth_year = _ensure_horse_in_db(conn, name)
@@ -4654,6 +4720,7 @@ def main():
         phase_completa_schede_senza_anno(conn)   # castroni e cavalli esteri senza anno
         phase_collega_stalloni_atleti(conn)      # stesso cavallo: scheda stallone + scheda da corsa
         phase_ripara_esiti_nr(conn)              # "nr" al posto di r.p./rit./... nei risultati 2026
+        phase_ritirati_recenti(conn)             # ritirati prima della partenza, per la verifica
         new_horses += up_horses
         new_races  += up_races
 
