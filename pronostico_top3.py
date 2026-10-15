@@ -102,7 +102,7 @@ PISTE = {
     "CS": "CASARANO", "PA": "PALERMO", "PC": "PONTECAGNANO", "MO": "MODENA",
     "FI": "FIRENZE", "BA": "BARI", "VA": "VARESE", "GA": "GARIGLIANO", "PD": "PADOVA",
     "VI": "VILLANOVA", "CT": "CASTELLUCCIO", "AN": "ANCONA", "TS": "TRIESTE",
-    "FR": "FROSINONE", "SS": "SAN SEVERO",
+    "FR": "FROSINONE", "SS": "SAN SEVERO", "RO": "ROMA",
     "MG": "MONTEGIORGIO", "AV": "AVERSA", "TA": "TARANTO", "FO": "FOLLONICA",
     "CV": "CIVITANOVA", "FE": "FERRARA",
     "MON": "MONTEGIORGIO",  # sigla sbagliata del 12/10/2026 (prime tre lettere)
@@ -558,7 +558,20 @@ def _ripara_piste_storico(conn):
         giusta = voti[0][0] if voti else PISTE.get(str(pista).upper())
         if not giusta or giusta == pista:
             continue
-        conn.execute("""UPDATE OR REPLACE pronostico_top3_storico SET pista = ?
+        # Una stima ricostruita non deve mai prendere il posto di quella del
+        # giorno: se la corsa ha gia' stime del giorno sulla pista giusta, le
+        # ricostruite (fatte con un'archivio parziale) si tolgono.
+        conn.execute("""DELETE FROM pronostico_top3_storico
+                        WHERE race_date = ? AND pista = ? AND corsa = ? AND tipo = 'ricostruito'
+                          AND EXISTS (SELECT 1 FROM pronostico_top3_storico d
+                                      WHERE d.race_date = ? AND d.pista = ? AND d.tipo = 'del_giorno')""",
+                     (data, pista, corsa, data, giusta))
+        conn.execute("""DELETE FROM pronostico_top3_storico
+                        WHERE race_date = ? AND pista = ? AND corsa = ?
+                          AND horse_name IN (SELECT horse_name FROM pronostico_top3_storico
+                                             WHERE race_date = ? AND pista = ?)""",
+                     (data, pista, corsa, data, giusta))
+        conn.execute("""UPDATE OR IGNORE pronostico_top3_storico SET pista = ?
                         WHERE race_date = ? AND pista = ? AND corsa = ?""", (giusta, data, pista, corsa))
     conn.commit()
 
@@ -586,10 +599,20 @@ def _ricostruisci(conn, df, lettore, ora) -> int:
     sel = df[(~df["futura"].astype(bool)) & (df["data"] >= oggi - pd.Timedelta(days=GIORNI_RICOSTRUITI)) & (df["data"] < oggi)]
     if sel.empty:
         return 0
-    gia = pd.read_sql_query("SELECT race_date, pista, horse_name FROM pronostico_top3_storico", conn)
+    gia = pd.read_sql_query("SELECT race_date, pista, horse_name, tipo FROM pronostico_top3_storico", conn)
     chiave = sel["data"].dt.strftime("%Y-%m-%d") + "|" + sel["pista"].astype(str) + "|" + sel["cavallo"]
     presenti = set(gia["race_date"] + "|" + gia["pista"].astype(str) + "|" + gia["horse_name"])
     sel = sel[~chiave.isin(presenti)]
+    # Niente ricostruite per piste e giorni che hanno gia' la stima del giorno:
+    # vuol dire che la corsa era in calendario, e la stima vera e' quella. Le
+    # gare arrivate dopo (anche con la pista in sigla, RO invece di ROMA) non
+    # devono creare una seconda stima.
+    dg = gia[gia["tipo"] == "del_giorno"]
+    giorni_dg = set(dg["race_date"] + "|" + dg["pista"].astype(str))
+    cavalli_dg = set(dg["race_date"] + "|" + dg["horse_name"])
+    gp = sel["data"].dt.strftime("%Y-%m-%d") + "|" + sel["pista"].map(lambda c: PISTE.get(str(c).upper(), c)).astype(str)
+    gc = sel["data"].dt.strftime("%Y-%m-%d") + "|" + sel["cavallo"]
+    sel = sel[~gp.isin(giorni_dg) & ~gc.isin(cavalli_dg)]
     if sel.empty:
         return 0
     grezza = lettore.probabilita(sel[VARIABILI].to_numpy(dtype="float32"))

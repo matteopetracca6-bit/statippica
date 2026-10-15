@@ -1607,9 +1607,24 @@ def _get_missing_convegni(conn: sqlite3.Connection) -> list[dict]:
             SELECT COUNT(*) FROM races
             WHERE race_date = ? AND UPPER(TRIM(track)) = UPPER(TRIM(?))
         """, (conv["data"], conv["ippodromo"])).fetchone()[0]
+        # Contare le righe "almeno 3" non basta: le schede dei singoli
+        # cavalli portano qualche gara della giornata (Roma e Treviso del
+        # 14/10: 12 e 9 righe su circa 70) e la giornata sembrava gia'
+        # scaricata, cosi' i risultati completi non venivano mai letti. Si
+        # confronta con quanti cavalli aveva il calendario di quel giorno.
+        try:
+            cavalli_attesi = conn.execute("""
+                SELECT COUNT(*) FROM pronostico_top3_storico
+                WHERE race_date = ? AND pista = ? AND tipo = 'del_giorno'
+            """, (conv["data"], conv["ippodromo"].upper().strip())).fetchone()[0]
+        except sqlite3.Error:
+            cavalli_attesi = 0
+        incompleto = cavalli_attesi >= 20 and count < 0.8 * cavalli_attesi
 
-        if count < 3:
-            label = f"ASSENTE" if count == 0 else f"incompleto ({count} gare)"
+        if count < 3 or incompleto:
+            label = (f"ASSENTE" if count == 0 else
+                     f"incompleto ({count} gare"
+                     + (f" su {cavalli_attesi} cavalli in calendario" if cavalli_attesi else "") + ")")
             print(f"  -> {conv['data']} {conv['ippodromo']} ({conv['sigla']}): {label}", file=sys.stderr)
             missing.append(conv)
         else:
@@ -3152,6 +3167,14 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
                 if nuovo_esito and nuovo_esito.lower() != "nr" and r.get("placement") is None:
                     conn.execute("UPDATE races SET placement_raw=? WHERE id=? AND placement_raw='nr'",
                                  (nuovo_esito, already[0]))
+                # Stessa gara gia' arrivata dalla scheda del cavallo (codice
+                # 2026-10-14_RO_2): si prende il codice della pagina dei
+                # risultati (..._R2), cosi' tutti i cavalli della corsa hanno
+                # lo stesso codice e la corsa non si spezza in due.
+                if re.search(r"_R\d+$", str(r.get("race_code") or "")):
+                    conn.execute("""UPDATE races SET race_code = ?
+                                    WHERE id = ? AND race_code NOT GLOB '*_R[0-9]*'""",
+                                 (r.get("race_code"), already[0]))
                 conn.execute("""UPDATE races SET
                                     race_number    = COALESCE(race_number, ?),
                                     start_pos      = COALESCE(start_pos, ?),
