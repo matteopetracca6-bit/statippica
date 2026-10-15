@@ -4004,6 +4004,42 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
             print(f"    [cavAn] {name}: {inserted} gare inserite", file=sys.stderr)
         time.sleep(0.5)  # rispetto per la fonte
 
+    # 3b) Cavalli gia' in archivio ma con la scheda incompleta: si rileggono
+    # adesso, prima di voti e pronostico, che girano piu' avanti nello stesso
+    # lavoro. Sono le schede nate vuote (solo il nome, o create come genitore
+    # di un altro cavallo), quelle senza anno di nascita, quelle con meno
+    # gare in archivio di quante ne dice la scheda, e i debuttanti senza gare
+    # non riletti da due giorni (possono aver corso altrove nel frattempo).
+    noti = sorted({e["horse_name"] for e in all_entries} - unknown)
+    da_rileggere = []
+    for name in noti:
+        r = conn.execute("""
+            SELECT h.birth_year, COALESCE(h.backfill_status, ''), COALESCE(h.horse_class, 'athlete'),
+                   COALESCE(h.career_races, 0), h.last_updated,
+                   (SELECT COUNT(*) FROM races x WHERE x.horse_name = h.name)
+            FROM horses h WHERE h.name = ? LIMIT 1""", (name,)).fetchone()
+        if not r:
+            continue
+        anno, stato, classe, gare_scheda, agg, gare_arch = r
+        vecchia = not agg or agg < (datetime.utcnow() - timedelta(days=2)).isoformat()
+        if (anno is None or stato != "done" or classe == "breeder"
+                or gare_scheda > gare_arch
+                or (gare_arch == 0 and vecchia)):
+            da_rileggere.append(name)
+    da_rileggere = da_rileggere[:150]
+    if da_rileggere:
+        print(f"  [FASE 0b] {len(da_rileggere)} cavalli in calendario con scheda incompleta: li rileggo",
+              file=sys.stderr)
+    for name in da_rileggere:
+        try:
+            _fetch_and_insert_full_career(conn, name)
+            conn.execute("UPDATE horses SET last_updated = ? WHERE name = ?",
+                         (datetime.utcnow().isoformat(), name))
+        except sqlite3.Error as e:
+            print(f"    [cavAn] {name}: {e}", file=sys.stderr)
+        time.sleep(0.3)
+    conn.commit()
+
     # 4) Inserisci i partenti in upcoming_races. Per ogni giornata letta di
     # nuovo si cancellano prima le righe vecchie: altrimenti un orario
     # corretto lascerebbe in piedi la vecchia corsa "senza orario" o un
