@@ -44,16 +44,28 @@ import numpy as np
 import pandas as pd
 
 # Gradini di premi in un anno (euro). -1 = non ha corso ("fermo").
-SOGLIE = [0, 1_000, 3_000, 7_000, 15_000, 30_000]
+# Ottobre 2026: l'ultimo gradino era "oltre 30.000" e metteva insieme chi
+# aveva vinto 35.000 euro e chi 300.000. I cavalli SSS (premi tipici 90.000
+# l'anno) ricevevano la stessa stima dei SS da 48.000: prova sul passato, SSS
+# 2,5 volte sopra la stima, SS-S in quel gradino 35% sotto. Aggiunti 60.000 e
+# 120.000.
+SOGLIE = [0, 1_000, 3_000, 7_000, 15_000, 30_000, 60_000, 120_000]
 NOMI_GRADINI = ["0", "fino a 1.000", "1.000-3.000", "3.000-7.000",
-                "7.000-15.000", "15.000-30.000", "oltre 30.000"]
+                "7.000-15.000", "15.000-30.000", "30.000-60.000",
+                "60.000-120.000", "oltre 120.000"]
 N_GRAD = len(NOMI_GRADINI)
 FERMO = N_GRAD           # indice dello stato "non ha corso"
 N_STATI = N_GRAD + 1
 # Gruppi di voto (stessa scala del sito: percentile fra i coetanei).
-GRUPPI_VOTO = ["A o meglio", "B", "C", "D", "E-F"]
-SOGLIE_VOTO = [0.75, 0.60, 0.40, 0.25]          # A>=75, B>=60, C>=40, D>=25
-LETTERA_GRUPPO = {"SSS": 0, "SS": 0, "S": 0, "A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 4}
+# Ottobre 2026: prima i gruppi erano "A o meglio" (SSS, SS, S e A insieme) ed
+# "E-F". Un SSS prendeva la media che comprendeva gli A, un F quella che
+# comprendeva gli E: stima bassa per i fortissimi, alta per i piu' deboli
+# (prova sul passato: F 38% sopra il vero, A 21% sopra). Ora i gruppi seguono
+# la scala del sito; SS e S restano insieme perche' separati sono pochi.
+# Se un gruppo ha pochi cavalli simili si allarga ai gruppi vicini.
+GRUPPI_VOTO = ["SSS", "SS-S", "A", "B", "C", "D", "E", "F"]
+SOGLIE_VOTO = [0.99, 0.90, 0.75, 0.60, 0.40, 0.25, 0.10]
+LETTERA_GRUPPO = {"SSS": 0, "SS": 1, "S": 1, "A": 2, "B": 3, "C": 4, "D": 5, "E": 6, "F": 7}
 N_VOTI = len(GRUPPI_VOTO)
 N_DOPPI = N_STATI * N_VOTI
 ETA_MIN, ETA_MAX = 2, 15
@@ -222,7 +234,7 @@ class Simili:
 def stima(simili: Simili, eta: int, premi12: float, attesi_modello: float | None,
           voto: int) -> dict:
     """Valore residuo: `eta` = eta' di oggi, `premi12` = premi degli ultimi
-    dodici mesi, `voto` = gruppo di voto (0 = A o meglio ... 4 = E-F)."""
+    dodici mesi, `voto` = gruppo di voto (0 = SSS ... 7 = F)."""
     cur = int(_gradino(np.array([max(premi12, 0.0)]))[0])
     r = simili.stima(eta, cur, voto)
     anni, tot = r["anni"], r["totali"]
