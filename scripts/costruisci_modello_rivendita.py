@@ -184,12 +184,16 @@ def main() -> int:
         "n_lotti_totali": len(righe),
         "n_venduti": len(venduti),
         "fonti": [
+            {"nome": "ITS Asta Selezionata Yearlings Trottatori 2026 (risultati GAET)",
+             "url": "https://www.gaet.it/notizie/daily/its-risultati-definitivi"},
+            {"nome": "ITS Asta evento Face Time Bourbon 2026 (risultati GAET)",
+             "url": "https://www.gaet.it/asta_FTB/"},
+            {"nome": "Asta ANACT yearlings 2026, risultati ufficiali",
+             "url": "https://www.gaet.it/notizie/daily/asta-anact-risultati-ufficiali"},
             {"nome": "ITS Asta Selezionata Yearling Trottatori 2025",
              "url": "https://www.its-aste.com/aste/asta-selezionata-yearling-trottatori/"},
             {"nome": "ITS Asta Selezionata Yearlings Trottatori 2024",
              "url": "https://www.its-aste.com/aste/asta-selezionata-yearlings-trottatori-5/"},
-            {"nome": "Asta ANACT yearlings, risultati ufficiali",
-             "url": "https://www.gaet.it/notizie/daily/asta-anact-risultati-ufficiali"},
         ],
         "nota": (
             f"Fasce di prezzo ricavate da {len(righe)} lotti yearling delle aste italiane "

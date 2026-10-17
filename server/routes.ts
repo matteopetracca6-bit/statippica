@@ -129,6 +129,20 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const n = Number(v);
     return Number.isFinite(n) && n >= min && n <= max ? n : def;
   };
+  // GENERAZIONE M (scripts/simula_generazione.py): simulazione sperimentale
+  // dei nati 2025 e dei puledri passati nelle aste del settembre 2026.
+  // E' un file fisso, rifatto a mano quando arrivano aste o stagioni nuove.
+  app.get("/api/generazione-m", (_req, res) => {
+    for (const f of [path.resolve(process.cwd(), "generazione_m.json"),
+                     path.resolve(process.cwd(), "..", "generazione_m.json")]) {
+      if (fs.existsSync(f)) {
+        res.set("Cache-Control", "public, max-age=3600");
+        res.type("application/json").send(fs.readFileSync(f, "utf8"));
+        return;
+      }
+    }
+    res.status(404).json({ message: "Simulazione non ancora calcolata" });
+  });
   app.get("/api/pareggio", (req, res) => {
     const db = getDb();
     try {

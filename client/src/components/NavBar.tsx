@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Home as HomeIcon, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale } from "lucide-react";
+import { Home as HomeIcon, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel } from "lucide-react";
 
 /**
  * IL MENU, RAGGRUPPATO.
@@ -30,6 +30,7 @@ const GRUPPI: Gruppo[] = [
   { nome: "Economia", icon: Scale, colore: "hsl(160 60% 50%)", schede: [
     { href: "/pareggio", label: "Punto di pareggio", nota: "Costi, vendere o far correre, quanto pesa ogni costo", icon: Scale, colore: "hsl(160 60% 50%)" },
     { href: "/tenere", label: "Tenere o fermare", nota: "Premi attesi e spese per ogni cavallo in attività", icon: TrendingUp, colore: "hsl(145 55% 52%)" },
+    { href: "/generazione-m", label: "Aste e generazione M", nota: "I nati 2025 e i puledri delle aste 2026, simulati", icon: Gavel, colore: "hsl(38 80% 58%)" },
   ] },
   { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)", schede: [
     { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)" },
