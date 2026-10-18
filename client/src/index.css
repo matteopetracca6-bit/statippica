@@ -834,3 +834,36 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .categoria-grande, .categoria-grande:hover { transition: none; transform: none; }
   .categoria-pagine { animation: none; }
 }
+
+/* Dettaglio del pronostico di una corsa: i numeri dietro le percentuali. */
+.bottone-dettaglio { display: inline-flex; align-items: center; gap: 6px; background: hsl(183 60% 40% / 0.08); border: 1px solid hsl(183 50% 40% / 0.35);
+  color: hsl(183 65% 62%); border-radius: 8px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.bottone-dettaglio:hover { background: hsl(183 60% 40% / 0.16); }
+.tabella-dettaglio { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 980px; }
+.tabella-dettaglio th { text-align: left; font-size: 10.5px; font-weight: 600; color: hsl(210 8% 50%); text-transform: uppercase; letter-spacing: .04em;
+  padding: 8px 10px; border-bottom: 1px solid hsl(220 10% 16%); background: hsl(220 12% 8%); white-space: nowrap; }
+.tabella-dettaglio td { padding: 8px 10px; border-bottom: 1px solid hsl(220 10% 13%); color: hsl(210 10% 84%); vertical-align: top; }
+.tabella-dettaglio .num { text-align: right; }
+.tabella-dettaglio tr:last-child td { border-bottom: none; }
+.tabella-dettaglio .nome { color: hsl(210 10% 90%); font-weight: 600; text-decoration: none; }
+.tabella-dettaglio .arrivi { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.tabella-dettaglio .arrivi span { font-size: 11px; padding: 1px 5px; border-radius: 4px; background: hsl(220 12% 15%); color: hsl(210 8% 62%); white-space: nowrap; }
+.tabella-dettaglio .arrivi span.ok { background: hsl(150 50% 40% / 0.2); color: hsl(150 55% 62%); font-weight: 700; }
+
+/* Riepilogo della verifica dei pronostici. */
+.riepilogo-griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px; margin-top: 10px; }
+.riepilogo-griglia .verifica-riquadro .valore { font-size: 24px; }
+.barre-orizz { display: grid; gap: 7px; }
+.barre-orizz .riga { display: grid; grid-template-columns: minmax(90px, 150px) 1fr; gap: 10px; align-items: center; font-size: 12px; color: hsl(210 10% 80%); }
+.barre-orizz .traccia { display: flex; align-items: center; gap: 6px; }
+.barre-orizz .traccia i { display: block; height: 9px; border-radius: 3px; }
+.barre-orizz .traccia b { font-size: 11px; font-weight: 600; color: hsl(210 10% 86%); white-space: nowrap; }
+.andamento { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding-top: 6px; }
+.andamento > div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.andamento .colonna { width: 100%; max-width: 26px; border-radius: 3px 3px 0 0; background: hsl(183 60% 48%); position: relative; }
+.andamento .caso { position: absolute; left: -2px; right: -2px; height: 2px; background: hsl(40 80% 60%); }
+.andamento small { font-size: 9.5px; color: hsl(210 8% 48%); margin-top: 3px; white-space: nowrap; }
+.vc-sommario { display: grid; gap: 4px; font-size: 12.5px; color: hsl(210 10% 80%); line-height: 1.5; padding: 4px 8px 10px; border-bottom: 1px solid hsl(220 10% 15%); margin-bottom: 6px; }
+.vc-sommario b { color: hsl(45 85% 62%); }
+.vc-vincitore { font-size: 11px; color: hsl(45 80% 62%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+@media (max-width: 700px) { .vc-vincitore { display: none; } }

@@ -7,6 +7,7 @@ import BandieraCavallo from "../components/BandieraCavallo";
 import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle, Medal } from "lucide-react";
 import VerificaPronostico from "../components/VerificaPronostico";
 import VerificaGare from "../components/VerificaGare";
+import DettaglioPronostico from "../components/DettaglioPronostico";
 
 interface CalendarEntry {
   horse_name: string;
@@ -341,6 +342,9 @@ export default function CalendarPage() {
                         );
                       })}
                     </div>
+                    {data.pronostico && race.n_runners > 3 && (
+                      <DettaglioPronostico track={race.track} date={race.race_date} time={race.race_time} />
+                    )}
                   </div>
                 )}
               </div>

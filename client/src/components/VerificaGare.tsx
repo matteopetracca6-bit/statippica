@@ -18,14 +18,127 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Check, X, ChevronDown, MapPin } from "lucide-react";
 import Sagoma from "./Sagoma";
+import { Spiegazione } from "./Spiegazione";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 42%)";
 
 type Voce = { horse_name: string; birth_year: number | null; prob: number; favorito: boolean; affidabile: boolean; arrivo: number | null; arrivo_testo: string | null; top3: boolean | null };
 type Mancante = { horse_name: string; birth_year: number | null; arrivo_testo: string | null; top3: boolean };
-type Corsa = { race_date: string; pista: string; tipo: string; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean };
-type Sintesi = { corse: number; favoriti_controllati: number; quota_favoriti: number | null; quota_tutti: number | null };
+type Corsa = { race_date: string; pista: string; tipo: string; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean;
+  vincitore?: { nome: string; prob: number | null; posto: number | null; su: number } | null; attesi?: number;
+  sorprese?: { nome: string; prob: number; arrivo: string }[]; primo_favorito?: { nome: string; prob: number; arrivo: string | null; top3: boolean | null } | null };
+type Sintesi = { corse: number; favoriti_controllati: number; quota_favoriti: number | null; quota_tutti: number | null;
+  attesi_per_corsa?: number | null; arrivati_per_corsa?: number | null; primo_favorito_top3?: number | null; primo_favorito_vince?: number | null;
+  vincitore_tra_favoriti?: number | null; distribuzione?: number[]; fasce?: { da: number; a: number; n: number; stimato: number; reale: number }[] };
+type Risposta = { corse: Corsa[]; sintesi: Record<string, Sintesi> | null; piste?: { pista: string; corse: number; quota_favoriti: number | null }[];
+  andamento?: { data: string; corse: number; quota_favoriti: number | null; quota_tutti: number | null }[] };
+
+const p1 = (n: number | null | undefined) => n == null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
+const dec = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString("it-IT", { maximumFractionDigits: 2 });
+
+/** Il riepilogo del periodo: solo le stime del giorno, quelle mostrate davvero prima della gara. */
+function Riepilogo({ d, giorni }: { d: Risposta; giorni: number }) {
+  const s = d.sintesi?.del_giorno;
+  if (!s || !s.corse) return null;
+  const dist = s.distribuzione ?? [0, 0, 0, 0];
+  const totDist = dist.reduce((a, b) => a + b, 0) || 1;
+  const maxDist = Math.max(...dist, 1);
+  const andamento = (d.andamento ?? []).filter(a => a.quota_favoriti != null);
+  return (
+    <div style={{ marginTop: 14 }}>
+      <h3 className="verifica-titolo" style={{ margin: "0 0 2px" }}>Com'è andato negli ultimi {giorni} giorni</h3>
+      <div style={{ fontSize: 12, color: MUTED }}>Solo le stime del giorno: {s.corse} corse con tutti i partenti e l'arrivo in archivio.</div>
+      <div className="riepilogo-griglia">
+        <div className="verifica-riquadro">
+          <div className="etichetta">Primo favorito</div>
+          <div className="valore tabular">{p1(s.primo_favorito_top3)}</div>
+          <div className="spiega">è arrivato nei primi tre; ha vinto nel {p1(s.primo_favorito_vince)} delle corse.</div>
+        </div>
+        <div className="verifica-riquadro">
+          <div className="etichetta">Il vincitore</div>
+          <div className="valore tabular">{p1(s.vincitore_tra_favoriti)}</div>
+          <div className="spiega">delle volte era fra i tre favoriti del pronostico.</div>
+        </div>
+        <div className="verifica-riquadro">
+          <div className="etichetta">Attesi e arrivati</div>
+          <div className="valore tabular" style={{ color: "hsl(210 10% 90%)" }}>{dec(s.arrivati_per_corsa)} <span style={{ fontSize: 14, color: MUTED }}>su 3</span></div>
+          <div className="spiega">favoriti nei primi tre per corsa; il pronostico se ne aspettava {dec(s.attesi_per_corsa)}.</div>
+        </div>
+      </div>
+
+      <div className="riepilogo-griglia" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))" }}>
+        <div className="verifica-riquadro">
+          <div className="etichetta" style={{ marginBottom: 8 }}>Quanti favoriti a segno, corsa per corsa</div>
+          <div className="barre-orizz">
+            {[3, 2, 1, 0].map(k => (
+              <div key={k} className="riga">
+                <span>{k} su 3</span>
+                <span className="traccia"><i style={{ width: `${(dist[k] / maxDist) * 80}%`, background: coloreSegno(k, 3) }} /><b>{dist[k]} corse · {Math.round((dist[k] / totDist) * 100)}%</b></span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {s.fasce && s.fasce.length > 0 && (
+          <div className="verifica-riquadro">
+            <div className="etichetta" style={{ marginBottom: 8 }}>Le percentuali erano giuste?</div>
+            <div className="barre-orizz">
+              {s.fasce.map(f => (
+                <div key={f.da} className="riga">
+                  <span>dati {f.da}–{f.a}%<small style={{ display: "block", color: DIM, fontSize: 10 }}>{f.n} cavalli</small></span>
+                  <span style={{ display: "grid", gap: 2 }}>
+                    <span className="traccia"><i style={{ width: `${f.stimato * 0.8}%`, background: "hsl(210 8% 45%)" }} /><b style={{ color: MUTED }}>{p1(f.stimato)}</b></span>
+                    <span className="traccia"><i style={{ width: `${f.reale * 0.8}%`, background: "hsl(183 60% 48%)" }} /><b>{p1(f.reale)}</b></span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="nota">Barra grigia: la stima media della fascia. Barra azzurra: quanti sono arrivati davvero nei primi tre.</div>
+          </div>
+        )}
+      </div>
+
+      <div className="riepilogo-griglia" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))" }}>
+        {andamento.length > 1 && (
+          <div className="verifica-riquadro">
+            <div className="etichetta">Giorno per giorno: favoriti a segno</div>
+            <div className="andamento">
+              {andamento.map(a => (
+                <div key={a.data} title={`${data(a.data)}: ${p1(a.quota_favoriti)} dei favoriti nei primi tre, ${a.corse} corse; a caso ${p1(a.quota_tutti)}`}>
+                  <div className="colonna" style={{ height: `${a.quota_favoriti ?? 0}%` }}>
+                    <span className="caso" style={{ bottom: `${((a.quota_tutti ?? 0) / Math.max(a.quota_favoriti ?? 1, 1)) * 100}%` }} />
+                  </div>
+                  <small>{new Date(a.data + "T00:00:00").getDate()}</small>
+                </div>
+              ))}
+            </div>
+            <div className="nota">Colonna: quota dei favoriti nei primi tre quel giorno. Linea gialla: un cavallo qualunque delle stesse corse.</div>
+          </div>
+        )}
+        {(d.piste ?? []).length > 0 && (
+          <div className="verifica-riquadro">
+            <div className="etichetta" style={{ marginBottom: 8 }}>Per ippodromo</div>
+            <div className="barre-orizz">
+              {(d.piste ?? []).slice(0, 10).map(p => (
+                <div key={p.pista} className="riga">
+                  <span>{titolo(p.pista)}<small style={{ display: "block", color: DIM, fontSize: 10 }}>{p.corse} corse</small></span>
+                  <span className="traccia"><i style={{ width: `${(p.quota_favoriti ?? 0) * 0.8}%`, background: "hsl(183 60% 48%)" }} /><b>{p1(p.quota_favoriti)}</b></span>
+                </div>
+              ))}
+            </div>
+            <div className="nota">Con poche corse per pista le differenze sono in gran parte caso.</div>
+          </div>
+        )}
+      </div>
+      <Spiegazione>
+        «Favoriti» sono i tre cavalli con la stima più alta fra quelli partiti davvero. «Attesi» è la somma delle loro percentuali: se il pronostico
+        dà 60%, 50% e 40%, si aspetta in media 1,5 favoriti nei primi tre. Se attesi e arrivati sono vicini, le percentuali sono oneste.
+        Le corse con partenti mancanti nel pronostico non entrano nel conto; le stime ricostruite sono escluse da questo riepilogo
+        perché non sono state mostrate prima della gara.
+      </Spiegazione>
+    </div>
+  );
+}
 
 const titolo = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 function data(iso: string) {
@@ -81,7 +194,7 @@ export default function VerificaGare() {
   const [giorni, setGiorni] = useState(14);
   const [aperta, setAperta] = useState<string | null>(null);
   const [tipo, setTipo] = useState<"tutte" | "del_giorno" | "ricostruito">("tutte");
-  const { data: d, isLoading } = useQuery<{ corse: Corsa[]; sintesi: Record<string, Sintesi> | null }>({
+  const { data: d, isLoading } = useQuery<Risposta>({
     queryKey: ["/api/calendar/verifica", giorni],
     queryFn: async () => (await apiRequest("GET", `/api/calendar/verifica?giorni=${giorni}`)).json(),
     staleTime: 10 * 60 * 1000,
@@ -115,7 +228,10 @@ export default function VerificaGare() {
         ))}
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", margin: "14px 0 12px" }}>
+      <Riepilogo d={d} giorni={giorni} />
+
+      <h3 className="verifica-titolo" style={{ margin: "22px 0 0" }}>Corsa per corsa</h3>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", margin: "10px 0 12px" }}>
         {([["tutte", "Tutte"], ["del_giorno", "Del giorno"], ["ricostruito", "Ricostruite"]] as const).map(([k, t]) => (
           <button key={k} className={`chip-filtro${tipo === k ? " attivo" : ""}`} onClick={() => setTipo(k)}>{t}</button>
         ))}
@@ -148,10 +264,30 @@ export default function VerificaGare() {
                       <span key={v.horse_name} className={v.top3 == null ? "" : v.top3 ? "ok" : "no"}>{v.horse_name}</span>
                     ))}
                   </span>
+                  {c.vincitore && <span className="vc-vincitore" title="Il vincitore e il suo posto nel pronostico">1° {c.vincitore.nome}{c.vincitore.posto != null ? ` · era ${c.vincitore.posto}° nel pronostico` : ""}</span>}
                   <ChevronDown size={15} style={{ marginLeft: "auto", color: MUTED, transform: ap ? "rotate(180deg)" : "none", transition: "transform .2s", flexShrink: 0 }} />
                 </button>
                 {ap && (
                   <div className="verifica-corsa-corpo">
+                    <div className="vc-sommario">
+                      {c.vincitore && (
+                        <div>
+                          <b>Ha vinto {c.vincitore.nome}</b>
+                          {c.vincitore.posto != null
+                            ? <>: per il pronostico era il {c.vincitore.posto}° su {c.vincitore.su}, dato al {Math.round(c.vincitore.prob ?? 0)}% di arrivare nei primi tre.</>
+                            : <>: non era nel pronostico.</>}
+                        </div>
+                      )}
+                      {c.primo_favorito && c.primo_favorito.top3 != null && (
+                        <div>Il primo favorito, {c.primo_favorito.nome} ({Math.round(c.primo_favorito.prob)}%), è arrivato {c.primo_favorito.arrivo ?? "—"}.</div>
+                      )}
+                      {c.attesi != null && c.favoriti_noti === 3 && (
+                        <div>Dei tre favoriti il pronostico se ne aspettava {dec(c.attesi)} nei primi tre; ne sono arrivati {c.favoriti_a_segno}.</div>
+                      )}
+                      {(c.sorprese ?? []).length > 0 && (
+                        <div>Sorpres{c.sorprese!.length === 1 ? "a" : "e"}: {c.sorprese!.map(x => `${x.nome} (${Math.round(x.prob)}%, ${x.arrivo})`).join(", ")}.</div>
+                      )}
+                    </div>
                     <div className="vc-riga intest"><span>Cavallo</span><span>Stima primi tre</span><span>Arrivo</span><span /></div>
                     {c.voci.map(v => (
                       <div key={v.horse_name} className={`vc-riga${v.favorito ? " fav" : ""}`}>

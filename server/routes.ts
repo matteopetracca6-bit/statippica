@@ -140,6 +140,8 @@ function assicuraIndici() {
   try {
     const w = new Database(DB_PATH);
     w.exec("CREATE INDEX IF NOT EXISTS idx_races_code ON races(race_code)");
+    // Il rendimento del guidatore, nel dettaglio del pronostico.
+    w.exec("CREATE INDEX IF NOT EXISTS idx_races_driver ON races(driver)");
     w.close();
     indiciPer = mtimeDb();
   } catch (e) { console.error("[indici]", e); }
@@ -2901,7 +2903,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
         gruppi.get(k)!.push(r);
       }
       const corse: any[] = [];
-      const tot: Record<string, { corse: number; fav: number; fav_noti: number; segno: number; tutti_noti: number; tutti_segno: number }> = {};
+      const tot: Record<string, any> = {};
+      const perPista: Record<string, { corse: number; fav_noti: number; segno: number }> = {};
+      const perGiorno: Record<string, { corse: number; fav_noti: number; segno: number; tutti_noti: number; tutti_segno: number }> = {};
       for (const [, g] of Array.from(gruppi.entries())) {
         g.sort((a, b) => b.prob - a.prob);
         const tipo = g[0].tipo;
@@ -2946,27 +2950,80 @@ export function registerRoutes(httpServer: Server, app: Express) {
         const favNoti = fav.filter(v => v.top3 != null);
         const segno = favNoti.filter(v => v.top3).length;
         const m = String(g[0].corsa).match(/R?(\d+)$/);
+        // Chi ha vinto, e a che posto lo metteva il pronostico (fra chi è partito).
+        const partiti = voci.filter(v => !/^non partito$/.test(String(v.arrivo_testo ?? "")));
+        const iv = partiti.findIndex(v => v.arrivo === 1);
+        const vMancante = mancanti.find((x: any) => x.arrivo_testo === "1°");
+        const vincitore = iv >= 0
+          ? { nome: partiti[iv].horse_name, prob: partiti[iv].prob, posto: iv + 1, su: partiti.length }
+          : vMancante ? { nome: vMancante.horse_name, prob: null, posto: null, su: partiti.length } : null;
+        const primo = partiti[0];
+        const attesi = Math.round(favNoti.reduce((a, v) => a + v.prob / 100, 0) * 10) / 10;
+        // Sorprese: nei primi tre con meno del 20%.
+        const sorprese = voci.filter(v => v.top3 && v.prob < 20).map(v => ({ nome: v.horse_name, prob: v.prob, arrivo: v.arrivo_testo }));
         corse.push({
           race_date: g[0].race_date, pista: g[0].pista, tipo,
           corsa: /^\d{1,2}:\d{2}/.test(g[0].corsa) ? g[0].corsa.slice(0, 5) : null,
           numero: m && !/^\d{1,2}:\d{2}/.test(g[0].corsa) ? Number(m[1]) : null,
           partenti: g.length, favoriti_noti: favNoti.length, favoriti_a_segno: segno, voci,
           mancanti, incompleto: mancanti.length > 0,
+          vincitore, attesi, sorprese,
+          primo_favorito: primo ? { nome: primo.horse_name, prob: primo.prob, arrivo: primo.arrivo_testo, top3: primo.top3 } : null,
         });
         if (mancanti.length > 0) continue; // pronostico fatto senza tutti i partenti: fuori dalla media
-        const t = (tot[tipo] ??= { corse: 0, fav: 0, fav_noti: 0, segno: 0, tutti_noti: 0, tutti_segno: 0 });
-        t.corse++; t.fav += fav.length; t.fav_noti += favNoti.length; t.segno += segno;
-        const tn = voci.filter(v => v.top3 != null);
-        t.tutti_noti += tn.length; t.tutti_segno += tn.filter(v => v.top3).length;
+        const nuovo = () => ({ corse: 0, fav: 0, fav_noti: 0, segno: 0, tutti_noti: 0, tutti_segno: 0, attesi: 0,
+                               corse3: 0, attesi3: 0, segno3: 0, primo_noti: 0, primo_top3: 0, primo_vince: 0, vinc_noti: 0, vinc_tra_fav: 0,
+                               distribuzione: [0, 0, 0, 0], fasce: new Map<number, { n: number; stimato: number; reale: number }>(),
+                               a_caso: 0 });
+        for (const chiave of [tipo, "tutte"]) {
+          const t = (tot[chiave] ??= nuovo() as any) as any;
+          t.corse++; t.fav += fav.length; t.fav_noti += favNoti.length; t.segno += segno; t.attesi += attesi;
+          const tn = voci.filter(v => v.top3 != null);
+          t.tutti_noti += tn.length; t.tutti_segno += tn.filter(v => v.top3).length;
+          if (favNoti.length === 3) { t.distribuzione[segno]++; t.corse3++; t.attesi3 += attesi; t.segno3 += segno; }
+          if (primo && primo.top3 != null) { t.primo_noti++; if (primo.top3) t.primo_top3++; if (primo.arrivo === 1) t.primo_vince++; }
+          if (vincitore) { t.vinc_noti++; if (vincitore.posto != null && vincitore.posto <= 3) t.vinc_tra_fav++; }
+          for (const v of tn) {
+            const b = v.prob < 10 ? 0 : v.prob < 20 ? 10 : v.prob < 30 ? 20 : v.prob < 40 ? 30 : v.prob < 50 ? 40 : v.prob < 60 ? 50 : 60;
+            const f = t.fasce.get(b) ?? { n: 0, stimato: 0, reale: 0 };
+            f.n++; f.stimato += v.prob; f.reale += v.top3 ? 100 : 0; t.fasce.set(b, f);
+          }
+        }
+        // Per pista e per giorno: solo le stime del giorno, quelle mostrate davvero.
+        if (tipo === "del_giorno" && favNoti.length > 0) {
+          const kp = String(g[0].pista);
+          const pp = (perPista[kp] ??= { corse: 0, fav_noti: 0, segno: 0 });
+          pp.corse++; pp.fav_noti += favNoti.length; pp.segno += segno;
+          const gg = (perGiorno[g[0].race_date] ??= { corse: 0, fav_noti: 0, segno: 0, tutti_noti: 0, tutti_segno: 0 });
+          gg.corse++; gg.fav_noti += favNoti.length; gg.segno += segno;
+          const tn = voci.filter(v => v.top3 != null);
+          gg.tutti_noti += tn.length; gg.tutti_segno += tn.filter(v => v.top3).length;
+        }
       }
       corse.sort((a, b) => (b.race_date.localeCompare(a.race_date)) || String(a.pista).localeCompare(String(b.pista)) || ((a.numero ?? 0) - (b.numero ?? 0)) || String(a.corsa ?? "").localeCompare(String(b.corsa ?? "")));
-      const sintesi = Object.fromEntries(Object.entries(tot).map(([k, t]) => [k, {
+      const q = (a: number, b: number) => b ? Math.round((a / b) * 1000) / 10 : null;
+      const sintesi = Object.fromEntries(Object.entries(tot).map(([k, t]: [string, any]) => [k, {
         corse: t.corse,
         favoriti_controllati: t.fav_noti,
-        quota_favoriti: t.fav_noti ? Math.round((t.segno / t.fav_noti) * 1000) / 10 : null,
-        quota_tutti: t.tutti_noti ? Math.round((t.tutti_segno / t.tutti_noti) * 1000) / 10 : null,
+        quota_favoriti: q(t.segno, t.fav_noti),
+        quota_tutti: q(t.tutti_segno, t.tutti_noti),
+        // Quanti dei tre favoriti il pronostico si aspettava nei primi tre, per corsa, e quanti ne sono arrivati.
+        attesi_per_corsa: t.corse3 ? Math.round((t.attesi3 / t.corse3) * 100) / 100 : null,
+        arrivati_per_corsa: t.corse3 ? Math.round((t.segno3 / t.corse3) * 100) / 100 : null,
+        primo_favorito_top3: q(t.primo_top3, t.primo_noti),
+        primo_favorito_vince: q(t.primo_vince, t.primo_noti),
+        vincitore_tra_favoriti: q(t.vinc_tra_fav, t.vinc_noti),
+        distribuzione: t.distribuzione,
+        fasce: Array.from(t.fasce.entries() as Iterable<[number, any]>).sort((a, b) => a[0] - b[0]).map(([da, f]) => ({
+          da, a: da === 60 ? 100 : da + 10, n: f.n,
+          stimato: Math.round(f.stimato / f.n * 10) / 10, reale: Math.round(f.reale / f.n * 10) / 10,
+        })),
       }]));
-      res.json({ giorni, corse, sintesi });
+      const piste = Object.entries(perPista).map(([pista, p]) => ({ pista, corse: p.corse, quota_favoriti: q(p.segno, p.fav_noti) }))
+        .sort((a, b) => b.corse - a.corse);
+      const andamento = Object.entries(perGiorno).map(([data, p]) => ({ data, corse: p.corse,
+        quota_favoriti: q(p.segno, p.fav_noti), quota_tutti: q(p.tutti_segno, p.tutti_noti) })).sort((a, b) => a.data.localeCompare(b.data));
+      res.json({ giorni, corse, sintesi, piste, andamento });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally {
@@ -2979,6 +3036,79 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const v = leggiVerificaTop3();
     if (!v) return res.status(404).json({ message: "verifica non disponibile" });
     res.json(v);
+  });
+
+  // Dettaglio del pronostico di una corsa in programma: i dati che il modello
+  // ha letto per ogni cavallo, in numeri veri, e dove ciascuno si colloca fra
+  // gli avversari della stessa corsa. Il modello non si ricalcola qui: i numeri
+  // sono gli stessi da cui parte (forma, premi, tempi, guidatore, pista,
+  // numero di partenza), riletti dall'archivio con i soli dati di prima della gara.
+  app.get("/api/calendar/dettaglio", pronta(10 * 60_000), (req, res) => {
+    assicuraIndici();
+    const db = getDb();
+    try {
+      const track = String(req.query.track ?? ""), data = String(req.query.date ?? ""), ora = String(req.query.time ?? "");
+      if (!track || !data || !ora) return res.status(400).json({ message: "servono pista, data e ora" });
+      const pista = NOMI_CALENDARIO[track.toUpperCase()] ?? track.toUpperCase();
+      const partenti = db.prepare(`SELECT u.horse_name, u.start_pos, h.birth_year FROM upcoming_races u
+                                    LEFT JOIN horses h ON h.name = u.horse_name
+                                    WHERE u.track = ? AND u.race_date = ? AND u.race_time = ? ORDER BY u.start_pos`).all(track, data, ora) as any[];
+      if (!partenti.length) return res.status(404).json({ message: "corsa non trovata" });
+      const haP = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pronostico_top3'").get();
+      const stime = new Map<string, any>(haP ? (db.prepare(`SELECT horse_name, prob, prob_grezza, n_corse FROM pronostico_top3
+                                    WHERE track = ? AND race_date = ? AND race_time = ?`).all(track, data, ora) as any[]).map(r => [r.horse_name, r]) : []);
+      const np = "COALESCE(LOWER(placement_raw), '') NOT IN ('nr', 'n.p.', 'np')";
+      const qStoria = db.prepare(`SELECT race_date, track, placement, placement_raw, time_km, prize_net, driver, total_starters
+                                    FROM races WHERE horse_name = ? AND race_date < ? AND ${np}
+                                   ORDER BY race_date DESC`);
+      const qGuid = db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) AS t
+                                  FROM races WHERE driver = ? AND race_date < ? AND ${np}`);
+      const unAnnoPrima = new Date(new Date(data + "T12:00:00").getTime() - 365 * 864e5).toISOString().slice(0, 10);
+      const giorniFra = (a: string, b: string) => Math.round((new Date(b + "T12:00:00").getTime() - new Date(a + "T12:00:00").getTime()) / 864e5);
+      const cavalli = partenti.map(p => {
+        const st = qStoria.all(p.horse_name, data) as any[];
+        const top3 = (r: any) => r.placement != null && r.placement >= 1 && r.placement <= 3;
+        const ult5 = st.slice(0, 5);
+        const tempi = st.map(r => r.time_km).filter((t: any) => t != null && t >= 9 && t <= 40);
+        const sullaPista = st.filter(r => r.track === pista);
+        const guidatore = st.find(r => r.driver)?.driver ?? null;
+        const g = guidatore ? (qGuid.get(guidatore, data) as any) : null;
+        const s = stime.get(p.horse_name);
+        return {
+          nome: p.horse_name, anno: p.birth_year ?? null, partenza: p.start_pos,
+          prob: s ? Math.round(s.prob * 1000) / 10 : null,
+          prob_grezza: s?.prob_grezza != null ? Math.round(s.prob_grezza * 1000) / 10 : null,
+          corse: st.length,
+          ultime: ult5.map(r => ({ data: r.race_date, pista: r.track,
+            arrivo: r.placement != null ? `${r.placement}°` : (esitoInParole(r.placement_raw) ?? "—"), top3: top3(r) })),
+          forma: ult5.length ? ult5.filter(top3).length : null,
+          forma_su: ult5.length,
+          ultima_top3: st.length ? top3(st[0]) : null,
+          giorni: st.length ? giorniFra(st[0].race_date, data) : null,
+          premi_anno: st.length ? Math.round(st.filter(r => r.race_date >= unAnnoPrima).reduce((a, r) => a + (r.prize_net || 0), 0)) : null,
+          record: tempi.length ? Math.min(...tempi) : null,
+          carriera_top3: st.length ? Math.round(st.filter(top3).length / st.length * 1000) / 10 : null,
+          pista_corse: sullaPista.length, pista_top3: sullaPista.filter(top3).length,
+          guidatore, guidatore_corse: g?.n ?? null,
+          guidatore_top3: g && g.n ? Math.round((g.t || 0) / g.n * 1000) / 10 : null,
+        };
+      });
+      // Posto nella corsa per ogni voce: 1 = il migliore. Chi non ha il dato non entra.
+      const posto = (chiave: string, alto: boolean) => {
+        const v = cavalli.filter((c: any) => c[chiave] != null && (chiave !== "forma" || c.forma_su >= 3));
+        v.sort((a: any, b: any) => alto ? b[chiave] - a[chiave] : a[chiave] - b[chiave]);
+        v.forEach((c: any) => { (c.posti ??= {})[chiave] = { posto: 1 + v.filter((x: any) => alto ? x[chiave] > c[chiave] : x[chiave] < c[chiave]).length, su: v.length }; });
+      };
+      posto("forma", true); posto("premi_anno", true); posto("record", false); posto("carriera_top3", true); posto("guidatore_top3", true);
+      cavalli.sort((a: any, b: any) => (b.prob ?? -1) - (a.prob ?? -1));
+      const sommaGrezza = cavalli.reduce((a: number, c: any) => a + (c.prob_grezza ?? 0), 0);
+      res.json({ pista, data, ora, partenti: cavalli.length, a_caso: Math.round(Math.min(3, cavalli.length) / cavalli.length * 1000) / 10,
+                 somma_grezza: Math.round(sommaGrezza) , cavalli });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally {
+      db.close();
+    }
   });
 
   // ──────────────────────────────────────────────
