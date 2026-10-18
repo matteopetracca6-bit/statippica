@@ -340,7 +340,9 @@ export function ipotesiCorrenti(db: Database.Database) {
 // due le scelte. Si confronta:
 //   VENDERE  = il prezzo incassato oggi
 //   TENERE   = premi netti attesi - allenamento da qui in avanti
-//              (12 mesi prima del debutto + 12 mesi per ogni stagione)
+//              (12 mesi prima del debutto + 12 mesi per ogni stagione,
+//              fermandolo quando una stagione dai 3 anni in su non rende
+//              meta' del suo costo: vedi valutaPuledro)
 // Le probabilita' di ogni voto vengono dai figli dello stallone (e della
 // fattrice), come per l'incrocio.
 
@@ -372,7 +374,17 @@ function venditeAste(): Vendita[] {
 }
 
 /** Probabilita' di ogni voto (e di "non corre") per un figlio di padre x madre. */
+const memoProb = new Map<string, { quando: number; r: ReturnType<typeof calcolaProbabilitaFiglio> }>();
 function probabilitaFiglio(db: Database.Database, padre: string, madre: string | null) {
+  const k = `${padre}|${madre ?? ""}`;
+  const m = memoProb.get(k);
+  if (m && Date.now() - m.quando < 60 * 60_000) return m.r;
+  const r = calcolaProbabilitaFiglio(db, padre, madre);
+  if (memoProb.size > 5000) memoProb.clear();
+  memoProb.set(k, { quando: Date.now(), r });
+  return r;
+}
+function calcolaProbabilitaFiglio(db: Database.Database, padre: string, madre: string | null) {
   const b = datiBase(db);
   // La madre sta nella tabella dei cavalli, non in quella dei voti: si uniscono.
   const figli = (col: "sire" | "dam", nome: string) => db.prepare(col === "sire" ? `
@@ -420,25 +432,24 @@ export function valutaVendita(db: Database.Database, padre: string, madre: strin
   const prezzo = prezzoDato ?? venditaVera?.prezzo ?? null;
   const prezzoDa = prezzoDato != null ? "tu" : venditaVera ? "asta" : null;
 
-  // Tenere: per ogni cavallo osservato di ogni voto, premi - allenamento da qui.
-  const daQui = (s: number) => 12 * mensile * (s + 1);
-  const costoNonCorso = 12 * mensile;   // un anno di allenamento, poi si ferma
+  // Tenere: lo stesso conto di "Quanto vale un puledro" (valutaPuledro), con
+  // la regola "lo fermo quando una stagione non rende": cosi' il prezzo a cui
+  // conviene vendere e il prezzo massimo per chi compra sono lo stesso numero.
+  const { esiti: tutti } = esitiPuledro(db, padre, madre, mensile, false);
   let valore = 0, guadagno = 0, costo = 0, pSupera = 0, pPositivo = 0;
-  const esiti = ORDINE_VOTI.filter(v => b.perVoto[v]?.length).map(v => {
-    const c = b.perVoto[v];
-    const netti = c.map(x => x.e - daQui(x.s));
-    const p = prob[v];
-    valore += p * media(netti);
-    guadagno += p * media(c.map(x => x.e));
-    costo += p * media(c.map(x => daQui(x.s)));
-    if (prezzo != null) pSupera += p * netti.filter(u => u > prezzo).length / c.length;
-    pPositivo += p * netti.filter(u => u > 0).length / c.length;
-    return { voto: v, p: Math.round(1000 * p) / 10, netto_medio: Math.round(media(netti)) };
+  for (const x of tutti) {
+    const netto = x.premiRegola - x.costoRegola;
+    valore += x.p * netto; guadagno += x.p * x.premiRegola; costo += x.p * x.costoRegola;
+    if (prezzo != null && netto > prezzo) pSupera += x.p;
+    if (netto > 0) pPositivo += x.p;
+  }
+  const esiti = ORDINE_VOTI.filter(v => tutti.some(x => x.voto === v)).map(v => {
+    const sel = tutti.filter(x => x.voto === v);
+    const P = sel.reduce((t, x) => t + x.p, 0);
+    return { voto: v, p: Math.round(1000 * P) / 10,
+             netto_medio: Math.round(sel.reduce((t, x) => t + x.p * (x.premiRegola - x.costoRegola), 0) / (P || 1)) };
   });
-  valore += prob.NON_CORSO * -costoNonCorso;
-  costo += prob.NON_CORSO * costoNonCorso;
-  if (prezzo != null && -costoNonCorso > prezzo) pSupera += prob.NON_CORSO;
-
+  void b;
   const differenza = prezzo != null ? prezzo - valore : null;
   // Entro il 10% del costo atteso da qui: le due scelte si equivalgono.
   const decisione = differenza == null ? null
@@ -524,4 +535,193 @@ export function sensibilita(db: Database.Database, mensile: number,
       per_il_pareggio: utile >= 0 ? 0 : Math.round(1000 * (-utile) / v.valore) / 10,
     })).sort((a, b) => b.effetto - a.effetto),
   };
+}
+
+// ── QUANTO VALE UN PULEDRO: prezzo massimo per chi compra ──────────────────
+// E' lo stesso conto di "vendere o far correre", visto da chi compra: il
+// prezzo massimo e' quello che, in media, lascia il compratore in pari.
+//   premi attesi        = somma su ogni esito (voto) di p(voto) x premi
+//                         netti in carriera dei cavalli veri di quel voto
+//   allenamento atteso  = 12 x mensile x (stagioni + 1) per chi corre,
+//                         12 x mensile per chi non corre mai
+//   prezzo massimo      = premi attesi / (1 + margine) - allenamento atteso
+// Il margine e' l'utile che si vuole in piu' su tutto quello che si spende.
+// I premi netti dell'archivio sono gia' la parte del proprietario.
+//
+// "Scelto all'asta": i puledri passati in asta vincono piu' di quanto dica
+// il loro pedigree (1,44 volte a 2 anni per l'asta 2024, 1,49 per l'asta
+// 2025 a stagione in corso, 1,37 a 3 anni per l'asta 2024 a stagione quasi
+// finita: scripts/simula_generazione.py). Si usa 1,4 sui premi, i costi non
+// cambiano. Dopo i 3 anni e' un'ipotesi: non c'e' ancora un'asta da cui
+// controllarlo.
+export const FATTORE_ASTA = 1.4;
+
+const SCENARI = [
+  { chiave: "campione", nome: "Campione", voti: ["SSS", "SS", "S"], nota: "voto S o meglio" },
+  { chiave: "buono", nome: "Buono", voti: ["A", "B"], nota: "voto A o B" },
+  { chiave: "discreto", nome: "Discreto", voti: ["C", "D"], nota: "voto C o D" },
+  { chiave: "poco", nome: "Corre poco", voti: ["E", "F"], nota: "voto E o F" },
+];
+const PREZZI_CURVA = [0, 5000, 10000, 15000, 20000, 30000, 40000, 60000, 80000, 100000, 150000, 200000];
+
+export interface EsitoPuledro { p: number; premi: number; costo: number; voto: string; s: number;
+                               premiRegola: number; costoRegola: number }
+
+// Le carriere stagione per stagione (nati 2014-2019, solo stagioni con
+// almeno una corsa), per la regola "lo fermo quando una stagione non rende".
+let cacheStagioni: { quando: number; perVoto: Record<string, number[][]> } | null = null;
+function stagioniPerVoto(db: Database.Database) {
+  if (cacheStagioni && Date.now() - cacheStagioni.quando < 60 * 60_000) return cacheStagioni.perVoto;
+  const [da, a] = IPOTESI.annate;
+  const righe = db.prepare(`
+    SELECT hr.name n, hr.birth_year y, hr.grade g, CAST(substr(r.race_date,1,4) AS INT) - hr.birth_year eta,
+           SUM(r.prize_net) p
+      FROM horse_ratings hr JOIN races r ON r.horse_name = hr.name
+     WHERE hr.birth_year BETWEEN ? AND ? AND hr.rating_mode = 'performance'
+       AND COALESCE(hr.horse_class, 'athlete') = 'athlete'
+       AND CAST(substr(r.race_date,1,4) AS INT) >= hr.birth_year + 2
+     GROUP BY hr.name, hr.birth_year, eta
+     ORDER BY hr.name, hr.birth_year, eta`).all(da, a) as { n: string; y: number; g: string; eta: number; p: number }[];
+  const perVoto: Record<string, number[][]> = {};
+  let chiave = "", corrente: number[] = [];
+  for (const r of righe) {
+    const k = `${r.n}|${r.y}`;
+    if (k !== chiave) {
+      corrente = [];
+      chiave = k;
+      if (ORDINE_VOTI.includes(r.g)) (perVoto[r.g] ??= []).push(corrente);
+    }
+    // Ogni stagione: [eta, premi].
+    corrente.push(r.eta * 1e9 + Math.max(0, r.p || 0));
+  }
+  cacheStagioni = { quando: Date.now(), perVoto };
+  return perVoto;
+}
+
+/** La regola del proprietario attento: dai 3 anni in su, se una stagione
+ *  rende meno della meta' di quanto costa, a fine stagione il cavallo si
+ *  ferma. Si decide solo con la stagione appena finita, senza sapere le
+ *  successive. */
+export const SOGLIA_FERMO = 0.5;
+function conRegola(stagioni: number[], mensile: number, f: number) {
+  const anno = 12 * mensile;
+  let premi = 0, costo = anno;           // un anno di doma e preparazione prima del debutto
+  for (const x of stagioni) {
+    const eta = Math.floor(x / 1e9), p = (x % 1e9) * f;
+    premi += p; costo += anno;
+    if (eta >= 3 && p < SOGLIA_FERMO * anno) break;
+  }
+  return { premi, costo };
+}
+
+/** Tutti gli esiti possibili di un figlio di padre x madre, cavallo per
+ *  cavallo, con il loro peso. Serve anche al portafoglio della scuderia. */
+export function esitiPuledro(db: Database.Database, padre: string, madre: string | null,
+                             mensile: number, asta: boolean) {
+  const { prob, nPadre, nMadre, affidabilita } = probabilitaFiglio(db, padre, madre);
+  const f = asta ? FATTORE_ASTA : 1;
+  const st = stagioniPerVoto(db);
+  const esiti: EsitoPuledro[] = [];
+  for (const v of ORDINE_VOTI) {
+    const c = st[v];
+    if (!c?.length) continue;
+    const w = prob[v] / c.length;
+    for (const x of c) {
+      const premi = x.reduce((t, y) => t + (y % 1e9), 0) * f;
+      const r = conRegola(x, mensile, f);
+      esiti.push({ p: w, premi, costo: 12 * mensile * (x.length + 1), voto: v, s: x.length,
+                   premiRegola: r.premi, costoRegola: r.costo });
+    }
+  }
+  esiti.push({ p: prob.NON_CORSO, premi: 0, costo: 12 * mensile, voto: "NON_CORSO", s: 0,
+               premiRegola: 0, costoRegola: 12 * mensile });
+  const tot = esiti.reduce((t, x) => t + x.p, 0);
+  for (const x of esiti) x.p /= tot;
+  return { esiti, nPadre, nMadre, affidabilita };
+}
+
+export function valutaPuledro(db: Database.Database, padre: string, madre: string | null, mensile: number,
+                              o: { margine?: number; asta?: boolean; prezzo?: number | null } = {}) {
+  const margine = Math.max(0, o.margine ?? 0);
+  const { esiti, nPadre, nMadre, affidabilita } = esitiPuledro(db, padre, madre, mensile, !!o.asta);
+  const prezzo = o.prezzo ?? null;
+
+  // Lo stesso conto in due modi: con la regola "lo fermo quando non rende"
+  // (il modo in cui conviene gestirlo) e tenendolo quanto e' andato
+  // davvero ogni cavallo dell'archivio.
+  const conto = (regola: boolean) => {
+    const premiDi = (x: EsitoPuledro) => regola ? x.premiRegola : x.premi;
+    const costoDi = (x: EsitoPuledro) => regola ? x.costoRegola : x.costo;
+    const G = esiti.reduce((t, x) => t + x.p * premiDi(x), 0);
+    const C = esiti.reduce((t, x) => t + x.p * costoDi(x), 0);
+    const valore = G - C;
+    const gruppo = (sel: EsitoPuledro[], chiave: string, nome: string, nota: string) => {
+      const P = sel.reduce((t, x) => t + x.p, 0);
+      if (P <= 0) return { chiave, nome, nota, p: 0, premi_medi: 0, premi_tipici: 0, anni_medi: 0, allenamento: 0, netto: 0 };
+      const premi = sel.reduce((t, x) => t + x.p * premiDi(x), 0) / P;
+      const costo = sel.reduce((t, x) => t + x.p * costoDi(x), 0) / P;
+      const ord = [...sel].sort((a, b) => premiDi(a) - premiDi(b));
+      let acc = 0, tipico = 0;
+      for (const x of ord) { acc += x.p; if (acc >= P / 2) { tipico = premiDi(x); break; } }
+      return { chiave, nome, nota, p: Math.round(1000 * P) / 10, premi_medi: Math.round(premi), premi_tipici: Math.round(tipico),
+               // anni pagati: quello prima del debutto piu' le stagioni
+               anni_medi: Math.round(10 * costo / (12 * mensile)) / 10,
+               allenamento: Math.round(costo), netto: Math.round(premi - costo) };
+    };
+    const scenari = [
+      ...SCENARI.map(sc => gruppo(esiti.filter(x => sc.voti.includes(x.voto)), sc.chiave, sc.nome, sc.nota)),
+      gruppo(esiti.filter(x => x.voto === "NON_CORSO"), "non_corre", "Non corre", "non arriva mai a correre"),
+    ];
+    const probRipaga = (pr: number) => esiti.filter(x => premiDi(x) >= pr + costoDi(x)).reduce((t, x) => t + x.p, 0);
+    return {
+      premi_attesi: Math.round(G),
+      allenamento_atteso: Math.round(C),
+      valore_atteso: Math.round(valore),
+      prezzo_massimo: Math.max(0, Math.round(G / (1 + margine) - C)),
+      prob_ripaga_gratis: Math.round(1000 * probRipaga(0)) / 10,
+      scenari,
+      curva: PREZZI_CURVA.map(pr => ({ prezzo: pr, prob_ripaga: Math.round(1000 * probRipaga(pr)) / 10, utile_atteso: Math.round(valore - pr) })),
+      con_prezzo: prezzo == null ? null : {
+        utile_atteso: Math.round(valore - prezzo),
+        rendimento: Math.round(1000 * (valore - prezzo) / (prezzo + C)) / 10,
+        prob_ripaga: Math.round(1000 * probRipaga(prezzo)) / 10,
+      },
+    };
+  };
+  const ferma = conto(true), tutta = conto(false);
+  const mensilePari = prezzo != null ? mensileDiPareggio(db, padre, madre, prezzo, !!o.asta) : null;
+  const aste = venditeAste();
+  return {
+    padre, madre, mensile, margine, scelto_asta: !!o.asta, fattore_asta: FATTORE_ASTA, soglia_fermo: SOGLIA_FERMO,
+    figli_osservati: { padre: nPadre, madre: nMadre }, affidabilita,
+    // I numeri principali sono quelli con la regola.
+    premi_attesi: ferma.premi_attesi,
+    allenamento_atteso: ferma.allenamento_atteso,
+    valore_atteso: ferma.valore_atteso,
+    prezzo_massimo: ferma.prezzo_massimo,
+    con_regola: ferma,
+    senza_regola: tutta,
+    prezzo,
+    mensile_di_pareggio: mensilePari,
+    aste_padre: riepilogoPrezzi(aste.filter(a => a.padre === padre).map(a => a.prezzo)),
+  };
+}
+
+/** Il costo mensile sotto il quale, pagato `prezzo`, il puledro va in pari
+ *  in media (con la regola "lo fermo quando non rende"). null se non va in
+ *  pari nemmeno a 100 euro al mese. */
+export function mensileDiPareggio(db: Database.Database, padre: string, madre: string | null,
+                                  prezzo: number, asta: boolean): number | null {
+  const valore = (m: number) => {
+    const { esiti } = esitiPuledro(db, padre, madre, m, asta);
+    return esiti.reduce((t, x) => t + x.p * (x.premiRegola - x.costoRegola), 0) - prezzo;
+  };
+  let lo = 100, hi = 5000;
+  if (valore(lo) < 0) return null;
+  if (valore(hi) >= 0) return hi;
+  for (let i = 0; i < 14; i++) {
+    const m = (lo + hi) / 2;
+    if (valore(m) >= 0) lo = m; else hi = m;
+  }
+  return Math.round(lo / 10) * 10;
 }

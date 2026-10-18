@@ -2,6 +2,8 @@ import IppodromiTrendPage from "./pages/IppodromiTrendPage";
 import PareggioPage from "./pages/PareggioPage";
 import TenerePage from "./pages/TenerePage";
 import GenerazionePage from "./pages/GenerazionePage";
+import ScuderiaPage from "./pages/ScuderiaPage";
+import PuledroPage from "./pages/PuledroPage";
 import { Switch, Route, Router } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -37,11 +39,19 @@ import TrackPage from "./pages/TrackPage";
 import NotFound from "./pages/not-found";
 import ErrorBoundary from "./components/ErrorBoundary";
 
+// Gli indirizzi possono portare dei parametri dopo il "?" (per esempio
+// #/puledro?padre=...): per scegliere la pagina conta solo il percorso, i
+// parametri li legge la pagina da window.location.hash.
+function useHashSenzaParametri(): [string, (to: string, opts?: any) => void] {
+  const [luogo, naviga] = useHashLocation();
+  return [luogo.split("?")[0], naviga];
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="dark">
-        <Router hook={useHashLocation}>
+        <Router hook={useHashSenzaParametri as any}>
           <Layout>
             {/* Se una pagina va in errore, si vede un messaggio al posto suo:
                 prima l'intero sito diventava una schermata bianca. */}
@@ -76,6 +86,11 @@ export default function App() {
               <Route path="/tenere" component={TenerePage} />
               <Route path="/generazione-m" component={GenerazionePage} />
               <Route path="/aste" component={GenerazionePage} />
+              <Route path="/scuderia" component={ScuderiaPage} />
+              <Route path="/portafoglio" component={ScuderiaPage} />
+              <Route path="/puledro" component={PuledroPage} />
+              <Route path="/prezzo-massimo" component={PuledroPage} />
+              <Route path="/vendere" component={PuledroPage} />
               <Route path="/break-even" component={PareggioPage} />
               <Route path="/ippodromo/:code" component={TrackPage} />
               <Route path="/piste" component={IppodromiTrendPage} />

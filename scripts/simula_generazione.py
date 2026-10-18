@@ -59,12 +59,14 @@ NATI_UFFICIALI = {2019: 2004, 2021: 2192, 2022: 2368, 2023: 2235, 2024: 2178, 20
 LETTERE = {2021: "G", 2022: "H", 2023: "I", 2024: "L", 2025: "M"}
 
 # Costi per il conto "ripaga o no", gli stessi della pagina Pareggio:
-# allenamento e mantenimento circa 1.200 euro al mese; al proprietario vanno
-# 42,5 parti su 50 dei premi netti. Dall'asta di settembre alla fine della
+# allenamento e mantenimento circa 1.200 euro al mese. I premi "netti"
+# dell'archivio sono GIA' la parte del proprietario (circa 42,5 su 50 del
+# lordo: il rapporto netto/lordo in archivio e' 0,87-0,89 dal 2019): non si
+# riducono una seconda volta. Dall'asta di settembre alla fine della
 # stagione dei 3 anni passano circa 27 mesi.
 COSTO_MESE = 1200
 MESI_FINO_A_3_ANNI = 27
-QUOTA_PROPRIETARIO = 42.5 / 50
+QUOTA_PROPRIETARIO = 1.0   # correzione 18/10/2026: prima 42,5/50 applicato due volte
 
 # Quanto "pesa" un gruppo di parenti: con n casi il peso e' n / (n + K).
 # Scelti prima della prova e non ritoccati per farla tornare.

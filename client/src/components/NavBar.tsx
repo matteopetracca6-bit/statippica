@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Home as HomeIcon, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel } from "lucide-react";
+import { Home as HomeIcon, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag } from "lucide-react";
 
 /**
  * IL MENU, RAGGRUPPATO.
@@ -28,9 +28,11 @@ const GRUPPI: Gruppo[] = [
     { href: "/advisor", label: "Advisor", nota: "Scegli l'accoppiamento per una fattrice", icon: Sparkles, colore: "hsl(280 60% 60%)" },
   ] },
   { nome: "Economia", icon: Scale, colore: "hsl(160 60% 50%)", schede: [
-    { href: "/pareggio", label: "Punto di pareggio", nota: "Costi, vendere o far correre, quanto pesa ogni costo", icon: Scale, colore: "hsl(160 60% 50%)" },
+    { href: "/scuderia", label: "La tua scuderia", nota: "I tuoi cavalli insieme: cassa, rischio e valore", icon: Briefcase, colore: "hsl(190 65% 52%)" },
+    { href: "/puledro", label: "Quanto vale un puledro", nota: "Prezzo massimo per comprare, o se conviene vendere", icon: Tag, colore: "hsl(25 75% 58%)" },
+    { href: "/generazione-m", label: "Aste e generazione M", nota: "I puledri delle aste 2026 con il prezzo massimo", icon: Gavel, colore: "hsl(38 80% 58%)" },
     { href: "/tenere", label: "Tenere o fermare", nota: "Premi attesi e spese per ogni cavallo in attività", icon: TrendingUp, colore: "hsl(145 55% 52%)" },
-    { href: "/generazione-m", label: "Aste e generazione M", nota: "I nati 2025 e i puledri delle aste 2026, simulati", icon: Gavel, colore: "hsl(38 80% 58%)" },
+    { href: "/pareggio", label: "Punto di pareggio", nota: "Quanto costa un cavallo, voti e incroci", icon: Scale, colore: "hsl(160 60% 50%)" },
   ] },
   { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)", schede: [
     { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)" },
@@ -53,6 +55,9 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/guidatori") return percorso.startsWith("/guidator");
   if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend");
   if (href === "/pareggio") return percorso.startsWith("/pareggio") || percorso.startsWith("/break-even");
+  if (href === "/scuderia") return percorso.startsWith("/scuderia") || percorso.startsWith("/portafoglio");
+  if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere");
+  if (href === "/generazione-m") return percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
   if (href === "/metodo") return percorso.startsWith("/metodo");
   if (href === "/advisor") return percorso.startsWith("/advisor");
   return percorso === href;

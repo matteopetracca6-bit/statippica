@@ -24,9 +24,10 @@ import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./
 import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
 import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo, stimaDaGradini, type RigaValoreResiduo } from "./careerValue";
+import { valutaScuderia, scuderiaEsempio } from "./scuderia";
 import { affidabilitaVoto } from "./gradeStability";
 import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
-import { tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
+import { valutaPuledro, mensileDiPareggio, FATTORE_ASTA, tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
 
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
@@ -132,16 +133,100 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // GENERAZIONE M (scripts/simula_generazione.py): simulazione sperimentale
   // dei nati 2025 e dei puledri passati nelle aste del settembre 2026.
   // E' un file fisso, rifatto a mano quando arrivano aste o stagioni nuove.
+  // Ai lotti si aggiunge il prezzo massimo di "Quanto vale un puledro"
+  // (carriera intera, puledro scelto d'asta), al costo mensile di base.
+  let cacheGenerazione: { mtime: number; testo: string } | null = null;
+  const fileGenerazione = () => [path.resolve(process.cwd(), "generazione_m.json"),
+                                 path.resolve(process.cwd(), "..", "generazione_m.json")].find(f => fs.existsSync(f)) ?? null;
+  // Il primo calcolo dei prezzi massimi richiede qualche secondo: lo si fa
+  // subito dopo l'avvio, cosi' il primo visitatore non aspetta.
+  setTimeout(() => {
+    try { const f = fileGenerazione(); if (f) prepara(f); } catch (e) { console.error("[generazione-m] preparazione", e); }
+  }, 15_000).unref?.();
+  function prepara(f: string) {
+        const mtime = fs.statSync(f).mtimeMs;
+        if (!cacheGenerazione || cacheGenerazione.mtime !== mtime) {
+          const dati = JSON.parse(fs.readFileSync(f, "utf8"));
+          const db = getDb();
+          try {
+            const mensile = ipotesiCorrenti(db).costo_mensile;
+            const memo = new Map<string, any>();
+            for (const l of dati?.puledri_in_asta?.lotti_elenco ?? []) {
+              if (!l.padre) continue;
+              const k = `${l.padre}|${l.madre ?? ""}`;
+              if (!memo.has(k)) {
+                const v = valutaPuledro(db, String(l.padre).toUpperCase(), l.madre ? String(l.madre).toUpperCase() : null, mensile, { asta: true });
+                memo.set(k, { prezzo_massimo: v.prezzo_massimo, valore_atteso: v.valore_atteso });
+              }
+              Object.assign(l, memo.get(k));
+              l.mensile_di_pareggio = l.venduto && l.prezzo > 0
+                ? mensileDiPareggio(db, String(l.padre).toUpperCase(), l.madre ? String(l.madre).toUpperCase() : null, l.prezzo, true)
+                : null;
+            }
+            dati.prezzo_massimo_ipotesi = { mensile, fattore_asta: FATTORE_ASTA };
+          } finally {
+            db.close();
+          }
+          cacheGenerazione = { mtime, testo: JSON.stringify(dati) };
+        }
+        return cacheGenerazione.testo;
+  }
   app.get("/api/generazione-m", (_req, res) => {
-    for (const f of [path.resolve(process.cwd(), "generazione_m.json"),
-                     path.resolve(process.cwd(), "..", "generazione_m.json")]) {
-      if (fs.existsSync(f)) {
-        res.set("Cache-Control", "public, max-age=3600");
-        res.type("application/json").send(fs.readFileSync(f, "utf8"));
-        return;
+    const f = fileGenerazione();
+    if (!f) return res.status(404).json({ message: "Simulazione non ancora calcolata" });
+    res.set("Cache-Control", "public, max-age=3600");
+    res.type("application/json").send(prepara(f));
+  });
+
+  // QUANTO VALE UN PULEDRO: prezzo massimo per chi compra, caso per caso.
+  // ?padre=&madre=&mensile=&margine=(percentuale)&asta=1&prezzo=
+  // oppure ?nome=&anno= per un cavallo dell'archivio.
+  app.get("/api/puledro/valore", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const margine = numero(req.query.margine, 0, 0, 300) / 100;
+      const prezzo = req.query.prezzo != null && req.query.prezzo !== "" ? numero(req.query.prezzo, NaN, 0, 5_000_000) : null;
+      let padre = String(req.query.padre ?? "").trim().toUpperCase();
+      let madre = String(req.query.madre ?? "").trim().toUpperCase() || null;
+      const nome = String(req.query.nome ?? "").trim().toUpperCase();
+      if (nome) {
+        const anno = numero(req.query.anno, 0, 1990, 2100) || null;
+        const h = db.prepare(`SELECT name, sire, dam FROM horses WHERE name = ? ${anno ? "AND birth_year = ?" : ""}
+                              ORDER BY birth_year DESC LIMIT 1`).get(...(anno ? [nome, anno] : [nome])) as any;
+        if (!h) return res.status(404).json({ message: "cavallo non trovato" });
+        padre = String(h.sire ?? "").toUpperCase(); madre = h.dam ? String(h.dam).toUpperCase() : null;
       }
+      if (!padre) return res.status(400).json({ message: "manca lo stallone" });
+      const asta = req.query.asta === "1" || req.query.asta === "true";
+      res.json({ nome: nome || null, ...valutaPuledro(db, padre, madre, mensile,
+        { margine, asta, prezzo: Number.isFinite(prezzo as number) ? prezzo : null }) });
+    } finally {
+      db.close();
     }
-    res.status(404).json({ message: "Simulazione non ancora calcolata" });
+  });
+
+  // PORTAFOGLIO DELLA SCUDERIA: { voci: [...], mensile } -> cassa dei
+  // prossimi 12 mesi simulata, rischio e valore di carriera.
+  app.post("/api/scuderia", (req, res) => {
+    const db = getDb();
+    try {
+      const ip = ipotesiCorrenti(db);
+      const mensile = numero(req.body?.mensile, ip.costo_mensile, 100, 10000);
+      const voci = Array.isArray(req.body?.voci) ? req.body.voci : [];
+      res.json(valutaScuderia(db, voci, mensile));
+    } finally {
+      db.close();
+    }
+  });
+  app.get("/api/scuderia/esempio", (_req, res) => {
+    const db = getDb();
+    try {
+      res.json({ voci: scuderiaEsempio(db) });
+    } finally {
+      db.close();
+    }
   });
   app.get("/api/pareggio", (req, res) => {
     const db = getDb();

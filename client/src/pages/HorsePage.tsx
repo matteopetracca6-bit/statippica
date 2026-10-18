@@ -3,6 +3,7 @@ import BandieraCavallo from "../components/BandieraCavallo";
 import { PareggioCavallo } from "../components/PareggioScheda";
 import PrevisioniCavallo from "../components/PrevisioniCavallo";
 import VendereOCorrere from "../components/VendereOCorrere";
+import AggiungiScuderia from "../components/AggiungiScuderia";
 import IndiceSezioni from "../components/IndiceSezioni";
 import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
@@ -391,6 +392,16 @@ export default function HorsePage() {
                 {horse.pedigree.sire}{horse.pedigree.dam ? <> × {horse.pedigree.dam}</> : null}
               </div>
             )}
+            {/* Collegamenti all'economia: la scuderia e, per i giovani, il valore del puledro. */}
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", marginTop: "10px" }}>
+              <AggiungiScuderia voce={{ tipo: "cavallo", nome: horse.name, anno: horse.birth_year }} />
+              {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 3 && horse.pedigree?.sire && (
+                <Link href={`/puledro?padre=${encodeURIComponent(horse.pedigree.sire)}&madre=${encodeURIComponent(horse.pedigree.dam ?? "")}&nome=${encodeURIComponent(horse.name)}`}
+                      style={{ fontSize: "12.5px", color: "hsl(25 75% 62%)" }}>
+                  Quanto vale questo puledro →
+                </Link>
+              )}
+            </div>
           </div>
           <MantoSesso coat={horse.coat_color} sex={horse.sex} />
         </div>

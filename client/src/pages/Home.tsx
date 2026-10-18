@@ -11,7 +11,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
-  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked, Scale } from "lucide-react";
+  BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked, Scale, Briefcase, Tag } from "lucide-react";
 
 interface Stats {
   totalHorses: number;
@@ -184,6 +184,8 @@ export default function Home() {
               <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
               <NavCard href="/guidatori" icon={Users} title="Guidatori" desc="Chi porta i cavalli a rendere piu' del loro solito, a parita' di cavallo e di numero di partenza" color="hsl(200 70% 58%)" />
               <NavCard href="/ippodromi" icon={MapPin} title="Ippodromi e trend" desc="Le 26 piste italiane, quanto pesa partire dentro o fuori, e come cambiano voti, guadagni e gare negli anni" color="hsl(95 55% 52%)" />
+              <NavCard href="/scuderia" icon={Briefcase} title="La tua scuderia" desc="Metti insieme i tuoi cavalli: entrate e spese dei prossimi 12 mesi, rischio della scuderia e valore di carriera" color="hsl(190 65% 52%)" />
+              <NavCard href="/puledro" icon={Tag} title="Quanto vale un puledro" desc="Il prezzo massimo da pagare, caso per caso dal campione al non corre, o se conviene venderlo" color="hsl(25 75% 58%)" />
               <NavCard href="/pareggio" icon={Scale} title="Punto di pareggio" desc="Quanto deve vincere un cavallo per ripagarsi: perdita, pareggio o profitto per voto, per cavallo e per incrocio" color="hsl(160 60% 50%)" />
               <NavCard href="/metodo" icon={BookMarked} title="Metodo e dati" desc="Da dove vengono i numeri, come si calcola ogni voto, cosa non se ne puo' concludere e quando si e' aggiornato l'archivio" color="hsl(40 40% 72%)" />
             </div>

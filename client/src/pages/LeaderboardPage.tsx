@@ -51,7 +51,7 @@ const NOMI_PAESE: Record<string, string> = {
 
 export default function LeaderboardPage() {
   const [location] = useLocation();
-  const urlParams = new URLSearchParams(location.split("?")[1] ?? "");
+  const urlParams = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
   
   const [year, setYear] = useState<string>(urlParams.get("year") ?? "");
   const [grade, setGrade] = useState<string>(urlParams.get("grade") ?? "");

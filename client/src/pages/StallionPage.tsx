@@ -474,6 +474,14 @@ export default function StallionPage() {
 
           {/* Punto di pareggio della monta */}
           {!stallion.no_offspring_data && <PareggioStallone nome={stallionName.toUpperCase()} />}
+          {!stallion.no_offspring_data && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "12.5px", margin: "-4px 0 14px" }}>
+              <Link href={`/puledro?padre=${encodeURIComponent(stallionName.toUpperCase())}`} style={{ color: "hsl(25 75% 62%)" }}>
+                Quanto vale un suo puledro: prezzo massimo, caso per caso →
+              </Link>
+              <Link href="/generazione-m" style={{ color: "hsl(38 80% 62%)" }}>I suoi figli alle aste 2026 →</Link>
+            </div>
+          )}
           <FigliInAttivita nome={stallionName.toUpperCase()} />
 
           {/* Rating card */}

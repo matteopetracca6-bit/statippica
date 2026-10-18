@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Scale, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Sagoma from "../components/Sagoma";
+import AggiungiScuderia from "../components/AggiungiScuderia";
 import GradeBadge from "../components/GradeBadge";
 import LegendaEsiti from "../components/LegendaEsiti";
 import { Spiegazione } from "../components/Spiegazione";
@@ -118,6 +119,7 @@ function ElencoCavalli({ mensile }: { mensile: string }) {
                 <td>
                   <Link href={`/horse/${encodeURIComponent(r.nome)}/${r.anno || 0}`}><a className="nome">{r.nome}</a></Link>
                   {r.voto && <span style={{ marginLeft: 6 }}><GradeBadge grade={r.voto} size="sm" /></span>}
+                  <span style={{ marginLeft: 6 }}><AggiungiScuderia icona voce={{ tipo: "cavallo", nome: r.nome, anno: r.anno ?? null }} /></span>
                 </td>
                 <td className="num tabular">{r.eta ?? "—"}</td>
                 <td className="nascondi-mobile">{r.padre ? <Link href={`/stallion/${encodeURIComponent(r.padre)}`}><a className="padre">{titolo(r.padre)}</a></Link> : "—"}</td>

@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Gavel, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Sagoma from "../components/Sagoma";
+import AggiungiScuderia from "../components/AggiungiScuderia";
 import { Spiegazione } from "../components/Spiegazione";
 
 const MUTED = "hsl(210 8% 55%)";
@@ -46,6 +47,27 @@ function Numero({ valore, etichetta, nota, colore }: { valore: string; etichetta
 
 function Titoletto({ children }: { children: React.ReactNode }) {
   return <h2 style={{ fontSize: 16, fontWeight: 800, color: TESTO, margin: "26px 0 10px", letterSpacing: "0.01em" }}>{children}</h2>;
+}
+
+/** In breve: quanti lotti hanno un prezzo massimo, e quanti sono stati pagati meno. */
+function PrezziMassimi({ lotti }: { lotti: any[] }) {
+  const v = lotti.filter(l => l.venduto && l.prezzo > 0 && l.prezzo_massimo != null);
+  if (!v.length) return null;
+  const positivi = v.filter(l => l.prezzo_massimo > 0).length;
+  const sotto = v.filter(l => l.prezzo_massimo > 0 && l.prezzo <= l.prezzo_massimo).length;
+  const m = v.map(l => l.mensile_di_pareggio).filter((x: number | null) => x != null).sort((a: number, b: number) => a - b);
+  const mediana = m.length ? m[Math.floor(m.length / 2)] : null;
+  const griglia: React.CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", marginBottom: 12 };
+  return (
+    <div style={griglia}>
+      <Numero valore={`${positivi} su ${v.length}`} etichetta="venduti con un prezzo massimo sopra zero"
+              nota="Per gli altri, a 1.200 € al mese, anche regalati i premi attesi non coprono l'allenamento." colore={ORO} />
+      <Numero valore={`${sotto}`} etichetta={sotto === 1 ? "pagato meno del suo prezzo massimo" : "pagati meno del loro prezzo massimo"}
+              nota="Chi compra all'asta paga anche la speranza del campione, la rivendita e, per le femmine, il valore da fattrice." />
+      <Numero valore={mediana ? `${euro(mediana)} al mese` : "—"} etichetta="costo mensile tipico per andare in pari"
+              nota={`Per i ${m.length} venduti che possono andare in pari al prezzo pagato; gli altri ${v.length - m.length} non ci vanno nemmeno a 100 € al mese.`} />
+    </div>
+  );
 }
 
 function ElencoLotti({ lotti }: { lotti: any[] }) {
@@ -82,15 +104,19 @@ function ElencoLotti({ lotti }: { lotti: any[] }) {
         <table className="tabella-tenere">
           <thead><tr>
             <th>Puledro</th><th className="nascondi-mobile">Padre × madre</th><th className="nascondi-mobile">Asta</th>
-            <th className="num">Prezzo</th><th className="num">Premi tipici</th>
+            <th className="num">Prezzo</th><th className="num nascondi-mobile">Premi tipici</th>
             <th className="num nascondi-mobile">Metà dei casi fra</th><th className="num">Ripaga</th>
-            <th className="num nascondi-mobile" title="Figli del padre e fratelli già corsi su cui poggia la stima">Figli · fratelli</th>
+            <th className="num" style={{ whiteSpace: "normal" }} title="In carriera, con la regola di fermarlo quando non rende, a 1.200 € al mese">Prezzo massimo</th>
+            <th className="num nascondi-mobile" title="Costo mensile sotto il quale il prezzo pagato va in pari in media">In pari sotto</th>
           </tr></thead>
           <tbody>
             {righe.map(l => (
               <tr key={l.asta + l.lotto}>
-                <td style={{ whiteSpace: "normal", minWidth: 96 }}><span style={{ color: TESTO, fontWeight: 700 }}>{titolo(l.puledro)}</span>
-                  <span style={{ color: MUTED, marginLeft: 5, fontSize: 11 }} title={l.sesso === "F" ? "femmina" : "maschio"}>{l.sesso}</span></td>
+                <td style={{ whiteSpace: "normal", minWidth: 96 }}>
+                  <Link href={`/puledro?padre=${encodeURIComponent(l.padre)}&madre=${encodeURIComponent(l.madre ?? "")}&asta=1&nome=${encodeURIComponent(l.puledro)}${l.venduto ? `&prezzo=${l.prezzo}` : ""}`}
+                        style={{ color: TESTO, fontWeight: 700 }} title="Quanto vale, caso per caso">{titolo(l.puledro)}</Link>
+                  <span style={{ color: MUTED, marginLeft: 5, fontSize: 11 }} title={l.sesso === "F" ? "femmina" : "maschio"}>{l.sesso}</span>
+                  <span style={{ marginLeft: 6 }}><AggiungiScuderia icona voce={{ tipo: "puledro", nome: l.puledro, padre: l.padre, madre: l.madre || null, anno: 2025, prezzo: l.venduto ? l.prezzo : null, asta: true }} /></span></td>
                 <td className="nascondi-mobile">
                   <Link href={`/stallion/${encodeURIComponent(l.padre)}`}><a className="padre">{titolo(l.padre)}</a></Link>
                   <span style={{ color: MUTED }}> × </span>
@@ -100,15 +126,20 @@ function ElencoLotti({ lotti }: { lotti: any[] }) {
                 <td className="num tabular" style={{ fontWeight: 700, color: l.venduto ? TESTO : MUTED }}>
                   {l.venduto ? euro(l.prezzo) : <span title={l.prezzo ? `battuto a ${euro(l.prezzo)}` : ""}>ricomprato</span>}
                 </td>
-                <td className="num tabular">{euro(l.premi_2_3_anni.mediana)}</td>
+                <td className="num tabular nascondi-mobile">{euro(l.premi_2_3_anni.mediana)}</td>
                 <td className="num tabular nascondi-mobile" style={{ color: MUTED }}>{euro(l.premi_2_3_anni.p25)} – {euro(l.premi_2_3_anni.p75)}</td>
                 <td className="num tabular" style={{ fontWeight: 700, color: l.ripaga_entro_3_anni == null ? MUTED : l.ripaga_entro_3_anni >= 0.25 ? "hsl(145 55% 52%)" : l.ripaga_entro_3_anni >= 0.1 ? ORO : "hsl(0 60% 62%)" }}>
                   {l.venduto ? pct(l.ripaga_entro_3_anni) : "—"}
                 </td>
-                <td className="num tabular nascondi-mobile" style={{ color: MUTED }}>{num(l.figli_padre)} · {num(l.fratelli)}</td>
+                <td className="num tabular" style={{ fontWeight: 700, color: !l.prezzo_massimo ? "hsl(0 60% 62%)" : l.venduto && l.prezzo_massimo >= l.prezzo ? "hsl(145 55% 52%)" : ORO }}>
+                  {l.prezzo_massimo == null ? "—" : l.prezzo_massimo > 0 ? euro(l.prezzo_massimo) : "nessuno"}
+                </td>
+                <td className="num tabular nascondi-mobile" style={{ color: l.mensile_di_pareggio ? TESTO : MUTED }}>
+                  {!l.venduto ? "—" : l.mensile_di_pareggio ? `${euro(l.mensile_di_pareggio)}/mese` : "mai"}
+                </td>
               </tr>
             ))}
-            {!righe.length && <tr><td colSpan={8} style={{ color: MUTED, padding: 18 }}>Nessun puledro con questi filtri.</td></tr>}
+            {!righe.length && <tr><td colSpan={9} style={{ color: MUTED, padding: 18 }}>Nessun puledro con questi filtri.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -229,8 +260,11 @@ export default function GenerazionePage() {
               <Titoletto>I puledri M in asta, uno per uno</Titoletto>
               <p style={{ color: MUTED, fontSize: 12.5, lineHeight: 1.6, margin: "0 0 10px", maxWidth: 900 }}>
                 «Premi tipici»: quanto vince a 2 e 3 anni il puledro a metà della fila delle simulazioni. «Ripaga»: quante volte su cento la sua
-                quota di premi copre prezzo e allenamento fino ai 3 anni.
+                quota di premi copre prezzo e allenamento fino ai 3 anni. «Prezzo massimo»: quanto si poteva pagare per essere in pari in media su tutta
+                la carriera, fermandolo quando non rende, a 1.200 € al mese (il conto di <Link href="/puledro" style={{ color: ORO }}>Quanto vale un puledro</Link>:
+                tocca il nome per vederlo caso per caso). «In pari sotto»: il costo mensile a cui il prezzo pagato va in pari.
               </p>
+              <PrezziMassimi lotti={a.lotti_elenco} />
               <ElencoLotti lotti={a.lotti_elenco} />
 
               <Spiegazione titolo="Come è fatta la simulazione e quanto ci si può fidare">
@@ -262,6 +296,10 @@ export default function GenerazionePage() {
                   {" "}<a href="https://www.gaet.it/asta_FTB/" target="_blank" rel="noreferrer">Face Time Bourbon</a>,
                   {" "}<a href="https://www.gaet.it/notizie/daily/asta-anact-risultati-ufficiali" target="_blank" rel="noreferrer">ANACT</a>.
                   Aggiornato il {new Date(d.aggiornato).toLocaleDateString("it-IT")}.
+                </p>
+                <p>
+                  Correzione del 18 ottobre 2026: nella prima versione i premi netti erano ridotti una seconda volta alla parte del proprietario (42,5 su 50),
+                  ma i premi netti dell'archivio sono già quella parte. I premi attesi al proprietario erano quindi circa il 15% troppo bassi; ora sono giusti.
                 </p>
               </Spiegazione>
             </>

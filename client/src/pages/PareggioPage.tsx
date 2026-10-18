@@ -23,7 +23,8 @@ import { Scale } from "lucide-react";
 import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 import GradeBadge from "../components/GradeBadge";
 import NameSelect from "../components/NameSelect";
-import VendereOCorrere, { MercatoStalloni } from "../components/VendereOCorrere";
+import { Link } from "wouter";
+import AggiungiScuderia from "../components/AggiungiScuderia";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
@@ -281,7 +282,8 @@ export default function PareggioPage() {
           {cv && !cvCarica && (
             <div style={{ marginTop: "14px", display: "grid", gap: "10px" }}>
               <div style={{ fontSize: "13px", color: "hsl(210 10% 88%)" }}>
-                <b>{cv.nome}</b> ({cv.anno}) <GradeBadge grade={cv.voto} size="sm" />
+                <b>{cv.nome}</b> ({cv.anno}) <GradeBadge grade={cv.voto} size="sm" />{" "}
+                <AggiungiScuderia piccolo voce={{ tipo: "cavallo", nome: cv.nome, anno: cv.anno }} />
                 <span style={{ color: MUTED }}> · {cv.gare} gare in {cv.stagioni} stagioni · {euro(cv.guadagni_carriera)} vinti</span>
                 {!cv.voto_da_corsa && <div style={{ color: MUTED, fontSize: "12px" }}>Non ha ancora corso: il voto viene solo dalla genealogia.</div>}
               </div>
@@ -369,21 +371,27 @@ export default function PareggioPage() {
         </div>
       </div>
 
-      {/* VENDERE O FAR CORRERE */}
-      <div id="vendere" style={{ ...CARD, marginBottom: "18px" }}>
-        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un puledro all'asta: vendere o far correre?</h2>
-        <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
-          All'asta yearling, verso i 18 mesi, l'allevatore sceglie: incassare subito o tenere il puledro e pagarne l'allenamento.
-          Allevamento e monta sono ormai spesi e non cambiano la scelta: si confronta il prezzo con quello che il puledro rende in pista, meno l'allenamento.
-        </p>
-        <VendereOCorrere mensile={mensile} />
-        <MercatoStalloni mensile={mensile} />
+      {/* VENDERE O FAR CORRERE: spostato in "Quanto vale un puledro", dove sta
+          insieme al prezzo massimo (e' lo stesso conto visto da chi compra). */}
+      <div id="vendere" style={{ ...CARD, marginBottom: "18px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ flex: "1 1 320px" }}>
+          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un puledro: comprarlo, venderlo o farlo correre?</h2>
+          <p style={{ fontSize: "12.5px", color: MUTED, margin: 0, lineHeight: 1.6 }}>
+            Il prezzo massimo da pagare e la scelta fra vendere all'asta e far correre sono lo stesso conto, ora in una pagina sola, caso per caso.
+            Per mettere insieme più cavalli e vedere il rischio di tutta la scuderia c'è «La tua scuderia».
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <Link href="/puledro" style={{ ...bottone(true), textDecoration: "none" }}>Quanto vale un puledro</Link>
+          <Link href="/puledro?modo=vendo" style={{ ...bottone(false), textDecoration: "none" }}>Vendere o far correre</Link>
+          <Link href="/scuderia" style={{ ...bottone(false), textDecoration: "none" }}>La tua scuderia</Link>
+        </div>
       </div>
 
       <div id="sez-metodo"><Spiegazione titolo="Come è fatto il conto, e cosa non contiene">
         <p>Il costo di un cavallo è: costo fino ai 2 anni (allevamento più monta, oppure prezzo d'acquisto),
         più 12 mesi di allenamento prima del debutto, più 12 mesi per ogni stagione di corse. Il ricavo è il premio
-        netto vinto, cioè la quota del proprietario: nella circolare ministeriale al proprietario vanno 42,5 parti
+        netto vinto, che è già la quota del proprietario: nella circolare ministeriale al proprietario vanno 42,5 parti
         su 50, il resto ad allenatore e guidatore.</p>
         <p>L'allevamento fino ai 2 anni ({euro(allev)}) viene dai listini di riproduzione e dalle tariffe UNIRE già usati
         nel capitolo economico. Fra i nati {ip.annate[0]}-{ip.annate[1]}, {ip.cavalli_mai_corsi.toLocaleString("it-IT")} non hanno

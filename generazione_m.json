@@ -6,7 +6,7 @@
  "ipotesi": {
   "costo_al_mese": 1200,
   "mesi_dall_asta_a_fine_3_anni": 27,
-  "quota_premi_al_proprietario": 0.85,
+  "quota_premi_al_proprietario": 1.0,
   "k_padre": 30,
   "k_madre": 3,
   "peso_max_madre": 0.4,
@@ -213,9 +213,9 @@
   "venduti": 215,
   "spesa_totale": 6584000,
   "premi_lordi_2_3_anni_attesi": 4190757,
-  "premi_al_proprietario_attesi": 3562143,
+  "premi_al_proprietario_attesi": 4190757,
   "costo_totale_fino_a_3_anni": 13550000,
-  "ripaga_entro_3_anni_medio": 0.041,
+  "ripaga_entro_3_anni_medio": 0.052,
   "fattore_asta": 1.44,
   "per_asta": [
    {
@@ -224,7 +224,7 @@
     "lotti": 132,
     "prezzo_medio": 12196,
     "premi_2_3_anni_medi_attesi": 13992,
-    "ripaga_entro_3_anni_medio": 0.04
+    "ripaga_entro_3_anni_medio": 0.05
    },
    {
     "asta": "ITS Asta Selezionata Yearlings Trottatori 2026",
@@ -232,7 +232,7 @@
     "lotti": 120,
     "prezzo_medio": 37490,
     "premi_2_3_anni_medi_attesi": 19858,
-    "ripaga_entro_3_anni_medio": 0.04
+    "ripaga_entro_3_anni_medio": 0.05
    },
    {
     "asta": "ITS Asta evento Face Time Bourbon 2026",
@@ -262,7 +262,7 @@
      "p75": 39306,
      "media": 84168
     },
-    "ripaga_entro_3_anni": 0.115,
+    "ripaga_entro_3_anni": 0.138,
     "figli_padre": 79,
     "fratelli": 2,
     "peso_padre": 0.61,
@@ -287,7 +287,7 @@
      "p75": 15426,
      "media": 12009
     },
-    "ripaga_entro_3_anni": 0.002,
+    "ripaga_entro_3_anni": 0.003,
     "figli_padre": 3,
     "fratelli": 5,
     "peso_padre": 0.07,
@@ -387,7 +387,7 @@
      "p75": 18490,
      "media": 16659
     },
-    "ripaga_entro_3_anni": 0.006,
+    "ripaga_entro_3_anni": 0.009,
     "figli_padre": 411,
     "fratelli": 6,
     "peso_padre": 0.68,
@@ -412,7 +412,7 @@
      "p75": 27607,
      "media": 48893
     },
-    "ripaga_entro_3_anni": 0.067,
+    "ripaga_entro_3_anni": 0.068,
     "figli_padre": 79,
     "fratelli": 0,
     "peso_padre": 0.72,
@@ -437,7 +437,7 @@
      "p75": 42111,
      "media": 49636
     },
-    "ripaga_entro_3_anni": 0.08,
+    "ripaga_entro_3_anni": 0.087,
     "figli_padre": 78,
     "fratelli": 5,
     "peso_padre": 0.54,
@@ -487,7 +487,7 @@
      "p75": 23783,
      "media": 36612
     },
-    "ripaga_entro_3_anni": 0.065,
+    "ripaga_entro_3_anni": 0.07,
     "figli_padre": 409,
     "fratelli": 6,
     "peso_padre": 0.68,
@@ -512,7 +512,7 @@
      "p75": 22576,
      "media": 32334
     },
-    "ripaga_entro_3_anni": 0.05,
+    "ripaga_entro_3_anni": 0.069,
     "figli_padre": 78,
     "fratelli": 0,
     "peso_padre": 0.72,
@@ -537,7 +537,7 @@
      "p75": 22484,
      "media": 63186
     },
-    "ripaga_entro_3_anni": 0.112,
+    "ripaga_entro_3_anni": 0.114,
     "figli_padre": 620,
     "fratelli": 1,
     "peso_padre": 0.86,
@@ -587,7 +587,7 @@
      "p75": 27607,
      "media": 47124
     },
-    "ripaga_entro_3_anni": 0.065,
+    "ripaga_entro_3_anni": 0.072,
     "figli_padre": 79,
     "fratelli": 0,
     "peso_padre": 0.72,
@@ -612,7 +612,7 @@
      "p75": 33402,
      "media": 46989
     },
-    "ripaga_entro_3_anni": 0.062,
+    "ripaga_entro_3_anni": 0.074,
     "figli_padre": 79,
     "fratelli": 0,
     "peso_padre": 0.72,
@@ -637,7 +637,7 @@
      "p75": 19656,
      "media": 20765
     },
-    "ripaga_entro_3_anni": 0.051,
+    "ripaga_entro_3_anni": 0.054,
     "figli_padre": 620,
     "fratelli": 6,
     "peso_padre": 0.7,
@@ -687,7 +687,7 @@
      "p75": 36300,
      "media": 46553
     },
-    "ripaga_entro_3_anni": 0.056,
+    "ripaga_entro_3_anni": 0.063,
     "figli_padre": 79,
     "fratelli": 2,
     "peso_padre": 0.61,
@@ -712,7 +712,7 @@
      "p75": 39240,
      "media": 53087
     },
-    "ripaga_entro_3_anni": 0.097,
+    "ripaga_entro_3_anni": 0.109,
     "figli_padre": 409,
     "fratelli": 3,
     "peso_padre": 0.75,
@@ -737,7 +737,7 @@
      "p75": 31823,
      "media": 48030
     },
-    "ripaga_entro_3_anni": 0.071,
+    "ripaga_entro_3_anni": 0.072,
     "figli_padre": 79,
     "fratelli": 0,
     "peso_padre": 0.72,
@@ -762,7 +762,7 @@
      "p75": 27914,
      "media": 16779
     },
-    "ripaga_entro_3_anni": 0.004,
+    "ripaga_entro_3_anni": 0.005,
     "figli_padre": 15,
     "fratelli": 1,
     "peso_padre": 0.3,
@@ -812,7 +812,7 @@
      "p75": 28105,
      "media": 39299
     },
-    "ripaga_entro_3_anni": 0.105,
+    "ripaga_entro_3_anni": 0.106,
     "figli_padre": 78,
     "fratelli": 5,
     "peso_padre": 0.54,
@@ -862,7 +862,7 @@
      "p75": 32684,
      "media": 44680
     },
-    "ripaga_entro_3_anni": 0.065,
+    "ripaga_entro_3_anni": 0.067,
     "figli_padre": 79,
     "fratelli": 1,
     "peso_padre": 0.65,
@@ -887,7 +887,7 @@
      "p75": 22456,
      "media": 21573
     },
-    "ripaga_entro_3_anni": 0.033,
+    "ripaga_entro_3_anni": 0.035,
     "figli_padre": 43,
     "fratelli": 0,
     "peso_padre": 0.59,
@@ -912,7 +912,7 @@
      "p75": 27607,
      "media": 48928
     },
-    "ripaga_entro_3_anni": 0.076,
+    "ripaga_entro_3_anni": 0.077,
     "figli_padre": 79,
     "fratelli": 0,
     "peso_padre": 0.72,
@@ -962,7 +962,7 @@
      "p75": 31876,
      "media": 31841
     },
-    "ripaga_entro_3_anni": 0.046,
+    "ripaga_entro_3_anni": 0.117,
     "figli_padre": 409,
     "fratelli": 3,
     "peso_padre": 0.75,
@@ -987,7 +987,7 @@
      "p75": 21591,
      "media": 36913
     },
-    "ripaga_entro_3_anni": 0.073,
+    "ripaga_entro_3_anni": 0.091,
     "figli_padre": 35,
     "fratelli": 0,
     "peso_padre": 0.54,
@@ -1037,7 +1037,7 @@
      "p75": 21678,
      "media": 41366
     },
-    "ripaga_entro_3_anni": 0.083,
+    "ripaga_entro_3_anni": 0.099,
     "figli_padre": 35,
     "fratelli": 0,
     "peso_padre": 0.54,
@@ -1062,7 +1062,7 @@
      "p75": 28105,
      "media": 47733
     },
-    "ripaga_entro_3_anni": 0.093,
+    "ripaga_entro_3_anni": 0.096,
     "figli_padre": 409,
     "fratelli": 5,
     "peso_padre": 0.7,
@@ -1087,7 +1087,7 @@
      "p75": 22212,
      "media": 23658
     },
-    "ripaga_entro_3_anni": 0.044,
+    "ripaga_entro_3_anni": 0.051,
     "figli_padre": 409,
     "fratelli": 2,
     "peso_padre": 0.78,
@@ -1137,7 +1137,7 @@
      "p75": 25294,
      "media": 26506
     },
-    "ripaga_entro_3_anni": 0.055,
+    "ripaga_entro_3_anni": 0.059,
     "figli_padre": 409,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -1162,7 +1162,7 @@
      "p75": 17298,
      "media": 12722
     },
-    "ripaga_entro_3_anni": 0.01,
+    "ripaga_entro_3_anni": 0.012,
     "figli_padre": 0,
     "fratelli": 5,
     "peso_padre": 0.0,
@@ -1212,7 +1212,7 @@
      "p75": 16785,
      "media": 11672
     },
-    "ripaga_entro_3_anni": 0.011,
+    "ripaga_entro_3_anni": 0.013,
     "figli_padre": 0,
     "fratelli": 3,
     "peso_padre": 0.0,
@@ -1287,7 +1287,7 @@
      "p75": 35819,
      "media": 28399
     },
-    "ripaga_entro_3_anni": 0.046,
+    "ripaga_entro_3_anni": 0.052,
     "figli_padre": 409,
     "fratelli": 6,
     "peso_padre": 0.68,
@@ -1312,7 +1312,7 @@
      "p75": 17255,
      "media": 13783
     },
-    "ripaga_entro_3_anni": 0.009,
+    "ripaga_entro_3_anni": 0.01,
     "figli_padre": 15,
     "fratelli": 0,
     "peso_padre": 0.33,
@@ -1362,7 +1362,7 @@
      "p75": 26576,
      "media": 44456
     },
-    "ripaga_entro_3_anni": 0.082,
+    "ripaga_entro_3_anni": 0.088,
     "figli_padre": 79,
     "fratelli": 1,
     "peso_padre": 0.65,
@@ -1387,7 +1387,7 @@
      "p75": 27607,
      "media": 47017
     },
-    "ripaga_entro_3_anni": 0.086,
+    "ripaga_entro_3_anni": 0.095,
     "figli_padre": 79,
     "fratelli": 0,
     "peso_padre": 0.72,
@@ -1412,7 +1412,7 @@
      "p75": 21899,
      "media": 24572
     },
-    "ripaga_entro_3_anni": 0.047,
+    "ripaga_entro_3_anni": 0.057,
     "figli_padre": 409,
     "fratelli": 3,
     "peso_padre": 0.75,
@@ -1462,7 +1462,7 @@
      "p75": 25044,
      "media": 39685
     },
-    "ripaga_entro_3_anni": 0.067,
+    "ripaga_entro_3_anni": 0.082,
     "figli_padre": 79,
     "fratelli": 3,
     "peso_padre": 0.58,
@@ -1487,7 +1487,7 @@
      "p75": 29614,
      "media": 27921
     },
-    "ripaga_entro_3_anni": 0.048,
+    "ripaga_entro_3_anni": 0.051,
     "figli_padre": 409,
     "fratelli": 5,
     "peso_padre": 0.7,
@@ -1512,7 +1512,7 @@
      "p75": 24506,
      "media": 36781
     },
-    "ripaga_entro_3_anni": 0.133,
+    "ripaga_entro_3_anni": 0.135,
     "figli_padre": 0,
     "fratelli": 4,
     "peso_padre": 0.0,
@@ -1537,7 +1537,7 @@
      "p75": 33196,
      "media": 41823
     },
-    "ripaga_entro_3_anni": 0.147,
+    "ripaga_entro_3_anni": 0.154,
     "figli_padre": 409,
     "fratelli": 1,
     "peso_padre": 0.84,
@@ -1562,7 +1562,7 @@
      "p75": 19433,
      "media": 19968
     },
-    "ripaga_entro_3_anni": 0.059,
+    "ripaga_entro_3_anni": 0.061,
     "figli_padre": 11,
     "fratelli": 4,
     "peso_padre": 0.21,
@@ -1587,7 +1587,7 @@
      "p75": 24414,
      "media": 17706
     },
-    "ripaga_entro_3_anni": 0.031,
+    "ripaga_entro_3_anni": 0.037,
     "figli_padre": 105,
     "fratelli": 3,
     "peso_padre": 0.62,
@@ -1612,7 +1612,7 @@
      "p75": 14234,
      "media": 12029
     },
-    "ripaga_entro_3_anni": 0.017,
+    "ripaga_entro_3_anni": 0.019,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -1637,7 +1637,7 @@
      "p75": 33128,
      "media": 26426
     },
-    "ripaga_entro_3_anni": 0.044,
+    "ripaga_entro_3_anni": 0.052,
     "figli_padre": 409,
     "fratelli": 4,
     "peso_padre": 0.72,
@@ -1662,7 +1662,7 @@
      "p75": 26718,
      "media": 26632
     },
-    "ripaga_entro_3_anni": 0.056,
+    "ripaga_entro_3_anni": 0.068,
     "figli_padre": 409,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -1687,7 +1687,7 @@
      "p75": 16918,
      "media": 12931
     },
-    "ripaga_entro_3_anni": 0.018,
+    "ripaga_entro_3_anni": 0.024,
     "figli_padre": 620,
     "fratelli": 1,
     "peso_padre": 0.86,
@@ -1712,7 +1712,7 @@
      "p75": 22638,
      "media": 19495
     },
-    "ripaga_entro_3_anni": 0.032,
+    "ripaga_entro_3_anni": 0.035,
     "figli_padre": 411,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -1737,7 +1737,7 @@
      "p75": 21203,
      "media": 20981
     },
-    "ripaga_entro_3_anni": 0.03,
+    "ripaga_entro_3_anni": 0.031,
     "figli_padre": 43,
     "fratelli": 1,
     "peso_padre": 0.53,
@@ -1787,7 +1787,7 @@
      "p75": 13555,
      "media": 11425
     },
-    "ripaga_entro_3_anni": 0.017,
+    "ripaga_entro_3_anni": 0.021,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -1812,7 +1812,7 @@
      "p75": 17439,
      "media": 13064
     },
-    "ripaga_entro_3_anni": 0.01,
+    "ripaga_entro_3_anni": 0.011,
     "figli_padre": 0,
     "fratelli": 4,
     "peso_padre": 0.0,
@@ -1837,7 +1837,7 @@
      "p75": 14369,
      "media": 12968
     },
-    "ripaga_entro_3_anni": 0.009,
+    "ripaga_entro_3_anni": 0.01,
     "figli_padre": 15,
     "fratelli": 0,
     "peso_padre": 0.33,
@@ -1862,7 +1862,7 @@
      "p75": 16178,
      "media": 13584
     },
-    "ripaga_entro_3_anni": 0.013,
+    "ripaga_entro_3_anni": 0.015,
     "figli_padre": 15,
     "fratelli": 0,
     "peso_padre": 0.33,
@@ -1937,7 +1937,7 @@
      "p75": 18100,
      "media": 15139
     },
-    "ripaga_entro_3_anni": 0.064,
+    "ripaga_entro_3_anni": 0.067,
     "figli_padre": 0,
     "fratelli": 5,
     "peso_padre": 0.0,
@@ -1962,7 +1962,7 @@
      "p75": 23480,
      "media": 14303
     },
-    "ripaga_entro_3_anni": 0.011,
+    "ripaga_entro_3_anni": 0.014,
     "figli_padre": 0,
     "fratelli": 2,
     "peso_padre": 0.0,
@@ -1987,7 +1987,7 @@
      "p75": 17326,
      "media": 16262
     },
-    "ripaga_entro_3_anni": 0.063,
+    "ripaga_entro_3_anni": 0.067,
     "figli_padre": 0,
     "fratelli": 5,
     "peso_padre": 0.0,
@@ -2012,7 +2012,7 @@
      "p75": 12928,
      "media": 12607
     },
-    "ripaga_entro_3_anni": 0.019,
+    "ripaga_entro_3_anni": 0.034,
     "figli_padre": 138,
     "fratelli": 0,
     "peso_padre": 0.82,
@@ -2037,7 +2037,7 @@
      "p75": 16091,
      "media": 16646
     },
-    "ripaga_entro_3_anni": 0.057,
+    "ripaga_entro_3_anni": 0.062,
     "figli_padre": 0,
     "fratelli": 5,
     "peso_padre": 0.0,
@@ -2062,7 +2062,7 @@
      "p75": 17727,
      "media": 17324
     },
-    "ripaga_entro_3_anni": 0.075,
+    "ripaga_entro_3_anni": 0.086,
     "figli_padre": 138,
     "fratelli": 4,
     "peso_padre": 0.63,
@@ -2087,7 +2087,7 @@
      "p75": 12984,
      "media": 10457
     },
-    "ripaga_entro_3_anni": 0.014,
+    "ripaga_entro_3_anni": 0.018,
     "figli_padre": 0,
     "fratelli": 4,
     "peso_padre": 0.0,
@@ -2112,7 +2112,7 @@
      "p75": 22015,
      "media": 18819
     },
-    "ripaga_entro_3_anni": 0.04,
+    "ripaga_entro_3_anni": 0.045,
     "figli_padre": 411,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -2137,7 +2137,7 @@
      "p75": 24450,
      "media": 22347
     },
-    "ripaga_entro_3_anni": 0.051,
+    "ripaga_entro_3_anni": 0.062,
     "figli_padre": 409,
     "fratelli": 4,
     "peso_padre": 0.72,
@@ -2162,7 +2162,7 @@
      "p75": 12563,
      "media": 11348
     },
-    "ripaga_entro_3_anni": 0.013,
+    "ripaga_entro_3_anni": 0.014,
     "figli_padre": 0,
     "fratelli": 5,
     "peso_padre": 0.0,
@@ -2187,7 +2187,7 @@
      "p75": 19404,
      "media": 13908
     },
-    "ripaga_entro_3_anni": 0.013,
+    "ripaga_entro_3_anni": 0.017,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -2212,7 +2212,7 @@
      "p75": 21035,
      "media": 21254
     },
-    "ripaga_entro_3_anni": 0.065,
+    "ripaga_entro_3_anni": 0.091,
     "figli_padre": 12,
     "fratelli": 0,
     "peso_padre": 0.29,
@@ -2237,7 +2237,7 @@
      "p75": 25677,
      "media": 26285
     },
-    "ripaga_entro_3_anni": 0.066,
+    "ripaga_entro_3_anni": 0.071,
     "figli_padre": 620,
     "fratelli": 5,
     "peso_padre": 0.72,
@@ -2262,7 +2262,7 @@
      "p75": 15031,
      "media": 11723
     },
-    "ripaga_entro_3_anni": 0.015,
+    "ripaga_entro_3_anni": 0.02,
     "figli_padre": 0,
     "fratelli": 3,
     "peso_padre": 0.0,
@@ -2287,7 +2287,7 @@
      "p75": 19187,
      "media": 12643
     },
-    "ripaga_entro_3_anni": 0.009,
+    "ripaga_entro_3_anni": 0.01,
     "figli_padre": 11,
     "fratelli": 4,
     "peso_padre": 0.21,
@@ -2312,7 +2312,7 @@
      "p75": 22789,
      "media": 23973
     },
-    "ripaga_entro_3_anni": 0.066,
+    "ripaga_entro_3_anni": 0.076,
     "figli_padre": 409,
     "fratelli": 1,
     "peso_padre": 0.84,
@@ -2337,7 +2337,7 @@
      "p75": 13543,
      "media": 10415
     },
-    "ripaga_entro_3_anni": 0.015,
+    "ripaga_entro_3_anni": 0.019,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -2362,7 +2362,7 @@
      "p75": 25534,
      "media": 25812
     },
-    "ripaga_entro_3_anni": 0.058,
+    "ripaga_entro_3_anni": 0.062,
     "figli_padre": 409,
     "fratelli": 4,
     "peso_padre": 0.72,
@@ -2387,7 +2387,7 @@
      "p75": 16543,
      "media": 14478
     },
-    "ripaga_entro_3_anni": 0.041,
+    "ripaga_entro_3_anni": 0.042,
     "figli_padre": 48,
     "fratelli": 2,
     "peso_padre": 0.52,
@@ -2462,7 +2462,7 @@
      "p75": 15974,
      "media": 19711
     },
-    "ripaga_entro_3_anni": 0.088,
+    "ripaga_entro_3_anni": 0.092,
     "figli_padre": 0,
     "fratelli": 3,
     "peso_padre": 0.0,
@@ -2487,7 +2487,7 @@
      "p75": 17132,
      "media": 12362
     },
-    "ripaga_entro_3_anni": 0.018,
+    "ripaga_entro_3_anni": 0.02,
     "figli_padre": 25,
     "fratelli": 5,
     "peso_padre": 0.34,
@@ -2512,7 +2512,7 @@
      "p75": 22638,
      "media": 19236
     },
-    "ripaga_entro_3_anni": 0.038,
+    "ripaga_entro_3_anni": 0.049,
     "figli_padre": 411,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -2562,7 +2562,7 @@
      "p75": 19864,
      "media": 19549
     },
-    "ripaga_entro_3_anni": 0.058,
+    "ripaga_entro_3_anni": 0.084,
     "figli_padre": 12,
     "fratelli": 0,
     "peso_padre": 0.29,
@@ -2587,7 +2587,7 @@
      "p75": 13797,
      "media": 12900
     },
-    "ripaga_entro_3_anni": 0.02,
+    "ripaga_entro_3_anni": 0.024,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -2612,7 +2612,7 @@
      "p75": 23170,
      "media": 25785
     },
-    "ripaga_entro_3_anni": 0.06,
+    "ripaga_entro_3_anni": 0.067,
     "figli_padre": 409,
     "fratelli": 2,
     "peso_padre": 0.78,
@@ -2637,7 +2637,7 @@
      "p75": 19247,
      "media": 17821
     },
-    "ripaga_entro_3_anni": 0.032,
+    "ripaga_entro_3_anni": 0.044,
     "figli_padre": 411,
     "fratelli": 1,
     "peso_padre": 0.84,
@@ -2662,7 +2662,7 @@
      "p75": 14336,
      "media": 11177
     },
-    "ripaga_entro_3_anni": 0.018,
+    "ripaga_entro_3_anni": 0.021,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -2687,7 +2687,7 @@
      "p75": 22456,
      "media": 21821
     },
-    "ripaga_entro_3_anni": 0.037,
+    "ripaga_entro_3_anni": 0.055,
     "figli_padre": 43,
     "fratelli": 0,
     "peso_padre": 0.59,
@@ -2762,7 +2762,7 @@
      "p75": 24732,
      "media": 24482
     },
-    "ripaga_entro_3_anni": 0.08,
+    "ripaga_entro_3_anni": 0.089,
     "figli_padre": 411,
     "fratelli": 5,
     "peso_padre": 0.7,
@@ -2787,7 +2787,7 @@
      "p75": 12435,
      "media": 10518
     },
-    "ripaga_entro_3_anni": 0.009,
+    "ripaga_entro_3_anni": 0.016,
     "figli_padre": 115,
     "fratelli": 3,
     "peso_padre": 0.63,
@@ -2812,7 +2812,7 @@
      "p75": 25007,
      "media": 20237
     },
-    "ripaga_entro_3_anni": 0.026,
+    "ripaga_entro_3_anni": 0.036,
     "figli_padre": 43,
     "fratelli": 2,
     "peso_padre": 0.49,
@@ -2887,7 +2887,7 @@
      "p75": 23143,
      "media": 20448
     },
-    "ripaga_entro_3_anni": 0.041,
+    "ripaga_entro_3_anni": 0.057,
     "figli_padre": 411,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -2937,7 +2937,7 @@
      "p75": 20127,
      "media": 14356
     },
-    "ripaga_entro_3_anni": 0.018,
+    "ripaga_entro_3_anni": 0.021,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -2962,7 +2962,7 @@
      "p75": 15706,
      "media": 18384
     },
-    "ripaga_entro_3_anni": 0.062,
+    "ripaga_entro_3_anni": 0.065,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -2987,7 +2987,7 @@
      "p75": 22456,
      "media": 30223
     },
-    "ripaga_entro_3_anni": 0.102,
+    "ripaga_entro_3_anni": 0.105,
     "figli_padre": 43,
     "fratelli": 3,
     "peso_padre": 0.47,
@@ -3012,7 +3012,7 @@
      "p75": 18502,
      "media": 12502
     },
-    "ripaga_entro_3_anni": 0.017,
+    "ripaga_entro_3_anni": 0.021,
     "figli_padre": 0,
     "fratelli": 1,
     "peso_padre": 0.0,
@@ -3037,7 +3037,7 @@
      "p75": 17015,
      "media": 13083
     },
-    "ripaga_entro_3_anni": 0.01,
+    "ripaga_entro_3_anni": 0.028,
     "figli_padre": 18,
     "fratelli": 6,
     "peso_padre": 0.27,
@@ -3062,7 +3062,7 @@
      "p75": 16013,
      "media": 13474
     },
-    "ripaga_entro_3_anni": 0.015,
+    "ripaga_entro_3_anni": 0.056,
     "figli_padre": 15,
     "fratelli": 0,
     "peso_padre": 0.33,
@@ -3087,7 +3087,7 @@
      "p75": 12412,
      "media": 9785
     },
-    "ripaga_entro_3_anni": 0.018,
+    "ripaga_entro_3_anni": 0.023,
     "figli_padre": 0,
     "fratelli": 1,
     "peso_padre": 0.0,
@@ -3162,7 +3162,7 @@
      "p75": 16909,
      "media": 12741
     },
-    "ripaga_entro_3_anni": 0.011,
+    "ripaga_entro_3_anni": 0.013,
     "figli_padre": 11,
     "fratelli": 4,
     "peso_padre": 0.21,
@@ -3212,7 +3212,7 @@
      "p75": 14252,
      "media": 10412
     },
-    "ripaga_entro_3_anni": 0.009,
+    "ripaga_entro_3_anni": 0.033,
     "figli_padre": 18,
     "fratelli": 0,
     "peso_padre": 0.38,
@@ -3237,7 +3237,7 @@
      "p75": 20693,
      "media": 18181
     },
-    "ripaga_entro_3_anni": 0.04,
+    "ripaga_entro_3_anni": 0.053,
     "figli_padre": 223,
     "fratelli": 0,
     "peso_padre": 0.88,
@@ -3287,7 +3287,7 @@
      "p75": 18598,
      "media": 14902
     },
-    "ripaga_entro_3_anni": 0.029,
+    "ripaga_entro_3_anni": 0.039,
     "figli_padre": 620,
     "fratelli": 0,
     "peso_padre": 0.95,
@@ -3312,7 +3312,7 @@
      "p75": 21328,
      "media": 23441
     },
-    "ripaga_entro_3_anni": 0.072,
+    "ripaga_entro_3_anni": 0.076,
     "figli_padre": 409,
     "fratelli": 2,
     "peso_padre": 0.78,
@@ -3337,7 +3337,7 @@
      "p75": 26403,
      "media": 28061
     },
-    "ripaga_entro_3_anni": 0.088,
+    "ripaga_entro_3_anni": 0.093,
     "figli_padre": 409,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -3387,7 +3387,7 @@
      "p75": 17304,
      "media": 14150
     },
-    "ripaga_entro_3_anni": 0.033,
+    "ripaga_entro_3_anni": 0.041,
     "figli_padre": 620,
     "fratelli": 0,
     "peso_padre": 0.95,
@@ -3412,7 +3412,7 @@
      "p75": 15391,
      "media": 11444
     },
-    "ripaga_entro_3_anni": 0.02,
+    "ripaga_entro_3_anni": 0.025,
     "figli_padre": 0,
     "fratelli": 3,
     "peso_padre": 0.0,
@@ -3437,7 +3437,7 @@
      "p75": 15389,
      "media": 11502
     },
-    "ripaga_entro_3_anni": 0.015,
+    "ripaga_entro_3_anni": 0.02,
     "figli_padre": 0,
     "fratelli": 2,
     "peso_padre": 0.0,
@@ -3462,7 +3462,7 @@
      "p75": 17017,
      "media": 13693
     },
-    "ripaga_entro_3_anni": 0.008,
+    "ripaga_entro_3_anni": 0.085,
     "figli_padre": 18,
     "fratelli": 4,
     "peso_padre": 0.29,
@@ -3512,7 +3512,7 @@
      "p75": 19284,
      "media": 12002
     },
-    "ripaga_entro_3_anni": 0.015,
+    "ripaga_entro_3_anni": 0.018,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -3587,7 +3587,7 @@
      "p75": 15485,
      "media": 12838
     },
-    "ripaga_entro_3_anni": 0.021,
+    "ripaga_entro_3_anni": 0.023,
     "figli_padre": 25,
     "fratelli": 3,
     "peso_padre": 0.36,
@@ -3637,7 +3637,7 @@
      "p75": 13635,
      "media": 11045
     },
-    "ripaga_entro_3_anni": 0.018,
+    "ripaga_entro_3_anni": 0.025,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -3687,7 +3687,7 @@
      "p75": 15510,
      "media": 11326
     },
-    "ripaga_entro_3_anni": 0.016,
+    "ripaga_entro_3_anni": 0.019,
     "figli_padre": 11,
     "fratelli": 3,
     "peso_padre": 0.21,
@@ -3737,7 +3737,7 @@
      "p75": 17773,
      "media": 11735
     },
-    "ripaga_entro_3_anni": 0.011,
+    "ripaga_entro_3_anni": 0.014,
     "figli_padre": 11,
     "fratelli": 6,
     "peso_padre": 0.2,
@@ -3762,7 +3762,7 @@
      "p75": 18000,
      "media": 13703
     },
-    "ripaga_entro_3_anni": 0.022,
+    "ripaga_entro_3_anni": 0.025,
     "figli_padre": 25,
     "fratelli": 5,
     "peso_padre": 0.34,
@@ -3787,7 +3787,7 @@
      "p75": 16516,
      "media": 16748
     },
-    "ripaga_entro_3_anni": 0.055,
+    "ripaga_entro_3_anni": 0.086,
     "figli_padre": 80,
     "fratelli": 5,
     "peso_padre": 0.55,
@@ -3812,7 +3812,7 @@
      "p75": 15409,
      "media": 11545
     },
-    "ripaga_entro_3_anni": 0.024,
+    "ripaga_entro_3_anni": 0.029,
     "figli_padre": 0,
     "fratelli": 1,
     "peso_padre": 0.0,
@@ -3837,7 +3837,7 @@
      "p75": 23254,
      "media": 18456
     },
-    "ripaga_entro_3_anni": 0.041,
+    "ripaga_entro_3_anni": 0.048,
     "figli_padre": 411,
     "fratelli": 3,
     "peso_padre": 0.75,
@@ -3887,7 +3887,7 @@
      "p75": 25441,
      "media": 18855
     },
-    "ripaga_entro_3_anni": 0.033,
+    "ripaga_entro_3_anni": 0.095,
     "figli_padre": 411,
     "fratelli": 5,
     "peso_padre": 0.7,
@@ -3912,7 +3912,7 @@
      "p75": 21860,
      "media": 13335
     },
-    "ripaga_entro_3_anni": 0.012,
+    "ripaga_entro_3_anni": 0.063,
     "figli_padre": 11,
     "fratelli": 5,
     "peso_padre": 0.2,
@@ -3937,7 +3937,7 @@
      "p75": 17074,
      "media": 12653
     },
-    "ripaga_entro_3_anni": 0.031,
+    "ripaga_entro_3_anni": 0.045,
     "figli_padre": 50,
     "fratelli": 0,
     "peso_padre": 0.62,
@@ -3962,7 +3962,7 @@
      "p75": 10902,
      "media": 11747
     },
-    "ripaga_entro_3_anni": 0.032,
+    "ripaga_entro_3_anni": 0.033,
     "figli_padre": 138,
     "fratelli": 1,
     "peso_padre": 0.74,
@@ -3987,7 +3987,7 @@
      "p75": 13337,
      "media": 10525
     },
-    "ripaga_entro_3_anni": 0.019,
+    "ripaga_entro_3_anni": 0.025,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -4012,7 +4012,7 @@
      "p75": 12768,
      "media": 18458
     },
-    "ripaga_entro_3_anni": 0.105,
+    "ripaga_entro_3_anni": 0.108,
     "figli_padre": 48,
     "fratelli": 5,
     "peso_padre": 0.46,
@@ -4062,7 +4062,7 @@
      "p75": 21084,
      "media": 13499
     },
-    "ripaga_entro_3_anni": 0.017,
+    "ripaga_entro_3_anni": 0.022,
     "figli_padre": 0,
     "fratelli": 3,
     "peso_padre": 0.0,
@@ -4087,7 +4087,7 @@
      "p75": 16448,
      "media": 10097
     },
-    "ripaga_entro_3_anni": 0.011,
+    "ripaga_entro_3_anni": 0.015,
     "figli_padre": 11,
     "fratelli": 5,
     "peso_padre": 0.2,
@@ -4112,7 +4112,7 @@
      "p75": 18296,
      "media": 11998
     },
-    "ripaga_entro_3_anni": 0.017,
+    "ripaga_entro_3_anni": 0.02,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -4137,7 +4137,7 @@
      "p75": 13912,
      "media": 10961
     },
-    "ripaga_entro_3_anni": 0.021,
+    "ripaga_entro_3_anni": 0.029,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -4162,7 +4162,7 @@
      "p75": 22619,
      "media": 22043
     },
-    "ripaga_entro_3_anni": 0.066,
+    "ripaga_entro_3_anni": 0.083,
     "figli_padre": 409,
     "fratelli": 1,
     "peso_padre": 0.84,
@@ -4187,7 +4187,7 @@
      "p75": 13543,
      "media": 10922
     },
-    "ripaga_entro_3_anni": 0.024,
+    "ripaga_entro_3_anni": 0.031,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -4212,7 +4212,7 @@
      "p75": 11913,
      "media": 9931
     },
-    "ripaga_entro_3_anni": 0.019,
+    "ripaga_entro_3_anni": 0.025,
     "figli_padre": 0,
     "fratelli": 1,
     "peso_padre": 0.0,
@@ -4262,7 +4262,7 @@
      "p75": 18948,
      "media": 12567
     },
-    "ripaga_entro_3_anni": 0.013,
+    "ripaga_entro_3_anni": 0.031,
     "figli_padre": 31,
     "fratelli": 0,
     "peso_padre": 0.51,
@@ -4287,7 +4287,7 @@
      "p75": 17746,
      "media": 13637
     },
-    "ripaga_entro_3_anni": 0.04,
+    "ripaga_entro_3_anni": 0.044,
     "figli_padre": 25,
     "fratelli": 3,
     "peso_padre": 0.36,
@@ -4312,7 +4312,7 @@
      "p75": 14950,
      "media": 14867
     },
-    "ripaga_entro_3_anni": 0.048,
+    "ripaga_entro_3_anni": 0.057,
     "figli_padre": 105,
     "fratelli": 1,
     "peso_padre": 0.7,
@@ -4337,7 +4337,7 @@
      "p75": 13904,
      "media": 11035
     },
-    "ripaga_entro_3_anni": 0.018,
+    "ripaga_entro_3_anni": 0.024,
     "figli_padre": 0,
     "fratelli": 4,
     "peso_padre": 0.0,
@@ -4362,7 +4362,7 @@
      "p75": 21052,
      "media": 20031
     },
-    "ripaga_entro_3_anni": 0.085,
+    "ripaga_entro_3_anni": 0.092,
     "figli_padre": 105,
     "fratelli": 5,
     "peso_padre": 0.58,
@@ -4387,7 +4387,7 @@
      "p75": 12983,
      "media": 11618
     },
-    "ripaga_entro_3_anni": 0.017,
+    "ripaga_entro_3_anni": 0.024,
     "figli_padre": 0,
     "fratelli": 5,
     "peso_padre": 0.0,
@@ -4412,7 +4412,7 @@
      "p75": 16483,
      "media": 13737
     },
-    "ripaga_entro_3_anni": 0.02,
+    "ripaga_entro_3_anni": 0.029,
     "figli_padre": 168,
     "fratelli": 2,
     "peso_padre": 0.71,
@@ -4462,7 +4462,7 @@
      "p75": 16054,
      "media": 13570
     },
-    "ripaga_entro_3_anni": 0.06,
+    "ripaga_entro_3_anni": 0.086,
     "figli_padre": 15,
     "fratelli": 0,
     "peso_padre": 0.33,
@@ -4487,7 +4487,7 @@
      "p75": 23515,
      "media": 19292
     },
-    "ripaga_entro_3_anni": 0.041,
+    "ripaga_entro_3_anni": 0.129,
     "figli_padre": 43,
     "fratelli": 3,
     "peso_padre": 0.47,
@@ -4587,7 +4587,7 @@
      "p75": 11206,
      "media": 13047
     },
-    "ripaga_entro_3_anni": 0.032,
+    "ripaga_entro_3_anni": 0.04,
     "figli_padre": 138,
     "fratelli": 1,
     "peso_padre": 0.74,
@@ -4612,7 +4612,7 @@
      "p75": 14443,
      "media": 16283
     },
-    "ripaga_entro_3_anni": 0.078,
+    "ripaga_entro_3_anni": 0.084,
     "figli_padre": 0,
     "fratelli": 4,
     "peso_padre": 0.0,
@@ -4637,7 +4637,7 @@
      "p75": 22409,
      "media": 21940
     },
-    "ripaga_entro_3_anni": 0.06,
+    "ripaga_entro_3_anni": 0.08,
     "figli_padre": 409,
     "fratelli": 4,
     "peso_padre": 0.72,
@@ -4687,7 +4687,7 @@
      "p75": 15241,
      "media": 17757
     },
-    "ripaga_entro_3_anni": 0.051,
+    "ripaga_entro_3_anni": 0.069,
     "figli_padre": 105,
     "fratelli": 1,
     "peso_padre": 0.7,
@@ -4712,7 +4712,7 @@
      "p75": 13539,
      "media": 16234
     },
-    "ripaga_entro_3_anni": 0.03,
+    "ripaga_entro_3_anni": 0.051,
     "figli_padre": 12,
     "fratelli": 5,
     "peso_padre": 0.21,
@@ -4737,7 +4737,7 @@
      "p75": 16751,
      "media": 12069
     },
-    "ripaga_entro_3_anni": 0.023,
+    "ripaga_entro_3_anni": 0.028,
     "figli_padre": 0,
     "fratelli": 2,
     "peso_padre": 0.0,
@@ -4812,7 +4812,7 @@
      "p75": 20379,
      "media": 19822
     },
-    "ripaga_entro_3_anni": 0.079,
+    "ripaga_entro_3_anni": 0.108,
     "figli_padre": 80,
     "fratelli": 0,
     "peso_padre": 0.73,
@@ -4837,7 +4837,7 @@
      "p75": 15776,
      "media": 12431
     },
-    "ripaga_entro_3_anni": 0.015,
+    "ripaga_entro_3_anni": 0.018,
     "figli_padre": 11,
     "fratelli": 2,
     "peso_padre": 0.23,
@@ -4887,7 +4887,7 @@
      "p75": 18611,
      "media": 17493
     },
-    "ripaga_entro_3_anni": 0.101,
+    "ripaga_entro_3_anni": 0.111,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -4912,7 +4912,7 @@
      "p75": 13844,
      "media": 11439
     },
-    "ripaga_entro_3_anni": 0.027,
+    "ripaga_entro_3_anni": 0.034,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -4937,7 +4937,7 @@
      "p75": 13986,
      "media": 11491
     },
-    "ripaga_entro_3_anni": 0.024,
+    "ripaga_entro_3_anni": 0.032,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -4962,7 +4962,7 @@
      "p75": 18612,
      "media": 19205
     },
-    "ripaga_entro_3_anni": 0.054,
+    "ripaga_entro_3_anni": 0.074,
     "figli_padre": 144,
     "fratelli": 0,
     "peso_padre": 0.83,
@@ -4987,7 +4987,7 @@
      "p75": 17481,
      "media": 16695
     },
-    "ripaga_entro_3_anni": 0.046,
+    "ripaga_entro_3_anni": 0.065,
     "figli_padre": 105,
     "fratelli": 0,
     "peso_padre": 0.78,
@@ -5012,7 +5012,7 @@
      "p75": 13524,
      "media": 11105
     },
-    "ripaga_entro_3_anni": 0.017,
+    "ripaga_entro_3_anni": 0.022,
     "figli_padre": 21,
     "fratelli": 1,
     "peso_padre": 0.37,
@@ -5037,7 +5037,7 @@
      "p75": 15485,
      "media": 12651
     },
-    "ripaga_entro_3_anni": 0.036,
+    "ripaga_entro_3_anni": 0.039,
     "figli_padre": 25,
     "fratelli": 0,
     "peso_padre": 0.45,
@@ -5062,7 +5062,7 @@
      "p75": 12699,
      "media": 8788
     },
-    "ripaga_entro_3_anni": 0.007,
+    "ripaga_entro_3_anni": 0.009,
     "figli_padre": 91,
     "fratelli": 1,
     "peso_padre": 0.68,
@@ -5087,7 +5087,7 @@
      "p75": 25294,
      "media": 26799
     },
-    "ripaga_entro_3_anni": 0.087,
+    "ripaga_entro_3_anni": 0.122,
     "figli_padre": 409,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -5112,7 +5112,7 @@
      "p75": 16749,
      "media": 11635
     },
-    "ripaga_entro_3_anni": 0.019,
+    "ripaga_entro_3_anni": 0.026,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -5137,7 +5137,7 @@
      "p75": 12985,
      "media": 10133
     },
-    "ripaga_entro_3_anni": 0.022,
+    "ripaga_entro_3_anni": 0.028,
     "figli_padre": 0,
     "fratelli": 2,
     "peso_padre": 0.0,
@@ -5187,7 +5187,7 @@
      "p75": 24815,
      "media": 25720
     },
-    "ripaga_entro_3_anni": 0.083,
+    "ripaga_entro_3_anni": 0.111,
     "figli_padre": 409,
     "fratelli": 0,
     "peso_padre": 0.93,
@@ -5237,7 +5237,7 @@
      "p75": 18018,
      "media": 17139
     },
-    "ripaga_entro_3_anni": 0.047,
+    "ripaga_entro_3_anni": 0.066,
     "figli_padre": 105,
     "fratelli": 0,
     "peso_padre": 0.78,
@@ -5262,7 +5262,7 @@
      "p75": 17189,
      "media": 12286
     },
-    "ripaga_entro_3_anni": 0.021,
+    "ripaga_entro_3_anni": 0.028,
     "figli_padre": 0,
     "fratelli": 3,
     "peso_padre": 0.0,
@@ -5287,7 +5287,7 @@
      "p75": 14318,
      "media": 11967
     },
-    "ripaga_entro_3_anni": 0.03,
+    "ripaga_entro_3_anni": 0.04,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5362,7 +5362,7 @@
      "p75": 17564,
      "media": 12122
     },
-    "ripaga_entro_3_anni": 0.032,
+    "ripaga_entro_3_anni": 0.035,
     "figli_padre": 18,
     "fratelli": 4,
     "peso_padre": 0.29,
@@ -5387,7 +5387,7 @@
      "p75": 15744,
      "media": 11713
     },
-    "ripaga_entro_3_anni": 0.019,
+    "ripaga_entro_3_anni": 0.022,
     "figli_padre": 0,
     "fratelli": 6,
     "peso_padre": 0.0,
@@ -5437,7 +5437,7 @@
      "p75": 13718,
      "media": 11648
     },
-    "ripaga_entro_3_anni": 0.03,
+    "ripaga_entro_3_anni": 0.037,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5462,7 +5462,7 @@
      "p75": 17658,
      "media": 11891
     },
-    "ripaga_entro_3_anni": 0.011,
+    "ripaga_entro_3_anni": 0.037,
     "figli_padre": 40,
     "fratelli": 3,
     "peso_padre": 0.46,
@@ -5487,7 +5487,7 @@
      "p75": 25294,
      "media": 23932
     },
-    "ripaga_entro_3_anni": 0.075,
+    "ripaga_entro_3_anni": 0.144,
     "figli_padre": 409,
     "fratelli": 5,
     "peso_padre": 0.7,
@@ -5512,7 +5512,7 @@
      "p75": 22612,
      "media": 23907
     },
-    "ripaga_entro_3_anni": 0.086,
+    "ripaga_entro_3_anni": 0.107,
     "figli_padre": 409,
     "fratelli": 1,
     "peso_padre": 0.84,
@@ -5537,7 +5537,7 @@
      "p75": 16525,
      "media": 11573
     },
-    "ripaga_entro_3_anni": 0.025,
+    "ripaga_entro_3_anni": 0.035,
     "figli_padre": 0,
     "fratelli": 2,
     "peso_padre": 0.0,
@@ -5587,7 +5587,7 @@
      "p75": 13848,
      "media": 11690
     },
-    "ripaga_entro_3_anni": 0.029,
+    "ripaga_entro_3_anni": 0.037,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5637,7 +5637,7 @@
      "p75": 13138,
      "media": 15244
     },
-    "ripaga_entro_3_anni": 0.042,
+    "ripaga_entro_3_anni": 0.057,
     "figli_padre": 138,
     "fratelli": 0,
     "peso_padre": 0.82,
@@ -5662,7 +5662,7 @@
      "p75": 14094,
      "media": 11643
     },
-    "ripaga_entro_3_anni": 0.023,
+    "ripaga_entro_3_anni": 0.092,
     "figli_padre": 0,
     "fratelli": 4,
     "peso_padre": 0.0,
@@ -5712,7 +5712,7 @@
      "p75": 14265,
      "media": 10934
     },
-    "ripaga_entro_3_anni": 0.026,
+    "ripaga_entro_3_anni": 0.035,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5737,7 +5737,7 @@
      "p75": 13902,
      "media": 10891
     },
-    "ripaga_entro_3_anni": 0.03,
+    "ripaga_entro_3_anni": 0.038,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5762,7 +5762,7 @@
      "p75": 13631,
      "media": 10921
     },
-    "ripaga_entro_3_anni": 0.028,
+    "ripaga_entro_3_anni": 0.036,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5787,7 +5787,7 @@
      "p75": 16283,
      "media": 15935
     },
-    "ripaga_entro_3_anni": 0.045,
+    "ripaga_entro_3_anni": 0.057,
     "figli_padre": 105,
     "fratelli": 6,
     "peso_padre": 0.57,
@@ -5812,7 +5812,7 @@
      "p75": 21033,
      "media": 17242
     },
-    "ripaga_entro_3_anni": 0.048,
+    "ripaga_entro_3_anni": 0.056,
     "figli_padre": 411,
     "fratelli": 4,
     "peso_padre": 0.72,
@@ -5837,7 +5837,7 @@
      "p75": 13955,
      "media": 10689
     },
-    "ripaga_entro_3_anni": 0.026,
+    "ripaga_entro_3_anni": 0.035,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5862,7 +5862,7 @@
      "p75": 13799,
      "media": 11973
     },
-    "ripaga_entro_3_anni": 0.03,
+    "ripaga_entro_3_anni": 0.038,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -5887,7 +5887,7 @@
      "p75": 19246,
      "media": 17262
     },
-    "ripaga_entro_3_anni": 0.051,
+    "ripaga_entro_3_anni": 0.062,
     "figli_padre": 411,
     "fratelli": 1,
     "peso_padre": 0.84,
@@ -5912,7 +5912,7 @@
      "p75": 18374,
      "media": 14246
     },
-    "ripaga_entro_3_anni": 0.026,
+    "ripaga_entro_3_anni": 0.038,
     "figli_padre": 168,
     "fratelli": 5,
     "peso_padre": 0.64,
@@ -6012,7 +6012,7 @@
      "p75": 18796,
      "media": 11936
     },
-    "ripaga_entro_3_anni": 0.023,
+    "ripaga_entro_3_anni": 0.029,
     "figli_padre": 0,
     "fratelli": 1,
     "peso_padre": 0.0,
@@ -6037,7 +6037,7 @@
      "p75": 19346,
      "media": 15087
     },
-    "ripaga_entro_3_anni": 0.033,
+    "ripaga_entro_3_anni": 0.043,
     "figli_padre": 168,
     "fratelli": 3,
     "peso_padre": 0.68,
@@ -6062,7 +6062,7 @@
      "p75": 13410,
      "media": 10531
     },
-    "ripaga_entro_3_anni": 0.029,
+    "ripaga_entro_3_anni": 0.036,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6087,7 +6087,7 @@
      "p75": 11583,
      "media": 10198
     },
-    "ripaga_entro_3_anni": 0.027,
+    "ripaga_entro_3_anni": 0.031,
     "figli_padre": 25,
     "fratelli": 1,
     "peso_padre": 0.41,
@@ -6112,7 +6112,7 @@
      "p75": 11316,
      "media": 8884
     },
-    "ripaga_entro_3_anni": 0.015,
+    "ripaga_entro_3_anni": 0.037,
     "figli_padre": 18,
     "fratelli": 2,
     "peso_padre": 0.32,
@@ -6137,7 +6137,7 @@
      "p75": 18701,
      "media": 15854
     },
-    "ripaga_entro_3_anni": 0.035,
+    "ripaga_entro_3_anni": 0.051,
     "figli_padre": 168,
     "fratelli": 0,
     "peso_padre": 0.85,
@@ -6162,7 +6162,7 @@
      "p75": 16762,
      "media": 11947
     },
-    "ripaga_entro_3_anni": 0.033,
+    "ripaga_entro_3_anni": 0.04,
     "figli_padre": 18,
     "fratelli": 1,
     "peso_padre": 0.34,
@@ -6187,7 +6187,7 @@
      "p75": 13795,
      "media": 10494
     },
-    "ripaga_entro_3_anni": 0.026,
+    "ripaga_entro_3_anni": 0.036,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6212,7 +6212,7 @@
      "p75": 16245,
      "media": 10909
     },
-    "ripaga_entro_3_anni": 0.025,
+    "ripaga_entro_3_anni": 0.043,
     "figli_padre": 40,
     "fratelli": 1,
     "peso_padre": 0.51,
@@ -6337,7 +6337,7 @@
      "p75": 12930,
      "media": 9457
     },
-    "ripaga_entro_3_anni": 0.032,
+    "ripaga_entro_3_anni": 0.038,
     "figli_padre": 18,
     "fratelli": 3,
     "peso_padre": 0.3,
@@ -6362,7 +6362,7 @@
      "p75": 13354,
      "media": 11542
     },
-    "ripaga_entro_3_anni": 0.033,
+    "ripaga_entro_3_anni": 0.042,
     "figli_padre": 0,
     "fratelli": 3,
     "peso_padre": 0.0,
@@ -6387,7 +6387,7 @@
      "p75": 13885,
      "media": 10690
     },
-    "ripaga_entro_3_anni": 0.034,
+    "ripaga_entro_3_anni": 0.041,
     "figli_padre": 18,
     "fratelli": 2,
     "peso_padre": 0.32,
@@ -6412,7 +6412,7 @@
      "p75": 13379,
      "media": 9540
     },
-    "ripaga_entro_3_anni": 0.041,
+    "ripaga_entro_3_anni": 0.043,
     "figli_padre": 25,
     "fratelli": 4,
     "peso_padre": 0.35,
@@ -6437,7 +6437,7 @@
      "p75": 15748,
      "media": 12021
     },
-    "ripaga_entro_3_anni": 0.058,
+    "ripaga_entro_3_anni": 0.064,
     "figli_padre": 25,
     "fratelli": 0,
     "peso_padre": 0.45,
@@ -6462,7 +6462,7 @@
      "p75": 13384,
      "media": 11450
     },
-    "ripaga_entro_3_anni": 0.03,
+    "ripaga_entro_3_anni": 0.043,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6512,7 +6512,7 @@
      "p75": 19037,
      "media": 18277
     },
-    "ripaga_entro_3_anni": 0.044,
+    "ripaga_entro_3_anni": 0.07,
     "figli_padre": 12,
     "fratelli": 1,
     "peso_padre": 0.26,
@@ -6587,7 +6587,7 @@
      "p75": 11831,
      "media": 10923
     },
-    "ripaga_entro_3_anni": 0.029,
+    "ripaga_entro_3_anni": 0.04,
     "figli_padre": 3,
     "fratelli": 1,
     "peso_padre": 0.08,
@@ -6612,7 +6612,7 @@
      "p75": 15289,
      "media": 10433
     },
-    "ripaga_entro_3_anni": 0.022,
+    "ripaga_entro_3_anni": 0.044,
     "figli_padre": 131,
     "fratelli": 0,
     "peso_padre": 0.81,
@@ -6637,7 +6637,7 @@
      "p75": 13469,
      "media": 11064
     },
-    "ripaga_entro_3_anni": 0.032,
+    "ripaga_entro_3_anni": 0.043,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6662,7 +6662,7 @@
      "p75": 17988,
      "media": 12347
     },
-    "ripaga_entro_3_anni": 0.035,
+    "ripaga_entro_3_anni": 0.092,
     "figli_padre": 17,
     "fratelli": 5,
     "peso_padre": 0.27,
@@ -6687,7 +6687,7 @@
      "p75": 11079,
      "media": 16179
     },
-    "ripaga_entro_3_anni": 0.057,
+    "ripaga_entro_3_anni": 0.064,
     "figli_padre": 12,
     "fratelli": 3,
     "peso_padre": 0.23,
@@ -6712,7 +6712,7 @@
      "p75": 10717,
      "media": 9417
     },
-    "ripaga_entro_3_anni": 0.028,
+    "ripaga_entro_3_anni": 0.039,
     "figli_padre": 0,
     "fratelli": 2,
     "peso_padre": 0.0,
@@ -6737,7 +6737,7 @@
      "p75": 13422,
      "media": 10994
     },
-    "ripaga_entro_3_anni": 0.034,
+    "ripaga_entro_3_anni": 0.046,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6762,7 +6762,7 @@
      "p75": 15748,
      "media": 11967
     },
-    "ripaga_entro_3_anni": 0.058,
+    "ripaga_entro_3_anni": 0.066,
     "figli_padre": 25,
     "fratelli": 0,
     "peso_padre": 0.45,
@@ -6787,7 +6787,7 @@
      "p75": 14501,
      "media": 12041
     },
-    "ripaga_entro_3_anni": 0.036,
+    "ripaga_entro_3_anni": 0.05,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6812,7 +6812,7 @@
      "p75": 18018,
      "media": 16770
     },
-    "ripaga_entro_3_anni": 0.079,
+    "ripaga_entro_3_anni": 0.089,
     "figli_padre": 105,
     "fratelli": 0,
     "peso_padre": 0.78,
@@ -6837,7 +6837,7 @@
      "p75": 16762,
      "media": 16317
     },
-    "ripaga_entro_3_anni": 0.071,
+    "ripaga_entro_3_anni": 0.083,
     "figli_padre": 105,
     "fratelli": 0,
     "peso_padre": 0.78,
@@ -6862,7 +6862,7 @@
      "p75": 13684,
      "media": 10756
     },
-    "ripaga_entro_3_anni": 0.034,
+    "ripaga_entro_3_anni": 0.046,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6887,7 +6887,7 @@
      "p75": 13378,
      "media": 10758
     },
-    "ripaga_entro_3_anni": 0.024,
+    "ripaga_entro_3_anni": 0.035,
     "figli_padre": 5,
     "fratelli": 0,
     "peso_padre": 0.14,
@@ -6937,7 +6937,7 @@
      "p75": 13775,
      "media": 10907
     },
-    "ripaga_entro_3_anni": 0.031,
+    "ripaga_entro_3_anni": 0.047,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -6962,7 +6962,7 @@
      "p75": 16747,
      "media": 14115
     },
-    "ripaga_entro_3_anni": 0.034,
+    "ripaga_entro_3_anni": 0.087,
     "figli_padre": 168,
     "fratelli": 2,
     "peso_padre": 0.71,
@@ -7062,7 +7062,7 @@
      "p75": 13663,
      "media": 11952
     },
-    "ripaga_entro_3_anni": 0.039,
+    "ripaga_entro_3_anni": 0.051,
     "figli_padre": 0,
     "fratelli": 0,
     "peso_padre": 0.0,
@@ -7087,7 +7087,7 @@
      "p75": 11963,
      "media": 8138
     },
-    "ripaga_entro_3_anni": 0.014,
+    "ripaga_entro_3_anni": 0.031,
     "figli_padre": 58,
     "fratelli": 0,
     "peso_padre": 0.66,
