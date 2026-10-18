@@ -123,10 +123,12 @@ export default function DriverPage() {
           background: "hsl(0 40% 11%)", border: "1px solid hsl(0 50% 34%)", borderRadius: "10px",
           padding: "13px 17px", marginBottom: "16px", fontSize: "12.5px", lineHeight: 1.65, color: "hsl(0 20% 85%)",
         }}>
-          <strong style={{ color: "hsl(0 70% 66%)" }}>Giudizio poco attendibile.</strong>{" "}
-          Poggia su {d.n_gare} gare, troppe poche perche' il rendimento si distingua dal
-          caso: qualche corsa fortunata o sfortunata sposta tutto. Il numero e' mostrato
-          per trasparenza, non per confrontare questa persona con altre.
+          <strong style={{ color: "hsl(0 70% 66%)" }}>Giudizio poco attendibile: poggia su {d.n_gare} gare.</strong>
+          <Spiegazione titolo="Perché" compatta>
+            Sono troppe poche perché il rendimento si distingua dal
+            caso: qualche corsa fortunata o sfortunata sposta tutto. Il numero è mostrato
+            per trasparenza, non per confrontare questa persona con altre.
+          </Spiegazione>
         </div>
       )}
 

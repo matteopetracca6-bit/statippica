@@ -103,6 +103,48 @@ function getDb() {
   return new Database(DB_PATH, { readonly: true });
 }
 
+// ── Risposte pronte ────────────────────────────────────────────────────────
+// Molte pagine chiedono dati che cambiano solo quando arriva l'archivio nuovo
+// (una volta a notte), ma il server li ricalcolava a ogni visita: la verifica
+// dei pronostici impiegava 8 secondi, i trend quasi uno. La risposta si tiene
+// in memoria finche' l'archivio non cambia (o per il tempo indicato) e chi
+// arriva dopo la riceve subito.
+const cacheRisposte = new Map<string, { mtime: number; quando: number; corpo: unknown }>();
+function mtimeDb(): number {
+  try { return fs.statSync(DB_PATH).mtimeMs; } catch { return 0; }
+}
+function pronta(durataMs = 60 * 60_000) {
+  return (req: any, res: any, next: any) => {
+    const k = req.originalUrl as string;
+    const mt = mtimeDb();
+    const c = cacheRisposte.get(k);
+    if (c && c.mtime === mt && Date.now() - c.quando < durataMs) return res.json(c.corpo);
+    const invia = res.json.bind(res);
+    res.json = (corpo: unknown) => {
+      if (res.statusCode < 400) {
+        if (cacheRisposte.size > 800) cacheRisposte.clear();
+        cacheRisposte.set(k, { mtime: mt, quando: Date.now(), corpo });
+      }
+      return invia(corpo);
+    };
+    next();
+  };
+}
+// Un indice che l'archivio non ha: senza, cercare i partenti di una corsa dal
+// suo codice voleva dire leggere tutte le corse, centinaia di volte di fila.
+let indiciPer = -1;
+function assicuraIndici() {
+  const mt = mtimeDb();
+  if (mt === indiciPer) return;
+  indiciPer = mt;
+  try {
+    const w = new Database(DB_PATH);
+    w.exec("CREATE INDEX IF NOT EXISTS idx_races_code ON races(race_code)");
+    w.close();
+    indiciPer = mtimeDb();
+  } catch (e) { console.error("[indici]", e); }
+}
+
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F", "N/A"];
 
 function gradeColor(grade: string): string {
@@ -122,6 +164,17 @@ function gradeColor(grade: string): string {
 }
 
 export function registerRoutes(httpServer: Server, app: Express) {
+  // Dopo l'avvio il server si chiede da solo le pagine piu' lente, cosi' il
+  // primo visitatore trova i conti gia' fatti.
+  setTimeout(async () => {
+    const porta = process.env.PORT || "5000";
+    for (const u of ["/api/stats", "/api/trends", "/api/top-races", "/api/stallions", "/api/rating-voti",
+                     "/api/calendar/verifica", "/api/pareggio/stalloni", "/api/pareggio/mercato", "/api/momento",
+                     "/api/scuderia/esempio", "/api/controllo-a-posteriori"]) {
+      try { await fetch(`http://127.0.0.1:${porta}${u}`); } catch { /* il sito funziona lo stesso */ }
+    }
+  }, 25_000).unref?.();
+
   // ──────────────────────────────────────────────
   // PUNTO DI PAREGGIO (vedi server/pareggio.ts)
   // Parametri comuni: mensile (costo al mese), ingresso (costo fino ai 2 anni).
@@ -291,6 +344,18 @@ export function registerRoutes(httpServer: Server, app: Express) {
       db.close();
     }
   });
+  // Controllo a posteriori: le stime rifatte con i soli dati di una data
+  // passata e confrontate con com'e' andata (scripts/controllo_a_posteriori.py).
+  // File fisso, rifatto a mano.
+  let cacheControllo: { mtime: number; dati: unknown } | null = null;
+  app.get("/api/controllo-a-posteriori", (_req, res) => {
+    const f = [path.resolve(process.cwd(), "controllo_a_posteriori.json"),
+               path.resolve(process.cwd(), "..", "controllo_a_posteriori.json")].find(x => fs.existsSync(x));
+    if (!f) return res.status(404).json({ error: "Controllo non ancora calcolato" });
+    const mtime = fs.statSync(f).mtimeMs;
+    if (!cacheControllo || cacheControllo.mtime !== mtime) cacheControllo = { mtime, dati: JSON.parse(fs.readFileSync(f, "utf8")) };
+    res.json(cacheControllo.dati);
+  });
   app.get("/api/controllo-modelli", (_req, res) => {
     const db = getDb();
     try { res.json(controlloModelli(db)); } finally { db.close(); }
@@ -380,7 +445,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
   const cacheMercato = new Map<number, { quando: number; dati: any }>();
-  app.get("/api/pareggio/mercato", (req, res) => {
+  app.get("/api/pareggio/mercato", pronta(), (req, res) => {
     const db = getDb();
     try {
       const ip = ipotesiCorrenti(db);
@@ -399,7 +464,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // e almeno 5 figli osservati, l'utile atteso di un suo figlio (fattrice
   // qualunque) e la monta massima che lo porterebbe in pari.
   const cacheStalloniPareggio = new Map<number, { quando: number; dati: any }>();
-  app.get("/api/pareggio/stalloni", (req, res) => {
+  app.get("/api/pareggio/stalloni", pronta(), (req, res) => {
     const db = getDb();
     try {
       const ip = ipotesiCorrenti(db);
@@ -1192,7 +1257,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/leaderboard/years — available birth years
   // ──────────────────────────────────────────────
-  app.get("/api/leaderboard/years", (req, res) => {
+  app.get("/api/leaderboard/years", pronta(), (req, res) => {
     const db = getDb();
     try {
       // Gli anni dipendono dalla classifica: quella storica copre il 1990-2015,
@@ -1255,7 +1320,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // Le fattrici sono valutate sulla PROGENIE (dam_rating_stats, FASE 3c della
   // pipeline), non sulla loro carriera: molte non corrono da vent'anni. Della
   // loro carriera teniamo i totali (own_*) come contesto di lettura.
-  app.get("/api/mares", (req, res) => {
+  app.get("/api/mares", pronta(), (req, res) => {
     const db = getDb();
     try {
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -1397,7 +1462,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // ── Lista stalloni per dropdown ──────────────────────────────────────────
-  app.get("/api/stallions", (_req, res) => {
+  app.get("/api/stallions", pronta(), (_req, res) => {
     const db = getDb();
     try {
       // Partiamo dagli stalloni VALUTATI (stallion_rating_stats), non dal
@@ -1458,7 +1523,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   //    mai fatto prima, con almeno 5 corse cronometrate alle spalle.
   // Con giovani=1 si guardano solo i cavalli di 2 e 3 anni.
   const cacheMomento = new Map<string, { quando: number; dati: any }>();
-  app.get("/api/momento", (req, res) => {
+  app.get("/api/momento", pronta(15 * 60_000), (req, res) => {
     try {
       const giovani = req.query.giovani === "1";
       const chiave = giovani ? "g" : "t";
@@ -1525,7 +1590,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // l'hanno presa. Serve al riquadro "Rating" della home: aperto, spiega come
   // si fa il voto e mostra cosa vuol dire in pratica ogni lettera.
   let cacheVoti: { quando: number; dati: any } | null = null;
-  app.get("/api/rating-voti", (_req, res) => {
+  app.get("/api/rating-voti", pronta(), (_req, res) => {
     try {
       if (cacheVoti && Date.now() - cacheVoti.quando < 60 * 60 * 1000) return res.json(cacheVoti.dati);
       const db = getDb();
@@ -1579,7 +1644,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
-  app.get("/api/stats", (_req, res) => {
+  app.get("/api/stats", pronta(), (_req, res) => {
     const db = getDb();
     try {
       // Conta solo gli atleti: i riproduttori non sono soggetti del sito.
@@ -1769,7 +1834,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/stud-farms — ranking allevamenti per qualita' produzione
   // ──────────────────────────────────────────────
-  app.get("/api/stud-farms", (_req, res) => {
+  app.get("/api/stud-farms", pronta(), (_req, res) => {
     const db = getDb();
     try {
       const farms = db.prepare(`
@@ -1814,7 +1879,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/trends — andamenti temporali rating e guadagni
   // ──────────────────────────────────────────────
-  app.get("/api/trends", (_req, res) => {
+  app.get("/api/trends", pronta(), (_req, res) => {
     const db = getDb();
     try {
       // Distribuzione dei voti per anno di nascita.
@@ -1922,7 +1987,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/top-races — migliori gare di sempre
   // ──────────────────────────────────────────────
-  app.get("/api/top-races", (req, res) => {
+  app.get("/api/top-races", pronta(), (req, res) => {
     const limit = parseInt(req.query.limit as string) || 50;
     const db = getDb();
     try {
@@ -2407,7 +2472,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/advisor/rules — testo della normativa e basi scientifiche
   // ──────────────────────────────────────────────
-  app.get("/api/advisor/rules", (req, res) => {
+  app.get("/api/advisor/rules", pronta(), (req, res) => {
     const stallion = ((req.query.stallion as string) || "").trim();
     const mare = ((req.query.mare as string) || "").trim();
     if (!stallion || !mare) {
@@ -2811,7 +2876,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
     return m[k] ?? String(t);
   };
 
-  app.get("/api/calendar/verifica", (req, res) => {
+  app.get("/api/calendar/verifica", pronta(10 * 60_000), (req, res) => {
+    assicuraIndici();
     const db = getDb();
     try {
       const giorni = Math.max(1, Math.min(30, parseInt(req.query.giorni as string) || 14));
@@ -2909,7 +2975,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // Come e' stato provato il pronostico dei primi tre (scritto dall'allenamento).
-  app.get("/api/pronostico/verifica", (_req, res) => {
+  app.get("/api/pronostico/verifica", pronta(10 * 60_000), (_req, res) => {
     const v = leggiVerificaTop3();
     if (!v) return res.status(404).json({ message: "verifica non disponibile" });
     res.json(v);
@@ -3124,7 +3190,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // GET /api/qualifiche/stats — riepilogo per l'intestazione della pagina
-  app.get("/api/qualifiche/stats", (_req, res) => {
+  app.get("/api/qualifiche/stats", pronta(), (_req, res) => {
     const db = getDb();
     try {
       if (!vpTableExists(db, "vp_qualifiche")) return res.json(null);
@@ -3203,7 +3269,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // GET /api/allevatori — chi ha allevato i cavalli, con la qualita' media
   // dei soggetti prodotti. Diverso da /api/stud-farms, che elenca le stazioni
   // di monta dove stanno gli stalloni.
-  app.get("/api/allevatori", (req, res) => {
+  app.get("/api/allevatori", pronta(), (req, res) => {
     const db = getDb();
     try {
       if (!vpTableExists(db, "vp_horse_breeder")) return res.json({ rows: [], total: 0 });
@@ -3292,7 +3358,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // e' negativo, meglio e': il cavallo arriva davanti rispetto al suo solito.
   // ══════════════════════════════════════════════════════════════
 
-  app.get("/api/drivers", (req, res) => {
+  app.get("/api/drivers", pronta(), (req, res) => {
     const db = getDb();
     try {
       if (!vpTableExists(db, "driver_stats")) {
@@ -3397,7 +3463,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // IPPODROMI
   // ══════════════════════════════════════════════════════════════
 
-  app.get("/api/tracks", (_req, res) => {
+  app.get("/api/tracks", pronta(), (_req, res) => {
     const db = getDb();
     try {
       if (!vpTableExists(db, "track_stats")) {

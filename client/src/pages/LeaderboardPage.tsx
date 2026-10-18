@@ -149,7 +149,7 @@ export default function LeaderboardPage() {
         {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
             il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
         {mode === "storico" && (
-          <Spiegazione titolo="Perche&#39; questi cavalli hanno una scala a parte" compatta>
+          <Spiegazione titolo="Perché questi cavalli hanno una scala a parte" compatta>
             Di questi cavalli l&apos;archivio conosce i totali di carriera ma non le singole
             gare, perche&apos; per gli anni in cui hanno corso non esistono online. Sono
             confrontati solo fra loro, su guadagni, record e percentuale di vittorie: i loro
@@ -161,7 +161,7 @@ export default function LeaderboardPage() {
             contro i coetanei. Senza spiegarlo, un cavallo che passa da B a SS
             sembrerebbe essere stato promosso. */}
         {mode === "performance" && voto === "annata" && (
-          <Spiegazione titolo="Che cosa cambia in questa lettura" compatta>
+          <Spiegazione titolo="Come si legge" compatta>
             Ogni cavallo e&apos; confrontato solo con i nati nel suo stesso anno, che hanno
             avuto lo stesso tempo per correre. Il punteggio non cambia, cambia con chi viene
             paragonato: nel confronto generale i giovani sono penalizzati perche&apos; hanno

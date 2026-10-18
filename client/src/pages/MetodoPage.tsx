@@ -14,7 +14,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import { BookMarked, Database, RefreshCw, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { BookMarked, Database, RefreshCw, CheckCircle2, AlertTriangle, Clock, ChevronDown } from "lucide-react";
+import IntestazionePagina from "../components/IntestazionePagina";
 import { Caricamento } from "../components/Caricamento";
 
 const MUTED = "hsl(210 8% 58%)";
@@ -46,12 +47,16 @@ function n(x?: number | null) {
   return x == null ? "\u2014" : String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+/** Ogni sezione è una tendina chiusa: si legge il titolo e si apre quella che serve. */
 function Sezione({ titolo, children }: { titolo: string; children: React.ReactNode }) {
   return (
-    <section style={{ ...CARD, marginBottom: "16px" }}>
-      <h2 style={{ fontSize: "16px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 10px" }}>{titolo}</h2>
-      <div className="testo-metodo" style={{ fontSize: "13.5px", color: TESTO, lineHeight: 1.75 }}>{children}</div>
-    </section>
+    <details className="sezione-metodo" style={{ ...CARD, marginBottom: "12px", padding: 0 }}>
+      <summary style={{ padding: "14px 22px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, listStyle: "none" }}>
+        <ChevronDown size={16} className="freccia-metodo" style={{ color: "hsl(183 60% 55%)", flexShrink: 0, transition: "transform .2s" }} />
+        <h2 style={{ fontSize: "15.5px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: 0 }}>{titolo}</h2>
+      </summary>
+      <div className="testo-metodo" style={{ fontSize: "13.5px", color: TESTO, lineHeight: 1.75, padding: "0 22px 18px" }}>{children}</div>
+    </details>
   );
 }
 
@@ -86,17 +91,14 @@ export default function MetodoPage() {
         .testo-metodo strong { color: hsl(210 10% 92%); }
         .testo-metodo table { border-collapse: collapse; margin: 8px 0 12px; font-size: 12.5px; }
         .testo-metodo td, .testo-metodo th { padding: 5px 14px 5px 0; text-align: left; border-bottom: 1px solid hsl(220 10% 15%); }
+        .sezione-metodo > summary::-webkit-details-marker { display: none; }
+        .sezione-metodo[open] .freccia-metodo { transform: rotate(180deg); }
+        .sezione-metodo > summary:hover h2 { color: hsl(183 70% 62%); }
         .testo-metodo th { color: hsl(210 8% 45%); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
       `}</style>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-        <BookMarked size={20} style={{ color: "hsl(183 75% 55%)" }} />
-        <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 90%)", margin: 0 }}>Metodo e dati</h1>
-      </div>
-      <p style={{ color: MUTED, fontSize: "13px", lineHeight: 1.7, marginBottom: "20px", maxWidth: "760px" }}>
-        Da dove vengono i numeri del sito, come si calcola ogni voto e cosa non se ne
-        puo' concludere. In cima, lo stato dell'archivio in questo momento.
-      </p>
+      <IntestazionePagina icona={BookMarked} colore="hsl(40 40% 72%)" titolo="Metodo e dati" margineSotto={20}
+        sottotitolo="Da dove vengono i numeri del sito, come si calcola ogni voto e cosa non se ne può concludere. Apri la sezione che ti serve." />
 
       {/* STATO DAL VIVO */}
       <section style={{ ...CARD, marginBottom: "20px", borderColor: "hsl(183 60% 30% / 0.5)" }}>
@@ -242,6 +244,13 @@ export default function MetodoPage() {
           almeno tre figli venduti si mostra la fascia effettivamente pagata. Per gli altri il prezzo si stima dalla
           tassa di monta, e quella stima spiega circa un quarto delle differenze di prezzo: e' indicata come tale.
         </p>
+      </Sezione>
+
+      <Sezione titolo="Le stime rifatte nel passato">
+        <p>Le stime economiche sono state rifatte con i soli dati di una data passata (il 1° ottobre 2025, che i modelli non avevano visto) e confrontate
+        con com'è andata: dei cavalli dati «in perdita» solo 5 su 100 hanno poi coperto la spesa, e il rischio della scuderia è risultato misurato bene.
+        Sui puledri dell'asta 2024 la stima ha indovinato il totale dei premi ma non quali puledri sarebbero andati meglio.
+        Tutti i numeri sono in <Link href="/controllo"><a style={{ color: "hsl(265 45% 68%)" }}>Controllo a posteriori</a></Link>.</p>
       </Sezione>
 
       <Sezione titolo="Cosa non si puo' concludere">

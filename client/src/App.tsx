@@ -1,43 +1,50 @@
-import IppodromiTrendPage from "./pages/IppodromiTrendPage";
-import PareggioPage from "./pages/PareggioPage";
-import TenerePage from "./pages/TenerePage";
-import GenerazionePage from "./pages/GenerazionePage";
-import ScuderiaPage from "./pages/ScuderiaPage";
-import PuledroPage from "./pages/PuledroPage";
+import { lazy, Suspense } from "react";
 import { Switch, Route, Router } from "wouter";
+import { Caricamento } from "./components/Caricamento";
 import { useHashLocation } from "wouter/use-hash-location";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
-import HorsePage from "./pages/HorsePage";
-import StallionPage from "./pages/StallionPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import AdvisorPage from "./pages/AdvisorPage";
-import ValidazionePage from "./pages/ValidazionePage";
-import ComparePage from "./pages/ComparePage";
-import StudFarmsPage from "./pages/StudFarmsPage";
-import AllevamentoHubPage from "./pages/AllevamentoHubPage";
-import TrendsPage from "./pages/TrendsPage";
-import StallionDirectoryPage from "./pages/StallionDirectoryPage";
-import PedigreePage from "./pages/PedigreePage";
 // La pagina Cavalli e' stata unita alla Leaderboard: mostravano la stessa
 // tabella con filtri diversi, e chi cercava un cavallo per nome doveva
 // rinunciare ai filtri della classifica, e viceversa. L'indirizzo resta
 // attivo e porta alla pagina unica, per non rompere i collegamenti salvati.
-import MaresPage from "./pages/MaresPage";
-import MarePage from "./pages/MarePage";
-import QualifichePage from "./pages/QualifichePage";
-import BreedersPage from "./pages/BreedersPage";
-import CalendarPage from "./pages/CalendarPage";
-import DriversPage from "./pages/DriversPage";
-import DriverPage from "./pages/DriverPage";
-import TracksPage from "./pages/TracksPage";
-import MetodoPage from "./pages/MetodoPage";
-import TrackPage from "./pages/TrackPage";
 import NotFound from "./pages/not-found";
 import ErrorBoundary from "./components/ErrorBoundary";
+
+// Ogni pagina si scarica solo quando la si apre: prima il sito intero era un
+// unico file di oltre un milione di caratteri, da scaricare tutto anche per
+// guardare la pagina iniziale (lento soprattutto sul telefono).
+const IppodromiTrendPage = lazy(() => import("./pages/IppodromiTrendPage"));
+const PareggioPage = lazy(() => import("./pages/PareggioPage"));
+const TenerePage = lazy(() => import("./pages/TenerePage"));
+const GenerazionePage = lazy(() => import("./pages/GenerazionePage"));
+const ScuderiaPage = lazy(() => import("./pages/ScuderiaPage"));
+const PuledroPage = lazy(() => import("./pages/PuledroPage"));
+const ControlloPage = lazy(() => import("./pages/ControlloPage"));
+const HorsePage = lazy(() => import("./pages/HorsePage"));
+const StallionPage = lazy(() => import("./pages/StallionPage"));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
+const AdvisorPage = lazy(() => import("./pages/AdvisorPage"));
+const ValidazionePage = lazy(() => import("./pages/ValidazionePage"));
+const ComparePage = lazy(() => import("./pages/ComparePage"));
+const StudFarmsPage = lazy(() => import("./pages/StudFarmsPage"));
+const AllevamentoHubPage = lazy(() => import("./pages/AllevamentoHubPage"));
+const TrendsPage = lazy(() => import("./pages/TrendsPage"));
+const StallionDirectoryPage = lazy(() => import("./pages/StallionDirectoryPage"));
+const PedigreePage = lazy(() => import("./pages/PedigreePage"));
+const MaresPage = lazy(() => import("./pages/MaresPage"));
+const MarePage = lazy(() => import("./pages/MarePage"));
+const QualifichePage = lazy(() => import("./pages/QualifichePage"));
+const BreedersPage = lazy(() => import("./pages/BreedersPage"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const DriversPage = lazy(() => import("./pages/DriversPage"));
+const DriverPage = lazy(() => import("./pages/DriverPage"));
+const TracksPage = lazy(() => import("./pages/TracksPage"));
+const MetodoPage = lazy(() => import("./pages/MetodoPage"));
+const TrackPage = lazy(() => import("./pages/TrackPage"));
 
 // Gli indirizzi possono portare dei parametri dopo il "?" (per esempio
 // #/puledro?padre=...): per scegliere la pagina conta solo il percorso, i
@@ -56,6 +63,7 @@ export default function App() {
             {/* Se una pagina va in errore, si vede un messaggio al posto suo:
                 prima l'intero sito diventava una schermata bianca. */}
             <ErrorBoundary>
+            <Suspense fallback={<div className="page-shell"><Caricamento testo="Apro la pagina..." /></div>}>
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/horse/:name/:year" component={HorsePage} />
@@ -86,6 +94,8 @@ export default function App() {
               <Route path="/tenere" component={TenerePage} />
               <Route path="/generazione-m" component={GenerazionePage} />
               <Route path="/aste" component={GenerazionePage} />
+              <Route path="/controllo" component={ControlloPage} />
+              <Route path="/controllo-a-posteriori" component={ControlloPage} />
               <Route path="/scuderia" component={ScuderiaPage} />
               <Route path="/portafoglio" component={ScuderiaPage} />
               <Route path="/puledro" component={PuledroPage} />
@@ -101,6 +111,7 @@ export default function App() {
               <Route path="/allevatore/:name" component={AllevamentoHubPage} />
               <Route component={NotFound} />
             </Switch>
+            </Suspense>
             </ErrorBoundary>
           </Layout>
         </Router>

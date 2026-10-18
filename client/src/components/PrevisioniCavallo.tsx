@@ -10,6 +10,7 @@
  * mai scesi in pista servirebbe una previsione dai genitori, che il sito non
  * presenta come affidabile.
  */
+import { Spiegazione } from "./Spiegazione";
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -103,7 +104,6 @@ const pct = (p: number | null, estremo?: string | null) =>
 
 export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: number }) {
   const [mensileScritto, setMensileScritto] = useState("");
-  const [prova, setProva] = useState(false);
   const mensile = Number(mensileScritto) >= 100 ? String(Math.round(Number(mensileScritto))) : "";
   const { data: d, isFetching } = useQuery<any>({
     queryKey: ["/api/horse/previsioni", nome, anno, mensile],
@@ -201,12 +201,8 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
 
           {v && (
             <div style={{ marginTop: 12 }}>
-              <button onClick={() => setProva(!prova)} aria-expanded={prova}
-                style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "hsl(160 60% 55%)", fontSize: 12, padding: 0, fontFamily: "inherit" }}>
-                Come è stata provata questa stima <ChevronDown size={14} style={{ transform: prova ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
-              </button>
-              {prova && (
-                <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginTop: 8 }}>
+              {(
+                <Spiegazione titolo="Come è fatto il conto e cosa non dice">
                   <p style={{ margin: "0 0 8px" }}>
                     Il modello ha imparato da fotografie trimestrali dal 2016 al 2023: per ogni cavallo, solo cosa era successo prima, confrontato con i premi
                     dei 12 mesi dopo. Poi è stato provato su {v.periodo.fotografie.toLocaleString("it-IT")} fotografie del 2025 ({v.periodo.cavalli.toLocaleString("it-IT")} cavalli), mai viste.
@@ -224,7 +220,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
                     (con "quanto l'anno scorso" il {Math.round(v.anno_prima.indicati_sopra_giusti * 100)}%). In media stimava {euro(v.medi_stimati)} e ne sono arrivati {euro(v.medi_reali)}.
                     La probabilità di coprire la spesa si legge da come sono andati i cavalli con una stima simile. Non conta rivendita, valore da riproduttore né infortuni futuri.
                   </p>
-                </div>
+                </Spiegazione>
               )}
             </div>
           )}

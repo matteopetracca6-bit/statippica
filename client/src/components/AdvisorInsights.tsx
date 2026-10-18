@@ -11,6 +11,7 @@
  * Sono componenti di sola lettura: ricevono i dati dall'API e li disegnano.
  */
 
+import { Spiegazione } from "./Spiegazione";
 import { AlertCircle, CheckCircle2, HelpCircle, Info, Scale, XCircle } from "lucide-react";
 import GradeBadge from "./GradeBadge";
 
@@ -531,7 +532,7 @@ export function ConclusioneEconomica({
 
         {riv && <ScenariRivendita r={r} riv={riv} />}
 
-        <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.6, borderTop: BORDER, paddingTop: "10px" }}>
+        <Spiegazione titolo="Come è fatto il conto e cosa non dice">
           <div style={{ marginBottom: "6px" }}>
             Calcolato sul puledro tipico. Lo stesso conto fatto sulle <em>medie</em> dei guadagni darebbe{" "}
             <strong style={{ color: "hsl(210 8% 62%)" }}>
@@ -546,7 +547,7 @@ export function ConclusioneEconomica({
               vero ricavo: il ritorno qui e&#39; quindi il piu&#39; prudente possibile, quello ottenuto correndo.
             </div>
           )}
-        </div>
+        </Spiegazione>
       </div>
     </div>
   );

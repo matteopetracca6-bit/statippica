@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import IntestazionePagina from "../components/IntestazionePagina";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -190,14 +191,12 @@ export default function BreedersPage({ embedded = false }: { embedded?: boolean 
     <div className={embedded ? "" : "page-shell"}>
       {!embedded && (
         <>
-          <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
-            Allevatori
-          </h1>
-          <p style={{ fontSize: "13px", color: "hsl(210 8% 60%)", margin: "0 0 20px", maxWidth: "820px", lineHeight: 1.55 }}>
+          <IntestazionePagina titolo="Allevatori" colore="hsl(20 70% 58%)" margineSotto={20}
+            sottotitolo="Chi ha allevato i cavalli, con la qualità media dei soggetti prodotti.">
             Chi ha materialmente allevato i cavalli, con la qualità media dei soggetti prodotti. È cosa
             diversa dalla sezione Allevamenti, che raccoglie le stazioni dove stanno gli stalloni. Il
             voto medio considera solo i cavalli che hanno già corso abbastanza da essere valutati.
-          </p>
+          </IntestazionePagina>
         </>
       )}
 

@@ -12,6 +12,7 @@ import Sagoma from "../components/Sagoma";
 import NameSelect from "../components/NameSelect";
 import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { useScuderia } from "@/lib/scuderia";
 
@@ -40,7 +41,7 @@ function Titoletto({ children, nota }: { children: React.ReactNode; nota?: React
   return (
     <div style={{ margin: "24px 0 10px" }}>
       <h2 style={{ fontSize: 16, fontWeight: 800, color: TESTO, margin: 0 }}>{children}</h2>
-      {nota && <p style={{ fontSize: 12.5, color: MUTED, margin: "4px 0 0", lineHeight: 1.6, maxWidth: 860 }}>{nota}</p>}
+      {nota && <Spiegazione compatta>{nota}</Spiegazione>}
     </div>
   );
 }
@@ -147,14 +148,11 @@ export default function ScuderiaPage() {
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "22px 18px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <Briefcase size={20} style={{ color: ACCENTO }} />
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: TESTO, margin: 0 }}>La tua scuderia</h1>
-      </div>
-      <p style={{ fontSize: 13, color: MUTED, margin: "0 0 14px", lineHeight: 1.6, maxWidth: 860 }}>
+      <IntestazionePagina icona={Briefcase} colore={ACCENTO} titolo="La tua scuderia" margineSotto={14}
+        sottotitolo="I tuoi cavalli e puledri insieme: cassa dei prossimi 12 mesi, rischio e valore di carriera.">
         Metti insieme i tuoi cavalli e i tuoi puledri. Il sito guarda la scuderia come un'azienda: quanto entra e quanto esce nei prossimi 12 mesi,
         quanto è rischiosa nel suo insieme e quanto vale la carriera che i cavalli hanno ancora davanti. L'elenco resta salvato in questo browser.
-      </p>
+      </IntestazionePagina>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
         <label style={{ fontSize: 12.5, color: MUTED, display: "flex", alignItems: "center", gap: 8 }}>
@@ -285,14 +283,16 @@ export default function ScuderiaPage() {
       </>}
 
       <div style={{ marginTop: 18 }}>
-        <Spiegazione titolo="Come è fatto il conto, e cosa non contiene">
+        <Spiegazione titolo="Come è fatto il conto e cosa non dice">
           <p>Cavalli in attività: i premi attesi nei prossimi 12 mesi sono la stima del sito, la stessa di «Tenere o fermare». Il modo in cui possono andare davvero
           viene da come sono andati, nel periodo di prova, i cavalli con una stima simile, dal 5% peggiore al 5% migliore. Un cavallo che non ha corso nell'ultimo anno conta solo come costo.</p>
           <p>Puledri: si pesca un cavallo vero tra i figli dello stesso padre nati 2018-2022 (con pochi figli, tra tutti i nati) e si prendono i suoi premi a 2 e 3 anni,
           solo la parte di stagione che cade nei prossimi 12 mesi. Per un nato dell'anno scorso è l'inizio della stagione dei 2 anni. «Comprato all'asta» moltiplica i premi per {d?.ipotesi?.fattore_asta?.toLocaleString("it-IT") ?? "1,4"},
           come è successo ai puledri delle aste 2024 e 2025.</p>
-          <p>I cavalli sono trattati come indipendenti fra loro. Nella realtà chi ha lo stesso allenatore o corre sulle stesse piste tende ad andare bene o male insieme:
-          il rischio vero della scuderia è un po' più alto di quello mostrato.</p>
+          <p>I cavalli sono trattati come indipendenti fra loro. Si poteva temere che chi ha lo stesso allenatore vada bene o male «tutto insieme»; rifatta sul passato
+          con scuderie di cavalli guidati dallo stesso guidatore (l'archivio non conosce allenatori e proprietari), la forchetta fra l'anno brutto e l'anno buono
+          ha contenuto il risultato vero 84 volte su 100, quanto le scuderie a caso: per ora non si vede un rischio nascosto. I dettagli sono
+          in <Link href="/controllo" style={{ color: ACCENTO }}>Controllo a posteriori</Link>.</p>
           <p>Valore di carriera: per i cavalli in attività i premi che possono ancora vincere, meno l'allenamento degli anni in cui resteranno in attività. Non contano rivendita,
           valore da riproduttore e premi all'allevatore, tutti a favore.</p>
         </Spiegazione>

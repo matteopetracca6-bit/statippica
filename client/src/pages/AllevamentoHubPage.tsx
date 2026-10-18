@@ -40,7 +40,7 @@ export default function AllevamentoHubPage() {
       <h1 style={{ fontSize: "28px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
         Allevamento
       </h1>
-      <Spiegazione titolo="Che differenza c&#39;e&#39; fra i due elenchi" compatta>
+      <Spiegazione titolo="Che differenza c'è fra i due elenchi" compatta>
         Due elenchi diversi nello stesso posto: gli allevatori, cioè chi ha materialmente allevato
         i cavalli, e le stazioni di monta, cioè i centri dove stanno gli stalloni. Il voto medio,
         in entrambi i casi, tiene conto solo dei cavalli che hanno già corso abbastanza da essere

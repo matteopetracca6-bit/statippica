@@ -1,4 +1,5 @@
 import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
+import { Spiegazione } from "../components/Spiegazione";
 import { useState } from "react";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -558,14 +559,15 @@ export default function StallionPage() {
               borderRadius: "10px", padding: "13px 16px", marginBottom: "18px",
               fontSize: "12.5px", lineHeight: 1.6, color: "hsl(8 25% 80%)",
             }}>
-              <strong style={{ color: "hsl(8 60% 72%)" }}>Giudizio non attendibile.</strong>{" "}
-              Questo voto poggia su {stallion.n_figli_corsi ?? 0}{" "}
-              {stallion.n_figli_corsi === 1 ? "figlio che ha" : "figli che hanno"} corso.
+              <strong style={{ color: "hsl(8 60% 72%)" }}>Giudizio non attendibile: poggia su {stallion.n_figli_corsi ?? 0}{" "}
+              {stallion.n_figli_corsi === 1 ? "figlio che ha" : "figli che hanno"} corso.</strong>
+              <Spiegazione titolo="Perché" compatta>
               Con così pochi risultati la parte dovuta al caso supera quella
               dovuta allo stallone: due figli fortunati o sfortunati spostano
               tutto. Il voto è mostrato per trasparenza, non per orientare una
               scelta. Serve almeno una dozzina di figli in pista perché il
               giudizio cominci a reggere, e la solidità cresce con il numero.
+              </Spiegazione>
             </div>
           )}
 

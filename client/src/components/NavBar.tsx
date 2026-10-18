@@ -11,39 +11,7 @@ import { Home as HomeIcon, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Trop
  * gruppi; ognuno apre una tendina con le sue pagine e una riga di
  * spiegazione. Ogni pagina tiene il colore del suo riquadro nella home.
  */
-type Scheda = { href: string; label: string; nota: string; icon: typeof HomeIcon; colore: string };
-type Gruppo = { nome: string; icon: typeof HomeIcon; colore: string; schede: Scheda[] };
-
-const GRUPPI: Gruppo[] = [
-  { nome: "Cavalli", icon: Trophy, colore: "hsl(51 80% 55%)", schede: [
-    { href: "/leaderboard", label: "Cavalli e classifica", nota: "Tutti i cavalli valutati, con voti e filtri", icon: Trophy, colore: "hsl(51 80% 55%)" },
-    { href: "/qualifiche", label: "Qualifiche", nota: "Il primo tempo ufficiale dei giovani", icon: Award, colore: "hsl(280 60% 62%)" },
-    { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(30 80% 55%)" },
-    { href: "/pedigree", label: "Pedigree", nota: "Albero genealogico fino a 5 generazioni", icon: Network, colore: "hsl(220 60% 60%)" },
-  ] },
-  { nome: "Allevamento", icon: Building2, colore: "hsl(120 60% 50%)", schede: [
-    { href: "/stalloni", label: "Stalloni", nota: "Catalogo, prezzi di monta e confronto", icon: BookOpen, colore: "hsl(120 60% 50%)" },
-    { href: "/fattrici", label: "Fattrici", nota: "Fattrici valutate sui figli", icon: Heart, colore: "hsl(330 70% 58%)" },
-    { href: "/allevamento", label: "Allevatori e stazioni di monta", nota: "Chi alleva e dove stanno gli stalloni", icon: Building2, colore: "hsl(20 70% 58%)" },
-    { href: "/advisor", label: "Advisor", nota: "Scegli l'accoppiamento per una fattrice", icon: Sparkles, colore: "hsl(280 60% 60%)" },
-  ] },
-  { nome: "Economia", icon: Scale, colore: "hsl(160 60% 50%)", schede: [
-    { href: "/scuderia", label: "La tua scuderia", nota: "I tuoi cavalli insieme: cassa, rischio e valore", icon: Briefcase, colore: "hsl(190 65% 52%)" },
-    { href: "/puledro", label: "Quanto vale un puledro", nota: "Prezzo massimo per comprare, o se conviene vendere", icon: Tag, colore: "hsl(25 75% 58%)" },
-    { href: "/generazione-m", label: "Aste e generazione M", nota: "I puledri delle aste 2026 con il prezzo massimo", icon: Gavel, colore: "hsl(38 80% 58%)" },
-    { href: "/tenere", label: "Tenere o fermare", nota: "Premi attesi e spese per ogni cavallo in attività", icon: TrendingUp, colore: "hsl(145 55% 52%)" },
-    { href: "/pareggio", label: "Punto di pareggio", nota: "Quanto costa un cavallo, voti e incroci", icon: Scale, colore: "hsl(160 60% 50%)" },
-  ] },
-  { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)", schede: [
-    { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)" },
-    { href: "/ippodromi", label: "Ippodromi e trend", nota: "Le piste italiane e i numeri negli anni", icon: MapPin, colore: "hsl(95 55% 52%)" },
-    { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(200 70% 58%)" },
-  ] },
-  { nome: "Metodo", icon: BookMarked, colore: "hsl(40 40% 72%)", schede: [
-    { href: "/metodo", label: "Metodo e dati", nota: "Da dove vengono i numeri e come si leggono", icon: BookMarked, colore: "hsl(40 40% 72%)" },
-    { href: "/validazione", label: "Verifica Advisor", nota: "La prova che il consiglio funziona", icon: FlaskConical, colore: "hsl(183 70% 52%)" },
-  ] },
-];
+import { GRUPPI, type Scheda } from "@/lib/sezioni";
 
 /** Vero quando la scheda indicata e' quella aperta adesso. */
 function isAttiva(percorso: string, href: string): boolean {
@@ -59,6 +27,7 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere");
   if (href === "/generazione-m") return percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
   if (href === "/metodo") return percorso.startsWith("/metodo");
+  if (href === "/controllo") return percorso.startsWith("/controllo");
   if (href === "/advisor") return percorso.startsWith("/advisor");
   return percorso === href;
 }

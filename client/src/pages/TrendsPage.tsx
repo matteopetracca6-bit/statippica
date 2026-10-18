@@ -1,4 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import IntestazionePagina from "../components/IntestazionePagina";
+import { LineChart } from "lucide-react";
+import { Spiegazione } from "../components/Spiegazione";
 import { apiRequest } from "@/lib/queryClient";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { useState, useMemo } from "react";
@@ -83,14 +86,8 @@ export default function TrendsPage() {
 
   return (
     <div className="page-shell">
-      <div style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>
-          Trend Temporali
-        </h1>
-        <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
-          Come cambiano voti, guadagni e gare nel tempo.
-        </p>
-      </div>
+      <IntestazionePagina icona={LineChart} colore="hsl(45 85% 58%)" titolo="Trend temporali" margineSotto={20}
+        sottotitolo="Come cambiano voti, guadagni e gare nel tempo." />
 
       {/* View tabs */}
       <div style={{ display: "flex", gap: "4px", marginBottom: "20px" }}>
@@ -238,11 +235,11 @@ export default function TrendsPage() {
               {/* Senza questa riga il grafico si legge come un crollo del
                   settore, mentre e' soltanto l'eta' dei cavalli: i nati di
                   recente devono ancora correre. */}
-              <div style={{ fontSize: "12px", color: "hsl(210 8% 55%)", marginBottom: "18px", lineHeight: 1.55, maxWidth: "70ch" }}>
+              <Spiegazione compatta>
                 Le annate recenti guadagnano meno perche&apos; i cavalli sono ancora giovani e
                 devono correre, non perche&apos; il settore stia calando. Sono confrontabili fra
                 loro solo le colonne piene, cioe&apos; le annate che hanno concluso la carriera.
-              </div>
+              </Spiegazione>
               <GraficoColonne
                 altezza={260}
                 colore={COLORI_GRAFICO.euro}

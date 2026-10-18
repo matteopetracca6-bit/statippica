@@ -26,6 +26,7 @@ import NameSelect from "../components/NameSelect";
 import { Link } from "wouter";
 import AggiungiScuderia from "../components/AggiungiScuderia";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
@@ -136,18 +137,12 @@ export default function PareggioPage() {
 
   return (
     <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "22px 18px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-        <Scale size={20} style={{ color: "hsl(160 60% 50%)" }} />
-        <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 90%)", margin: 0, letterSpacing: "0.02em" }}>
-          Punto di pareggio
-        </h1>
-      </div>
-      <p style={{ color: MUTED, fontSize: "13px", lineHeight: 1.7, maxWidth: "860px", marginBottom: "20px" }}>
-        Quanto deve vincere un cavallo per ripagare quello che costa, e quali voti ci arrivano davvero.
+      <IntestazionePagina icona={Scale} colore="hsl(160 60% 50%)" titolo="Punto di pareggio" margineSotto={20}
+        sottotitolo="Quanto deve vincere un cavallo per ripagare quello che costa, e quali voti ci arrivano davvero.">
         I conti usano la carriera reale di {ip.cavalli_osservati.toLocaleString("it-IT")} cavalli nati
         fra il {ip.annate[0]} e il {ip.annate[1]}, che hanno corso almeno una volta e hanno ormai una
         carriera quasi completa. Si legge come una media storica, non come la previsione su un singolo cavallo.
-      </p>
+      </IntestazionePagina>
 
       <IndiceSezioni voci={[
         { id: "sez-ipotesi", testo: "Le tue ipotesi" },
@@ -228,10 +223,10 @@ export default function PareggioPage() {
       {/* TABELLA PER VOTO */}
       {!manca && <div id="sez-voti" style={{ ...CARD, marginBottom: "18px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Voto per voto</h2>
-        <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
+        <Spiegazione compatta>
           Il cavallo tipico di ogni voto, con il costo calcolato sulle sue stagioni reali. "Pareggio" vuol dire
           entro il {Math.round(ip.fascia_pareggio * 100)}% del costo, sopra o sotto.
-        </p>
+        </Spiegazione>
         <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", fontVariantNumeric: "tabular-nums", minWidth: "760px" }}>
           <thead>
@@ -263,9 +258,9 @@ export default function PareggioPage() {
       {/* QUANTO PESA OGNI COSTO */}
       <div id="sez-pesi" style={{ ...CARD, marginBottom: "18px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Quanto pesa ogni costo</h2>
-        <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
+        <Spiegazione compatta>
           Con le tue ipotesi, quale voce sposta di più il risultato di un cavallo qualunque: dove conviene risparmiare, e cosa servirebbe per andare in pari.
-        </p>
+        </Spiegazione>
         <PesoCosti mensile={mensile} monta={modo === "allevo" ? monta : undefined} prezzo={modo === "compro" ? prezzo : undefined} />
       </div>
 
@@ -273,9 +268,9 @@ export default function PareggioPage() {
         {/* UN CAVALLO */}
         <div id="sez-cavallo" style={CARD}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un cavallo: tenerlo o fermarlo?</h2>
-          <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
+          <Spiegazione compatta>
             Confronta quello che ha vinto negli ultimi 12 mesi con quanto costa in un anno, e fa il bilancio della carriera fin qui.
-          </p>
+          </Spiegazione>
           <NameSelect value={cavallo?.nome ?? ""} endpoint="/api/search/horse" placeholder="Scegli un cavallo"
                       onChange={(nome, o) => setCavallo(nome ? { nome, anno: o?.birth_year ?? null } : null)} />
           {cvCarica && <Sagoma riquadri={3} />}
@@ -316,10 +311,10 @@ export default function PareggioPage() {
         {/* UN INCROCIO */}
         <div id="sez-incrocio" style={CARD}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un incrocio: conviene farlo?</h2>
-          <p style={{ fontSize: "12.5px", color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
+          <Spiegazione compatta>
             Pesa ogni esito possibile del puledro, dal voto SSS al "non corre mai", con quanto è successo ai figli
             dello stallone (e della fattrice, se la indichi). Con pochi figli conta di più la media di tutti i cavalli.
-          </p>
+          </Spiegazione>
           <div style={{ display: "grid", gap: "8px" }}>
             <NameSelect value={padre} endpoint="/api/search/stallion" placeholder="Stallone (scrivi almeno 2 lettere)" onChange={n => setPadre(n)} />
             <NameSelect value={madre} endpoint="/api/search/mare" placeholder="Fattrice (facoltativa)" onChange={n => setMadre(n)} />
@@ -376,10 +371,10 @@ export default function PareggioPage() {
       <div id="vendere" style={{ ...CARD, marginBottom: "18px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ flex: "1 1 320px" }}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un puledro: comprarlo, venderlo o farlo correre?</h2>
-          <p style={{ fontSize: "12.5px", color: MUTED, margin: 0, lineHeight: 1.6 }}>
+          <Spiegazione compatta>
             Il prezzo massimo da pagare e la scelta fra vendere all'asta e far correre sono lo stesso conto, ora in una pagina sola, caso per caso.
             Per mettere insieme più cavalli e vedere il rischio di tutta la scuderia c'è «La tua scuderia».
-          </p>
+          </Spiegazione>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <Link href="/puledro" style={{ ...bottone(true), textDecoration: "none" }}>Quanto vale un puledro</Link>
@@ -388,7 +383,7 @@ export default function PareggioPage() {
         </div>
       </div>
 
-      <div id="sez-metodo"><Spiegazione titolo="Come è fatto il conto, e cosa non contiene">
+      <div id="sez-metodo"><Spiegazione titolo="Come è fatto il conto e cosa non dice">
         <p>Il costo di un cavallo è: costo fino ai 2 anni (allevamento più monta, oppure prezzo d'acquisto),
         più 12 mesi di allenamento prima del debutto, più 12 mesi per ogni stagione di corse. Il ricavo è il premio
         netto vinto, che è già la quota del proprietario: nella circolare ministeriale al proprietario vanno 42,5 parti

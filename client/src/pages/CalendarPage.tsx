@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Spiegazione } from "../components/Spiegazione";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
@@ -357,11 +358,11 @@ export default function CalendarPage() {
           background: "hsl(220 12% 8%)", borderRadius: "10px",
           border: "1px solid hsl(220 10% 14%)",
         }}>
-          <p style={{ fontSize: "11px", color: "hsl(210 8% 45%)", margin: 0, lineHeight: 1.6 }}>
+          <Spiegazione titolo="Come è fatto il conto e cosa non dice" compatta>
             {data.pronostico
               ? "La percentuale è la probabilità di arrivare nei primi tre, stimata da un modello di apprendimento automatico (XGBoost) con quello che si sa prima della partenza: forma recente, premi, tempi, guidatore dell'ultima corsa, numero di partenza e confronto con gli avversari. In ogni corsa le percentuali sommano a tre, perché i posti sono tre. È una lettura statistica, non un consiglio di scommessa: non conosciamo le quote né lo stato del cavallo il giorno della gara."
               : "Le probabilità di vittoria sono stime indicative basate sul punteggio StatIppica e non tengono conto di fattori come partenza, condizioni di pista, stato di forma recente e strategie di gara. Non costituiscono consiglio di scommessa."}
-          </p>
+          </Spiegazione>
         </div>
       )}
     </div>

@@ -10,6 +10,7 @@
  */
 
 import { useState, useMemo } from "react";
+import IntestazionePagina from "../components/IntestazionePagina";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -95,16 +96,8 @@ export default function TracksPage() {
 
   return (
     <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "22px 18px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-        <MapPin size={20} style={{ color: "hsl(183 75% 55%)" }} />
-        <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 90%)", margin: 0, letterSpacing: "0.02em" }}>
-          Ippodromi
-        </h1>
-      </div>
-      <p style={{ color: MUTED, fontSize: "13px", lineHeight: 1.7, maxWidth: "820px", marginBottom: "22px" }}>
-        Le {data.n} piste italiane presenti nell'archivio, e quanto pesa il numero di
-        partenza su ciascuna.
-      </p>
+      <IntestazionePagina icona={MapPin} colore="hsl(183 75% 55%)" titolo="Ippodromi" margineSotto={22}
+        sottotitolo={<>Le {data.n} piste italiane presenti nell'archivio, e quanto pesa il numero di partenza su ciascuna.</>} />
 
       {/* IL NUMERO DI PARTENZA: prima di tutto, perche' e' il dato piu' netto. */}
       {data.partenze?.length > 0 && (
@@ -135,7 +128,7 @@ export default function TracksPage() {
             />
           </div>
 
-          <Spiegazione titolo="Come si legge, e cosa NON dice" compatta>
+          <Spiegazione titolo="Come si legge" compatta>
             Fino al quinto numero la quota resta intorno al 50%; dal sesto scende, e dal
             decimo in poi si dimezza. La differenza fra il primo e il dodicesimo e' di
             circa venti punti, ed e' uno degli effetti piu' grossi che questo archivio
@@ -225,13 +218,13 @@ export default function TracksPage() {
         </div>
       )}
 
-      <div style={{ marginTop: "16px", fontSize: "11.5px", color: DIM, lineHeight: 1.7, maxWidth: "820px" }}>
+      <Spiegazione>
         "Partire dentro vale" e' la differenza, su quella pista, fra la quota di
         piazzamenti nei primi tre partendo dai primi tre numeri e partendo dal settimo
         in poi. Le gare corse all'estero sono nell'archivio e contano nelle carriere dei
         cavalli, ma non hanno una scheda: la fonte le raccoglie tutte sotto un'unica
         voce, e sono decine di piste diverse in paesi diversi.
-      </div>
+      </Spiegazione>
 
       <CollegamentiCorrelati
         voci={[

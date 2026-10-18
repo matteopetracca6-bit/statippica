@@ -166,7 +166,7 @@ export default function StallionDirectoryPage() {
         </p>
         {/* L'istruzione sul filtro e le fonti non servono a chi guarda la
             classifica: erano due righe di testo prima dei dati. */}
-        <Spiegazione titolo="Il filtro della stagione e le fonti" compatta>
+        <Spiegazione titolo="Come è fatto il conto e cosa non dice" compatta>
           Spuntando &quot;Solo monta 2026&quot; restano soltanto gli stalloni disponibili in
           Italia in questa stagione. I dati vengono da Trot Stallions Directory e dal Libro
           Stalloni ANACT.
@@ -427,7 +427,7 @@ export default function StallionDirectoryPage() {
         fontSize: "11px", color: "hsl(210 8% 38%)", marginTop: "24px", padding: "12px 16px",
         background: "hsl(220 12% 9%)", borderRadius: "8px", border: "1px solid hsl(220 10% 14%)",
       }}>
-        <Spiegazione titolo="Come leggere i prezzi di monta" compatta>
+        <Spiegazione titolo="Come si legge" compatta>
           Dati raccolti da Trot Stallions Directory (stagione 2026), ANACT Libro Stalloni e
           schede individuali degli allevamenti. I prezzi si intendono + IVA salvo dove
           diversamente indicato; alcuni stalloni hanno tariffe in dollari, convertite a un

@@ -234,7 +234,7 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
       {/* Le due note di metodo, unite in una tendina sola: dicevano cose
           diverse ma erano entrambe "come si legge questo numero", e in chiaro
           occupavano piu' spazio del numero stesso. */}
-      <Spiegazione titolo="Come si calcola questa stima">
+      <Spiegazione titolo="Come è fatto il conto e cosa non dice">
         {nuova ? (<>
           <p style={{ margin: "0 0 8px" }}>
             Si cercano i cavalli degli anni passati con lo stesso voto (com&apos;era allora,

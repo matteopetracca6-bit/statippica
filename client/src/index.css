@@ -758,3 +758,79 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .controllo-mesi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .controllo-mese { background: hsl(220 12% 8%); border: 1px solid hsl(220 10% 16%); border-left: 3px solid var(--c); border-radius: 9px; padding: 8px 12px; font-size: 12px; color: hsl(210 8% 62%); min-width: 150px; }
 .controllo-mese b { color: hsl(210 10% 90%); }
+
+/* ── Pagina iniziale: le cinque categorie, grandi e selezionabili ───────── */
+.categorie-grandi {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 1100px) { .categorie-grandi { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .categorie-grandi { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .categorie-grandi > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+.categoria-grande {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  min-height: 190px; padding: 20px 18px 16px;
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+  border-radius: 16px;
+  border: 1px solid hsl(220 10% 17%);
+  background:
+    radial-gradient(120% 90% at 100% 0%, var(--colore-riquadro-fondo), transparent 60%),
+    hsl(220 12% 10%);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
+}
+.categoria-grande::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--colore-riquadro); opacity: .55; transition: opacity .2s ease;
+}
+.categoria-grande-icona {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--colore-riquadro-icona);
+}
+.categoria-grande-nome { font-size: 21px; font-weight: 800; letter-spacing: .01em; color: hsl(210 10% 93%); line-height: 1.1; }
+.categoria-grande-desc { font-size: 12.5px; line-height: 1.5; color: hsl(210 8% 56%); }
+.categoria-grande-piede {
+  margin-top: auto; padding-top: 6px; width: 100%;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: hsl(210 8% 52%);
+}
+.categoria-grande-pallini { display: flex; gap: 4px; margin-right: auto; flex-wrap: wrap; }
+.categoria-grande-pallini > span {
+  width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+}
+.categoria-grande-freccia { transition: transform .2s ease; color: var(--colore-riquadro); }
+.categoria-grande:hover, .categoria-grande:focus-visible {
+  border-color: var(--colore-riquadro);
+  box-shadow: 0 0 0 1px var(--colore-riquadro), 0 12px 30px -10px var(--colore-riquadro-alone);
+  transform: translateY(-3px); outline: none;
+}
+.categoria-grande.scelta {
+  border-color: var(--colore-riquadro);
+  box-shadow: 0 0 0 1px var(--colore-riquadro), 0 14px 34px -10px var(--colore-riquadro-alone);
+  background:
+    radial-gradient(130% 100% at 100% 0%, var(--colore-riquadro-alone), transparent 65%),
+    hsl(220 12% 11%);
+}
+.categoria-grande.scelta::before { opacity: 1; }
+.categoria-grande.scelta .categoria-grande-freccia { transform: rotate(180deg); }
+.categoria-pagine {
+  margin-top: 16px; padding: 18px; border-radius: 16px;
+  border: 1px solid var(--colore-riquadro-alone);
+  background: linear-gradient(180deg, var(--colore-riquadro-fondo), transparent 70%);
+  animation: categoria-apri .22s ease-out;
+}
+@keyframes categoria-apri { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) {
+  .categoria-grande { min-height: 158px; padding: 16px 14px 13px; }
+  .categoria-grande-icona { width: 42px; height: 42px; border-radius: 12px; }
+  .categoria-grande-nome { font-size: 18px; }
+  .categoria-grande-desc { font-size: 12px; }
+  .categoria-pagine { padding: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .categoria-grande, .categoria-grande:hover { transition: none; transform: none; }
+  .categoria-pagine { animation: none; }
+}

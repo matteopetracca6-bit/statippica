@@ -130,7 +130,7 @@ export default function InbreedingPanel({ horseName }: { horseName: string }) {
         <>
           {/* La spiegazione della notazione serve una volta sola: chi la
               conosce non deve rileggerla a ogni cavallo. */}
-          <Spiegazione titolo="Come si leggono queste cifre" compatta>
+          <Spiegazione titolo="Come si legge" compatta>
             Questi antenati compaiono da entrambe le parti dell'albero. Le cifre indicano a
             quale generazione: «4+5» vuol dire due volte su quel lato, alla quarta e alla
             quinta. Più il numero è basso, più l'incrocio è stretto, perché l'antenato

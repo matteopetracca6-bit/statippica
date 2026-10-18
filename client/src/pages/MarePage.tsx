@@ -163,7 +163,7 @@ export default function MarePage() {
       <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>
         La sua carriera
       </h2>
-      <Spiegazione titolo="Perche&#39; qui non c&#39;e&#39; l&#39;elenco delle gare" compatta>
+      <Spiegazione titolo="Perché qui non c'è l'elenco delle gare" compatta>
         Sono i totali di carriera, non l'elenco delle singole corse: per i riproduttori la fonte
         fornisce solo i dati aggregati. Non incidono sul voto della progenie, servono a leggerlo.
       </Spiegazione>

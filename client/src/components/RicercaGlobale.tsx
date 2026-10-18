@@ -36,7 +36,7 @@ const PAGINE: { titolo: string; href: string; sotto: string; parole: string }[] 
   { titolo: "Catalogo stalloni", href: "/stalloni", sotto: "prezzi di monta e confronto", parole: "stalloni catalogo monta prezzo confronto" },
   { titolo: "Fattrici", href: "/fattrici", sotto: "valutate sui figli", parole: "fattrici madri" },
   { titolo: "Advisor", href: "/advisor", sotto: "simula un accoppiamento", parole: "advisor accoppiamento incrocio monta simula" },
-  { titolo: "Verifica Advisor", href: "/validazione", sotto: "la prova che il consiglio funziona", parole: "verifica validazione prova" },
+  { titolo: "Verifica Advisor", href: "/validazione", sotto: "il consiglio di accoppiamento messo alla prova", parole: "verifica validazione prova" },
   { titolo: "Comparazione", href: "/compare", sotto: "due cavalli a confronto", parole: "comparazione confronto confronta" },
   { titolo: "Pedigree", href: "/pedigree", sotto: "albero a 5 generazioni", parole: "pedigree genealogia albero consanguineita inbreeding" },
   { titolo: "Calendario", href: "/calendario", sotto: "le prossime corse", parole: "calendario corse programma prossime" },

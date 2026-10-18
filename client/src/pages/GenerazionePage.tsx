@@ -19,6 +19,7 @@ import { Gavel, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Sagoma from "../components/Sagoma";
 import AggiungiScuderia from "../components/AggiungiScuderia";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
 
 const MUTED = "hsl(210 8% 55%)";
 const TESTO = "hsl(210 10% 90%)";
@@ -163,16 +164,12 @@ export default function GenerazionePage() {
   const griglia: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 };
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto", padding: "22px 18px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-        <Gavel size={20} style={{ color: ORO }} />
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: TESTO, margin: 0, letterSpacing: "0.02em" }}>Aste e generazione M</h1>
-        <span style={{ fontSize: 11, fontWeight: 700, color: ORO, border: `1px solid ${ORO}`, borderRadius: 999, padding: "1px 8px" }}>sperimentale</span>
-      </div>
-      <p style={{ color: MUTED, fontSize: 13, lineHeight: 1.7, maxWidth: 860, marginBottom: 16 }}>
+      <IntestazionePagina icona={Gavel} colore={ORO} titolo="Aste e generazione M" etichetta="sperimentale"
+        sottotitolo="I nati 2025 (nomi con la M) simulati tutti insieme, e i puledri delle aste di settembre 2026 uno per uno.">
         I trottatori nati nel 2025 hanno il nome che comincia per M e debutteranno a 2 anni nel 2027. Qui c'è la generazione intera simulata e,
         uno per uno, i puledri M passati nelle aste di settembre 2026. I numeri della generazione e delle aste sono provati sul passato;
         quelli del singolo puledro sono un intervallo largo, non una previsione.
-      </p>
+      </IntestazionePagina>
 
       {error ? <div style={{ ...CARD, color: MUTED, fontSize: 13 }}>La simulazione non è ancora disponibile.</div>
         : !d ? <Sagoma cornice righe={8} />
@@ -235,10 +232,9 @@ export default function GenerazionePage() {
               </div>
 
               <Titoletto>Com'è andata ai puledri dell'asta 2024</Titoletto>
-              <p style={{ color: MUTED, fontSize: 13, lineHeight: 1.7, maxWidth: 900, margin: "0 0 10px" }}>
-                La generazione I, venduta all'asta ITS nel 2024, ha finito la stagione dei 2 anni e sta finendo quella dei 3. È la prova più concreta:
-                dei {pa.venduti_ritrovati} puledri venduti e ritrovati in archivio, {pa.gia_ripagati_a_ottobre_2026} hanno già ripagato prezzo e allenamento.
-                In media sono costati {euro(pa.prezzo_medio_venduti)} e hanno vinto finora {euro(pa.premi_2_e_3_anni_finora_medi_venduti)}.
+              <p style={{ color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.6, maxWidth: 900, margin: "0 0 10px" }}>
+                Dei {pa.venduti_ritrovati} puledri venduti, {pa.gia_ripagati_a_ottobre_2026} hanno già ripagato prezzo e allenamento:
+                costati in media {euro(pa.prezzo_medio_venduti)}, hanno vinto finora {euro(pa.premi_2_e_3_anni_finora_medi_venduti)}.
               </p>
               <div style={{ ...CARD, padding: 0, overflowX: "auto" }}>
                 <table className="tabella-tenere">
@@ -253,21 +249,24 @@ export default function GenerazionePage() {
                   </tbody>
                 </table>
               </div>
-              <p style={{ color: MUTED, fontSize: 12, lineHeight: 1.6, marginTop: 8 }}>
-                Chi ha pagato di più ha vinto di più a 3 anni, ma molto meno di quanto ha speso. A 2 anni il prezzo non distingueva quasi nulla.
-              </p>
+              <Spiegazione>
+                La generazione I, venduta all'asta ITS nel 2024, ha finito la stagione dei 2 anni e sta finendo quella dei 3: è la prova più concreta
+                di come vanno i puledri d'asta. Chi ha pagato di più ha vinto di più a 3 anni, ma molto meno di quanto ha speso. A 2 anni il prezzo
+                non distingueva quasi nulla. La stessa prova, rifatta con i soli dati di settembre 2024, è
+                in <Link href="/controllo" style={{ color: ORO }}>Controllo a posteriori</Link>.
+              </Spiegazione>
 
               <Titoletto>I puledri M in asta, uno per uno</Titoletto>
-              <p style={{ color: MUTED, fontSize: 12.5, lineHeight: 1.6, margin: "0 0 10px", maxWidth: 900 }}>
+              <Spiegazione>
                 «Premi tipici»: quanto vince a 2 e 3 anni il puledro a metà della fila delle simulazioni. «Ripaga»: quante volte su cento la sua
                 quota di premi copre prezzo e allenamento fino ai 3 anni. «Prezzo massimo»: quanto si poteva pagare per essere in pari in media su tutta
                 la carriera, fermandolo quando non rende, a 1.200 € al mese (il conto di <Link href="/puledro" style={{ color: ORO }}>Quanto vale un puledro</Link>:
                 tocca il nome per vederlo caso per caso). «In pari sotto»: il costo mensile a cui il prezzo pagato va in pari.
-              </p>
+              </Spiegazione>
               <PrezziMassimi lotti={a.lotti_elenco} />
               <ElencoLotti lotti={a.lotti_elenco} />
 
-              <Spiegazione titolo="Come è fatta la simulazione e quanto ci si può fidare">
+              <Spiegazione titolo="Come è fatto il conto e cosa non dice">
                 <p>
                   I premi per i cavalli di 2 e di 3 anni sono quasi una torta fissa che si divide fra i puledri di quell'anno. Per questo ogni cavallo
                   nato fra il 2016 e il 2022 è descritto dalla fetta che ha preso. Un puledro nuovo pesca il suo destino fra i figli dello stesso padre,

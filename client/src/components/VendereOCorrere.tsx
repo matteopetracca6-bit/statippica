@@ -13,6 +13,7 @@
  * davvero all'asta per quel puledro. Le aste dei figli del padre sono solo
  * un riferimento, da usare con un clic.
  */
+import { Spiegazione } from "./Spiegazione";
 import Sagoma from "./Sagoma";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -138,12 +139,12 @@ export default function VendereOCorrere({ nome, anno, mensile = 1200, inScheda =
               : "In media l'allenamento costa più di quanto il puledro vince: qualunque offerta conviene, salvo puntare sul caso raro di un campione."} />
         )}
       </div>
-      <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "10px", lineHeight: 1.55 }}>
+      <Spiegazione titolo="Come è fatto il conto e cosa non dice">
         Ipotesi: {euro(d.mensile)} al mese, un anno di preparazione prima del debutto. Allevamento e monta sono già spesi e non contano:
         valgono per tutte e due le scelte. Le probabilità vengono da {d.figli_osservati.padre} figli di {nomePadre}
         {d.madre && d.figli_osservati.madre > 0 && <> e {d.figli_osservati.madre} di {d.madre}</>} (affidabilità {Math.round(d.affidabilita * 100)}%).
         È una media storica, non una previsione sul singolo puledro.
-      </div>
+      </Spiegazione>
       <LegendaEsiti style={{ marginTop: "8px" }} />
     </>
   ) : null;
@@ -188,10 +189,10 @@ export function MercatoStalloni({ mensile }: { mensile: number }) {
   return (
     <div style={{ overflowX: "auto", marginTop: "16px" }}>
       <div style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 88%)", marginBottom: "4px" }}>Il mercato contro la pista</div>
-      <p style={{ fontSize: "12px", color: MUTED, margin: "0 0 10px", lineHeight: 1.55 }}>
+      <Spiegazione compatta>
         Stalloni con almeno 3 figli venduti alle aste yearling e 5 figli già valutati in corsa. «Valore di tenerlo» è quanto rende in media un loro figlio
         dopo l'allenamento, senza contare il prezzo pagato. Se è sotto il prezzo d'asta, chi vende fa meglio, in media, di chi compra per far correre.
-      </p>
+      </Spiegazione>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", fontVariantNumeric: "tabular-nums", minWidth: "620px" }}>
         <thead>
           <tr style={{ color: MUTED, fontSize: "11.5px" }}>

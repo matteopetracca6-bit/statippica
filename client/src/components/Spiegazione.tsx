@@ -15,16 +15,43 @@
  */
 import React from "react";
 
+/**
+ * Le tre parole del sito, sempre le stesse, perche' chi le impara su una pagina
+ * le ritrovi sulle altre:
+ *  - "Cosa trovi in questa pagina"  sotto il titolo di ogni pagina;
+ *  - "Come si legge"                 sotto un riquadro o una tabella;
+ *  - "Come è fatto il conto e cosa non dice"  il metodo e i suoi limiti.
+ * Dentro, se servono, tre parti con lo stesso nome: Cosa mostra, Da dove
+ * vengono i numeri, Cosa non dice.
+ */
+export const TITOLI_SPIEGAZIONE = {
+  pagina: "Cosa trovi in questa pagina",
+  lettura: "Come si legge",
+  metodo: "Come è fatto il conto e cosa non dice",
+} as const;
+
 export function Spiegazione({
-  titolo = "Come si legge questo dato",
+  titolo = TITOLI_SPIEGAZIONE.lettura,
   children,
   compatta = false,
+  mostra,
+  numeri,
+  limiti,
 }: {
   titolo?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /** Versione minima, per infilarla sotto un singolo numero. */
   compatta?: boolean;
+  mostra?: React.ReactNode;
+  numeri?: React.ReactNode;
+  limiti?: React.ReactNode;
 }) {
+  const parte = (nome: string, testo: React.ReactNode) => testo ? (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "hsl(210 8% 62%)", marginBottom: 2 }}>{nome}</div>
+      <div>{testo}</div>
+    </div>
+  ) : null;
   return (
     <details
       className="spiegazione"
@@ -78,7 +105,10 @@ export function Spiegazione({
           maxWidth: "72ch",
         }}
       >
-        {children}
+        {parte("Cosa mostra", mostra)}
+        {parte("Da dove vengono i numeri", numeri)}
+        {parte("Cosa non dice", limiti)}
+        {children && (mostra || numeri || limiti) ? <div style={{ marginTop: 8 }}>{children}</div> : children}
       </div>
     </details>
   );

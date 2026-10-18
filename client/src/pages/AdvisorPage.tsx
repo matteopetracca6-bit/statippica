@@ -9,6 +9,8 @@ import { PredictionCard, ReasonsList, InbreedingPanel, RulesPanel, RoiRangePanel
 import type { Prediction, InbreedingDetail, Eligibility, RoiRange, Rivendita } from "../components/AdvisorInsights";
 import { Search, Dna, AlertCircle, Euro, TrendingUp, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const GRADE_COLORS: Record<string, string> = {
@@ -349,11 +351,11 @@ function ComparePanel({ mare, stallions, onClear }: { mare: string; stallions: s
               })}
             </tbody>
           </table>
-          <div style={{ fontSize: "10.5px", color: "hsl(210 8% 35%)", marginTop: "10px", lineHeight: 1.5 }}>
+          <Spiegazione compatta>
             In verde il voto atteso piu' alto e la miglior qualita' per euro speso. La fascia
             tipica contiene meta' dei puledri attesi: quando due fasce si sovrappongono quasi
             del tutto, la differenza fra i due stalloni non e' dimostrabile con questi dati.
-          </div>
+          </Spiegazione>
         </div>
       )}
     </div>
@@ -388,23 +390,14 @@ export default function AdvisorPage() {
   return (
     <div className="page-shell">
       {/* Header */}
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>
-          Advisor Allevatore
-        </h1>
-        <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
-          {/* La frase di prima diceva "vedrai i guadagni stimati e il ROI", e
-              prometteva una cosa che questo strumento non sa fare: annunciava
-              un ritorno economico sopra un modello che spiega il 2,3% dei
-              risultati. Ora dice cosa e' davvero, e l'avviso qui sotto spiega
-              perche'. */}
-          Scegli una fattrice: per ogni stallone compatibile vedrai il voto che
-          il modello si aspetta dal puledro, con quanto e' larga l'incertezza
-          intorno a quel voto, la consanguineita' e la tassa di monta. E' un
-          ordine di massima per restringere una lista, non una previsione: il
-          perche' e' spiegato appena sotto.
-        </p>
-      </div>
+      <IntestazionePagina icona={Sparkles} colore="hsl(280 60% 60%)" titolo="Advisor Allevatore" etichetta="sperimentale" margineSotto={24}
+        sottotitolo="Per una fattrice, gli stalloni compatibili in ordine di voto atteso del puledro: un ordine di massima, non una previsione.">
+        Scegli una fattrice: per ogni stallone compatibile vedrai il voto che
+        il modello si aspetta dal puledro, con quanto è larga l'incertezza
+        intorno a quel voto, la consanguineità e la tassa di monta. È un
+        ordine di massima per restringere una lista, non una previsione: il
+        perché è spiegato nell'avviso sopra i risultati.
+      </IntestazionePagina>
 
       {/* Form */}
       <form onSubmit={handleSubmit} style={{
@@ -522,7 +515,8 @@ export default function AdvisorPage() {
             }}>
               <strong style={{ color: "hsl(35 95% 62%)" }}>
                 Strumento sperimentale, non usarlo per decidere una monta.
-              </strong>{" "}
+              </strong>
+              <Spiegazione titolo="Perché" compatta>
               Prevedere la carriera di un singolo puledro dai genitori e' quasi
               impossibile, e non per un difetto di questo programma: il puledro
               prende meta' dei geni da ciascun genitore, ma quali meta' e' un
@@ -539,6 +533,7 @@ export default function AdvisorPage() {
               non come una previsione. Per scegliere uno stallone, la strada che
               funziona e' un'altra: guardare com'e' andata la sua progenie, sulla
               sua scheda, dove e' scritto anche su quanti figli poggia il voto.
+              </Spiegazione>
             </div>
           )}
 
@@ -692,7 +687,7 @@ export default function AdvisorPage() {
         </div>
       )}
       <CollegamentiCorrelati voci={[
-        { href: "/validazione", titolo: "Verifica advisor", descrizione: "La prova che il consiglio funziona: test su puledri mai visti dal modello." },
+        { href: "/validazione", titolo: "Verifica advisor", descrizione: "Il consiglio messo alla prova su puledri mai visti dal modello, e perché resta sperimentale." },
         { href: "/fattrici", titolo: "Fattrici", descrizione: "Cerca un'altra fattrice da cui partire, valutata sulla progenie." },
         { href: "/stalloni", titolo: "Catalogo stalloni", descrizione: "Tutti gli stalloni valutati, con tasse di monta e allevamento." },
       ]} />

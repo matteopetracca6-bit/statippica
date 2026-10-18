@@ -136,7 +136,7 @@ export default function QualifichePage() {
         Qualifiche
       </h1>
       <div style={{ marginBottom: "20px" }}>
-        <Spiegazione titolo="Che cos&#39;e&#39; la prova di qualifica" compatta>
+        <Spiegazione titolo="Che cos'è la prova di qualifica" compatta>
           La prova di qualifica e&apos; il primo tempo ufficiale di un cavallo, sostenuta da
           giovane prima di poter correre. Per molti di questi soggetti e&apos; l&apos;unica
           informazione esistente: non hanno ancora una carriera e quindi nemmeno un voto. Il
@@ -353,7 +353,7 @@ export default function QualifichePage() {
         </div>
       )}
 
-      <Spiegazione titolo="Da dove vengono questi numeri" compatta>
+      <Spiegazione titolo="Come è fatto il conto e cosa non dice" compatta>
         Fonte dei dati di qualifica: VendoPuledri. Aggiornati ogni notte.
       </Spiegazione>
       <CollegamentiCorrelati voci={[

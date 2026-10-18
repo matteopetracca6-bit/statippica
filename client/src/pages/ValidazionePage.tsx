@@ -94,7 +94,7 @@ function Section({ title, icon, children, sub }: {
           risultati e chi no puo' sempre aprirla. */}
       {sub && (
         <div style={{ marginBottom: "14px" }}>
-          <Spiegazione titolo="Che cosa mostra questa sezione" compatta>{sub}</Spiegazione>
+          <Spiegazione titolo="Come si legge" compatta>{sub}</Spiegazione>
         </div>
       )}
       {children}
@@ -151,7 +151,7 @@ function ScatterPlot({ points }: { points: { pred: number; actual: number }[] })
         <text x={12} y={H / 2} textAnchor="middle" fontSize={11} fill={MUTED}
           transform={`rotate(-90 12 ${H / 2})`}>voto realmente ottenuto</text>
       </svg>
-      <Spiegazione titolo="Come si legge questo grafico" compatta>
+      <Spiegazione titolo="Come si legge" compatta>
         Ogni puntino e' un puledro nato dopo il 2019, che il modello non aveva mai visto.
         La linea arancione e' la media reale per fascia di previsione: se sale da sinistra
         a destra, vuol dire che una previsione piu' alta corrisponde davvero a cavalli
@@ -282,7 +282,7 @@ export default function ValidazionePage() {
                 <div style={{ fontSize: "20px", fontWeight: 800, color: CYAN }}>{advisor.spearman.toFixed(3)}</div>
               </div>
             </div>
-            <Spiegazione titolo="Perche' esiste un tetto, e perche' e' basso" compatta>
+            <Spiegazione titolo="Perché esiste un tetto, e perché è basso" compatta>
               L'ereditabilita' dei guadagni nel trotto misurata dalla letteratura sta fra{" "}
               {ceil.heritability_usata.guadagni_basso} e {ceil.heritability_usata.guadagni_alto}.
               Da questa si ricava, con {ceil.formula}, il massimo che qualunque previsione
@@ -410,7 +410,7 @@ export default function ValidazionePage() {
                 {/* La nota di ogni scenario e' un paragrafo: tre scenari
                     facevano tre paragrafi fra i numeri che contano. */}
                 <div style={{ marginTop: "9px", paddingTop: "9px", borderTop: BORDER }}>
-                  <Spiegazione titolo="Che cosa dice questo scenario" compatta>
+                  <Spiegazione titolo="Come si legge" compatta>
                     {s.note}{s.nota_nonna ? " " + s.nota_nonna : ""}
                   </Spiegazione>
                 </div>

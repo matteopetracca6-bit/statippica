@@ -7,6 +7,7 @@
  * dove vanno i soldi, e di quanto dovrebbe cambiare ogni voce da sola per
  * arrivare in pari.
  */
+import { Spiegazione } from "./Spiegazione";
 import Sagoma from "./Sagoma";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -74,10 +75,10 @@ export default function PesoCosti({ mensile, monta, prezzo }: { mensile: number;
 
       {/* Se una voce cambia del 20% */}
       <div style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 88%)", marginBottom: "4px" }}>Se una voce cambia del {pct}%</div>
-      <p style={{ fontSize: "12px", color: MUTED, margin: "0 0 12px", lineHeight: 1.55 }}>
+      <Spiegazione compatta>
         Di quanto si sposta l'utile medio di un cavallo se una sola voce migliora (verde) o peggiora (rosso) del {pct}%, tutto il resto fermo.
         Le barre più lunghe sono le leve che contano.
-      </p>
+      </Spiegazione>
       <div style={{ display: "grid", gap: "8px", marginBottom: "18px" }}>
         {d.voci.map(v => {
           const w = (50 * v.effetto) / max;

@@ -555,7 +555,7 @@ export default function HorsePage() {
           </div>
 
           {(horse.affidabilita_voto?.disponibile || horse.grade_annata) && (
-            <Spiegazione titolo="Perche&#39; due lettere, e quanto durano">
+            <Spiegazione titolo="Perché due lettere, e quanto durano">
               {horse.grade_annata && horse.grade_annata !== horse.grade && (
                 <p style={{ margin: "0 0 8px" }}>
                   Le due lettere nascono dallo stesso punteggio: cambia solo con chi viene
@@ -616,7 +616,7 @@ export default function HorsePage() {
             ))}
           </div>
           {(horse.gare_estero ?? 0) > 0 && (
-            <Spiegazione titolo="Perche&#39; separare Italia ed estero">
+            <Spiegazione titolo="Perché separare Italia ed estero">
               Una gara all&apos;estero paga in media 1.920 euro, una italiana 518: quasi quattro
               volte. I guadagni fuori confine pesano quindi molto piu&apos; del numero di corse,
               e due cavalli con lo stesso totale possono avere fatto carriere diversissime.
@@ -640,7 +640,7 @@ export default function HorsePage() {
             Confrontato solo con gli altri cavalli storici, su guadagni, record e percentuale
             di vittorie.
           </div>
-          <Spiegazione titolo="Perche&#39; ha una scala a parte">
+          <Spiegazione titolo="Perché ha una scala a parte">
             Di questo cavallo l&apos;archivio conosce i totali di carriera presi
             dall&apos;anagrafe ufficiale, ma non le singole gare: per gli anni in cui ha corso
             non esistono online. Confrontarlo con i cavalli di oggi sarebbe doppiamente

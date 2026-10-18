@@ -14,6 +14,7 @@ import Sagoma from "../components/Sagoma";
 import NameSelect from "../components/NameSelect";
 import VendereOCorrere, { MercatoStalloni } from "../components/VendereOCorrere";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import AggiungiScuderia from "../components/AggiungiScuderia";
 import { useScuderia } from "@/lib/scuderia";
@@ -131,10 +132,10 @@ function Compro() {
 
         <div style={CARD}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: TESTO, margin: "0 0 4px" }}>Caso per caso</h2>
-          <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 10px", lineHeight: 1.6 }}>
+          <Spiegazione compatta>
             Ogni riga è un modo in cui può andare la sua carriera, con la probabilità che viene dai figli del padre{d.madre ? " e della madre" : ""} e i premi veri dei cavalli
             nati 2014-2019 finiti in quel caso. Il cavallo si ferma a fine stagione, dai 3 anni in su, se in quella stagione ha vinto meno di metà del suo costo.
-          </p>
+          </Spiegazione>
           <div style={{ overflowX: "auto" }}>
             <table className="tabella-tenere">
               <thead><tr><th>Caso</th><th className="num">Probabilità</th><th className="num">Premi in carriera</th>
@@ -160,19 +161,19 @@ function Compro() {
               </tbody>
             </table>
           </div>
-          <p style={{ fontSize: 12, color: MUTED, margin: "10px 0 0", lineHeight: 1.6 }}>
+          <Spiegazione compatta titolo="E se non lo fermi">
             Se invece lo tieni quanto hanno corso davvero i cavalli dell'archivio, senza fermarlo: premi {euro(d.senza_regola.premi_attesi)}, allenamento {euro(d.senza_regola.allenamento_atteso)},
             netto {euro(d.senza_regola.valore_atteso)}{d.senza_regola.prezzo_massimo > 0 ? <>, prezzo massimo {euro(d.senza_regola.prezzo_massimo)}</> : null}. Fermare chi non rende
             {d.senza_regola.valore_atteso < r.valore_atteso ? <> vale {euro(r.valore_atteso - d.senza_regola.valore_atteso)} a puledro.</> : " qui non migliora il conto."}
-          </p>
+          </Spiegazione>
         </div>
 
         <div style={CARD}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: TESTO, margin: "0 0 4px" }}>Se lo paghi…</h2>
-          <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 10px", lineHeight: 1.6 }}>
+          <Spiegazione compatta>
             Per ogni prezzo: in quanti casi su 100 i premi coprono prezzo e allenamento, e l'utile medio.
             {d.aste_padre && <> All'asta i figli di {titolo(d.padre)} sono stati pagati in mediana {euro(d.aste_padre.mediana)} ({d.aste_padre.n} venduti).</>}
-          </p>
+          </Spiegazione>
           <div style={{ display: "grid", gap: 4 }}>
             {r.curva.map((c: any) => {
               const sopra = r.prezzo_massimo > 0 && c.prezzo <= r.prezzo_massimo;
@@ -204,32 +205,31 @@ export default function PuledroPage() {
   });
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <Tag size={20} style={{ color: ACCENTO }} />
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: TESTO, margin: 0 }}>Quanto vale un puledro</h1>
-      </div>
-      <p style={{ fontSize: 13, color: MUTED, margin: "0 0 14px", lineHeight: 1.6, maxWidth: 820 }}>
+      <IntestazionePagina icona={Tag} colore={ACCENTO} titolo="Quanto vale un puledro" margineSotto={14}
+        sottotitolo="Quanto pagarlo al massimo, o se conviene venderlo invece di farlo correre.">
         Lo stesso conto visto dai due lati. Chi compra vuole sapere quanto può pagare al massimo, chi ha allevato il puledro se conviene venderlo o farlo correre.
         Il valore è quello che il puledro rende in pista, caso per caso, meno quello che costa farlo correre.
-      </p>
+        Sul singolo puledro la stima è larga: rifatta sull'asta 2024 con i dati di allora, ha indovinato bene il totale dei premi ma non quali puledri
+        sarebbero andati meglio (vedi <Link href="/controllo" style={{ color: ACCENTO }}>Controllo a posteriori</Link>).
+      </IntestazionePagina>
       <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
         <button style={bottone(modo === "compro")} onClick={() => setModo("compro")}>Lo compro: prezzo massimo</button>
         <button style={bottone(modo === "vendo")} onClick={() => setModo("vendo")}>Lo vendo: vendere o far correre</button>
       </div>
       {modo === "compro" ? <Compro /> : (
         <div style={CARD}>
-          <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
+          <Spiegazione compatta>
             All'asta yearling, verso i 18 mesi, l'allevatore sceglie: incassare subito o tenere il puledro e pagarne l'allenamento.
             Allevamento e monta sono ormai spesi e non cambiano la scelta. Conviene vendere quando il prezzo supera il valore del puledro in pista,
             cioè il prezzo massimo che pagherebbe un compratore attento.
-          </p>
+          </Spiegazione>
           <VendereOCorrere mensile={scuderia.mensile || 1200} />
           <MercatoStalloni mensile={scuderia.mensile || 1200} />
         </div>
       )}
 
       <div style={{ marginTop: 16 }}>
-        <Spiegazione titolo="Come è fatto il conto, e cosa non contiene">
+        <Spiegazione titolo="Come è fatto il conto e cosa non dice">
           <p>Le probabilità di ogni caso vengono dai voti dei figli del padre (e della madre) nati 2012-2021; con pochi figli si appoggiano alla media di tutti i cavalli,
           come per gli incroci. I premi e le stagioni di ogni caso sono quelli veri, stagione per stagione, dei cavalli nati 2014-2019 con quel voto.
           I premi netti sono già la parte del proprietario.</p>

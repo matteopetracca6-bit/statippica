@@ -7,6 +7,7 @@
  * chi sta in alto a sinistra da' figli buoni a poco prezzo, chi sta in basso a
  * destra costa piu' di quello che i figli restituiscono.
  */
+import { Spiegazione } from "./Spiegazione";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -65,12 +66,12 @@ export default function ConfrontoStalloni() {
       </button>
       {aperto && (
         <div style={{ marginTop: "12px" }}>
-          <p style={{ fontSize: "12.5px", color: MUTED, lineHeight: 1.65, margin: "0 0 12px", maxWidth: "900px" }}>
+          <Spiegazione compatta>
             Quanto vince in media in carriera un figlio di ogni stallone, contando anche chi non corre mai, e
             quanto resta dopo i costi (monta, allevamento, allenamento). In alto a sinistra gli stalloni che
             danno figli buoni a poco prezzo; in basso a destra quelli che costano più di quanto restituiscono.
             Con fattrice qualunque: una fattrice buona sposta il risultato.
-          </p>
+          </Spiegazione>
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center", marginBottom: "10px" }}>
             <span style={{ fontSize: "12px", color: MUTED }}>Costo al mese:</span>
             {[800, 1200].map(m => <button key={m} style={bottone(mensile === m)} onClick={() => setMensile(m)}>{euro(m)}</button>)}
@@ -140,12 +141,12 @@ export default function ConfrontoStalloni() {
                   </tbody>
                 </table>
               </div>
-              <p style={{ fontSize: "11.5px", color: MUTED, lineHeight: 1.6, margin: "10px 0 0" }}>
+              <Spiegazione compatta>
                 "Resa per €" è quanto vince in media un figlio per ogni euro di monta.
                 {righe.length > 0 && righe.every(r => r.utile_atteso < 0) && <> Con questo costo mensile nessuno stallone, con fattrice
                 qualunque, porta il figlio medio in utile: pesa soprattutto il costo di allenamento, non la monta.</>}
                 {" "}I conti sono gli stessi della scheda <Link href="/pareggio"><a style={{ color: "hsl(160 60% 55%)" }}>Punto di pareggio</a></Link>.
-              </p>
+              </Spiegazione>
             </>
           )}
         </div>

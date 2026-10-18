@@ -12,12 +12,13 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Scale, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Scale, TrendingUp, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Sagoma from "../components/Sagoma";
 import AggiungiScuderia from "../components/AggiungiScuderia";
 import GradeBadge from "../components/GradeBadge";
 import LegendaEsiti from "../components/LegendaEsiti";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
 import { ESITO_COLORE } from "@/lib/esiti";
 import { testoProb } from "@/lib/probCopre";
 
@@ -202,10 +203,10 @@ function PerStallone({ mensile }: { mensile: string }) {
           </tbody>
         </table>
       </div>
-      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8, lineHeight: 1.6 }}>
+      <Spiegazione>
         Conta solo i figli che hanno corso nell'ultimo anno: chi ha smesso o non ha mai corso non c'è, quindi il quadro è più favorevole di quello di
         tutta la produzione. Per il rendimento di un intero raccolto c'è la scheda Punto di pareggio.
-      </div>
+      </Spiegazione>
     </div>
   );
 }
@@ -216,14 +217,13 @@ export default function TenerePage() {
   const mensile = useRitardo(Number(mensileScritto) >= 100 ? String(Math.round(Number(mensileScritto))) : "1200", 400);
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto", padding: "22px 18px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <Scale size={20} style={{ color: "hsl(160 60% 50%)" }} />
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "hsl(210 10% 90%)", margin: 0, letterSpacing: "0.02em" }}>Tenere o fermare</h1>
-      </div>
-      <p style={{ color: MUTED, fontSize: 13, lineHeight: 1.7, maxWidth: 860, marginBottom: 16 }}>
+      <IntestazionePagina icona={TrendingUp} colore="hsl(145 55% 52%)" titolo="Tenere o fermare"
+        sottotitolo="Ogni cavallo in attività: premi attesi nei prossimi 12 mesi contro la spesa di un anno.">
         Per ogni cavallo che ha corso nell'ultimo anno: quanto vincerà probabilmente nei prossimi 12 mesi e quanto è probabile che copra la spesa
         di un anno. Le spese passate non contano più: si confronta solo quello che costa da oggi con quello che può rendere da oggi.
-      </p>
+        Rifatto sul passato (al 1° ottobre 2025), dei cavalli che il sito avrebbe dato «in perdita» solo 5 su 100 hanno poi coperto la spesa:
+        i dettagli sono in <Link href="/controllo" style={{ color: "hsl(145 55% 52%)" }}>Controllo a posteriori</Link>.
+      </IntestazionePagina>
 
       <div style={{ ...CARD, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, marginBottom: 16 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "hsl(210 10% 85%)" }}>
@@ -244,7 +244,7 @@ export default function TenerePage() {
       {scheda === "cavalli" ? <ElencoCavalli mensile={mensile} /> : <PerStallone mensile={mensile} />}
 
       <LegendaEsiti style={{ marginTop: 12 }} />
-      <Spiegazione titolo="Da dove vengono questi numeri">
+      <Spiegazione titolo="Come è fatto il conto e cosa non dice">
         <p>
           I premi attesi vengono da un modello XGBoost che ha imparato da fotografie trimestrali dei cavalli fra il 2016 e il 2023 ed è stato
           provato sul 2025: sbaglia in media di circa 4.200 €, contro 5.200 € di «vincerà quanto l'anno scorso». La probabilità di coprire la spesa

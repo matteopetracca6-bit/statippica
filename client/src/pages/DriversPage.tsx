@@ -14,6 +14,7 @@
  */
 
 import { useState, useMemo } from "react";
+import IntestazionePagina from "../components/IntestazionePagina";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -113,20 +114,13 @@ export default function DriversPage() {
 
   return (
     <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "22px 18px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-        <Users size={20} style={{ color: "hsl(183 75% 55%)" }} />
-        <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 90%)", margin: 0, letterSpacing: "0.02em" }}>
-          Guidatori
-        </h1>
-      </div>
-      <p style={{ color: MUTED, fontSize: "13px", lineHeight: 1.7, maxWidth: "820px", marginBottom: "16px" }}>
-        Chi porta i cavalli a rendere piu' del loro solito. La classifica NON e' per
-        vittorie: quelle dipendono soprattutto da quali cavalli vengono affidati.
-        Il confronto e' fatto dentro lo stesso cavallo, e tiene conto del numero di
-        partenza.
-      </p>
+      <IntestazionePagina icona={Users} colore="hsl(200 70% 58%)" titolo="Guidatori"
+        sottotitolo="Chi porta i cavalli a rendere più del loro solito, a parità di cavallo e di numero di partenza.">
+        La classifica NON è per vittorie: quelle dipendono soprattutto da quali cavalli vengono affidati.
+        Il confronto è fatto dentro lo stesso cavallo, e tiene conto del numero di partenza.
+      </IntestazionePagina>
 
-      <Spiegazione titolo="Perche' le vittorie non misurano il guidatore">
+      <Spiegazione titolo="Perché le vittorie non misurano il guidatore">
         <p>
           Un guidatore che lavora per una grande scuderia vince spesso perche' ha
           sotto i cavalli migliori, e uno bravissimo con cavalli modesti perde lo
@@ -289,9 +283,7 @@ export default function DriversPage() {
         </div>
       )}
 
-      <div style={{ marginTop: "14px", fontSize: "11.5px", color: DIM, lineHeight: 1.7, display: "flex", gap: "8px", alignItems: "flex-start" }}>
-        <TrendingDown size={13} style={{ flexShrink: 0, marginTop: "2px" }} />
-        <div>
+      <Spiegazione>
           La barra parte dal centro: verso sinistra il guidatore porta i cavalli a
           rendere meglio del loro solito, verso destra peggio. Il numero accanto e'
           quanto vale in posizioni, su una gara da dieci partenti.
@@ -299,8 +291,7 @@ export default function DriversPage() {
           confrontare due guidatori: dipende soprattutto dai cavalli che ricevono.
           La colonna della partenza media dice da quale numero partono di solito, ed
           e' gia' scontata dal rendimento.
-        </div>
-      </div>
+      </Spiegazione>
 
       <CollegamentiCorrelati
         voci={[

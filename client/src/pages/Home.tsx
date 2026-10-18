@@ -8,6 +8,7 @@ import GradeBadge from "../components/GradeBadge";
 import CavalliDelMomento from "../components/CavalliDelMomento";
 import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
+import EsploraCategorie from "../components/EsploraCategorie";
 import { getFlag } from "@/lib/flags";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
@@ -66,36 +67,6 @@ function AnimatedNumber({ value, format = true }: { value: number; format?: bool
     requestAnimationFrame(tick);
   }, [value]);
   return <>{format ? display.toLocaleString("it-IT") : display}</>;
-}
-
-// I colori dei riquadri sono scritti come hsl(...): la trasparenza va messa
-// dentro la parentesi. Accodare "55" come si fa con i colori esadecimali
-// produce un colore non valido, e il bordo al passaggio non compariva.
-function trasparente(colore: string, alfa: number) {
-  return colore.startsWith("hsl(") ? colore.replace(/\)$/, ` / ${alfa})`) : colore;
-}
-
-function NavCard({ href, icon: Icon, title, desc, color }: { href: string; icon: any; title: string; desc: string; color: string }) {
-  // Al passaggio del cursore (o quando ci si arriva col tasto Tab) il
-  // riquadro prende un contorno del suo colore, con un alone leggero.
-  const vars = {
-    "--colore-riquadro": color,
-    "--colore-riquadro-alone": trasparente(color, 0.22),
-    "--colore-riquadro-icona": trasparente(color, 0.12),
-  } as React.CSSProperties;
-  return (
-    <Link href={href}>
-      <a className="riquadro-home" style={vars}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div className="riquadro-home-icona">
-            <Icon size={18} style={{ color }} />
-          </div>
-          <span style={{ fontSize: "14px", fontWeight: 700, color: "hsl(210 10% 90%)", letterSpacing: "0.02em" }}>{title}</span>
-        </div>
-        <span style={{ fontSize: "12px", color: "hsl(210 8% 48%)", lineHeight: 1.5 }}>{desc}</span>
-      </a>
-    </Link>
-  );
 }
 
 export default function Home() {
@@ -164,32 +135,7 @@ export default function Home() {
             <HorseSearchBar placeholder="Cerca un cavallo per nome..." />
           </div>
 
-          {/* Esplora — navigation cards */}
-          <div style={{ marginTop: "28px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>
-              Esplora
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" }}>
-              {/* Leaderboard e Cavalli erano la stessa tabella con filtri
-                  diversi: una scheda sola, con tutti i filtri. */}
-              <NavCard href="/leaderboard" icon={Trophy} title="Cavalli e classifica" desc="Tutti i cavalli valutati: cerca per nome o ordina per voto, guadagni e vittorie. Il voto si legge contro tutti o dentro la sua annata" color="hsl(51 80% 55%)" />
-              <NavCard href="/stallioni" icon={BookOpen} title="Catalogo Stalloni" desc="Tutti gli stalloni valutati, con tasse di monta, allevamenti e provenienza" color="hsl(120 60% 50%)" />
-              <NavCard href="/advisor" icon={Dna} title="Advisor" desc="Simula accoppiamenti, calcola ROI e valuta il coefficiente di inbreeding" color="hsl(280 60% 60%)" />
-              <NavCard href="/compare" icon={GitCompare} title="Comparazione" desc="Confronta due cavalli su statistiche, carriera e genealogia" color="hsl(30 80% 55%)" />
-              <NavCard href="/calendario" icon={Calendar} title="Calendario" desc="Prossime gare in programma con iscritti, voti e stima probabilita di vittoria" color="hsl(0 60% 55%)" />
-              <NavCard href="/pedigree" icon={Network} title="Pedigree" desc="Albero genealogico completo fino a 5 generazioni, con consanguineita e incroci ripetuti" color="hsl(220 60% 60%)" />
-              <NavCard href="/qualifiche" icon={Sparkles} title="Qualifiche" desc="Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" color="hsl(280 60% 62%)" />
-              <NavCard href="/allevamento" icon={Warehouse} title="Allevamento" desc="Allevatori e stazioni di monta in un'unica scheda, con la qualita media della produzione" color="hsl(20 70% 58%)" />
-              <NavCard href="/validazione" icon={FlaskConical} title="Verifica Advisor" desc="La prova che il consiglio di accoppiamento funziona: test su puledri mai visti e fonti scientifiche" color="hsl(183 70% 52%)" />
-              <NavCard href="/fattrici" icon={Heart} title="Fattrici" desc="Fattrici valutate sulla progenie: figli di vertice, guadagni medi e carriera della madre" color="hsl(330 70% 58%)" />
-              <NavCard href="/guidatori" icon={Users} title="Guidatori" desc="Chi porta i cavalli a rendere piu' del loro solito, a parita' di cavallo e di numero di partenza" color="hsl(200 70% 58%)" />
-              <NavCard href="/ippodromi" icon={MapPin} title="Ippodromi e trend" desc="Le 26 piste italiane, quanto pesa partire dentro o fuori, e come cambiano voti, guadagni e gare negli anni" color="hsl(95 55% 52%)" />
-              <NavCard href="/scuderia" icon={Briefcase} title="La tua scuderia" desc="Metti insieme i tuoi cavalli: entrate e spese dei prossimi 12 mesi, rischio della scuderia e valore di carriera" color="hsl(190 65% 52%)" />
-              <NavCard href="/puledro" icon={Tag} title="Quanto vale un puledro" desc="Il prezzo massimo da pagare, caso per caso dal campione al non corre, o se conviene venderlo" color="hsl(25 75% 58%)" />
-              <NavCard href="/pareggio" icon={Scale} title="Punto di pareggio" desc="Quanto deve vincere un cavallo per ripagarsi: perdita, pareggio o profitto per voto, per cavallo e per incrocio" color="hsl(160 60% 50%)" />
-              <NavCard href="/metodo" icon={BookMarked} title="Metodo e dati" desc="Da dove vengono i numeri, come si calcola ogni voto, cosa non se ne puo' concludere e quando si e' aggiornato l'archivio" color="hsl(40 40% 72%)" />
-            </div>
-          </div>
+          <EsploraCategorie />
         </div>
       </div>
 
