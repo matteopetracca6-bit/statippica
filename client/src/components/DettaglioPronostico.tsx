@@ -66,7 +66,7 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
                 <thead>
                   <tr>
                     <th>Cavallo</th><th className="num">Stima</th><th>Ultime 5 corse</th><th className="num">Premi ultimo anno</th>
-                    <th className="num">Miglior tempo</th><th className="num">Primi tre in carriera</th><th>Guidatore dell'ultima corsa</th>
+                    <th className="num">Miglior tempo</th><th className="num">Primi tre in carriera</th><th>Guidatore di oggi</th>
                     <th className="num">Su questa pista</th><th className="num">Ferma da</th>
                   </tr>
                 </thead>
@@ -95,7 +95,7 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
                       <td className="num tabular">{c.record != null ? tempo(c.record) : "—"}<PostoCorsa p={c.posti?.record} /></td>
                       <td className="num tabular">{c.carriera_top3 != null ? pct(c.carriera_top3) : "—"}<PostoCorsa p={c.posti?.carriera_top3} /></td>
                       <td>
-                        {c.guidatore ?? <span style={{ color: DIM }}>—</span>}
+                        {c.guidatore ?? <span style={{ color: DIM }}>non ancora dichiarato</span>}
                         {c.guidatore_top3 != null && <small style={{ display: "block", color: MUTED, fontSize: 10.5 }}>{pct(c.guidatore_top3)} nei primi tre su {c.guidatore_corse?.toLocaleString("it-IT")} corse</small>}
                         <PostoCorsa p={c.posti?.guidatore_top3} />
                       </td>
@@ -114,7 +114,7 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
             <Spiegazione compatta>
               Sono i numeri da cui parte il modello, riletti dall'archivio con le sole corse prima di questa. Sotto ogni numero c'è il posto del cavallo
               fra i partenti della corsa (verde nel terzo migliore, rosso nel terzo peggiore): il modello guarda soprattutto questo confronto, non il valore da solo.
-              «Guidatore» è chi lo ha guidato nell'ultima corsa: il calendario non dice chi lo guiderà oggi. Pesa anche il numero di partenza, e conta
+              «Guidatore di oggi» è quello dichiarato per questa corsa, con il suo rendimento nelle corse dei giorni prima; se non è ancora dichiarato il modello non ne tiene conto. Pesa anche il numero di partenza, e conta
               quanti sono i partenti. Un arrivo in verde è un piazzamento nei primi tre; passa sopra un arrivo per vedere data e pista.
             </Spiegazione>
           </div>

@@ -39,7 +39,7 @@ from pathlib import Path
 CARTELLA = Path(__file__).resolve().parent / "modelli"
 FILE_MODELLO = CARTELLA / "top3_xgb.json"
 FILE_VERIFICA = CARTELLA / "top3_verifica.json"
-NOME_MODELLO = "top3-xgb-v1"
+NOME_MODELLO = "top3-xgb-v2"
 
 # Ordine fisso delle variabili: il modello le legge per posizione.
 VARIABILI = [
@@ -59,7 +59,7 @@ SPIEGAZIONI = {
     "r_premi_365": ("premi dell'ultimo anno", +1),
     "r_top3": ("piazzamenti in carriera", +1),
     "r_tempo_migl": ("tempi", -1),   # tempo basso = meglio
-    "r_d_top3": ("guidatore", +1),
+    "r_d_top3": ("guidatore di oggi", +1),
     "partenza": ("numero di partenza", -1),        # numero basso = meglio
     "h_pista_top3": ("risultati su questa pista", +1),
     "h_giorni": ("giorni dall'ultima corsa", 0),
@@ -113,7 +113,7 @@ def _calendario(conn: sqlite3.Connection):
     import pandas as pd
     up = pd.read_sql_query(
         """SELECT horse_name AS cavallo, race_date AS data, track AS pista,
-                  race_time AS ora, start_pos AS partenza
+                  race_time AS ora, start_pos AS partenza, NULLIF(driver, '') AS guidatore
              FROM upcoming_races WHERE race_date >= date('now')""", conn)
     if up.empty:
         return up
@@ -124,7 +124,9 @@ def _calendario(conn: sqlite3.Connection):
     # Nel calendario l'elenco dei partenti e' completo: il loro numero e' il campo.
     up["partenti"] = up.groupby("gara")["cavallo"].transform("count")
     up["numero"] = up["ora"]
-    up["guidatore"] = None
+    # Il guidatore e' quello dichiarato per questa corsa; se la fonte non lo
+    # scrive resta vuoto (il modello lo tratta come dato mancante), mai quello
+    # dell'ultima corsa.
     up["arrivo"] = None
     up["tempo"] = None
     up["premio"] = 0.0
@@ -222,17 +224,22 @@ def costruisci_variabili(conn: sqlite3.Connection, con_calendario: bool = False)
     df["h_pista_n"] = gp.cumcount().astype(float)
     df["h_pista_top3"] = _media_passata(df, ["cavallo", "pista"], "top3")
 
-    # Guidatore: quello dell'ultima corsa del cavallo, con il suo rendimento
-    # misurato fino a quella corsa (escludendola). Vale per allenamento e
-    # calendario allo stesso modo.
-    dd = df[df["guidatore"].notna()].sort_values(["data", "gara"])
-    d_top3 = _media_passata(dd, "guidatore", "top3")
-    d_n = dd.groupby("guidatore", sort=False).cumcount().astype(float)
-    df["_d_top3"] = d_top3.reindex(df.index)
-    df["_d_n"] = d_n.reindex(df.index)
-    df.loc[df["guidatore"].isna(), ["_d_top3", "_d_n"]] = np.nan
-    df["d_top3"] = g["_d_top3"].shift()
-    df["d_n"] = g["_d_n"].shift()
+    # Guidatore: quello di QUESTA corsa (dichiarato prima della partenza), con
+    # il suo rendimento misurato sulle corse dei giorni precedenti. Nella
+    # versione 1 si usava il guidatore dell'ultima corsa del cavallo, perche'
+    # il calendario non lo leggeva: spesso non era lo stesso, e la stima lo
+    # faceva credere. Le corse dello stesso giorno restano fuori: la sera
+    # prima i loro arrivi non si conoscono.
+    dd = df[df["guidatore"].notna()]
+    gior = (dd.groupby(["guidatore", "data"], sort=True)["top3"]
+              .agg(s="sum", n="count"))
+    cs = gior.groupby(level=0)["s"].cumsum() - gior["s"]
+    cn = gior.groupby(level=0)["n"].cumsum() - gior["n"]
+    prima = pd.DataFrame({"_cs": cs, "_cn": cn}).reset_index()
+    df = df.merge(prima, on=["guidatore", "data"], how="left")
+    df["d_n"] = df["_cn"].astype(float)
+    df["d_top3"] = (df["_cs"] / df["_cn"]).where(df["_cn"] > 0)
+    df = df.drop(columns=["_cs", "_cn"])
 
     # Eta' e sesso dall'anagrafica.
     import pandas as pd  # noqa: F811
@@ -508,11 +515,6 @@ def _motivi(riga) -> list[dict]:
                     out.append({"testo": "va bene su questa pista", "pro": True, "forza": 0.3})
                 elif v <= 0.1:
                     out.append({"testo": "su questa pista finora non ha reso", "pro": False, "forza": 0.3})
-            continue
-        # "Guidatore" e' chi lo ha guidato nell'ultima corsa. Se era una corsa
-        # all'estero quel guidatore oggi quasi certamente non c'e', e le sue
-        # statistiche in archivio vengono da pochi cavalli venuti in Italia.
-        if var == "r_d_top3" and (riga.get("h_ult_estero") or 0) >= 1:
             continue
         # Classifica nella corsa: 1 = il migliore del gruppo. Con meno di
         # quattro avversari noti "tra i migliori" non vuol dire niente.

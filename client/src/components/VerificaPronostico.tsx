@@ -128,10 +128,10 @@ export default function VerificaPronostico() {
 
           <h4 className="verifica-titolo">Come si calcola, passo per passo</h4>
           <ol className="verifica-testo" style={{ paddingLeft: 18, display: "grid", gap: 6 }}>
-            <li><b>I partenti.</b> Ogni notte si leggono le corse in calendario con i partenti e il numero di partenza.</li>
+            <li><b>I partenti.</b> Ogni notte si leggono le corse in calendario con i partenti, il numero di partenza e il guidatore dichiarato.</li>
             <li><b>I dati di ogni cavallo, solo dal passato.</b> Per ciascuno si calcolano {v.peso_variabili?.length ?? 28} numeri con le sole corse prima di
               quel giorno: forma delle ultime cinque corse e dell'ultima, piazzamenti e vittorie in carriera, premi e corse dell'ultimo anno, miglior tempo
-              e ultimo tempo, risultati sulla stessa pista, giorni dall'ultima corsa, età, sesso e rendimento del guidatore dell'ultima corsa.</li>
+              e ultimo tempo, risultati sulla stessa pista, giorni dall'ultima corsa, età, sesso e rendimento del guidatore che lo guida in quella corsa.</li>
             <li><b>Il confronto con gli avversari.</b> Gli stessi numeri si mettono in fila fra i partenti della corsa: conta essere il migliore del gruppo,
               non avere un buon numero in assoluto. Contano anche il numero di partenza e quanti sono i partenti.</li>
             <li><b>Il modello.</b> Un insieme di {num(v.alberi ?? 0)} alberi di decisione (XGBoost), allenato su {num(v.periodo_allenamento.partenze)} partenze
@@ -146,7 +146,7 @@ export default function VerificaPronostico() {
           <p className="verifica-testo">Quanto conta ogni gruppo di dati nelle scelte del modello, in parti su cento.</p>
           <PesiRaggruppati pesi={v.peso_variabili ?? []} />
           <p className="verifica-testo" style={{ marginBottom: 0, marginTop: 10 }}>
-            Il guidatore pesa poco anche perché nel calendario non è indicato e si usa quello dell'ultima corsa. Per i cavalli con meno di cinque corse
+            Il guidatore è quello dichiarato per la corsa; se non è ancora dichiarato, il modello non ne tiene conto. Per i cavalli con meno di cinque corse
             in archivio la stima è debole ed è segnata con «poche corse». Non entrano le quote delle scommesse, lo stato del cavallo il giorno della gara,
             il terreno e la distanza.
           </p>

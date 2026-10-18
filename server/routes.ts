@@ -3050,7 +3050,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const track = String(req.query.track ?? ""), data = String(req.query.date ?? ""), ora = String(req.query.time ?? "");
       if (!track || !data || !ora) return res.status(400).json({ message: "servono pista, data e ora" });
       const pista = NOMI_CALENDARIO[track.toUpperCase()] ?? track.toUpperCase();
-      const partenti = db.prepare(`SELECT u.horse_name, u.start_pos, h.birth_year FROM upcoming_races u
+      const partenti = db.prepare(`SELECT u.horse_name, u.start_pos, NULLIF(u.driver, '') AS driver, h.birth_year FROM upcoming_races u
                                     LEFT JOIN horses h ON h.name = u.horse_name
                                     WHERE u.track = ? AND u.race_date = ? AND u.race_time = ? ORDER BY u.start_pos`).all(track, data, ora) as any[];
       if (!partenti.length) return res.status(404).json({ message: "corsa non trovata" });
@@ -3071,7 +3071,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
         const ult5 = st.slice(0, 5);
         const tempi = st.map(r => r.time_km).filter((t: any) => t != null && t >= 9 && t <= 40);
         const sullaPista = st.filter(r => r.track === pista);
-        const guidatore = st.find(r => r.driver)?.driver ?? null;
+        // Il guidatore dichiarato per QUESTA corsa; se la fonte non lo dice
+        // ancora resta vuoto (non si usa quello dell'ultima corsa).
+        const guidatore = p.driver ?? null;
         const g = guidatore ? (qGuid.get(guidatore, data) as any) : null;
         const s = stime.get(p.horse_name);
         return {

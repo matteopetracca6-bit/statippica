@@ -3754,12 +3754,24 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
                 pass
             if not horse_name or horse_name == "NON PARTENTE":
                 continue
+            # Il guidatore di QUESTA corsa: la fonte lo scrive accanto al nome.
+            # Prima non lo si leggeva e il pronostico usava quello dell'ultima
+            # corsa, che spesso non era lo stesso.
+            td_drv = tr.find("td", class_="driver")
+            driver = td_drv.get_text(" ", strip=True) if td_drv else ""
+            td_dist = tr.find("td", class_="dist_cav")
+            try:
+                distance = int(td_dist.get_text(strip=True)) if td_dist else None
+            except ValueError:
+                distance = None
             entries.append({
                 "track": track,
                 "race_date": race_date,
                 "race_time": race_time,
                 "horse_name": horse_name,
                 "start_pos": start_pos,
+                "driver": driver or None,
+                "distance": distance,
             })
     return entries
 
@@ -4051,12 +4063,13 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     inserted_races = 0
     for e in all_entries:
         cur = conn.execute(
-            """INSERT INTO upcoming_races (track, race_date, race_time, horse_name, start_pos, fetched_at)
-               VALUES (?, ?, ?, ?, ?, ?)
+            """INSERT INTO upcoming_races (track, race_date, race_time, horse_name, start_pos, driver, distance, fetched_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(track, race_date, race_time, horse_name) DO UPDATE SET
-                 start_pos=excluded.start_pos, fetched_at=excluded.fetched_at""",
+                 start_pos=excluded.start_pos, driver=excluded.driver,
+                 distance=excluded.distance, fetched_at=excluded.fetched_at""",
             (e["track"], e["race_date"], e["race_time"], e["horse_name"],
-             e.get("start_pos"), now)
+             e.get("start_pos"), e.get("driver"), e.get("distance"), now)
         )
         if cur.rowcount == 1:
             inserted_races += 1
