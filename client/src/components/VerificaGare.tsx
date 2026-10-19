@@ -33,7 +33,7 @@ type Sintesi = { corse: number; favoriti_controllati: number; quota_favoriti: nu
   vincitore_tra_favoriti?: number | null; distribuzione?: number[]; fasce?: { da: number; a: number; n: number; stimato: number; reale: number }[] };
 type Risposta = { corse: Corsa[]; sintesi: Record<string, Sintesi> | null; piste?: { pista: string; corse: number; quota_favoriti: number | null }[];
   andamento?: { data: string; corse: number; quota_favoriti: number | null; quota_tutti: number | null }[];
-  confronto_mercato?: { corse: number; noi: number | null; mercato: number | null; in_comune: number | null } | null };
+  confronto_mercato?: { corse: number; noi: number | null; mercato: number | null; in_comune: number | null } | null; in_attesa?: number };
 
 const p1 = (n: number | null | undefined) => n == null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
 const dec = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString("it-IT", { maximumFractionDigits: 2 });
@@ -49,7 +49,10 @@ function Riepilogo({ d, giorni }: { d: Risposta; giorni: number }) {
   return (
     <div style={{ marginTop: 14 }}>
       <h3 className="verifica-titolo" style={{ margin: "0 0 2px" }}>Com'è andato negli ultimi {giorni} giorni</h3>
-      <div style={{ fontSize: 12, color: MUTED }}>Solo le stime del giorno: {s.corse} corse con tutti i partenti e l'arrivo in archivio.</div>
+      <div style={{ fontSize: 12, color: MUTED }}>
+        Solo le stime del giorno: {s.corse} corse con tutti i partenti e l'arrivo in archivio.
+        {d.in_attesa ? <> Altre {d.in_attesa} corse aspettano l'arrivo completo: la fonte non l'ha ancora pubblicato tutto, compariranno dopo il prossimo aggiornamento.</> : null}
+      </div>
       <div className="riepilogo-griglia">
         <div className="verifica-riquadro">
           <div className="etichetta">Primo favorito</div>

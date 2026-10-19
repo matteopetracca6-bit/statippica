@@ -2903,6 +2903,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const leggiQuote = haQuote ? db.prepare(`SELECT horse_name, quota FROM quote_totalizzatore
                                                  WHERE race_date = ? AND pista = ? AND corsa = ?`) : null;
       const mercato = { corse: 0, noi: 0, loro: 0, comuni: 0 };
+      let inAttesa = 0;
       const gruppi = new Map<string, any[]>();
       for (const r of righe) {
         const k = `${r.race_date}|${r.pista}|${r.corsa}`;
@@ -2918,6 +2919,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
         const tipo = g[0].tipo;
         const noti = g.filter(e => e.arrivo != null || e.arrivo_testo != null);
         if (!noti.length) continue; // risultati non ancora arrivati
+        // Con tre cavalli stimati o meno "i tre favoriti" sono tutti: non e' una prova.
+        if (g.length < 4) continue;
+        // Arrivo ancora a meta': l'archivio ha solo i cavalli presi dalle loro
+        // schede (succede quando la fonte pubblica i risultati in ritardo).
+        // Non si mostra e non conta finche' l'arrivo non e' completo.
+        if (noti.length < Math.max(3, 0.7 * g.length)) { inAttesa++; continue; }
         // Le stime ricostruite valgono solo se l'archivio conosce abbastanza
         // partenti: con tre o quattro cavalli "i tre favoriti" sono quasi tutti.
         if (tipo === "ricostruito" && g.length < 6) continue;
@@ -3055,7 +3062,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         mercato: q(mercato.loro, mercato.corse * 3),
         in_comune: q(mercato.comuni, mercato.corse * 3),
       } : null;
-      res.json({ giorni, corse, sintesi, piste, andamento, confronto_mercato });
+      res.json({ giorni, corse, sintesi, piste, andamento, confronto_mercato, in_attesa: inAttesa });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally {
