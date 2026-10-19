@@ -2904,6 +2904,16 @@ export function registerRoutes(httpServer: Server, app: Express) {
                                                  WHERE race_date = ? AND pista = ? AND corsa = ?`) : null;
       const mercato = { corse: 0, noi: 0, loro: 0, comuni: 0 };
       let inAttesa = 0;
+      // Ricontrolli del giro notturno sulle corse con l'arrivo mancante o a meta'
+      // (nightly_update.py, phase_ricontrolla_arrivi): tentativi e motivo.
+      const controlli = new Map<string, any>();
+      if (vpTableExists(db, "arrivi_ricontrolli")) {
+        for (const c of db.prepare(`SELECT race_date, pista, corsa, tentativi, ultimo, esito, dettaglio FROM arrivi_ricontrolli
+                                     WHERE race_date >= date('now', ?)`).all(`-${giorni + 1} day`) as any[]) {
+          controlli.set(`${c.race_date}|${c.pista}|${c.corsa}`, { tentativi: c.tentativi, ultimo: c.ultimo, esito: c.esito, dettaglio: c.dettaglio });
+        }
+      }
+      const inAttesaElenco: any[] = [];
       const gruppi = new Map<string, any[]>();
       for (const r of righe) {
         const k = `${r.race_date}|${r.pista}|${r.corsa}`;
@@ -2924,7 +2934,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // Arrivo ancora a meta': l'archivio ha solo i cavalli presi dalle loro
         // schede (succede quando la fonte pubblica i risultati in ritardo).
         // Non si mostra e non conta finche' l'arrivo non e' completo.
-        if (noti.length < Math.max(3, 0.7 * g.length)) { inAttesa++; continue; }
+        if (noti.length < Math.max(3, 0.7 * g.length)) {
+          inAttesa++;
+          inAttesaElenco.push({ race_date: g[0].race_date, pista: g[0].pista, corsa: g[0].corsa, cavalli_con_arrivo: noti.length, partenti: g.length,
+                                controllo: controlli.get(`${g[0].race_date}|${g[0].pista}|${g[0].corsa}`) ?? null });
+          continue;
+        }
         // Le stime ricostruite valgono solo se l'archivio conosce abbastanza
         // partenti: con tre o quattro cavalli "i tre favoriti" sono quasi tutti.
         if (tipo === "ricostruito" && g.length < 6) continue;
@@ -3001,6 +3016,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           mancanti, incompleto: mancanti.length > 0,
           vincitore, attesi, sorprese,
           mercato: favMercato ? { favoriti: favMercato, a_segno: segnoMercato } : null,
+          controllo: controlli.get(`${g[0].race_date}|${g[0].pista}|${g[0].corsa}`) ?? null,
           primo_favorito: primo ? { nome: primo.horse_name, prob: primo.prob, arrivo: primo.arrivo_testo, top3: primo.top3 } : null,
         });
         if (mancanti.length > 0) continue; // pronostico fatto senza tutti i partenti: fuori dalla media
@@ -3062,7 +3078,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         mercato: q(mercato.loro, mercato.corse * 3),
         in_comune: q(mercato.comuni, mercato.corse * 3),
       } : null;
-      res.json({ giorni, corse, sintesi, piste, andamento, confronto_mercato, in_attesa: inAttesa });
+      res.json({ giorni, corse, sintesi, piste, andamento, confronto_mercato, in_attesa: inAttesa,
+                 in_attesa_elenco: inAttesaElenco.sort((a, b) => b.race_date.localeCompare(a.race_date)), tentativi_max: 8 });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally {

@@ -1711,6 +1711,215 @@ def _salva_ritirati(conn: sqlite3.Connection, righe: list) -> int:
     return len(righe)
 
 
+RICONTROLLI_MAX = 8   # due giri al giorno: circa quattro giorni di tentativi
+
+
+def _nome_semplice(n: str) -> str:
+    """Nome senza sigla del paese tra parentesi, spazi e segni: per riconoscere
+    lo stesso cavallo scritto in due modi (es. KUNIGUNDE (D) / KUNIGUNDE)."""
+    n = re.sub(r"\s*\([A-Z]{1,3}\)\s*$", "", (n or "").upper())
+    return re.sub(r"[^A-Z0-9]", "", n)
+
+
+def _stato_corse_pronostico(conn: sqlite3.Connection, giorni: int) -> dict:
+    """Per ogni corsa del pronostico del giorno degli ultimi giorni: i cavalli
+    stimati e, per ciascuno, se l'archivio conosce l'arrivo. Stesse regole
+    della pagina «Com'e' andato il pronostico»."""
+    righe = conn.execute("""
+        SELECT s.race_date, s.pista, s.corsa, s.horse_name, s.prob,
+               (SELECT COALESCE(LOWER(r.placement_raw), CAST(r.placement AS TEXT), '')
+                  FROM races r WHERE r.horse_name = s.horse_name AND r.race_date = s.race_date
+                   AND r.track = s.pista LIMIT 1) AS esito,
+               EXISTS (SELECT 1 FROM partenti_ritirati p WHERE p.horse_name = s.horse_name
+                        AND p.race_date = s.race_date) AS ritirato
+          FROM pronostico_top3_storico s
+         WHERE s.tipo = 'del_giorno' AND s.race_date >= date('now', ?) AND s.race_date < date('now')
+    """, (f"-{giorni} day",)).fetchall()
+    corse: dict = {}
+    for data, pista, corsa, nome, prob, esito, ritirato in righe:
+        corse.setdefault((data, pista, corsa), []).append(
+            {"nome": nome, "prob": prob or 0, "noto": esito is not None or bool(ritirato),
+             "np": bool(ritirato) or (esito or "") in ("n.p.", "np", "nr")})
+    return corse
+
+
+def _da_ricontrollare(cavalli: list) -> list:
+    """Favoriti senza arrivo, oppure arrivo a meta'. Lista vuota = corsa a posto
+    (la pagina mostra 0/3, 1/3, 2/3 o 3/3)."""
+    if len(cavalli) < 4:
+        return []
+    ordinati = sorted(cavalli, key=lambda c: -c["prob"])
+    favoriti = [c for c in ordinati if not c["np"]][:3]
+    mancano = [c["nome"] for c in favoriti if not c["noto"]]
+    noti = sum(1 for c in cavalli if c["noto"])
+    if mancano or noti < max(3, 0.7 * len(cavalli)):
+        return mancano or ["(arrivo a meta')"]
+    return []
+
+
+def phase_ricontrolla_arrivi(conn: sqlite3.Connection, giorni: int = 21, max_convegni: int = 30) -> int:
+    """Corse del pronostico che la pagina «Com'e' andato il pronostico» non
+    riesce a giudicare (un favorito senza arrivo, o arrivo a meta'): si rilegge
+    la pagina dei risultati di Trottoweb a ogni giro, finche' l'arrivo non c'e'
+    o finche' non si sono fatti RICONTROLLI_MAX tentativi.
+
+    PERCHE'. Trottoweb a volte pubblica i risultati con ore di ritardo (il
+    18/10/2026 non c'erano ne' a mezzanotte ne' la mattina dopo). La raccolta
+    normale guarda solo le giornate quasi vuote; qui si guarda corsa per corsa.
+    Ogni tentativo lascia scritto il motivo nella tabella arrivi_ricontrolli,
+    che il sito mostra accanto alla corsa.
+    """
+    try:
+        conn.execute("SELECT 1 FROM pronostico_top3_storico LIMIT 1")
+    except sqlite3.Error:
+        return 0
+    _salva_ritirati(conn, [])   # crea partenti_ritirati se manca
+    conn.execute("""CREATE TABLE IF NOT EXISTS arrivi_ricontrolli (
+        race_date TEXT, pista TEXT, corsa TEXT, tentativi INTEGER DEFAULT 0,
+        ultimo TEXT, esito TEXT, dettaglio TEXT,
+        PRIMARY KEY (race_date, pista, corsa))""")
+    gia = {(r[0], r[1], r[2]): (r[3], r[4]) for r in conn.execute(
+        "SELECT race_date, pista, corsa, tentativi, esito FROM arrivi_ricontrolli")}
+    stato = _stato_corse_pronostico(conn, giorni)
+    adesso = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+
+    # Corse da guardare, raggruppate per giornata e ippodromo (una pagina ciascuna).
+    per_convegno: dict = {}
+    for chiave, cavalli in stato.items():
+        mancano = _da_ricontrollare(cavalli)
+        if not mancano:
+            # Era in controllo e ora e' a posto (per esempio l'ha recuperata la
+            # raccolta normale): si segna come recuperata.
+            if chiave in gia and gia[chiave][1] == "in_controllo":
+                conn.execute("UPDATE arrivi_ricontrolli SET esito = 'recuperato', ultimo = ?, dettaglio = ? "
+                             "WHERE race_date = ? AND pista = ? AND corsa = ?",
+                             (adesso, "arrivo completo in archivio", *chiave))
+            continue
+        tentativi, esito = gia.get(chiave, (0, None))
+        if tentativi >= RICONTROLLI_MAX:
+            if esito != "abbandonato":
+                conn.execute("UPDATE arrivi_ricontrolli SET esito = 'abbandonato' "
+                             "WHERE race_date = ? AND pista = ? AND corsa = ?", chiave)
+            continue
+        per_convegno.setdefault((chiave[0], chiave[1]), []).append((chiave, mancano))
+    conn.commit()
+    if not per_convegno:
+        return 0
+
+    inverso = {}
+    for sg, ip in TRACK_CODE_MAP.items():
+        if sg != "ES":
+            inverso.setdefault(ip, sg)
+    recuperate = 0
+    print(f"[RICONTROLLO] {sum(len(v) for v in per_convegno.values())} corse senza arrivo completo "
+          f"in {len(per_convegno)} giornate", file=sys.stderr)
+    for (data, pista), corse in sorted(per_convegno.items(), reverse=True)[:max_convegni]:
+        codice = conn.execute("""SELECT race_code FROM races WHERE race_date = ? AND track = ?
+                                 AND race_code GLOB '????-??-??_*_*' LIMIT 1""", (data, pista)).fetchone()
+        m = re.match(r"\d{4}-\d{2}-\d{2}_([A-Z]+)_", (codice or [""])[0] or "")
+        sigla = m.group(1) if m else inverso.get(pista)
+        righe = []
+        motivo_pagina = None
+        if not sigla:
+            motivo_pagina = "ippodromo senza sigla Trottoweb"
+        else:
+            url = ("https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php?"
+                   f"data={data}&sigla={sigla}&ippodromo={requests.utils.quote(pista)}"
+                   "&flag_ris_u=1&note_giorno=")
+            soup = fetch_url(url)
+            if not soup:
+                motivo_pagina = "Trottoweb non raggiungibile"
+            else:
+                righe = _parse_hris_page(soup, data, pista, sigla)
+                if not righe:
+                    motivo_pagina = "Trottoweb non ha ancora pubblicato i risultati di questa giornata"
+                else:
+                    try:
+                        ferri = _ferri_del_convegno(url, data, pista, sigla)
+                    except Exception:
+                        ferri = {}
+                    for h in righe:
+                        h["shoes"] = h.get("shoes") or ferri.get((h["race_code"], h["name"]))
+                    # Righe vecchie salvate con la sigla al posto dell'ippodromo
+                    # (es. BO invece di BOLOGNA, 8/10/2026) e il piazzamento non
+                    # letto: bloccano il salvataggio di quelle giuste. Si
+                    # correggono con i dati della pagina.
+                    for h in righe:
+                        if h.get("ritirato"):
+                            continue
+                        conn.execute("""UPDATE races SET track = ?, placement = COALESCE(placement, ?),
+                                               placement_raw = ?, race_code = ?
+                                         WHERE horse_name = ? AND race_date = ? AND track = ?""",
+                                     (pista, h["placement"],
+                                      str(h["placement"]) if h["placement"] else (h.get("esito") or "nr"),
+                                      h["race_code"], h["name"], data, sigla))
+                    nuove, _ = _salva_righe_convegno(conn, righe)
+                    conn.commit()
+                    print(f"  [RICONTROLLO] {data} {pista}: {len(righe)} righe lette, {nuove} gare nuove",
+                          file=sys.stderr)
+        codice_di = {h["name"]: h["race_code"] for h in righe}
+        semplici: dict = {}
+        for h in righe:
+            semplici.setdefault((h["race_code"], _nome_semplice(h["name"])), h["name"])
+        # Stesso cavallo scritto in due modi nella stessa corsa (MULBERRY nel
+        # calendario, MULBERRY (S) nell'arrivo): il pronostico prende il nome
+        # dell'archivio, cosi' la pagina trova l'arrivo.
+        rinominati = {}
+        for chiave, mancano in corse:
+            altri = [codice_di[c["nome"]] for c in stato.get(chiave, []) if c["nome"] in codice_di]
+            rc = max(set(altri), key=altri.count) if altri else None
+            for nome in mancano:
+                vero = semplici.get((rc, _nome_semplice(nome))) if rc else None
+                if vero and vero != nome and not conn.execute(
+                        "SELECT 1 FROM pronostico_top3_storico WHERE race_date = ? AND pista = ? AND corsa = ? AND horse_name = ?",
+                        (*chiave, vero)).fetchone():
+                    conn.execute("UPDATE pronostico_top3_storico SET horse_name = ? "
+                                 "WHERE race_date = ? AND pista = ? AND corsa = ? AND horse_name = ?",
+                                 (vero, *chiave, nome))
+                    rinominati.setdefault(chiave, []).append(f"{nome} -> {vero}")
+        conn.commit()
+        dopo = _stato_corse_pronostico(conn, giorni)
+        for chiave, _ in corse:
+            cavalli = dopo.get(chiave, [])
+            ancora = _da_ricontrollare(cavalli)
+            tent = gia.get(chiave, (0, None))[0] + 1
+            if not ancora:
+                esito, dettaglio = "recuperato", f"arrivo recuperato al tentativo {tent}"
+                if chiave in rinominati:
+                    dettaglio += " (nome allineato all'arrivo: " + ", ".join(rinominati[chiave]) + ")"
+                recuperate += 1
+            elif motivo_pagina:
+                esito, dettaglio = "in_controllo", motivo_pagina
+            else:
+                # In quale corsa della pagina stanno gli altri cavalli del pronostico?
+                codici = [codice_di[c["nome"]] for c in cavalli if c["nome"] in codice_di]
+                rc = max(set(codici), key=codici.count) if codici else None
+                if rc is None:
+                    dettaglio = "la corsa non compare nella pagina dei risultati"
+                else:
+                    pezzi = []
+                    for nome in ancora:
+                        if nome.startswith("("):
+                            pezzi.append("la pagina ha solo una parte dell'arrivo")
+                        elif nome in codice_di:
+                            pezzi.append(f"{nome}: nella pagina c'e' ma non si e' salvato")
+                        elif (rc, _nome_semplice(nome)) in semplici:
+                            pezzi.append(f"{nome}: nella pagina ha un nome diverso ({semplici[(rc, _nome_semplice(nome))]})")
+                        else:
+                            pezzi.append(f"{nome}: non compare nell'arrivo della corsa")
+                    dettaglio = "; ".join(pezzi)
+                esito = "abbandonato" if tent >= RICONTROLLI_MAX else "in_controllo"
+            conn.execute("""INSERT INTO arrivi_ricontrolli (race_date, pista, corsa, tentativi, ultimo, esito, dettaglio)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            ON CONFLICT(race_date, pista, corsa) DO UPDATE SET
+                              tentativi = excluded.tentativi, ultimo = excluded.ultimo,
+                              esito = excluded.esito, dettaglio = excluded.dettaglio""",
+                         (*chiave, tent, adesso, esito, dettaglio))
+        conn.commit()
+    print(f"[RICONTROLLO] corse recuperate: {recuperate}", file=sys.stderr)
+    return recuperate
+
+
 def phase_ritirati_recenti(conn: sqlite3.Connection, giorni: int = 30) -> int:
     """Giornate gia' scaricate in cui alcuni cavalli del calendario non hanno
     l'arrivo: si rilegge una volta la pagina dei risultati per segnare i
@@ -1750,6 +1959,57 @@ def phase_ritirati_recenti(conn: sqlite3.Connection, giorni: int = 30) -> int:
     return trovati
 
 
+def _salva_righe_convegno(conn: sqlite3.Connection, rows: list) -> tuple[int, int]:
+    """Salva le righe lette da una pagina dei risultati (hRis.php): ritirati a
+    parte, cavalli nuovi con la carriera completa, gare nell'archivio.
+    Ritorna (gare nuove, cavalli nuovi). Usata dai risultati della notte e dal
+    ricontrollo degli arrivi rimasti a meta'."""
+    conv_races = 0
+    conv_horses = 0
+    _salva_ritirati(conn, [h for h in rows if h.get("ritirato")])
+    rows = [h for h in rows if not h.get("ritirato")]
+    for h in rows:
+        name = h["name"]
+        is_new, birth_year = _ensure_horse_in_db(conn, name)
+        if is_new:
+            conv_horses += 1
+            print(f"    [NEW] {name} -> recupero carriera completa...", file=sys.stderr)
+            caught_up = _fetch_and_insert_full_career(conn, name, birth_year)
+            print(f"      +{caught_up} gare storiche recuperate", file=sys.stderr)
+            _mark_backfilled(conn, name)
+
+        race_dict = {
+            "horse_name":    name,
+            "race_date":     h["race_date"],
+            "track":         h["track"],
+            "placement":     h["placement"],
+            "placement_raw": str(h["placement"]) if h["placement"] else (h.get("esito") or "nr"),
+            "start_pos":     h.get("start_pos"),
+            "total_starters": h.get("total_starters"),
+            "time_km":       h["time_km"],
+            "distance":      h["distance"],
+            "driver":        h["driver"],
+            "shoes":         h.get("shoes"),
+            # Il numero che la pagina fornisce e' il premio NETTO:
+            # verificato incrociando 18 gare del vecchio archivio di cui
+            # si conoscevano sia netto sia lordo, e combaciava sempre col
+            # netto. Il lordo NON viene fornito e non si inventa: il
+            # rapporto netto/lordo non e' costante (vale 0,85 nell'87%
+            # delle gare, ma non all'estero ne' ovunque in Italia), quindi
+            # calcolarlo produrrebbe numeri falsi. Resta vuoto, che vuol
+            # dire "non lo so", diverso da zero che vorrebbe dire
+            # "non ha fruttato niente". Il sito mostra il netto.
+            "prize_net":     h["prize"],
+            "prize_gross":   None,
+            "race_code":     h["race_code"],
+        }
+        n_inserted = _insert_races(conn, [race_dict])
+        if n_inserted > 0:
+            conv_races += 1
+            _update_horse_career_stats(conn, name)
+    return conv_races, conv_horses
+
+
 def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
     """
     FASE 0 — Scarica i convegni mancanti da Trottoweb e li inserisce nel DB.
@@ -1781,52 +2041,9 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
         for h in rows:
             h["shoes"] = h.get("shoes") or ferri.get((h["race_code"], h["name"]))
 
-        conv_races = 0
-        conv_horses = 0
-        _salva_ritirati(conn, [h for h in rows if h.get("ritirato")])
-        rows = [h for h in rows if not h.get("ritirato")]
-        for h in rows:
-            name = h["name"]
-            is_new, birth_year = _ensure_horse_in_db(conn, name)
-            if is_new:
-                total_new_horses += 1
-                conv_horses += 1
-                print(f"    [NEW] {name} -> recupero carriera completa...", file=sys.stderr)
-                caught_up = _fetch_and_insert_full_career(conn, name, birth_year)
-                print(f"      +{caught_up} gare storiche recuperate", file=sys.stderr)
-                _mark_backfilled(conn, name)
-
-            race_dict = {
-                "horse_name":    name,
-                "race_date":     h["race_date"],
-                "track":         h["track"],
-                "placement":     h["placement"],
-                "placement_raw": str(h["placement"]) if h["placement"] else (h.get("esito") or "nr"),
-                "start_pos":     h.get("start_pos"),
-                "total_starters": h.get("total_starters"),
-                "time_km":       h["time_km"],
-                "distance":      h["distance"],
-                "driver":        h["driver"],
-                "shoes":         h.get("shoes"),
-                # Il numero che la pagina fornisce e' il premio NETTO:
-                # verificato incrociando 18 gare del vecchio archivio di cui
-                # si conoscevano sia netto sia lordo, e combaciava sempre col
-                # netto. Il lordo NON viene fornito e non si inventa: il
-                # rapporto netto/lordo non e' costante (vale 0,85 nell'87%
-                # delle gare, ma non all'estero ne' ovunque in Italia), quindi
-                # calcolarlo produrrebbe numeri falsi. Resta vuoto, che vuol
-                # dire "non lo so", diverso da zero che vorrebbe dire
-                # "non ha fruttato niente". Il sito mostra il netto.
-                "prize_net":     h["prize"],
-                "prize_gross":   None,
-                "race_code":     h["race_code"],
-            }
-            n_inserted = _insert_races(conn, [race_dict])
-            if n_inserted > 0:
-                total_new_races += 1
-                conv_races += 1
-                _update_horse_career_stats(conn, name)
-
+        conv_races, conv_horses = _salva_righe_convegno(conn, rows)
+        total_new_races += conv_races
+        total_new_horses += conv_horses
         conn.commit()
         print(f"  -> {conv['ippodromo']} {conv['data']}: +{conv_races} gare, +{conv_horses} cavalli nuovi", file=sys.stderr)
 
@@ -4865,6 +5082,11 @@ def main():
             d_horses          = phase_discovery(conn)  # FASE 1: cavalli nuovi da homepage (+ catch-up)
             new_horses += r_horses + d_horses
             new_races  += r_races
+
+        try:
+            phase_ricontrolla_arrivi(conn)    # corse del pronostico con l'arrivo mancante o a meta': si riprova
+        except Exception as e:
+            print(f"[RICONTROLLO] errore: {e}", file=sys.stderr)
 
         if mode in ("maintenance", "full"):
             u_updated, u_races = phase_update(conn)         # FASE 2: aggiorna cavalli attivi

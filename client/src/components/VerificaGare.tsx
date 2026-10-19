@@ -25,15 +25,26 @@ const DIM = "hsl(210 8% 42%)";
 
 type Voce = { horse_name: string; birth_year: number | null; prob: number; favorito: boolean; affidabile: boolean; arrivo: number | null; arrivo_testo: string | null; top3: boolean | null };
 type Mancante = { horse_name: string; birth_year: number | null; arrivo_testo: string | null; top3: boolean };
-type Corsa = { race_date: string; pista: string; tipo: string; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean;
+type Corsa = { race_date: string; pista: string; tipo: string; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean; controllo?: Controllo | null;
   vincitore?: { nome: string; prob: number | null; posto: number | null; su: number } | null; attesi?: number;
   sorprese?: { nome: string; prob: number; arrivo: string }[]; primo_favorito?: { nome: string; prob: number; arrivo: string | null; top3: boolean | null } | null };
+type Controllo = { tentativi: number; ultimo: string; esito: string; dettaglio: string | null };
 type Sintesi = { corse: number; favoriti_controllati: number; quota_favoriti: number | null; quota_tutti: number | null;
   attesi_per_corsa?: number | null; arrivati_per_corsa?: number | null; primo_favorito_top3?: number | null; primo_favorito_vince?: number | null;
   vincitore_tra_favoriti?: number | null; distribuzione?: number[]; fasce?: { da: number; a: number; n: number; stimato: number; reale: number }[] };
 type Risposta = { corse: Corsa[]; sintesi: Record<string, Sintesi> | null; piste?: { pista: string; corse: number; quota_favoriti: number | null }[];
   andamento?: { data: string; corse: number; quota_favoriti: number | null; quota_tutti: number | null }[];
-  confronto_mercato?: { corse: number; noi: number | null; mercato: number | null; in_comune: number | null } | null; in_attesa?: number };
+  confronto_mercato?: { corse: number; noi: number | null; mercato: number | null; in_comune: number | null } | null; in_attesa?: number;
+  in_attesa_elenco?: { race_date: string; pista: string; corsa: string; cavalli_con_arrivo: number; partenti: number; controllo: Controllo | null }[]; tentativi_max?: number };
+
+/** A che punto e' il ricontrollo notturno di una corsa senza arrivo completo. */
+function testoControllo(c: Controllo | null | undefined, max: number): string {
+  if (!c) return "sarà ricontrollata al prossimo aggiornamento notturno";
+  const quando = c.ultimo ? ` (ultimo il ${c.ultimo.slice(8, 10)}/${c.ultimo.slice(5, 7)} alle ${c.ultimo.slice(11, 16)} UTC)` : "";
+  if (c.esito === "abbandonato") return `ricontrollata ${c.tentativi} volte senza esito: ${c.dettaglio ?? "motivo non noto"}. Resta così`;
+  if (c.esito === "recuperato") return c.dettaglio ?? "arrivo recuperato";
+  return `ricontrollo ${c.tentativi} di ${max}${quando}: ${c.dettaglio ?? "in corso"}`;
+}
 
 const p1 = (n: number | null | undefined) => n == null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
 const dec = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString("it-IT", { maximumFractionDigits: 2 });
@@ -51,8 +62,23 @@ function Riepilogo({ d, giorni }: { d: Risposta; giorni: number }) {
       <h3 className="verifica-titolo" style={{ margin: "0 0 2px" }}>Com'è andato negli ultimi {giorni} giorni</h3>
       <div style={{ fontSize: 12, color: MUTED }}>
         Solo le stime del giorno: {s.corse} corse con tutti i partenti e l'arrivo in archivio.
-        {d.in_attesa ? <> Altre {d.in_attesa} corse aspettano l'arrivo completo: la fonte non l'ha ancora pubblicato tutto, compariranno dopo il prossimo aggiornamento.</> : null}
+        {d.in_attesa ? (d.in_attesa === 1
+          ? <> Un'altra corsa aspetta l'arrivo completo: il giro notturno la ricontrolla finché Trottoweb non lo pubblica.</>
+          : <> Altre {d.in_attesa} corse aspettano l'arrivo completo: il giro notturno le ricontrolla finché Trottoweb non lo pubblica.</>) : null}
       </div>
+      {(d.in_attesa_elenco ?? []).length > 0 && (
+        <details style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>
+          <summary style={{ cursor: "pointer" }}>Le corse in attesa e il motivo</summary>
+          <div style={{ display: "grid", gap: 3, marginTop: 6 }}>
+            {d.in_attesa_elenco!.map(c => (
+              <div key={`${c.race_date}${c.pista}${c.corsa}`}>
+                <b style={{ color: "hsl(210 10% 80%)" }}>{c.race_date.split("-").reverse().join("/")} {titolo(c.pista)} {c.corsa}</b>
+                {" · "}{c.cavalli_con_arrivo} arrivi su {c.partenti} · {testoControllo(c.controllo, d.tentativi_max ?? 8)}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
       <div className="riepilogo-griglia">
         <div className="verifica-riquadro">
           <div className="etichetta">Primo favorito</div>
@@ -270,6 +296,9 @@ export default function VerificaGare() {
                   <span className="vc-pista"><MapPin size={12} /> {titolo(c.pista)}{c.corsa ? ` · ${c.corsa}` : c.numero ? ` · corsa ${c.numero}` : ""}</span>
                   {c.tipo === "ricostruito" && <span className="vc-tipo">ricostruita</span>}
                   {c.incompleto && <span className="vc-tipo" title="Il pronostico non aveva tutti i partenti: non conta nella media">incompleto</span>}
+                  {c.favoriti_noti < 3 && c.controllo?.esito !== "recuperato" && (
+                    <span className="vc-tipo" title={testoControllo(c.controllo, 8)}>{c.controllo?.esito === "abbandonato" ? "arrivo non trovato" : "in controllo"}</span>
+                  )}
                   <span className="vc-segno tabular" style={{ color: col, borderColor: col }}>
                     {c.favoriti_noti ? `${c.favoriti_a_segno} su ${c.favoriti_noti}` : "—"}
                   </span>
@@ -329,6 +358,11 @@ export default function VerificaGare() {
                         <span />
                       </div>
                     ))}
+                    {c.favoriti_noti < 3 && c.controllo?.esito !== "recuperato" && (
+                      <div className="vc-nota" style={{ color: "hsl(35 80% 62%)" }}>
+                        {3 - c.favoriti_noti === 1 ? "Manca l'arrivo di un favorito" : `Manca l'arrivo di ${3 - c.favoriti_noti} favoriti`}: {testoControllo(c.controllo, 8)}.
+                      </div>
+                    )}
                     {c.incompleto && (
                       <div className="vc-nota" style={{ color: "hsl(35 80% 62%)" }}>
                         Pronostico incompleto: {c.mancanti!.length === 1 ? "mancava 1 partente" : `mancavano ${c.mancanti!.length} partenti`}.
