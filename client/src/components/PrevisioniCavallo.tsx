@@ -220,6 +220,15 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
                     (con "quanto l'anno scorso" il {Math.round(v.anno_prima.indicati_sopra_giusti * 100)}%). In media stimava {euro(v.medi_stimati)} e ne sono arrivati {euro(v.medi_reali)}.
                     La probabilità di coprire la spesa si legge da come sono andati i cavalli con una stima simile. Non conta rivendita, valore da riproduttore né infortuni futuri.
                   </p>
+                  {v.rifacimento && (
+                    <p style={{ margin: "8px 0 0" }}>
+                      Dopo la correzione dei premi (ottobre 2026) il modello è stato rifatto da capo sui dati corretti e provato sugli stessi cavalli:
+                      sbagliava in media di {euro(v.rifacimento.errore_medio)} e ordinava i cavalli a {Number(v.rifacimento.correlazione_rango).toFixed(2).replace(".", ",")},
+                      praticamente come questo. {v.rifacimento.esito === "adottato"
+                        ? "È quello in uso."
+                        : "Non essendo migliore, è rimasto quello di prima: i numeri qui sopra sono rifatti sui premi corretti."}
+                    </p>
+                  )}
                 </Spiegazione>
               )}
             </div>

@@ -37,7 +37,9 @@ from pronostico_top3 import Alberi
 CARTELLA = Path(__file__).resolve().parent / "modelli"
 FILE_MODELLO = CARTELLA / "premi_xgb.json"
 FILE_VERIFICA = CARTELLA / "premi_verifica.json"
-NOME_MODELLO = "premi-xgb-v1"
+# Nome della prossima versione allenata. Quello del modello IN USO e' scritto
+# nel file di verifica (resta il precedente se il nuovo non e' migliore).
+NOME_MODELLO = "premi-xgb-v2"
 
 # Spesa di riferimento della tesi: 1.200 euro al mese.
 COSTO_ANNO_RIFERIMENTO = 14_400
@@ -220,20 +222,49 @@ def allena():
     per_eta = tutti.groupby("eta")["y"].mean()
     media_eta = prova["eta"].map(per_eta).fillna(tutti["y"].mean()).to_numpy()
 
+    # Il modello in uso, provato sugli stessi cavalli e sugli stessi premi:
+    # il nuovo prende il suo posto solo se e' davvero migliore (errore medio
+    # piu' basso di almeno l'1% e ordine dei cavalli non peggiore). Altrimenti
+    # resta quello in uso, con i numeri rifatti sui dati di oggi, e la prova
+    # del nuovo si scrive accanto.
+    candidato = {"modello": NOME_MODELLO, **_misure(vero, pred),
+                 "premi_medi_stimati": round(float(pred.mean()), 0), "alberi": n_alberi}
+    vecchio = json.loads(FILE_VERIFICA.read_text(encoding="utf-8")) if FILE_VERIFICA.exists() else None
+    tieni_vecchio = False
+    if vecchio and FILE_MODELLO.exists():
+        pred_v = Alberi(FILE_MODELLO).importo(prova[VARIABILI].to_numpy(dtype="float32"))
+        mv = _misure(vero, pred_v)
+        tieni_vecchio = not (candidato["errore_medio"] < 0.99 * mv["errore_medio"]
+                             and candidato["correlazione_rango"] >= mv["correlazione_rango"] - 0.002)
+    oggi = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     CARTELLA.mkdir(exist_ok=True)
-    m.save_model(str(FILE_MODELLO))
-    lettore = Alberi(FILE_MODELLO)
-    # Scarto relativo: gli importi arrivano a decine di migliaia di euro.
-    scarto = float((np.abs(lettore.importo(prova[VARIABILI].to_numpy(dtype="float32")) - pred) / np.maximum(pred, 1)).max())
-    peso = m.get_score(importance_type="gain")
-    totp = sum(peso.values()) or 1
+    if tieni_vecchio:
+        pred = pred_v
+        nome, allenato_il = vecchio["modello"], vecchio.get("allenato_il")
+        n_alberi_out = vecchio.get("alberi")
+        pesi_out = vecchio.get("peso_variabili")
+        scarto = 0.0
+        candidato["esito"] = "non adottato: non migliora il modello in uso sugli stessi dati"
+        print("Il nuovo modello non e' migliore: resta quello in uso.", file=sys.stderr)
+    else:
+        m.save_model(str(FILE_MODELLO))
+        lettore = Alberi(FILE_MODELLO)
+        # Scarto relativo: gli importi arrivano a decine di migliaia di euro.
+        scarto = float((np.abs(lettore.importo(prova[VARIABILI].to_numpy(dtype="float32")) - pred) / np.maximum(pred, 1)).max())
+        peso = m.get_score(importance_type="gain")
+        totp = sum(peso.values()) or 1
+        nome, allenato_il, n_alberi_out = NOME_MODELLO, oggi, n_alberi
+        pesi_out = sorted(({"variabile": k, "peso": round(v / totp, 4)} for k, v in peso.items()),
+                          key=lambda d: -d["peso"])[:10]
+        candidato["esito"] = "adottato"
     ris = {
-        "modello": NOME_MODELLO,
-        "allenato_il": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "modello": nome,
+        "allenato_il": allenato_il,
+        "verificato_il": oggi,
         "fotografie_allenamento": {"da": "2016-01-01", "a": "2023-10-01", "n": int(len(tutti))},
         "periodo_prova": {"da": "2025-01-01", "a": "2025-07-01", "fotografie": int(len(prova)),
                            "cavalli": int(prova["cavallo"].nunique())},
-        "alberi": n_alberi,
+        "alberi": n_alberi_out,
         "costo_anno_riferimento": COSTO_ANNO_RIFERIMENTO,
         "modello_misure": _misure(vero, pred),
         "come_l_anno_prima": _misure(vero, ripeti),
@@ -242,9 +273,9 @@ def allena():
         "premi_medi_stimati": round(float(pred.mean()), 0),
         "quota_a_zero": round(float((vero <= 0).mean()), 3),
         "fasce": _fasce(pred, vero),
-        "peso_variabili": sorted(({"variabile": k, "peso": round(v / totp, 4)} for k, v in peso.items()),
-                                 key=lambda d: -d["peso"])[:10],
+        "peso_variabili": pesi_out,
         "scarto_lettore": scarto,
+        "prova_rifacimento": candidato,
     }
     mm, rr = ris["modello_misure"], ris["come_l_anno_prima"]
     ris["supera_i_metodi_semplici"] = bool(
@@ -310,7 +341,7 @@ def phase_stima_premi(conn: sqlite3.Connection) -> int:
             d = rr.to_dict()
             righe.append((d["cavallo"], round(float(p), 0), round(float(d["premi365"]), 0), int(d["n365"]),
                           int(d["eta"]) if d["eta"] == d["eta"] else None,
-                          json.dumps(_motivi(d, mediane), ensure_ascii=False), NOME_MODELLO, ver, ora))
+                          json.dumps(_motivi(d, mediane), ensure_ascii=False), verifica.get("modello", NOME_MODELLO), ver, ora))
         conn.executemany("INSERT OR REPLACE INTO stima_premi VALUES (?,?,?,?,?,?,?,?,?)", righe)
         conn.commit()
         print(f"[PREMI] {len(righe)} cavalli stimati", file=sys.stderr)

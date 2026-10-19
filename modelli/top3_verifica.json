@@ -1,9 +1,9 @@
 {
   "modello": {
-    "auc": 0.7402,
-    "log_loss": 0.5477,
-    "brier": 0.1852,
-    "tre_scelti_a_segno": 0.5039
+    "auc": 0.7417,
+    "log_loss": 0.5468,
+    "brier": 0.1848,
+    "tre_scelti_a_segno": 0.5059
   },
   "solo_partenza": {
     "auc": 0.6318,
@@ -26,16 +26,16 @@
   "campo_completo": {
     "corse": 6310,
     "modello": {
-      "auc": 0.7444,
-      "log_loss": 0.5477,
-      "brier": 0.1853,
-      "tre_scelti_a_segno": 0.5356
+      "auc": 0.7458,
+      "log_loss": 0.5469,
+      "brier": 0.185,
+      "tre_scelti_a_segno": 0.5382
     },
     "modello_normalizzato": {
-      "auc": 0.7446,
-      "log_loss": 0.5709,
-      "brier": 0.1864,
-      "tre_scelti_a_segno": 0.5356
+      "auc": 0.7462,
+      "log_loss": 0.5697,
+      "brier": 0.186,
+      "tre_scelti_a_segno": 0.5382
     },
     "solo_partenza": {
       "auc": 0.636,
@@ -54,172 +54,196 @@
     {
       "da": 0,
       "a": 0.1,
-      "n": 6435,
-      "stimato": 0.058,
-      "reale": 0.059
+      "n": 6415,
+      "stimato": 0.059,
+      "reale": 0.055
     },
     {
       "da": 0.1,
       "a": 0.2,
-      "n": 9958,
+      "n": 9905,
       "stimato": 0.151,
-      "reale": 0.146
+      "reale": 0.147
     },
     {
       "da": 0.2,
       "a": 0.3,
-      "n": 10450,
+      "n": 10557,
       "stimato": 0.25,
-      "reale": 0.248
+      "reale": 0.247
     },
     {
       "da": 0.3,
       "a": 0.4,
-      "n": 9636,
+      "n": 9585,
       "stimato": 0.349,
-      "reale": 0.344
+      "reale": 0.348
     },
     {
       "da": 0.4,
       "a": 0.5,
-      "n": 7914,
+      "n": 7968,
       "stimato": 0.448,
-      "reale": 0.457
+      "reale": 0.453
     },
     {
       "da": 0.5,
       "a": 0.6,
-      "n": 5839,
+      "n": 5854,
       "stimato": 0.547,
-      "reale": 0.548
+      "reale": 0.552
     },
     {
       "da": 0.6,
       "a": 0.7,
-      "n": 3634,
-      "stimato": 0.645,
-      "reale": 0.647
+      "n": 3541,
+      "stimato": 0.644,
+      "reale": 0.645
     },
     {
       "da": 0.7,
       "a": 1,
-      "n": 2150,
-      "stimato": 0.793,
-      "reale": 0.707
+      "n": 2191,
+      "stimato": 0.791,
+      "reale": 0.708
     }
   ],
   "peso_variabili": [
     {
-      "variabile": "d_top3",
-      "peso": 0.107
-    },
-    {
-      "variabile": "partenza",
-      "peso": 0.0979
-    },
-    {
       "variabile": "h_ult5_top3",
-      "peso": 0.0921
+      "peso": 0.1197
     },
     {
       "variabile": "r_top3",
-      "peso": 0.0905
+      "peso": 0.0955
+    },
+    {
+      "variabile": "d_top3",
+      "peso": 0.0947
+    },
+    {
+      "variabile": "partenza",
+      "peso": 0.0891
     },
     {
       "variabile": "partenti",
-      "peso": 0.0831
+      "peso": 0.0748
     },
     {
       "variabile": "h_ult_top3",
-      "peso": 0.0667
+      "peso": 0.0642
     },
     {
       "variabile": "s_premi_365",
-      "peso": 0.0507
+      "peso": 0.0425
     },
     {
       "variabile": "r_ult5_top3",
-      "peso": 0.0421
-    },
-    {
-      "variabile": "s_ult5_top3",
-      "peso": 0.0402
-    },
-    {
-      "variabile": "r_tempo_migl",
-      "peso": 0.0401
+      "peso": 0.0403
     },
     {
       "variabile": "r_d_top3",
-      "peso": 0.0383
-    },
-    {
-      "variabile": "r_premi_365",
-      "peso": 0.0353
+      "peso": 0.0354
     },
     {
       "variabile": "s_tempo_migl",
-      "peso": 0.0345
+      "peso": 0.0354
+    },
+    {
+      "variabile": "r_premi_365",
+      "peso": 0.0333
+    },
+    {
+      "variabile": "r_tempo_migl",
+      "peso": 0.0325
+    },
+    {
+      "variabile": "s_ult5_top3",
+      "peso": 0.0311
     },
     {
       "variabile": "partenza_rel",
-      "peso": 0.022
-    },
-    {
-      "variabile": "h_tempo_ult",
-      "peso": 0.0177
+      "peso": 0.0197
     },
     {
       "variabile": "maschio",
-      "peso": 0.0158
+      "peso": 0.0165
+    },
+    {
+      "variabile": "h_tempo_ult",
+      "peso": 0.0161
     },
     {
       "variabile": "h_giorni",
-      "peso": 0.0154
+      "peso": 0.0134
     },
     {
       "variabile": "h_ult3_pos",
-      "peso": 0.0147
+      "peso": 0.0132
+    },
+    {
+      "variabile": "dist_handicap",
+      "peso": 0.0115
     },
     {
       "variabile": "h_gare_365",
-      "peso": 0.0131
+      "peso": 0.0112
     },
     {
-      "variabile": "h_top3",
-      "peso": 0.0122
-    },
-    {
-      "variabile": "h_pista_top3",
-      "peso": 0.0113
-    },
-    {
-      "variabile": "h_vitt",
+      "variabile": "r_fascia_top3",
       "peso": 0.0111
     },
     {
-      "variabile": "h_n",
+      "variabile": "h_top3",
+      "peso": 0.0108
+    },
+    {
+      "variabile": "h_pista_top3",
+      "peso": 0.0106
+    },
+    {
+      "variabile": "h_vitt",
       "peso": 0.01
     },
     {
-      "variabile": "h_premi_365",
-      "peso": 0.0085
+      "variabile": "h_n",
+      "peso": 0.0092
     },
     {
       "variabile": "eta",
-      "peso": 0.0085
+      "peso": 0.0079
+    },
+    {
+      "variabile": "h_premi_365",
+      "peso": 0.0073
     },
     {
       "variabile": "d_n",
-      "peso": 0.0077
+      "peso": 0.0071
+    },
+    {
+      "variabile": "distanza",
+      "peso": 0.0067
     },
     {
       "variabile": "h_pista_n",
-      "peso": 0.007
+      "peso": 0.0065
+    },
+    {
+      "variabile": "dist_vs_solita",
+      "peso": 0.0065
     },
     {
       "variabile": "h_tempo_migl",
-      "peso": 0.0063
+      "peso": 0.0057
+    },
+    {
+      "variabile": "h_fascia_top3",
+      "peso": 0.0053
+    },
+    {
+      "variabile": "h_fascia_n",
+      "peso": 0.0053
     }
   ],
   "supera_i_metodi_semplici": true,
@@ -234,7 +258,14 @@
     "a": "2024-12-31",
     "partenze": 485543
   },
-  "alberi": 414,
-  "nome": "top3-xgb-v2",
-  "allenato_il": "2026-10-18"
+  "alberi": 395,
+  "modello_precedente": {
+    "nome": "top3-xgb-v2",
+    "auc": 0.7402,
+    "log_loss": 0.5477,
+    "brier": 0.1852,
+    "tre_scelti_a_segno": 0.5039
+  },
+  "nome": "top3-xgb-v3",
+  "allenato_il": "2026-10-19"
 }

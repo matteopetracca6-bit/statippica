@@ -44,6 +44,8 @@ from fasi_guidatori_ippodromi import phase_driver_stats, phase_track_stats
 from pronostico_top3 import phase_pronostico_top3
 from stima_premi import phase_stima_premi
 from controllo_modelli import phase_controllo_modelli
+sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
+from quote_totalizzatore import phase_quote_totalizzatore  # noqa: E402
 
 
 def phase_valore_residuo(conn):
@@ -1445,6 +1447,7 @@ def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str
                         "distance": None, "driver": "", "prize": 0.0,
                         "race_code": race_code, "race_date": race_date, "track": track,
                         "esito": "n.p.", "start_pos": None, "ritirato": True,
+                        "shoes": None,
                     })
                 continue
             pos_raw    = td("piaz_u") or td("piaz")
@@ -1485,6 +1488,9 @@ def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str
                 "race_code": race_code, "race_date": race_date, "track": track,
                 "esito": esito,
                 "start_pos": int(num_p.group(1)) if num_p else None,
+                # Ferratura (F ferrato, A senza ferri davanti, P dietro, AP
+                # scalzo): c'e' solo nella versione della pagina SENZA premi.
+                "shoes": (td("ferri_u") or td("ferri")) or None,
             })
         # Partenti della corsa: tutti quelli in tabella, non partiti esclusi.
         corsa = [r for r in results if r["race_code"] == race_code]
@@ -1493,6 +1499,25 @@ def _parse_hris_page(soup: BeautifulSoup, race_date: str, track: str, sigla: str
             r["total_starters"] = n_part or None
 
     return results
+
+
+def _ferri_del_convegno(url: str, race_date: str, track: str, sigla: str) -> dict:
+    """Ferratura di ogni cavallo, letta dalla versione della pagina senza premi.
+
+    La versione con i premi (flag_ris_u=1), quella che si usa per i
+    risultati, non ha la colonna dei ferri: per questo da luglio 2026 la
+    ferratura non veniva piu' salvata. Si legge l'altra versione e si
+    abbinano i cavalli per corsa e nome.
+    """
+    from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+    pezzi = urlparse(url)
+    q = parse_qs(pezzi.query, keep_blank_values=True)
+    q["flag_ris_u"] = ["0"]
+    soup = fetch_url(urlunparse(pezzi._replace(query=urlencode(q, doseq=True))))
+    if not soup:
+        return {}
+    return {(r["race_code"], r["name"]): r["shoes"]
+            for r in _parse_hris_page(soup, race_date, track, sigla) if r.get("shoes")}
 
 
 def _con_premi(url: str) -> str:
@@ -1752,6 +1777,9 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
 
         rows = _parse_hris_page(soup, conv["data"], conv["ippodromo"], conv["sigla"])
         print(f"  Righe parsate: {len(rows)}", file=sys.stderr)
+        ferri = _ferri_del_convegno(conv["url"], conv["data"], conv["ippodromo"], conv["sigla"])
+        for h in rows:
+            h["shoes"] = h.get("shoes") or ferri.get((h["race_code"], h["name"]))
 
         conv_races = 0
         conv_horses = 0
@@ -1779,6 +1807,7 @@ def phase_results(conn: sqlite3.Connection) -> tuple[int, int]:
                 "time_km":       h["time_km"],
                 "distance":      h["distance"],
                 "driver":        h["driver"],
+                "shoes":         h.get("shoes"),
                 # Il numero che la pagina fornisce e' il premio NETTO:
                 # verificato incrociando 18 gare del vecchio archivio di cui
                 # si conoscevano sia netto sia lordo, e combaciava sempre col
@@ -3245,10 +3274,11 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
                                     race_number    = COALESCE(race_number, ?),
                                     start_pos      = COALESCE(start_pos, ?),
                                     total_starters = COALESCE(total_starters, ?),
-                                    driver         = COALESCE(NULLIF(driver, ''), ?)
+                                    driver         = COALESCE(NULLIF(driver, ''), ?),
+                                    shoes          = COALESCE(NULLIF(shoes, ''), ?)
                                 WHERE id=?""",
                              (r.get("race_number"), r.get("start_pos"), r.get("total_starters"),
-                              r.get("driver") or None, already[0]))
+                              r.get("driver") or None, r.get("shoes") or None, already[0]))
                 continue
 
             # Stessa gara gia' presente ma senza data, arrivata dai risultati di
@@ -3283,14 +3313,15 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
                 INSERT OR IGNORE INTO races
                     (horse_name, race_date, track, placement, placement_raw,
                      time_km, distance, driver, prize_net, prize_gross, race_code,
-                     race_number, start_pos, total_starters)
-                VALUES (?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)
+                     race_number, start_pos, total_starters, shoes)
+                VALUES (?,?,?,?,?, ?,?,?,?,?,?, ?,?,?,?)
             """, (
                 r.get("horse_name"), r.get("race_date"), r.get("track"),
                 r.get("placement"), r.get("placement_raw"),
                 r.get("time_km"), r.get("distance"), r.get("driver"),
                 r.get("prize_net", 0), r.get("prize_gross", 0), r.get("race_code", ""),
                 r.get("race_number"), r.get("start_pos"), r.get("total_starters"),
+                r.get("shoes") or None,
             ))
             if cursor.rowcount > 0:
                 inserted += 1
@@ -3759,6 +3790,10 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
             # corsa, che spesso non era lo stesso.
             td_drv = tr.find("td", class_="driver")
             driver = td_drv.get_text(" ", strip=True) if td_drv else ""
+            # Ferratura dichiarata per la corsa: di solito compare solo il
+            # giorno della corsa; prima resta vuota (= non ancora nota).
+            td_fer = tr.find("td", class_="ferri")
+            shoes = td_fer.get_text(strip=True) if td_fer else ""
             td_dist = tr.find("td", class_="dist_cav")
             try:
                 distance = int(td_dist.get_text(strip=True)) if td_dist else None
@@ -3772,6 +3807,7 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
                 "start_pos": start_pos,
                 "driver": driver or None,
                 "distance": distance,
+                "shoes": shoes or None,
             })
     return entries
 
@@ -3846,6 +3882,49 @@ def phase_collega_stalloni_atleti(conn: sqlite3.Connection) -> int:
         print(f"  [ALIAS] stallone e scheda da corsa collegati per {len(coppie)} cavalli: "
               + ", ".join(c[3] for c in coppie), file=sys.stderr)
     return len(coppie)
+
+
+def phase_ripara_ferri(conn: sqlite3.Connection, limite: int = 400) -> int:
+    """Recupera la ferratura dei convegni del 2026 rimasti senza.
+
+    Da luglio 2026 i risultati arrivavano dalla pagina con i premi, che non
+    ha la colonna dei ferri. Si rilegge la versione senza premi e si scrive
+    la ferratura solo dove manca. Ogni convegno si legge una volta sola.
+    """
+    conn.execute("""CREATE TABLE IF NOT EXISTS ferri_convegni_letti (
+                        race_date TEXT, track TEXT, PRIMARY KEY (race_date, track))""")
+    convegni = conn.execute("""
+        SELECT r.race_date, r.track, MIN(r.race_code) FROM races r
+         WHERE r.race_date >= '2026-01-01' AND r.race_code GLOB '????-??-??_*_R[0-9]*'
+           AND NOT EXISTS (SELECT 1 FROM ferri_convegni_letti f
+                            WHERE f.race_date = r.race_date AND f.track = r.track)
+         GROUP BY r.race_date, r.track
+        HAVING SUM(COALESCE(r.shoes, '') = '') * 2 > COUNT(*)
+         ORDER BY r.race_date DESC LIMIT ?""", (limite,)).fetchall()
+    scritte = 0
+    for data, pista, codice in convegni:
+        m = re.match(r"\d{4}-\d{2}-\d{2}_([A-Z]+)_", codice or "")
+        if not m:
+            continue
+        url = ("https://www.trottoweb.it/TrottoWeb/php_resp/hRis.php?"
+               f"data={data}&sigla={m.group(1)}&ippodromo={requests.utils.quote(pista)}"
+               "&flag_ris_u=1&note_giorno=")
+        ferri = _ferri_del_convegno(url, data, pista, m.group(1))
+        if not ferri:
+            continue   # pagina non arrivata: si riprova la notte dopo
+        for (codice_corsa, nome), f in ferri.items():
+            cur = conn.execute("""UPDATE races SET shoes = ?
+                                   WHERE horse_name = ? AND race_date = ? AND track = ?
+                                     AND COALESCE(shoes, '') = ''""",
+                               (f, _normalize_name(nome), data, pista))
+            scritte += cur.rowcount
+        conn.execute("INSERT OR IGNORE INTO ferri_convegni_letti VALUES (?, ?)", (data, pista))
+        conn.commit()
+        time.sleep(0.3)
+    if convegni:
+        print(f"[FERRI] {len(convegni)} convegni riletti, ferratura scritta per {scritte} corse",
+              file=sys.stderr)
+    return scritte
 
 
 def phase_ripara_esiti_nr(conn: sqlite3.Connection, limite: int = 120) -> int:
@@ -3926,6 +4005,10 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
             UNIQUE(track, race_date, race_time, horse_name)
         )
     """)
+    # Ferratura dichiarata per la corsa (aggiunta a ottobre 2026).
+    colonne = {r[1] for r in conn.execute("PRAGMA table_info(upcoming_races)")}
+    if "shoes" not in colonne:
+        conn.execute("ALTER TABLE upcoming_races ADD COLUMN shoes TEXT")
     conn.commit()
 
     # Pulisci gare passate
@@ -4063,13 +4146,15 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     inserted_races = 0
     for e in all_entries:
         cur = conn.execute(
-            """INSERT INTO upcoming_races (track, race_date, race_time, horse_name, start_pos, driver, distance, fetched_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """INSERT INTO upcoming_races (track, race_date, race_time, horse_name, start_pos, driver, distance, shoes, fetched_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(track, race_date, race_time, horse_name) DO UPDATE SET
                  start_pos=excluded.start_pos, driver=excluded.driver,
-                 distance=excluded.distance, fetched_at=excluded.fetched_at""",
+                 distance=excluded.distance,
+                 shoes=COALESCE(excluded.shoes, upcoming_races.shoes),
+                 fetched_at=excluded.fetched_at""",
             (e["track"], e["race_date"], e["race_time"], e["horse_name"],
-             e.get("start_pos"), e.get("driver"), e.get("distance"), now)
+             e.get("start_pos"), e.get("driver"), e.get("distance"), e.get("shoes"), now)
         )
         if cur.rowcount == 1:
             inserted_races += 1
@@ -4769,7 +4854,9 @@ def main():
         phase_completa_schede_senza_anno(conn)   # castroni e cavalli esteri senza anno
         phase_collega_stalloni_atleti(conn)      # stesso cavallo: scheda stallone + scheda da corsa
         phase_ripara_esiti_nr(conn)              # "nr" al posto di r.p./rit./... nei risultati 2026
+        phase_ripara_ferri(conn)                 # ferratura mancante nei risultati da luglio 2026
         phase_ritirati_recenti(conn)             # ritirati prima della partenza, per la verifica
+        phase_quote_totalizzatore(conn)          # quote finali del totalizzatore (Hippoweb), per il confronto
         new_horses += up_horses
         new_races  += up_races
 

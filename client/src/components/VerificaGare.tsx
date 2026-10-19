@@ -32,7 +32,8 @@ type Sintesi = { corse: number; favoriti_controllati: number; quota_favoriti: nu
   attesi_per_corsa?: number | null; arrivati_per_corsa?: number | null; primo_favorito_top3?: number | null; primo_favorito_vince?: number | null;
   vincitore_tra_favoriti?: number | null; distribuzione?: number[]; fasce?: { da: number; a: number; n: number; stimato: number; reale: number }[] };
 type Risposta = { corse: Corsa[]; sintesi: Record<string, Sintesi> | null; piste?: { pista: string; corse: number; quota_favoriti: number | null }[];
-  andamento?: { data: string; corse: number; quota_favoriti: number | null; quota_tutti: number | null }[] };
+  andamento?: { data: string; corse: number; quota_favoriti: number | null; quota_tutti: number | null }[];
+  confronto_mercato?: { corse: number; noi: number | null; mercato: number | null; in_comune: number | null } | null };
 
 const p1 = (n: number | null | undefined) => n == null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
 const dec = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString("it-IT", { maximumFractionDigits: 2 });
@@ -65,6 +66,16 @@ function Riepilogo({ d, giorni }: { d: Risposta; giorni: number }) {
           <div className="valore tabular" style={{ color: "hsl(210 10% 90%)" }}>{dec(s.arrivati_per_corsa)} <span style={{ fontSize: 14, color: MUTED }}>su 3</span></div>
           <div className="spiega">favoriti nei primi tre per corsa; il pronostico se ne aspettava {dec(s.attesi_per_corsa)}.</div>
         </div>
+        {d.confronto_mercato && (
+          <div className="verifica-riquadro">
+            <div className="etichetta">I favoriti del pubblico</div>
+            <div className="valore tabular" style={{ color: "hsl(210 10% 90%)" }}>{p1(d.confronto_mercato.mercato)}</div>
+            <div className="spiega">
+              nei primi tre, sulle stesse {d.confronto_mercato.corse} corse (i nostri: {p1(d.confronto_mercato.noi)}). Sono le tre quote più basse
+              del totalizzatore alla partenza: il pubblico sa cose che la sera prima non si conoscono. In comune con i nostri: {p1(d.confronto_mercato.in_comune)}.
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="riepilogo-griglia" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))" }}>

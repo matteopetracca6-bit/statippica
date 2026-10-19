@@ -380,6 +380,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           periodo: v.periodo_prova, modello: v.modello_misure, anno_prima: v.come_l_anno_prima,
           per_eta: v.media_per_eta, supera: v.supera_i_metodi_semplici, soglia: v.costo_anno_riferimento,
           medi_reali: v.premi_medi_reali, medi_stimati: v.premi_medi_stimati,
+          verificato_il: v.verificato_il ?? null, rifacimento: v.prova_rifacimento ?? null,
         } : null,
       });
     } finally {
@@ -2896,6 +2897,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
          WHERE s.race_date < date('now') AND s.race_date >= date('now', ?)
       `).all(`-${giorni} day`) as any[];
 
+      // Quote finali del totalizzatore (se gia' raccolte): per confrontare i
+      // nostri tre favoriti con i tre favoriti del pubblico.
+      const haQuote = vpTableExists(db, "quote_totalizzatore");
+      const leggiQuote = haQuote ? db.prepare(`SELECT horse_name, quota FROM quote_totalizzatore
+                                                 WHERE race_date = ? AND pista = ? AND corsa = ?`) : null;
+      const mercato = { corse: 0, noi: 0, loro: 0, comuni: 0 };
       const gruppi = new Map<string, any[]>();
       for (const r of righe) {
         const k = `${r.race_date}|${r.pista}|${r.corsa}`;
@@ -2950,6 +2957,24 @@ export function registerRoutes(httpServer: Server, app: Express) {
         const favNoti = fav.filter(v => v.top3 != null);
         const segno = favNoti.filter(v => v.top3).length;
         const m = String(g[0].corsa).match(/R?(\d+)$/);
+        // I tre favoriti del pubblico: le tre quote piu' basse fra chi e' partito.
+        let favMercato: string[] | null = null;
+        let segnoMercato: number | null = null;
+        const nCorsa = String(codice ?? "").match(/_R?(\d+)$/);
+        if (leggiQuote && nCorsa && mancanti.length === 0) {
+          const qq = new Map<string, number>((leggiQuote.all(g[0].race_date, g[0].pista, Number(nCorsa[1])) as any[])
+            .filter(x => x.quota != null).map(x => [x.horse_name, x.quota]));
+          const partitiQ = voci.filter(v => v.top3 != null);
+          if (partitiQ.length >= 4 && partitiQ.every(v => qq.has(v.horse_name))) {
+            const ord = [...partitiQ].sort((a, b) => qq.get(a.horse_name)! - qq.get(b.horse_name)!).slice(0, 3);
+            favMercato = ord.map(v => v.horse_name);
+            segnoMercato = ord.filter(v => v.top3).length;
+            if (tipo === "del_giorno" && favNoti.length === 3) {
+              mercato.corse++; mercato.noi += segno; mercato.loro += segnoMercato;
+              mercato.comuni += favNoti.filter(v => favMercato!.includes(v.horse_name)).length;
+            }
+          }
+        }
         // Chi ha vinto, e a che posto lo metteva il pronostico (fra chi è partito).
         const partiti = voci.filter(v => !/^non partito$/.test(String(v.arrivo_testo ?? "")));
         const iv = partiti.findIndex(v => v.arrivo === 1);
@@ -2968,6 +2993,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           partenti: g.length, favoriti_noti: favNoti.length, favoriti_a_segno: segno, voci,
           mancanti, incompleto: mancanti.length > 0,
           vincitore, attesi, sorprese,
+          mercato: favMercato ? { favoriti: favMercato, a_segno: segnoMercato } : null,
           primo_favorito: primo ? { nome: primo.horse_name, prob: primo.prob, arrivo: primo.arrivo_testo, top3: primo.top3 } : null,
         });
         if (mancanti.length > 0) continue; // pronostico fatto senza tutti i partenti: fuori dalla media
@@ -3023,12 +3049,27 @@ export function registerRoutes(httpServer: Server, app: Express) {
         .sort((a, b) => b.corse - a.corse);
       const andamento = Object.entries(perGiorno).map(([data, p]) => ({ data, corse: p.corse,
         quota_favoriti: q(p.segno, p.fav_noti), quota_tutti: q(p.tutti_segno, p.tutti_noti) })).sort((a, b) => a.data.localeCompare(b.data));
-      res.json({ giorni, corse, sintesi, piste, andamento });
+      const confronto_mercato = mercato.corse ? {
+        corse: mercato.corse,
+        noi: q(mercato.noi, mercato.corse * 3),
+        mercato: q(mercato.loro, mercato.corse * 3),
+        in_comune: q(mercato.comuni, mercato.corse * 3),
+      } : null;
+      res.json({ giorni, corse, sintesi, piste, andamento, confronto_mercato });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally {
       db.close();
     }
+  });
+
+  // Il pronostico confrontato con le quote finali del totalizzatore, sulle
+  // corse del periodo di prova (scripts/confronto_quote.py). Analisi, non
+  // consiglio di gioco.
+  app.get("/api/pronostico/confronto-quote", pronta(10 * 60_000), (_req, res) => {
+    const v = leggiJsonModelli("confronto_quote.json");
+    if (!v) return res.status(404).json({ message: "confronto non disponibile" });
+    res.json(v);
   });
 
   // Come e' stato provato il pronostico dei primi tre (scritto dall'allenamento).
@@ -3050,7 +3091,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const track = String(req.query.track ?? ""), data = String(req.query.date ?? ""), ora = String(req.query.time ?? "");
       if (!track || !data || !ora) return res.status(400).json({ message: "servono pista, data e ora" });
       const pista = NOMI_CALENDARIO[track.toUpperCase()] ?? track.toUpperCase();
-      const partenti = db.prepare(`SELECT u.horse_name, u.start_pos, NULLIF(u.driver, '') AS driver, h.birth_year FROM upcoming_races u
+      const partenti = db.prepare(`SELECT u.horse_name, u.start_pos, NULLIF(u.driver, '') AS driver, u.distance, h.birth_year FROM upcoming_races u
                                     LEFT JOIN horses h ON h.name = u.horse_name
                                     WHERE u.track = ? AND u.race_date = ? AND u.race_time = ? ORDER BY u.start_pos`).all(track, data, ora) as any[];
       if (!partenti.length) return res.status(404).json({ message: "corsa non trovata" });
@@ -3058,13 +3099,17 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const stime = new Map<string, any>(haP ? (db.prepare(`SELECT horse_name, prob, prob_grezza, n_corse FROM pronostico_top3
                                     WHERE track = ? AND race_date = ? AND race_time = ?`).all(track, data, ora) as any[]).map(r => [r.horse_name, r]) : []);
       const np = "COALESCE(LOWER(placement_raw), '') NOT IN ('nr', 'n.p.', 'np')";
-      const qStoria = db.prepare(`SELECT race_date, track, placement, placement_raw, time_km, prize_net, driver, total_starters
+      const qStoria = db.prepare(`SELECT race_date, track, placement, placement_raw, time_km, prize_net, driver, total_starters, distance
                                     FROM races WHERE horse_name = ? AND race_date < ? AND ${np}
                                    ORDER BY race_date DESC`);
       const qGuid = db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) AS t
                                   FROM races WHERE driver = ? AND race_date < ? AND ${np}`);
       const unAnnoPrima = new Date(new Date(data + "T12:00:00").getTime() - 365 * 864e5).toISOString().slice(0, 10);
       const giorniFra = (a: string, b: string) => Math.round((new Date(b + "T12:00:00").getTime() - new Date(a + "T12:00:00").getTime()) / 864e5);
+      // Distanza: chi parte dietro (handicap) ha piu' metri da fare; la fascia
+      // e' quella usata dal modello (miglio fino a 1.799 m, media, lunga da 2.200 m).
+      const distMin = Math.min(...partenti.map(p => p.distance).filter((x: any) => x >= 1000 && x <= 3700));
+      const fascia = (m: number | null) => m == null || m < 1000 ? null : m < 1800 ? 0 : m < 2200 ? 1 : 2;
       const cavalli = partenti.map(p => {
         const st = qStoria.all(p.horse_name, data) as any[];
         const top3 = (r: any) => r.placement != null && r.placement >= 1 && r.placement <= 3;
@@ -3093,6 +3138,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
           pista_corse: sullaPista.length, pista_top3: sullaPista.filter(top3).length,
           guidatore, guidatore_corse: g?.n ?? null,
           guidatore_top3: g && g.n ? Math.round((g.t || 0) / g.n * 1000) / 10 : null,
+          distanza: p.distance ?? null,
+          metri_in_piu: p.distance != null && Number.isFinite(distMin) ? p.distance - distMin : null,
+          ...(() => {
+            const f = fascia(p.distance ?? null);
+            const stessa = f == null ? [] : st.filter(r => fascia(r.distance) === f);
+            return { distanza_corse: f == null ? null : stessa.length, distanza_top3: stessa.filter(top3).length };
+          })(),
         };
       });
       // Posto nella corsa per ogni voce: 1 = il migliore. Chi non ha il dato non entra.
@@ -3679,6 +3731,17 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
 // Risultati della prova del pronostico dei primi tre (modelli/top3_verifica.json).
 let _verificaTop3: any | undefined;
+const _jsonModelli = new Map<string, any>();
+function leggiJsonModelli(nome: string): any | null {
+  if (_jsonModelli.has(nome)) return _jsonModelli.get(nome);
+  let v: any = null;
+  for (const p of [path.resolve(process.cwd(), "modelli", nome), path.resolve(process.cwd(), "..", "modelli", nome)]) {
+    try { v = JSON.parse(fs.readFileSync(p, "utf-8")); break; } catch { /* prossimo */ }
+  }
+  _jsonModelli.set(nome, v);
+  return v;
+}
+
 function leggiVerificaTop3(): any | null {
   if (_verificaTop3 !== undefined) return _verificaTop3;
   _verificaTop3 = null;

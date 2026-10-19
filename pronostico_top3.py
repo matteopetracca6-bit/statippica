@@ -39,7 +39,7 @@ from pathlib import Path
 CARTELLA = Path(__file__).resolve().parent / "modelli"
 FILE_MODELLO = CARTELLA / "top3_xgb.json"
 FILE_VERIFICA = CARTELLA / "top3_verifica.json"
-NOME_MODELLO = "top3-xgb-v2"
+NOME_MODELLO = "top3-xgb-v3"
 
 # Ordine fisso delle variabili: il modello le legge per posizione.
 VARIABILI = [
@@ -50,7 +50,15 @@ VARIABILI = [
     "partenza", "partenti", "partenza_rel",
     "r_ult5_top3", "r_premi_365", "r_top3", "r_tempo_migl", "r_d_top3",
     "s_ult5_top3", "s_premi_365", "s_tempo_migl",
+    # dalla versione 3: la distanza della corsa (nota prima della partenza)
+    "distanza", "dist_handicap", "dist_vs_solita", "h_fascia_top3", "h_fascia_n", "r_fascia_top3",
 ]
+# Provate e lasciate fuori (ottobre 2026), sulle stesse 102 mila partenze:
+#  - ferratura delle corse passate (quanto spesso corre scalzo, e come va):
+#    nessun miglioramento;
+#  - ferratura di oggi: migliorerebbe un poco, ma la fonte la scrive solo il
+#    giorno della corsa, dopo il lavoro notturno. Usarla vorrebbe dire
+#    allenare il modello con un dato che al momento della stima non c'e'.
 
 # Come si spiega ogni variabile a chi legge il calendario. Solo quelle che
 # hanno senso in una frase; il verso dice se un valore alto e' un pregio.
@@ -63,6 +71,7 @@ SPIEGAZIONI = {
     "partenza": ("numero di partenza", -1),        # numero basso = meglio
     "h_pista_top3": ("risultati su questa pista", +1),
     "h_giorni": ("giorni dall'ultima corsa", 0),
+    "r_fascia_top3": ("risultati su questa distanza", +1),
 }
 
 
@@ -76,7 +85,8 @@ def _storico(conn: sqlite3.Connection):
         """SELECT r.horse_name AS cavallo, r.race_date AS data, r.track AS pista,
                   r.race_number AS numero, r.driver AS guidatore,
                   r.placement AS arrivo, r.time_km AS tempo, r.start_pos AS partenza,
-                  r.total_starters AS partenti, r.prize_net AS premio, r.race_code AS codice
+                  r.total_starters AS partenti, r.prize_net AS premio, r.race_code AS codice,
+                  r.distance AS distanza, NULLIF(r.shoes, '') AS ferri
              FROM races r
             WHERE r.race_date IS NOT NULL AND r.race_date >= '2013-01-01'
               -- non partiti: non hanno corso, quindi non sono una partenza
@@ -111,9 +121,14 @@ PISTE = {
 
 def _calendario(conn: sqlite3.Connection):
     import pandas as pd
+    colonne = {r[1] for r in conn.execute("PRAGMA table_info(upcoming_races)")}
+    # La ferratura e' dichiarata di solito solo il giorno della corsa: se non
+    # c'e' resta vuota, mai presa dall'ultima corsa.
+    ferri = "NULLIF(shoes, '')" if "shoes" in colonne else "NULL"
     up = pd.read_sql_query(
-        """SELECT horse_name AS cavallo, race_date AS data, track AS pista,
-                  race_time AS ora, start_pos AS partenza, NULLIF(driver, '') AS guidatore
+        f"""SELECT horse_name AS cavallo, race_date AS data, track AS pista,
+                  race_time AS ora, start_pos AS partenza, NULLIF(driver, '') AS guidatore,
+                  distance AS distanza, {ferri} AS ferri
              FROM upcoming_races WHERE race_date >= date('now')""", conn)
     if up.empty:
         return up
@@ -241,6 +256,46 @@ def costruisci_variabili(conn: sqlite3.Connection, con_calendario: bool = False)
     df["d_top3"] = (df["_cs"] / df["_cn"]).where(df["_cn"] > 0)
     df = df.drop(columns=["_cs", "_cn"])
 
+    # Distanza: in Italia nelle corse a handicap chi ha vinto di piu' parte
+    # dietro, con 20 o 40 metri in piu'. La distanza del cavallo e' nota
+    # prima della corsa (e' nel calendario), quindi si puo' usare.
+    df["distanza"] = pd.to_numeric(df["distanza"], errors="coerce")
+    df.loc[(df["distanza"] < 1000) | (df["distanza"] > 3700), "distanza"] = np.nan
+    df["dist_handicap"] = df["distanza"] - df.groupby("gara")["distanza"].transform("min")
+    gd = df.groupby("cavallo", sort=False)["distanza"]
+    prev_d = gd.shift()
+    somma_d = prev_d.fillna(0).groupby(df["cavallo"], sort=False).cumsum()
+    quante_d = prev_d.notna().astype(float).groupby(df["cavallo"], sort=False).cumsum()
+    df["h_dist_media"] = (somma_d / quante_d).where(quante_d > 0)
+    df["dist_vs_solita"] = df["distanza"] - df["h_dist_media"]
+    # Fascia di distanza: miglio (fino a 1.799 m), media, lunga (da 2.200 m).
+    df["_fascia"] = pd.cut(df["distanza"], [0, 1799, 2199, 9999], labels=["corta", "media", "lunga"]).astype(str)
+    df["h_fascia_n"] = df.groupby(["cavallo", "_fascia"], sort=False).cumcount().astype(float)
+    df["h_fascia_top3"] = _media_passata(df, ["cavallo", "_fascia"], "top3")
+    df.loc[df["distanza"].isna(), ["h_fascia_n", "h_fascia_top3"]] = np.nan
+
+    # Ferratura. F = ferrato, A = senza ferri davanti, P = dietro, AP = scalzo.
+    # Quella di OGGI vale solo se la fonte l'ha gia' dichiarata: altrimenti
+    # resta vuota (mai quella dell'ultima corsa).
+    f = df["ferri"].astype("string").str.upper().str.strip()
+    nota = f.isin(["F", "A", "P", "AP"])
+    df["oggi_scalzo_ant"] = np.where(nota, f.isin(["A", "AP"]).astype(float), np.nan)
+    df["oggi_scalzo_post"] = np.where(nota, f.isin(["P", "AP"]).astype(float), np.nan)
+    # Dal passato: quanto spesso corre senza ferri, e come va cosi'.
+    df["_scalzo"] = np.where(nota & ~df["futura"].astype(bool), f.isin(["A", "AP"]).astype(float), np.nan)
+    df["h_scalzo_quota"] = _media_passata(df, "cavallo", "_scalzo")
+    df["_top3_scalzo"] = df["top3"].where(df["_scalzo"] == 1)
+    df["_top3_ferrato"] = df["top3"].where(df["_scalzo"] == 0)
+    df["h_top3_scalzo"] = _media_passata(df, "cavallo", "_top3_scalzo")
+    df["h_top3_ferrato"] = _media_passata(df, "cavallo", "_top3_ferrato")
+    ult_f = f.where(nota & ~df["futura"].astype(bool)).groupby(df["cavallo"], sort=False).shift()
+    ult_f = ult_f.groupby(df["cavallo"], sort=False).ffill()
+    df["cambio_ferri"] = np.where(nota & ult_f.notna(), (f != ult_f).astype(float), np.nan)
+    # Il cavallo toglie i ferri davanti oggi ma di solito corre ferrato.
+    df["toglie_ferri"] = np.where(nota & ult_f.notna(),
+                                  (f.isin(["A", "AP"]) & ~ult_f.isin(["A", "AP"])).astype(float), np.nan)
+    df = df.drop(columns=["_fascia", "_scalzo", "_top3_scalzo", "_top3_ferrato"])
+
     # Eta' e sesso dall'anagrafica.
     import pandas as pd  # noqa: F811
     an = pd.read_sql_query("SELECT name AS cavallo, birth_year, sex FROM horses", conn)
@@ -258,7 +313,7 @@ def costruisci_variabili(conn: sqlite3.Connection, con_calendario: bool = False)
     gg = df.groupby("gara", sort=False)
     for sorg, dest, verso in (("h_ult5_top3", "r_ult5_top3", True), ("h_premi_365", "r_premi_365", True),
                               ("h_top3", "r_top3", True), ("h_tempo_migl", "r_tempo_migl", False),
-                              ("d_top3", "r_d_top3", True)):
+                              ("d_top3", "r_d_top3", True), ("h_fascia_top3", "r_fascia_top3", True)):
         df[dest] = gg[sorg].rank(pct=True, ascending=verso)
     for sorg, dest in (("h_ult5_top3", "s_ult5_top3"), ("h_premi_365", "s_premi_365"),
                        ("h_tempo_migl", "s_tempo_migl")):
@@ -399,6 +454,16 @@ def allena():
     # Riallena su allenamento + 2024 con lo stesso numero di alberi; il 2025-26 resta mai visto.
     trva = pd.concat([tr, va])
     bst = xgb.train(par, xgb.DMatrix(X(trva), label=trva["top3"], feature_names=VARIABILI), n_alberi)
+    # Il modello in uso, sulle stesse partenze: per dire se il nuovo e' meglio.
+    precedente = None
+    if FILE_MODELLO.exists() and FILE_VERIFICA.exists():
+        try:
+            vecchio = Alberi(FILE_MODELLO)
+            pv = vecchio.probabilita(te[list(vecchio.variabili)].to_numpy(dtype="float32"))
+            precedente = {"nome": json.loads(FILE_VERIFICA.read_text()).get("nome"),
+                          **_misure(te["top3"].to_numpy(), pv, te["gara"].to_numpy())}
+        except Exception as e:  # noqa: BLE001
+            print("modello precedente non confrontabile:", e, flush=True)
     CARTELLA.mkdir(exist_ok=True)
     bst.save_model(str(FILE_MODELLO))
 
@@ -481,6 +546,7 @@ def allena():
     ris["periodo_allenamento"] = {"da": str(trva["data"].min().date()), "a": str(trva["data"].max().date()),
                                   "partenze": int(len(trva))}
     ris["alberi"] = int(n_alberi)
+    ris["modello_precedente"] = precedente
     ris["nome"] = NOME_MODELLO
     ris["allenato_il"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     FILE_VERIFICA.write_text(json.dumps(ris, indent=2, ensure_ascii=False))

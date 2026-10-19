@@ -30,6 +30,7 @@ type Cavallo = {
   forma: number | null; forma_su: number; giorni: number | null; premi_anno: number | null; record: number | null;
   carriera_top3: number | null; pista_corse: number; pista_top3: number;
   guidatore: string | null; guidatore_corse: number | null; guidatore_top3: number | null;
+  distanza?: number | null; metri_in_piu?: number | null; distanza_corse?: number | null; distanza_top3?: number;
   posti?: Record<string, Posto>;
 };
 
@@ -67,7 +68,7 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
                   <tr>
                     <th>Cavallo</th><th className="num">Stima</th><th>Ultime 5 corse</th><th className="num">Premi ultimo anno</th>
                     <th className="num">Miglior tempo</th><th className="num">Primi tre in carriera</th><th>Guidatore di oggi</th>
-                    <th className="num">Su questa pista</th><th className="num">Ferma da</th>
+                    <th className="num">Distanza</th><th className="num">Su questa pista</th><th className="num">Ferma da</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -99,6 +100,11 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
                         {c.guidatore_top3 != null && <small style={{ display: "block", color: MUTED, fontSize: 10.5 }}>{pct(c.guidatore_top3)} nei primi tre su {c.guidatore_corse?.toLocaleString("it-IT")} corse</small>}
                         <PostoCorsa p={c.posti?.guidatore_top3} />
                       </td>
+                      <td className="num tabular">
+                        {c.distanza != null ? `${c.distanza.toLocaleString("it-IT")} m` : "—"}
+                        {c.metri_in_piu ? <small style={{ display: "block", color: MUTED, fontSize: 10.5 }}>{c.metri_in_piu} m in più</small> : null}
+                        {c.distanza_corse != null && <small style={{ display: "block", color: DIM, fontSize: 10.5 }}>{c.distanza_corse ? `${c.distanza_top3} su ${c.distanza_corse} a questa distanza` : "mai a questa distanza"}</small>}
+                      </td>
                       <td className="num tabular">{c.pista_corse ? `${c.pista_top3} su ${c.pista_corse}` : <span style={{ color: DIM }}>mai</span>}</td>
                       <td className="num tabular" style={{ color: c.giorni != null && c.giorni > 120 ? ROSSO : undefined }}>{c.giorni != null ? `${c.giorni} giorni` : "—"}</td>
                     </tr>
@@ -115,7 +121,9 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
               Sono i numeri da cui parte il modello, riletti dall'archivio con le sole corse prima di questa. Sotto ogni numero c'è il posto del cavallo
               fra i partenti della corsa (verde nel terzo migliore, rosso nel terzo peggiore): il modello guarda soprattutto questo confronto, non il valore da solo.
               «Guidatore di oggi» è quello dichiarato per questa corsa, con il suo rendimento nelle corse dei giorni prima; se non è ancora dichiarato il modello non ne tiene conto. Pesa anche il numero di partenza, e conta
-              quanti sono i partenti. Un arrivo in verde è un piazzamento nei primi tre; passa sopra un arrivo per vedere data e pista.
+              quanti sono i partenti. «Distanza» è quella del cavallo: nelle corse a handicap chi ha vinto di più parte dietro, con metri in più da fare;
+              sotto, i suoi piazzamenti su distanze simili (miglio fino a 1.799 m, media fino a 2.199 m, lunga oltre). La ferratura non entra: la fonte la
+              dichiara solo il giorno della corsa, dopo che il pronostico è fatto. Un arrivo in verde è un piazzamento nei primi tre; passa sopra un arrivo per vedere data e pista.
             </Spiegazione>
           </div>
         )

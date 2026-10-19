@@ -18,7 +18,7 @@ const MUTED = "hsl(210 8% 55%)";
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const num = (x: number) => x.toLocaleString("it-IT");
 
-// Le 28 voci del modello raccolte in gruppi che si capiscono.
+// Le voci del modello raccolte in gruppi che si capiscono.
 const GRUPPI_PESO: [string, string[]][] = [
   ["Forma recente", ["h_ult5_top3", "h_ult_top3", "h_ult3_pos", "s_ult5_top3", "r_ult5_top3"]],
   ["Numero di partenza", ["partenza", "partenza_rel"]],
@@ -29,6 +29,7 @@ const GRUPPI_PESO: [string, string[]][] = [
   ["Guidatore", ["d_top3", "d_n", "r_d_top3"]],
   ["Età, sesso e attività", ["maschio", "eta", "h_giorni", "h_gare_365"]],
   ["Risultati su questa pista", ["h_pista_top3", "h_pista_n"]],
+  ["Distanza e metri di handicap", ["distanza", "dist_handicap", "dist_vs_solita", "h_fascia_top3", "h_fascia_n", "r_fascia_top3"]],
 ];
 
 function PesiRaggruppati({ pesi }: { pesi: { variabile: string; peso: number }[] }) {
@@ -45,6 +46,93 @@ function PesiRaggruppati({ pesi }: { pesi: { variabile: string; peso: number }[]
         </div>
       ))}
     </div>
+  );
+}
+
+/** Il pronostico accanto alle quote finali del totalizzatore (periodo di prova). */
+function ConfrontoMercato() {
+  const { data: c } = useQuery<any>({
+    queryKey: ["/api/pronostico/confronto-quote"],
+    queryFn: async () => {
+      const r = await fetch("/api/pronostico/confronto-quote");
+      return r.ok ? r.json() : null;
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+  if (!c || !c.noi) return null;
+  const p1 = (x: number) => `${(x * 100).toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
+  const dec = (x: number) => (Math.round(x * 100) / 100).toLocaleString("it-IT");
+  const ins = c.insieme;
+  const righe = [
+    { nome: "Il nostro pronostico", m: c.noi, evid: true, nota: "fatto la sera prima" },
+    { nome: "I favoriti del pubblico", m: c.mercato, nota: "quote finali, alla partenza" },
+  ];
+  const cal = (lista: any[], da: number) => lista.find((f: any) => f.da === da);
+  const nos = cal(c.calibrazione.noi, 0.6), mer = cal(c.calibrazione.mercato, 0.6);
+  const molto = c.disaccordo.find((d: any) => d.fascia.startsWith("noi molto sopra"));
+  const sotto = c.disaccordo.find((d: any) => d.fascia.startsWith("noi molto sotto"));
+  const data = (s: string) => s.split("-").reverse().join("/");
+  return (
+    <>
+      <h4 className="verifica-titolo">Confronto con le quote del totalizzatore</h4>
+      <p className="verifica-testo">
+        Su {num(c.periodo.corse)} corse dal {data(c.periodo.da)} al {data(c.periodo.a)}, mai viste dal modello, il pronostico è stato messo accanto alla
+        quota finale vincente di ogni cavallo (fonte: archivio risultati di Hippoweb). La quota riassume cosa pensava tutto il pubblico che gioca:
+        quota 4 vuol dire circa una possibilità su quattro di vincere, tolta la parte che il totalizzatore trattiene (in media il{" "}
+        {Math.round(c.trattenuta_media * 100)}%). Dalla probabilità di vincere si ricava quella di arrivare nei primi tre.
+      </p>
+      <div className="verifica-tabella">
+        <div className="intestazione"><span>Chi sceglie</span><span>Dei 3 favoriti, quanti nei primi tre</span><span>Capacità di distinguere</span></div>
+        {righe.map(r => (
+          <div key={r.nome} className={r.evid ? "evid" : ""}>
+            <span>{r.nome}<small>{r.nota}</small></span>
+            <span className="tabular">
+              <span className="barretta"><span style={{ width: pct(r.m.tre_scelti_a_segno) }} /></span>
+              {p1(r.m.tre_scelti_a_segno)}
+            </span>
+            <span className="tabular">{dec(r.m.auc)}</span>
+          </div>
+        ))}
+        {ins && (
+          <div>
+            <span>Pronostico e quote insieme<small>regola fissata sul 2025, provata su {num(ins.corse_prova)} corse del 2026</small></span>
+            <span className="tabular">
+              <span className="barretta"><span style={{ width: pct(ins.mercato_piu_noi.tre_scelti_a_segno) }} /></span>
+              {p1(ins.mercato_piu_noi.tre_scelti_a_segno)}
+            </span>
+            <span className="tabular">{dec(ins.mercato_piu_noi.auc)}</span>
+          </div>
+        )}
+        <div className="nota-tabella">
+          Scegliendo tre cavalli a caso ne arriverebbero circa {p1(c.a_caso)}. Il primo favorito arriva nei primi tre il {p1(c.noi.primo_scelto_nei_tre)} delle
+          volte con il nostro pronostico, il {p1(c.mercato.primo_scelto_nei_tre)} con le quote.
+        </div>
+      </div>
+      <p className="verifica-testo" style={{ marginTop: 12 }}>
+        {c.mercato.tre_scelti_a_segno > c.noi.tre_scelti_a_segno
+          ? <><b>Il pubblico sceglie un po' meglio,</b> ed è normale: </>
+          : <><b>Il pronostico sceglie bene quanto il pubblico,</b> che pure è avvantaggiato: </>}
+        la quota finale si forma fino alla partenza e conosce ritirati, ferratura, riscaldamento e
+        voci di scuderia, mentre il pronostico è fatto la sera prima con i soli dati dell'archivio.
+        {nos && mer && <> Le percentuali ricavate dalle quote gonfiano i favoriti: fra i cavalli dati dal 60 al 70% nei primi tre, con le quote ne arrivano
+        il {p1(mer.reale)}, con il pronostico il {p1(nos.reale)}. È soprattutto un limite del modo di leggere le quote: corretto con una regola fissata
+        sul 2025, anche il mercato dà percentuali credibili.</>}
+        {ins && <> E il pronostico <b>aggiunge qualcosa</b> a quello che il mercato sa già: messi insieme, i tre favoriti arrivano il{" "}
+        {p1(ins.mercato_piu_noi.tre_scelti_a_segno)} delle volte contro il {p1(ins.solo_mercato.tre_scelti_a_segno)} delle sole quote, sulle stesse corse.</>}
+      </p>
+      {molto && sotto && (
+        <p className="verifica-testo">
+          <b>Quando non sono d'accordo.</b> Nei {num(molto.n)} casi in cui il pronostico dava un cavallo molto più in alto del pubblico (in media{" "}
+          {p1(molto.stima_noi)} contro {p1(molto.stima_mercato)}), è arrivato nei primi tre il {p1(molto.reale)}. Nei {num(sotto.n)} casi opposti
+          ({p1(sotto.stima_noi)} contro {p1(sotto.stima_mercato)}) il {p1(sotto.reale)}. La verità sta in mezzo: nessuno dei due ha sempre ragione,
+          ed è per questo che insieme funzionano meglio.
+        </p>
+      )}
+      <p className="verifica-testo" style={{ color: MUTED, fontSize: 12 }}>
+        È un'analisi della qualità del pronostico, non un consiglio di gioco: scommettere comporta il rischio di perdere denaro, e la parte trattenuta dal
+        totalizzatore fa sì che in media chi gioca perda. Il gioco è vietato ai minori.
+      </p>
+    </>
   );
 }
 
@@ -131,7 +219,9 @@ export default function VerificaPronostico() {
             <li><b>I partenti.</b> Ogni notte si leggono le corse in calendario con i partenti, il numero di partenza e il guidatore dichiarato.</li>
             <li><b>I dati di ogni cavallo, solo dal passato.</b> Per ciascuno si calcolano {v.peso_variabili?.length ?? 28} numeri con le sole corse prima di
               quel giorno: forma delle ultime cinque corse e dell'ultima, piazzamenti e vittorie in carriera, premi e corse dell'ultimo anno, miglior tempo
-              e ultimo tempo, risultati sulla stessa pista, giorni dall'ultima corsa, età, sesso e rendimento del guidatore che lo guida in quella corsa.</li>
+              e ultimo tempo, risultati sulla stessa pista, giorni dall'ultima corsa, età, sesso e rendimento del guidatore che lo guida in quella corsa.
+              Dalla versione 3 anche la distanza: quella della corsa, i metri in più per chi parte dietro nelle corse a handicap, quanto è diversa dalle
+              distanze solite del cavallo e come è andato su distanze simili.</li>
             <li><b>Il confronto con gli avversari.</b> Gli stessi numeri si mettono in fila fra i partenti della corsa: conta essere il migliore del gruppo,
               non avere un buon numero in assoluto. Contano anche il numero di partenza e quanti sono i partenti.</li>
             <li><b>Il modello.</b> Un insieme di {num(v.alberi ?? 0)} alberi di decisione (XGBoost), allenato su {num(v.periodo_allenamento.partenze)} partenze
@@ -147,9 +237,20 @@ export default function VerificaPronostico() {
           <PesiRaggruppati pesi={v.peso_variabili ?? []} />
           <p className="verifica-testo" style={{ marginBottom: 0, marginTop: 10 }}>
             Il guidatore è quello dichiarato per la corsa; se non è ancora dichiarato, il modello non ne tiene conto. Per i cavalli con meno di cinque corse
-            in archivio la stima è debole ed è segnata con «poche corse». Non entrano le quote delle scommesse, lo stato del cavallo il giorno della gara,
-            il terreno e la distanza.
+            in archivio la stima è debole ed è segnata con «poche corse». Non entrano le quote delle scommesse, lo stato del cavallo il giorno della gara
+            e il terreno. La ferratura è stata provata e lasciata fuori: quella delle corse passate non migliora la stima, e quella di oggi la fonte la
+            dichiara solo il giorno della corsa, dopo che il pronostico è fatto.
           </p>
+          {v.modello_precedente && (
+            <p className="verifica-testo" style={{ marginBottom: 0, marginTop: 10 }}>
+              Rispetto alla versione precedente, provata sulle stesse partenze: dei tre favoriti arrivavano nei primi tre il{" "}
+              {(v.modello_precedente.tre_scelti_a_segno * 100).toLocaleString("it-IT", { maximumFractionDigits: 1 })}%, ora il{" "}
+              {(v.modello.tre_scelti_a_segno * 100).toLocaleString("it-IT", { maximumFractionDigits: 1 })}%; capacità di distinguere da{" "}
+              {num(Math.round(v.modello_precedente.auc * 1000) / 1000)} a {num(Math.round(v.modello.auc * 1000) / 1000)}. Un passo piccolo ma
+              dello stesso verso su tutte le misure.
+            </p>
+          )}
+          <ConfrontoMercato />
         </div>
       )}
     </div>
