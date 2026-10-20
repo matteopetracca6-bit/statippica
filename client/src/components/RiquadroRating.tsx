@@ -20,11 +20,11 @@ const GRADE_COLORS: Record<string, string> = {
 };
 const MUTED = "hsl(210 8% 52%)";
 const PARTI = [
-  { nome: "Guadagni", peso: 45, cosa: "quanto ha vinto in carriera" },
-  { nome: "Record", peso: 15, cosa: "il miglior tempo al chilometro" },
-  { nome: "Vittorie", peso: 15, cosa: "quota di corse vinte, corretta se le corse sono poche" },
-  { nome: "Tenuta", peso: 12.5, cosa: "quante stagioni ha corso" },
-  { nome: "Continuità", peso: 12.5, cosa: "stagioni corse su quelle che poteva correre" },
+  { nome: "Guadagni", peso: 60, cosa: "quanto ha vinto in carriera, contando anche quanti soldi in più" },
+  { nome: "Record", peso: 10, cosa: "il miglior tempo al chilometro" },
+  { nome: "Vittorie", peso: 7.5, cosa: "quota di corse vinte, corretta se le corse sono poche" },
+  { nome: "Tenuta", peso: 11.25, cosa: "quante stagioni ha corso" },
+  { nome: "Continuità", peso: 11.25, cosa: "stagioni corse su quelle che poteva correre" },
 ];
 
 interface Voto {
@@ -105,7 +105,7 @@ export default function RiquadroRating() {
                 <div key={p.nome} style={{ display: "grid", gridTemplateColumns: "90px 1fr 46px", alignItems: "center", gap: "10px", fontSize: "12.5px" }}>
                   <span style={{ color: "hsl(210 10% 88%)", fontWeight: 600 }}>{p.nome}</span>
                   <span title={p.cosa} style={{ height: "10px", background: "hsl(220 12% 8%)", borderRadius: "5px", overflow: "hidden" }}>
-                    <span style={{ display: "block", height: "100%", width: `${p.peso / 45 * 100}%`, background: "hsl(183 60% 50%)", borderRadius: "5px" }} />
+                    <span style={{ display: "block", height: "100%", width: `${p.peso / 60 * 100}%`, background: "hsl(183 60% 50%)", borderRadius: "5px" }} />
                   </span>
                   <span className="tabular" style={{ color: MUTED, textAlign: "right" }}>{p.peso.toLocaleString("it-IT")}%</span>
                   <span style={{ gridColumn: "1 / -1", color: MUTED, fontSize: "11.5px", marginTop: "-4px" }}>{p.cosa}</span>

@@ -21,6 +21,7 @@ Output finale su stdout (ultima riga): JSON con chiavi new_horses, new_races, ho
 """
 
 import bisect
+import math
 import os
 import re
 import json
@@ -239,11 +240,22 @@ GRADE_WEIGHTS = {
 # importante economicamente: la tavola di sopravvivenza di questo progetto
 # mostra che i guadagni stanno negli anni in pista, non nel colpo singolo.
 # ─────────────────────────────────────────────
-PESO_GUADAGNI = 0.45
-PESO_RECORD = 0.15
-PESO_VITTORIE = 0.15
-PESO_TENUTA = 0.125      # stagioni corse, in assoluto
-PESO_INTEGRITA = 0.125   # stagioni corse su quelle che poteva correre
+#
+# Ottobre 2026: piu' peso ai guadagni totali. Contati solo come percentile si
+# appiattivano in cima: Zorro Wind, 223.779 euro, era al 98,8%; Vivid Wise As,
+# 3,53 milioni, al 100%. Quindici volte i soldi valevano poco piu' di un punto,
+# e Zorro Wind finiva primo dell'archivio grazie alla quota di vittorie. Ora i
+# guadagni pesano 0,60 e sono per meta' il percentile (che separa bene i
+# cavalli normali) e per meta' una scala dei soldi veri, in logaritmo, dove il
+# cavallo che ha vinto di piu' vale 100: in cima ogni milione in piu' conta.
+# Provato su tutto l'archivio: Vivid Wise As primo, Zorro Wind ventunesimo,
+# l'ordine degli altri quasi invariato (correlazione di rango 0,998).
+PESO_GUADAGNI = 0.60
+QUOTA_GUADAGNI_SCALA = 0.5   # parte dei guadagni data dalla scala dei soldi veri
+PESO_RECORD = 0.10
+PESO_VITTORIE = 0.075
+PESO_TENUTA = 0.1125     # stagioni corse, in assoluto
+PESO_INTEGRITA = 0.1125  # stagioni corse su quelle che poteva correre
 
 # Quante "corse fantasma" a rendimento medio si aggiungono per correggere la
 # percentuale di vittorie. Con venti, un cavallo da venti corse pesa per meta'
@@ -2668,6 +2680,14 @@ def phase_ratings(conn: sqlite3.Connection):
         pos = bisect.bisect_right(all_earnings, earnings)
         return round(pos / n_earn * 100, 2)
 
+    # Scala dei soldi veri: logaritmo dei guadagni, 100 = chi ha vinto di piu'.
+    log_max = math.log1p(all_earnings[-1]) if n_earn else 0.0
+
+    def earn_scala(earnings: float) -> float:
+        if not log_max or not earnings or earnings <= 0:
+            return 0.0
+        return min(100.0, math.log1p(earnings) / log_max * 100)
+
     all_times = sorted([t for r in pool if (t := _time_to_seconds(r[6] or ""))])
     n_times = len(all_times)
 
@@ -2769,8 +2789,10 @@ def phase_ratings(conn: sqlite3.Connection):
         tenuta = tenuta_pct(st_corse)
         integrita = integrita_pct(st_corse / st_poss)
 
+        guadagni = (QUOTA_GUADAGNI_SCALA * earn_scala(career_earnings or 0)
+                    + (1 - QUOTA_GUADAGNI_SCALA) * ep)
         score = round(min(
-            ep * PESO_GUADAGNI
+            guadagni * PESO_GUADAGNI
             + tp * PESO_RECORD
             + win_rate_corretto * PESO_VITTORIE
             + tenuta * PESO_TENUTA

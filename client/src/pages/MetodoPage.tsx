@@ -177,13 +177,20 @@ export default function MetodoPage() {
         <table>
           <thead><tr><th>Parte</th><th>Peso</th><th>Cosa misura</th></tr></thead>
           <tbody>
-            <tr><td>Guadagni</td><td>45%</td><td>quanto ha vinto in carriera</td></tr>
-            <tr><td>Record</td><td>15%</td><td>il miglior tempo al chilometro</td></tr>
-            <tr><td>Vittorie</td><td>15%</td><td>quota di corse vinte, corretta per il numero di corse</td></tr>
-            <tr><td>Tenuta</td><td>12,5%</td><td>quante stagioni ha corso</td></tr>
-            <tr><td>Continuita'</td><td>12,5%</td><td>stagioni corse su quelle che poteva correre</td></tr>
+            <tr><td>Guadagni</td><td>60%</td><td>quanto ha vinto in carriera: per meta' la posizione fra gli atleti, per meta' quanti soldi in piu'</td></tr>
+            <tr><td>Record</td><td>10%</td><td>il miglior tempo al chilometro</td></tr>
+            <tr><td>Vittorie</td><td>7,5%</td><td>quota di corse vinte, corretta per il numero di corse</td></tr>
+            <tr><td>Tenuta</td><td>11,25%</td><td>quante stagioni ha corso</td></tr>
+            <tr><td>Continuita'</td><td>11,25%</td><td>stagioni corse su quelle che poteva correre</td></tr>
           </tbody>
         </table>
+        <p>
+          <strong>Perche' i guadagni pesano di piu'.</strong> Contati solo come posizione in classifica si
+          appiattivano in cima: un cavallo con 223.779 euro stava gia' al 98,8%, uno con 3,5 milioni al 100%, e
+          quindici volte i soldi valevano poco piu' di un punto. Per questo meta' del peso va a una scala dei soldi
+          veri, dove il cavallo che ha vinto di piu' vale 100 e ogni raddoppio dei guadagni aggiunge lo stesso
+          tratto: in cima ogni milione in piu' conta ancora.
+        </p>
         <p>
           <strong>Perche' le vittorie sono corrette.</strong> Otto vittorie su otto corse non valgono piu' di
           venticinque su novanta: con poche prove non si distingue il campione dal fortunato. Per questo alla
