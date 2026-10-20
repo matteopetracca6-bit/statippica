@@ -1,8 +1,8 @@
 {
   "n_samples": 234,
-  "n_samples_before_target_filter": 404,
+  "n_samples_before_target_filter": 410,
   "n_family_groups": 39,
-  "poor_prevalence": 0.274,
+  "poor_prevalence": 0.265,
   "feature_coverage": {
     "s_time": 1.0,
     "s_earn": 1.0,
@@ -35,48 +35,48 @@
   ],
   "baselines": {
     "target_mean": {
-      "mae": 14.138,
-      "rmse": 16.726,
+      "mae": 11.881,
+      "rmse": 14.401,
       "r2": 0.0
     },
     "mid_parent_score": {
-      "mae": 19.631,
-      "rmse": 23.531,
-      "r2": -0.9792
+      "mae": 17.118,
+      "rmse": 20.485,
+      "r2": -1.0233
     }
   },
   "regression_oof_by_family": {
     "gb_150_d3": {
-      "mae": 14.222,
-      "rmse": 17.705,
-      "r2": -0.1205
+      "mae": 12.199,
+      "rmse": 15.414,
+      "r2": -0.1455
     },
     "gb_60_d2": {
-      "mae": 13.605,
-      "rmse": 16.344,
-      "r2": 0.0451
+      "mae": 11.536,
+      "rmse": 14.128,
+      "r2": 0.0376
     },
     "ridge_a10": {
-      "mae": 14.53,
-      "rmse": 17.496,
-      "r2": -0.0942
+      "mae": 12.609,
+      "rmse": 15.411,
+      "r2": -0.1452
     }
   },
   "regression_temporal_holdout": {
     "split_year": 2021,
     "n_train": 82,
     "n_test": 152,
-    "mae": 16.504,
-    "rmse": 20.0,
-    "r2": -0.7111
+    "mae": 13.666,
+    "rmse": 16.829,
+    "r2": -0.5831
   },
   "classification_oof_by_family": {
-    "auc": 0.6017,
-    "pr_auc": 0.3527,
-    "pr_auc_baseline_prevalence": 0.2735,
-    "brier": 0.2332
+    "auc": 0.5618,
+    "pr_auc": 0.312,
+    "pr_auc_baseline_prevalence": 0.265,
+    "brier": 0.2424
   },
-  "trained_at": "2026-10-18T08:58:59.794803+00:00",
+  "trained_at": "2026-10-20T14:10:02.699597+00:00",
   "min_child_races": 10,
   "features": [
     "s_time",
@@ -94,7 +94,7 @@
   "is_decision_support_ready": false,
   "tetto_teorico_r2": 0.15,
   "segnale_misurato_r2": 0.036,
-  "quota_del_tetto_raggiunta": 0.301,
+  "quota_del_tetto_raggiunta": 0.251,
   "validation_criteria": {
     "min_r2_decision": 0.08,
     "min_auc_decision": 0.65,
