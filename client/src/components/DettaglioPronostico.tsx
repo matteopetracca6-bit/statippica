@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ChevronDown, ListChecks } from "lucide-react";
 import { Spiegazione } from "./Spiegazione";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 42%)";
@@ -75,7 +76,7 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
                   {(d.cavalli as Cavallo[]).map(c => (
                     <tr key={c.nome}>
                       <td>
-                        <Link href={`/horse/${encodeURIComponent(c.nome)}/${c.anno || 0}`}><a className="nome">{c.nome}</a></Link>
+                        <BandieraCavallo nome={c.nome} /> <Link href={`/horse/${encodeURIComponent(c.nome)}/${c.anno || 0}`}><a className="nome">{c.nome}</a></Link>
                         <small style={{ display: "block", color: DIM, fontSize: 10.5 }}>
                           {c.partenza != null ? `numero ${c.partenza} · ` : ""}{c.corse} corse in archivio
                         </small>

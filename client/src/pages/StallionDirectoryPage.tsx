@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "../components/GradeBadge";
 import { Search, X, MapPin, Euro, Filter, ArrowUpDown } from "lucide-react";
 import ConfrontoStalloni from "../components/ConfrontoStalloni";
@@ -345,7 +345,7 @@ export default function StallionDirectoryPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "3px" }}>
                       {country && (
                         <span style={{ fontSize: "11px", color: "hsl(210 8% 50%)" }}>
-                          {getFlag(country)} {COUNTRY_LABELS[country] || country}
+                          <BandieraCavallo paese={country} ignoto_se_vuoto /> {COUNTRY_LABELS[country] || country}
                         </span>
                       )}
                     </div>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "../components/GradeBadge";
 import { COLORE_VOTO } from "@/lib/coloreVoto";
 import { ArrowLeft, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -381,7 +381,7 @@ export default function StallionPage() {
                   {stallion.grade && <GradeBadge grade={stallion.grade} size="lg" />}
                   <div style={{ flex: 1, minWidth: "200px" }}>
                     <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 95%)", letterSpacing: "0.03em", margin: "0 0 4px", display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ fontSize: "20px" }}>{getFlag(stallion.nationality, stallion.sire)}</span>
+                      <BandieraCavallo nome={stallion.sire} paese={stallion.nationality} ignoto_se_vuoto grande />
                       {stallion.sire}
                     </h1>
                     <div style={{ fontSize: "13px", color: "hsl(210 8% 55%)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -418,7 +418,7 @@ export default function StallionPage() {
                     {migliore ? (
                       <Link href={`/horse/${encodeURIComponent(migliore.name)}/${migliore.birth_year}`}>
                         <a style={{ textDecoration: "none" }}>
-                          <div className="valore" style={{ fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{migliore.name}</div>
+                          <div className="valore" style={{ fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><BandieraCavallo nome={migliore.name} /> {migliore.name}</div>
                           <div className="sotto">{euro(migliore.career_earnings)}</div>
                         </a>
                       </Link>
@@ -695,7 +695,7 @@ export default function StallionPage() {
                     <td style={{ padding: "9px 10px" }}>
                       <Link href={`/horse/${encodeURIComponent(c.name)}/${c.birth_year}`}>
                         <a style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 80%)", textDecoration: "none", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "5px" }}>
-                          <span>{c.name}</span>
+                          <BandieraCavallo nome={c.name} /><span>{c.name}</span>
                         </a>
                       </Link>
                     </td>

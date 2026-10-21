@@ -10,7 +10,6 @@ import { useRoute, useLocation, Link } from "wouter";
 import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { getFlag, KNOWN_STALLION_NATIONALITY, COUNTRY_FLAG } from "@/lib/flags";
 import { COLORE_VOTO } from "@/lib/coloreVoto";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
@@ -808,6 +807,7 @@ export default function HorsePage() {
                     onMouseLeave={e => e.currentTarget.style.background = "none"}
                   >
                     <GradeBadge grade={s.grade} size="sm" />
+                    <BandieraCavallo nome={s.name} />
                     <span style={{ flex: 1, fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 78%)", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
                     <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 45%)", flexShrink: 0 }}>
                       €{s.career_earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}

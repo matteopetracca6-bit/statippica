@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { Activity, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "./GradeBadge";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const GRADE_COLORS: Record<string, string> = {
   SSS: "hsl(51 100% 55%)", SS: "hsl(0 0% 78%)", S: "hsl(30 70% 60%)",
@@ -150,8 +151,8 @@ export default function RiquadroRating() {
           {sel && (
             <div style={{ fontSize: "13px", color: "hsl(210 10% 82%)", lineHeight: 1.7, background: "hsl(220 12% 8%)", borderRadius: "10px", padding: "12px 14px" }}>
               <GradeBadge grade={sel.voto} size="sm" /> {sel.n.toLocaleString("it-IT")} cavalli, {sel.quota} della classifica.
-              {sel.esempio && <> Un esempio tipico: <Link href={`/horse/${encodeURIComponent(sel.esempio.nome)}/${sel.esempio.anno}`}><a style={{ color: "hsl(183 60% 55%)" }}>{sel.esempio.nome} ({sel.esempio.anno})</a></Link>.</>}
-              {sel.migliore && sel.migliore.nome !== sel.esempio?.nome && <> Il migliore della lettera: <Link href={`/horse/${encodeURIComponent(sel.migliore.nome)}/${sel.migliore.anno}`}><a style={{ color: "hsl(183 60% 55%)" }}>{sel.migliore.nome} ({sel.migliore.anno})</a></Link>.</>}
+              {sel.esempio && <> Un esempio tipico: <BandieraCavallo nome={sel.esempio.nome} /> <Link href={`/horse/${encodeURIComponent(sel.esempio.nome)}/${sel.esempio.anno}`}><a style={{ color: "hsl(183 60% 55%)" }}>{sel.esempio.nome} ({sel.esempio.anno})</a></Link>.</>}
+              {sel.migliore && sel.migliore.nome !== sel.esempio?.nome && <> Il migliore della lettera: <BandieraCavallo nome={sel.migliore.nome} /> <Link href={`/horse/${encodeURIComponent(sel.migliore.nome)}/${sel.migliore.anno}`}><a style={{ color: "hsl(183 60% 55%)" }}>{sel.migliore.nome} ({sel.migliore.anno})</a></Link>.</>}
               {" "}<Link href={`/leaderboard?grade=${sel.voto}`}><a style={{ color: "hsl(183 60% 55%)" }}>Vedi tutti</a></Link>
             </div>
           )}

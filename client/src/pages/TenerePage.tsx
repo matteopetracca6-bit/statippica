@@ -21,6 +21,7 @@ import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { ESITO_COLORE } from "@/lib/esiti";
 import { testoProb } from "@/lib/probCopre";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 55%)";
 const CARD: React.CSSProperties = { background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 18%)", borderRadius: 12, padding: "16px 18px" };
@@ -118,7 +119,7 @@ function ElencoCavalli({ mensile }: { mensile: string }) {
             {d.righe.map((r: any) => (
               <tr key={r.nome}>
                 <td>
-                  <Link href={`/horse/${encodeURIComponent(r.nome)}/${r.anno || 0}`}><a className="nome">{r.nome}</a></Link>
+                  <BandieraCavallo nome={r.nome} /> <Link href={`/horse/${encodeURIComponent(r.nome)}/${r.anno || 0}`}><a className="nome">{r.nome}</a></Link>
                   {r.voto && <span style={{ marginLeft: 6 }}><GradeBadge grade={r.voto} size="sm" /></span>}
                   <span style={{ marginLeft: 6 }}><AggiungiScuderia icona voce={{ tipo: "cavallo", nome: r.nome, anno: r.anno ?? null }} /></span>
                 </td>
@@ -194,7 +195,7 @@ function PerStallone({ mensile }: { mensile: string }) {
                   <td className="num tabular nascondi-mobile">{euro(s.attesi_mediani)}</td>
                   <td className="num tabular" style={{ color: s.saldo_medio >= 0 ? ESITO_COLORE.profitto : ESITO_COLORE.perdita }}>{euro(s.saldo_medio)}</td>
                   <td className="nascondi-mobile">
-                    <Link href={`/horse/${encodeURIComponent(s.migliore.nome)}/${s.migliore.anno || 0}`}><a className="padre">{titolo(s.migliore.nome)}</a></Link>
+                    <BandieraCavallo nome={s.migliore.nome} /> <Link href={`/horse/${encodeURIComponent(s.migliore.nome)}/${s.migliore.anno || 0}`}><a className="padre">{titolo(s.migliore.nome)}</a></Link>
                     <span className="tabular" style={{ color: MUTED, fontSize: 11, marginLeft: 6 }}>{euro(s.migliore.attesi)}</span>
                   </td>
                 </tr>

@@ -13,6 +13,7 @@ import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
 import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 40%)";
@@ -205,7 +206,7 @@ export default function DriverPage() {
                     <td style={{ padding: "5px 0", color: "hsl(210 10% 80%)" }}>
                       {c.anno ? (
                         <Link href={`/horse/${encodeURIComponent(c.nome)}/${c.anno}`} className="collegamento-scheda">
-                          {c.nome}
+                          <BandieraCavallo nome={c.nome} /> {c.nome}
                         </Link>
                       ) : c.nome}
                       {c.grade && <span style={{ marginLeft: "6px" }}><GradeBadge grade={c.grade} size="sm" /></span>}

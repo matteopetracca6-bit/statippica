@@ -15,6 +15,7 @@ import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { useScuderia } from "@/lib/scuderia";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 55%)";
 const TESTO = "hsl(210 10% 90%)";
@@ -247,7 +248,7 @@ export default function ScuderiaPage() {
                 <tr key={v.id}>
                   <td style={{ whiteSpace: "normal", minWidth: 120 }}>
                     {v.tipo === "cavallo"
-                      ? <Link href={`/horse/${encodeURIComponent(v.nome)}/${v.anno}`} style={{ color: TESTO, fontWeight: 700 }}>{titolo(v.nome)}</Link>
+                      ? <><BandieraCavallo nome={v.nome} /> <Link href={`/horse/${encodeURIComponent(v.nome)}/${v.anno}`} style={{ color: TESTO, fontWeight: 700 }}>{titolo(v.nome)}</Link></>
                       : <Link href={`/puledro?padre=${encodeURIComponent(v.padre)}&madre=${encodeURIComponent(v.madre ?? "")}&prezzo=${v.prezzo ?? ""}&asta=${v.asta ? 1 : 0}${v.nome ? `&nome=${encodeURIComponent(v.nome)}` : ""}`} style={{ color: TESTO, fontWeight: 700 }}>{v.nome ? titolo(v.nome) : "Puledro"}</Link>}
                     {v.voto && <span style={{ marginLeft: 6 }}><GradeBadge grade={v.voto} size="sm" /></span>}
                     {idDaFermare.has(v.id) && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 800, color: ROSSO, border: `1px solid ${ROSSO}`, borderRadius: 5, padding: "0 4px" }}>DA FERMARE</span>}

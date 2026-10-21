@@ -9,7 +9,7 @@ import CavalliDelMomento from "../components/CavalliDelMomento";
 import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import EsploraCategorie from "../components/EsploraCategorie";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "@/components/BandieraCavallo";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
   BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked, Scale, Briefcase, Tag } from "lucide-react";
@@ -223,7 +223,7 @@ export default function Home() {
                       <span className="tabular" style={{ fontSize: "12px", color: i < 3 ? "hsl(51 80% 55%)" : "hsl(210 8% 35%)", fontWeight: 700, minWidth: "20px" }}>
                         {i + 1}
                       </span>
-                      <span style={{ fontSize: "16px" }}>{getFlag(s.nationality, s.name)}</span>
+                      <BandieraCavallo nome={s.name} paese={s.nationality} ignoto_se_vuoto />
                       <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 85%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {s.name}
                       </span>
@@ -253,6 +253,7 @@ export default function Home() {
               <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Campione per generazione
               </span>
+              <span style={{ fontSize: "11px", color: "hsl(210 8% 45%)" }}>solo nati in Italia</span>
             </div>
             {isLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -274,7 +275,7 @@ export default function Home() {
                       <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 45%)", fontWeight: 700, minWidth: "36px" }}>{h.birth_year}</span>
                       {i === 0 && <span style={{ fontSize: "14px" }}>👑</span>}
                       <GradeBadge grade={h.grade} size="sm" />
-                      <span style={{ fontSize: "16px" }}>{getFlag(h.country, h.name)}</span>
+                      <BandieraCavallo nome={h.name} paese={h.country} />
                       <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: i === 0 ? "hsl(51 80% 65%)" : "hsl(210 10% 85%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {h.name}
                       </span>

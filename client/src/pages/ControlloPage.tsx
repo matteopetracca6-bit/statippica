@@ -19,6 +19,7 @@ import Sagoma from "../components/Sagoma";
 import { ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { ESITO_COLORE } from "@/lib/esiti";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const COLORE = "hsl(265 45% 68%)";
 const MUTED = "hsl(210 8% 55%)";
@@ -252,7 +253,7 @@ export default function ControlloPage() {
               <tbody>
                 {a.migliori.map((x: any) => (
                   <tr key={x.puledro}>
-                    <td><Link href={`/horse/${encodeURIComponent(x.puledro)}/2023`} style={{ color: COLORE }}>{titolo(x.puledro)}</Link></td>
+                    <td><BandieraCavallo nome={x.puledro} /> <Link href={`/horse/${encodeURIComponent(x.puledro)}/2023`} style={{ color: COLORE }}>{titolo(x.puledro)}</Link></td>
                     <td className="nascondi-mobile">{titolo(x.padre ?? "")}</td>
                     <td className="num tabular">{euro(x.prezzo)}</td>
                     <td className="num tabular nascondi-mobile">{euro(x.stima)}</td>

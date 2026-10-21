@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "../components/GradeBadge";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { Dna } from "lucide-react";
@@ -88,7 +88,7 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
       )}
       {node.birth_year && !compact && (
         <div style={{ fontSize: "10px", color: "hsl(210 8% 42%)", marginTop: "2px" }}>
-          {node.birth_year}{node.country ? ` · ${node.country}` : ""}
+          <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto /> {node.birth_year}
         </div>
       )}
       {node.career_earnings != null && node.career_earnings > 0 && !compact && (
@@ -275,12 +275,12 @@ export default function PedigreePage() {
                 Soggetto
               </div>
               <div style={{ fontSize: "18px", fontWeight: 800, color: "hsl(210 10% 90%)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "20px" }}>{getFlag(data.horse.country, data.horse.name)}</span>
+                <BandieraCavallo nome={data.horse.name} paese={data.horse.country} grande />
                 {data.horse.name}
               </div>
               <div style={{ fontSize: "12px", color: "hsl(210 8% 52%)", marginTop: "3px" }}>
                 {data.horse.birth_year || "—"} · {data.horse.sex === "M" ? "♂ Stallone" : data.horse.sex === "F" ? "♀ Fattrice" : "—"}
-                {data.horse.country ? ` · ${data.horse.country}` : ""}
+
                 {data.horse.career_races ? ` · ${data.horse.career_races} corse` : ""}
               </div>
             </div>

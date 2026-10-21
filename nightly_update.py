@@ -3088,6 +3088,38 @@ PAESI_SIGLA = {
     "CANADA": "CAN",
     "STATI UNITI D'AMERICA": "USA",
     "STATI UNITI": "USA",
+    "FINLANDIA": "FIN",
+    "DANIMARCA": "DEN",
+    "PAESI BASSI": "NED",
+    "OLANDA": "NED",
+    "BELGIO": "BEL",
+    "AUSTRIA": "AUT",
+    "SVIZZERA": "SUI",
+    "SLOVENIA": "SLO",
+    "AUSTRALIA": "AUS",
+    "NUOVA ZELANDA": "NZL",
+    "GRAN BRETAGNA": "GBR",
+    "REGNO UNITO": "GBR",
+    "IRLANDA": "IRE",
+    "SPAGNA": "ESP",
+    "UNGHERIA": "HUN",
+    "DEU": "GER",
+    "DNK": "DEN",
+    "NLD": "NED",
+    "CHE": "SUI",
+    "SVN": "SLO",
+    "I": "ITA",
+    "F": "FRA",
+}
+
+# Sigla che Trottoweb aggiunge al nome dei cavalli nati all'estero, es.
+# GO ON BOY (F), FRAGOLINO ROSSO (D). L'anagrafe per loro scrive solo "EST"
+# (estero): il paese vero e' nella sigla. Verificate sull'archivio (ottobre
+# 2026): (SL) Nina From Brezina corre a Ljutomer, (AU) No Limit Ty a Baden.
+SIGLA_NOME_PAESE = {
+    "S": "SWE", "D": "GER", "F": "FRA", "DK": "DEN", "SL": "SLO", "SLO": "SLO",
+    "AU": "AUT", "A": "AUT", "NL": "NED", "NO": "NOR", "N": "NOR", "SF": "FIN",
+    "FI": "FIN", "US": "USA", "USA": "USA", "B": "BEL", "CH": "SUI", "CA": "CAN",
 }
 
 
@@ -3105,7 +3137,48 @@ def phase_normalize_country(conn: sqlite3.Connection) -> None:
     # Stessa sigla scritta in minuscolo o con spazi attorno.
     conn.execute("""UPDATE horses SET country = UPPER(TRIM(country))
                     WHERE country IS NOT NULL AND country <> UPPER(TRIM(country))""")
+    # "EST" o vuoto con la sigla nel nome: il paese e' quello della sigla.
+    # Si guarda solo la sigla in fondo al nome; chi ha gia' un paese preciso
+    # lo tiene.
+    da_sigla = 0
+    for nome, in conn.execute("""SELECT DISTINCT name FROM horses
+                                  WHERE (country IS NULL OR TRIM(country) IN ('', 'EST'))
+                                    AND name GLOB '* ([A-Z]*)'""").fetchall():
+        m = re.search(r"\(([A-Z]{1,3})\)\s*$", nome)
+        paese = SIGLA_NOME_PAESE.get(m.group(1)) if m else None
+        if paese:
+            da_sigla += conn.execute("""UPDATE horses SET country = ? WHERE name = ?
+                                         AND (country IS NULL OR TRIM(country) IN ('', 'EST'))""",
+                                     (paese, nome)).rowcount
+    # Riproduttori senza paese: lo si prende dalla scheda dello stallone o dal
+    # suo pedigree, se lo conoscono.
+    da_stallone = 0
+    for tabella, campo, chiave in (("stallions", "country", "name"),
+                                   ("stallion_pedigree", "nationality", "name")):
+        try:
+            cols = {r[1] for r in conn.execute(f"PRAGMA table_info({tabella})")}
+            if campo not in cols or chiave not in cols:
+                continue
+            da_stallone += conn.execute(f"""
+                UPDATE horses SET country = (
+                    SELECT UPPER(TRIM(t.{campo})) FROM {tabella} t
+                     WHERE UPPER(TRIM(t.{chiave})) = UPPER(TRIM(horses.name))
+                       AND COALESCE(TRIM(t.{campo}), '') NOT IN ('', 'EST') LIMIT 1)
+                 WHERE COALESCE(TRIM(country), '') IN ('', 'EST')
+                   AND EXISTS (SELECT 1 FROM {tabella} t
+                                WHERE UPPER(TRIM(t.{chiave})) = UPPER(TRIM(horses.name))
+                                  AND COALESCE(TRIM(t.{campo}), '') NOT IN ('', 'EST'))""").rowcount
+        except sqlite3.Error as e:
+            print(f"[PAESI] {tabella}: {e}", file=sys.stderr)
+    # Le stesse sigle lunghe anche nelle schede stalloni.
+    for tabella, campo in (("stallions", "country"), ("stallion_pedigree", "nationality")):
+        try:
+            for nome_lungo, sigla in PAESI_SIGLA.items():
+                conn.execute(f"UPDATE {tabella} SET {campo} = ? WHERE UPPER(TRIM({campo})) = ?", (sigla, nome_lungo))
+        except sqlite3.Error:
+            pass
     conn.commit()
+    print(f"[PAESI] Paese dalla sigla del nome: {da_sigla}; dalla scheda stallone: {da_stallone}.", file=sys.stderr)
     print(f"[PAESI] Uniformati {totale} cavalli.", file=sys.stderr)
 
 

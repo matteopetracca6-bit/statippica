@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "../components/GradeBadge";
 import { ChevronLeft, ChevronRight, SortAsc } from "lucide-react";
 import { formatRecord } from "@/lib/record";
@@ -356,7 +356,7 @@ export default function LeaderboardPage() {
                       <td style={{ padding: "10px 12px", minWidth: "160px" }}>
                         <Link href={`/horse/${encodeURIComponent(row.name)}/${row.birth_year}`}>
                           <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none", letterSpacing: "0.03em", display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                            <span style={{ fontSize: "15px" }}>{getFlag(row.country, row.name)}</span>
+                            <BandieraCavallo nome={row.name} paese={row.country} />
                             {row.name}
                           </a>
                         </Link>

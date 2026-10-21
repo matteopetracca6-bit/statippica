@@ -19,6 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Check, X, ChevronDown, MapPin } from "lucide-react";
 import Sagoma from "./Sagoma";
 import { Spiegazione } from "./Spiegazione";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 42%)";
@@ -335,7 +336,7 @@ export default function VerificaGare() {
                     {c.voci.map(v => (
                       <div key={v.horse_name} className={`vc-riga${v.favorito ? " fav" : ""}`}>
                         <span>
-                          <Link href={`/horse/${encodeURIComponent(v.horse_name)}/${v.birth_year || 0}`}><a>{v.horse_name}</a></Link>
+                          <BandieraCavallo nome={v.horse_name} /> <Link href={`/horse/${encodeURIComponent(v.horse_name)}/${v.birth_year || 0}`}><a>{v.horse_name}</a></Link>
                           {v.favorito && <small>favorito</small>}
                         </span>
                         <span className="tabular">
@@ -350,7 +351,7 @@ export default function VerificaGare() {
                     {(c.mancanti ?? []).map(m => (
                       <div key={m.horse_name} className="vc-riga" style={{ opacity: 0.85 }}>
                         <span>
-                          <Link href={`/horse/${encodeURIComponent(m.horse_name)}/${m.birth_year || 0}`}><a>{m.horse_name}</a></Link>
+                          <BandieraCavallo nome={m.horse_name} /> <Link href={`/horse/${encodeURIComponent(m.horse_name)}/${m.birth_year || 0}`}><a>{m.horse_name}</a></Link>
                           <small style={{ color: "hsl(35 80% 60%)" }}>non nel pronostico</small>
                         </span>
                         <span className="tabular" style={{ color: DIM }}>—</span>

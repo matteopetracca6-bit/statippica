@@ -1042,7 +1042,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const natFromHorses = db.prepare(`
         SELECT h.country
         FROM horses h
-        WHERE h.name = ?
+        WHERE h.name = ? AND COALESCE(TRIM(h.country), '') NOT IN ('', 'EST')
         LIMIT 1
       `).get(name) as any;
 
@@ -1486,7 +1486,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
           -- avvertenza. Chi sceglie uno stallone deve poter distinguere una
           -- misura da un'impressione.
           sr.affidabilita, sr.affidabilita_txt, sr.n_figli_corsi,
-          COALESCE(s.country, sp.nationality)               AS nationality,
+          COALESCE(NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), ''),
+                   (SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
+                     WHERE hx.name = COALESCE(s.name, sr.sire)
+                       AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1)) AS nationality,
           CASE WHEN s.name IS NOT NULL THEN 1 ELSE 0 END    AS in_catalog
         FROM stallion_rating_stats sr
         LEFT JOIN stallions s          ON UPPER(TRIM(s.name))  = UPPER(TRIM(sr.sire))
@@ -1501,7 +1504,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
           s.country, s.season, s.fee_source,
           NULL, NULL, NULL, NULL, NULL, NULL, NULL,
           NULL, NULL, NULL,
-          COALESCE(s.country, sp.nationality), 1
+          COALESCE(NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), ''),
+                   (SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
+                     WHERE hx.name = s.name
+                       AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1)), 1
         FROM stallions s
         LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
         WHERE UPPER(TRIM(s.name)) NOT IN (
@@ -1664,13 +1670,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
         WHERE rating_mode = 'performance' AND COALESCE(horse_class, 'athlete') = 'athlete'
         GROUP BY grade ORDER BY cnt DESC
       `).all() as any[];
+      // Campione per generazione: solo cavalli nati in Italia. Gli esteri
+      // hanno la sigla del paese nel nome (GO ON BOY (F), FRAGOLINO ROSSO (D))
+      // e un paese diverso da ITA; qui si confrontano gli allevamenti italiani.
       const topByYear = db.prepare(`
-        SELECT birth_year, name, grade, score, career_earnings
-        FROM horse_ratings
-        WHERE rating_mode = 'performance' AND COALESCE(horse_class, 'athlete') = 'athlete'
-        GROUP BY birth_year
-        HAVING score = MAX(score)
-        ORDER BY birth_year DESC
+        SELECT hr.birth_year, hr.name, hr.grade, MAX(hr.score) AS score, hr.career_earnings,
+               COALESCE(NULLIF(TRIM(h.country), ''), 'ITA') AS country
+        FROM horse_ratings hr
+        LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year
+        WHERE hr.rating_mode = 'performance' AND COALESCE(hr.horse_class, 'athlete') = 'athlete'
+          AND hr.name NOT GLOB '* ([A-Z]*)'
+          AND COALESCE(NULLIF(TRIM(h.country), ''), 'ITA') = 'ITA'
+        GROUP BY hr.birth_year
+        ORDER BY hr.birth_year DESC
         LIMIT 10
       `).all() as any[];
       res.json({ totalHorses, totalRaces, totalStallions, totalBreeders, gradeDist, topByYear });
@@ -1865,7 +1877,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const result = farms.map(f => {
         const bestStallion = db.prepare(`
           SELECT s.name, sr.final_score, sr.grade, sr.n_figli_totali, sr.pct_top_S,
-                 s.stud_fee_eur, COALESCE(s.country, sp.nationality) AS nationality
+                 s.stud_fee_eur,
+                 COALESCE(NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), ''),
+                          (SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
+                            WHERE hx.name = s.name
+                              AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1)) AS nationality
           FROM stallions s
           LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
           LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))

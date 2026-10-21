@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "../components/GradeBadge";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { useState, useMemo } from "react";
@@ -266,7 +266,7 @@ export default function StudFarmsPage({ embedded = false }: { embedded?: boolean
                               onMouseLeave={e => e.currentTarget.style.background = "hsl(183 100% 38% / 0.1)"}
                             >
                               <span style={{ fontSize: "14px", fontWeight: 700, color: "hsl(183 80% 62%)", display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                                <span style={{ fontSize: "16px" }}>{getFlag(farm.best_stallion.nationality, farm.best_stallion.name)}</span>
+                                <BandieraCavallo nome={farm.best_stallion.name} paese={farm.best_stallion.nationality} ignoto_se_vuoto />
                                 {farm.best_stallion.name}
                               </span>
                               {farm.best_stallion.grade && <GradeBadge grade={farm.best_stallion.grade} size="sm" />}

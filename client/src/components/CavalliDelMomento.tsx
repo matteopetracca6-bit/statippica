@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { Flame, Timer } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "./GradeBadge";
+import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 50%)";
 const CARD: React.CSSProperties = {
@@ -32,7 +33,7 @@ function Riga({ i, nome, anno, voto, children }: { i: number; nome: string; anno
       <span className="tabular" style={{ fontSize: "12px", color: i < 3 ? "hsl(25 90% 60%)" : "hsl(210 8% 35%)", fontWeight: 700, minWidth: "20px" }}>{i + 1}</span>
       <span style={{ width: "34px", flexShrink: 0 }}>{voto ? <GradeBadge grade={voto} size="sm" /> : null}</span>
       <span style={{ flex: 1, minWidth: 0, fontSize: "13px", fontWeight: 600, color: "hsl(210 10% 85%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {nome}{anno ? <span style={{ color: MUTED, fontWeight: 400 }}> ({anno})</span> : null}
+        <BandieraCavallo nome={nome} /> {nome}{anno ? <span style={{ color: MUTED, fontWeight: 400 }}> ({anno})</span> : null}
       </span>
       <span className="momento-dati" style={{ display: "flex", alignItems: "center", gap: "10px" }}>{children}</span>
     </>

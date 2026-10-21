@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
-import { getFlag } from "@/lib/flags";
+import BandieraCavallo from "@/components/BandieraCavallo";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 
 const GRADE_ORDER = ["SSS","SS","S","A","B","C","D","E","F"] as const;
@@ -275,7 +275,7 @@ export default function ComparePage() {
                     onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
                     onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
                   >
-                    {getFlag(h.country, h.name)} {h.name}
+                    <BandieraCavallo nome={h.name} paese={h.country} /> {h.name}
                   </a>
                 </Link>
                 <div style={{ fontSize: "12px", color: "hsl(210 8% 48%)", marginBottom: "10px" }}>
