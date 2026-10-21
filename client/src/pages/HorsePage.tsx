@@ -13,7 +13,13 @@ import { apiRequest } from "@/lib/queryClient";
 import { COLORE_VOTO } from "@/lib/coloreVoto";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart } from "lucide-react";
+
+// Cavalli con un cuoricino viola accanto al nome. CHICCA ROSS e' stata il
+// cavallo di riferimento su cui e' stato provato il voto.
+const CUORI: Record<string, string> = {
+  "CHICCA ROSS": "Il cavallo di riferimento: è stata il benchmark",
+};
 import { formatRecord } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
@@ -367,6 +373,12 @@ export default function HorsePage() {
             <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 95%)", letterSpacing: "0.03em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
               <BandieraCavallo nome={horse.name} paese={horse.country} />
               {horse.name}
+              {CUORI[horse.name.toUpperCase()] && (
+                <span title={CUORI[horse.name.toUpperCase()]} aria-label={CUORI[horse.name.toUpperCase()]} role="img"
+                      style={{ display: "inline-flex", flexShrink: 0 }}>
+                  <Heart size={20} fill="hsl(275 75% 62%)" color="hsl(275 75% 62%)" />
+                </span>
+              )}
             </h1>
             {(horse as any).stallone_come && (
               <div style={{ fontSize: "12.5px", marginBottom: "6px" }}>
