@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import BandieraCavallo from "../components/BandieraCavallo";
+import BandieraCavallo, { paeseCavallo } from "../components/BandieraCavallo";
 import { PareggioCavallo } from "../components/PareggioScheda";
 import PrevisioniCavallo from "../components/PrevisioniCavallo";
 import VendereOCorrere from "../components/VendereOCorrere";
@@ -381,7 +381,7 @@ export default function HorsePage() {
               <span>{horse.birth_year}</span>
               <span>·</span>
               <span>{SEX_LABEL[horse.sex] ?? horse.sex}</span>
-              {horse.country && <><span>·</span><span>{horse.country}</span></>}
+              {(() => { const pc = paeseCavallo(horse.name, horse.country); return pc ? <><span>·</span><span>{pc.nome}</span></> : null; })()}
               <span>·</span>
               <span>Rating: {MODE_LABEL}</span>
               {horse.score != null && <><span>·</span><span className="tabular">Score {horse.score.toFixed(1)}</span></>}
