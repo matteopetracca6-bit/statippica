@@ -1401,6 +1401,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
         LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
                                    AND hr.rating_mode = 'performance'
         WHERE UPPER(TRIM(h.dam)) = ?
+          -- Stesso cavallo registrato due volte, con e senza sigla del paese
+          -- (GO ON BOY e GO ON BOY (F)): la copia senza corse non si mostra.
+          AND NOT (COALESCE(h.career_races, 0) = 0 AND EXISTS (
+                SELECT 1 FROM horses t
+                WHERE t.birth_year = h.birth_year AND t.dam = h.dam AND t.name <> h.name
+                  AND substr(t.name, 1, length(h.name) + 2) = h.name || ' ('))
         ORDER BY hr.score IS NULL, hr.score DESC, h.birth_year DESC
       `).all(name) as any[];
 

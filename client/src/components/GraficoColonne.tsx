@@ -7,7 +7,7 @@
  * numero sopra la colonna, stessa scheda quando ci passi sopra (o la tocchi
  * sul telefono), stessa animazione d'entrata.
  */
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type Colonna = {
   chiave: string | number;
@@ -57,11 +57,27 @@ export default function GraficoColonne({
   const [sopra, setSopra] = useState<string | number | null>(null);
   const max = massimo ?? (Math.max(...dati.map(d => d.valore), 0) || 1);
   const fitte = dati.length > 14;
+  // Sul telefono le colonne diventano strette e i numeri sopra si toccano
+  // ("49%50%51%"): sotto i 26 pixel per colonna si toglie il simbolo % e si
+  // rimpicciolisce il testo. Il valore completo resta nella scheda al tocco.
+  const contenitore = useRef<HTMLDivElement>(null);
+  const [larghezza, setLarghezza] = useState(0);
+  useEffect(() => {
+    const el = contenitore.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(v => setLarghezza(v[0].contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const perColonna = larghezza > 0 ? (larghezza - (formatoGuida ? 40 : 0)) / Math.max(1, dati.length) : 99;
+  const strette = perColonna < 26;
+  const testoColonna = (t?: string) => (strette && t ? t.replace(/\s*%$/, "") : t ?? "");
+  const corpoTesto = strette ? "8.5px" : fitte ? "9.5px" : "10.5px";
   const altezzaBarre = altezza - 34; // spazio per il numero sopra e l'etichetta sotto
 
   return (
     <div className="grafico-colonne">
-      <div style={{ position: "relative", height: `${altezza}px` }}>
+      <div ref={contenitore} style={{ position: "relative", height: `${altezza}px` }}>
         {/* Linee guida: meta' e massimo */}
         {[1, 0.5].map(f => (
           <div key={f} className="grafico-guida" style={{ bottom: `${18 + altezzaBarre * f}px`, right: 0 }}>
@@ -96,8 +112,8 @@ export default function GraficoColonne({
                   </div>
                 )}
                 {mostraTesti && (
-                  <span className="tabular grafico-testo" style={{ color: attiva ? c : "hsl(210 10% 78%)", fontSize: fitte ? "9.5px" : "10.5px" }}>
-                    {d.testo ?? ""}
+                  <span className="tabular grafico-testo" style={{ color: attiva ? c : "hsl(210 10% 78%)", fontSize: corpoTesto }}>
+                    {testoColonna(d.testo)}
                   </span>
                 )}
                 <div className="barra-su" style={{

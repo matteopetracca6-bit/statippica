@@ -135,7 +135,9 @@ export default function StudFarmsPage({ embedded = false }: { embedded?: boolean
                   style={{
                     padding: "16px 20px",
                     cursor: "pointer",
-                    display: "flex", alignItems: "center", gap: "12px",
+                    // Sul telefono il nome va su una riga intera e i numeri sotto:
+                    // prima il nome veniva tagliato a "Varenn...".
+                    display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap",
                   }}
                   onMouseEnter={e => {
                     if (!isOpen) e.currentTarget.parentElement.style.borderColor = "hsl(183 40% 25%)";
@@ -154,20 +156,20 @@ export default function StudFarmsPage({ embedded = false }: { embedded?: boolean
                   </span>
 
                   {/* Farm name + summary */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: "1 1 200px", minWidth: 0 }}>
                     <div style={{
                       fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      overflowWrap: "anywhere",
                     }}>
                       {farm.stud_farm}
                     </div>
                     <div style={{ fontSize: "12px", color: "hsl(210 8% 48%)", marginTop: "2px" }}>
-                      {farm.n_stallions} stalloni · {fmt(farm.n_figli_totali)} figli · {fmt(farm.n_in_corsa)} in gara
+                      {farm.n_stallions} {farm.n_stallions === 1 ? "stallone" : "stalloni"} · {fmt(farm.n_figli_totali)} figli · {fmt(farm.n_in_corsa)} in gara
                     </div>
                   </div>
 
                   {/* Quick stats */}
-                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center", marginLeft: "auto" }}>
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: "10px", color: "hsl(210 8% 38%)", textTransform: "uppercase" }}>Score</div>
                       <div className="tabular" style={{ fontSize: "16px", fontWeight: 700, color: "hsl(183 80% 58%)", transition: "color 0.2s" }}>
