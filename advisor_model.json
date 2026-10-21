@@ -1,16 +1,16 @@
 {
  "version": 2,
- "trained_on": 16669,
- "population_mean": 48.0223,
+ "trained_on": 16684,
+ "population_mean": 48.0293,
  "k_sire": 8.0,
  "k_dam": 2.0,
- "intercept": -9.728577,
- "w_sire": 0.864777,
- "w_dam": 0.324607,
- "residual_sd": 21.9003,
+ "intercept": -9.700299,
+ "w_sire": 0.864048,
+ "w_dam": 0.32476,
+ "residual_sd": 21.893,
  "backtest_summary": {
-  "spearman": 0.163,
-  "mae": 17.19,
+  "spearman": 0.162,
+  "mae": 17.18,
   "baseline_spearman": 0.143
  }
 }
