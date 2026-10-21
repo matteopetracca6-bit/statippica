@@ -14,10 +14,10 @@ import type { Server } from "http";
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
-import { predictBreeding, loadBreedingModel, getValidationInfo } from "./breeding";
 import { ensureGenealogy } from "./vpFetch";
 import {
   loadAdvisorModel, getAdvisorModel, getAdvisorBacktest,
+  loadPuledriModel, getPuledriVerifica,
   predictPair, inbreeding, explain,
 } from "./advisorEngine";
 import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
@@ -2491,7 +2491,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         error: "Verifica non disponibile: advisor_backtest.json non generato",
       });
     }
-    res.json({ ...bt, model: getAdvisorModel(), science: BASI_SCIENTIFICHE });
+    res.json({ ...bt, model: getAdvisorModel(), science: BASI_SCIENTIFICHE, puledri: getPuledriVerifica() });
   });
 
   // ──────────────────────────────────────────────
@@ -2542,6 +2542,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
           typical_high: p.typical_high,
           prob_top: p.prob_top,
           prob_poor: p.prob_poor,
+          prob_buono: p.puledro.prob_buono,
+          prob_corre: p.puledro.prob_corre,
           confidence: p.confidence,
           confidence_label: p.confidence_label,
           n_offspring_sire: p.sire.n_offspring,
@@ -2623,7 +2625,6 @@ export function registerRoutes(httpServer: Server, app: Express) {
           if (budget_max && s.stud_fee_eur > budget_max) return false;
           return true;
         })
-        .slice(0, 15)
         .map((s: any) => {
           // Ogni candidato viene ora valutato SULLA FATTRICE scelta:
           // stesso stallone + fattrice diversa = risultato diverso.
@@ -2640,6 +2641,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
             typical_low: p.typical_low,
             typical_high: p.typical_high,
             prob_top: p.prob_top,
+            prob_buono: p.puledro.prob_buono,
+            prob_corre: p.puledro.prob_corre,
             confidence: p.confidence,
             confidence_label: p.confidence_label,
             value_index: fee && fee > 0
@@ -2649,25 +2652,29 @@ export function registerRoutes(httpServer: Server, app: Express) {
             score_rank: p.expected_score,
           };
         })
-        .sort((a: any, b: any) => b.expected_score - a.expected_score);
+        // Ordine: probabilita' di un buon cavallo, la previsione verificata su
+        // tutti i nati (anche chi non corre). A pari probabilita', voto atteso.
+        .sort((a: any, b: any) => ((b.prob_buono ?? -1) - (a.prob_buono ?? -1))
+                                  || (b.expected_score - a.expected_score))
+        .slice(0, 15);
 
       // Lo stato del modello viaggia con i consigli, non solo nella pagina che
       // spiega il metodo. Chi apre l'Advisor vede voti attesi e guadagni
       // stimati: se il modello che li produce e' sperimentale, deve leggerlo
       // qui, accanto ai numeri, non altrove.
-      let validazione = null;
-      try {
-        const percorsoModello = path.resolve(process.cwd(), "breeding_model.json");
-        if (require("fs").existsSync(percorsoModello)) {
-          validazione = getValidationInfo(
-            JSON.parse(require("fs").readFileSync(percorsoModello, "utf-8")),
-          );
-        }
-      } catch {
-        // Se il modello non si legge, i consigli restano: sono calcolati dalla
-        // progenie, non da lui. Si perde solo l'avviso, e in quel caso e'
-        // meglio non inventarne uno.
-      }
+      // Lo stato del modello viaggia con i consigli: chi apre l'Advisor deve
+      // leggere accanto ai numeri quanto sono affidabili, non altrove.
+      const ver = getPuledriVerifica();
+      const validazione = ver ? {
+        stato: ver.stato,
+        sperimentale: ver.sperimentale,
+        riserva: ver.riserva,
+        auc_buono: ver.buono?.auc_modello ?? null,
+        auc_solo_padre: ver.buono?.auc_solo_padre ?? null,
+        n_prova: ver.n_prova,
+        anni_prova: ver.anni_prova,
+        annata_di_conferma: ver.annata_di_conferma,
+      } : null;
 
       res.json({
         found: true,
@@ -2740,9 +2747,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // ──────────────────────────────────────────────
-  // BREEDING — stima accoppiamento stallone x fattrice
-  // Il modello (breeding_model.json) è addestrato offline da
-  // train_breeding_model.py via GitHub Actions; qui si fa solo inferenza.
+  // CONSIGLIERE DI ALLEVAMENTO — pesi letti all'avvio. Il vecchio modello
+  // sperimentale (breeding_model.json) e' stato tolto: non superava la prova.
   // ──────────────────────────────────────────────
   const advisorModelLoaded = loadAdvisorModel(process.cwd());
   if (!advisorModelLoaded) {
@@ -2750,64 +2756,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
                  "finche' non viene generato da scripts/advisor_model.py");
   }
 
-  const breedingModelLoaded = loadBreedingModel(
-    path.resolve(process.cwd(), "breeding_model.json")
-  );
-  if (!breedingModelLoaded) {
-    console.warn("[BREEDING] breeding_model.json non trovato: /api/breeding/* risponderà 503 " +
-                  "finché non viene generato da train_breeding_model.py");
+  if (!loadPuledriModel(process.cwd())) {
+    console.warn("[PULEDRI] puledri_model.json non trovato: niente probabilita' sui puledri " +
+                 "finche' non viene generato da scripts/puledri_model.py");
   }
-
-  // GET /api/breeding/predict?stallion=NOME&mare=NOME
-  app.get("/api/breeding/predict", (req, res) => {
-    const stallion = ((req.query.stallion as string) || "").trim();
-    const mare = ((req.query.mare as string) || "").trim();
-    if (!stallion || !mare) {
-      return res.status(400).json({ ok: false, error: "Parametri richiesti: stallion, mare" });
-    }
-    const db = getDb();
-    try {
-      const result = predictBreeding(db, stallion, mare);
-      if (!result.ok) {
-        // 503 se manca il modello, 404 se mancano i dati del cavallo
-        const missingModel = (result.error || "").includes("breeding_model.json");
-        return res.status(missingModel ? 503 : 404).json(result);
-      }
-      res.json(result);
-    } catch (e: any) {
-      console.error("[BREEDING] errore predizione:", e?.message);
-      res.status(500).json({ ok: false, error: "Errore interno nella predizione" });
-    } finally {
-      db.close();
-    }
-  });
-
-  // GET /api/breeding/info — stato del modello (per la UI)
-  app.get("/api/breeding/info", (_req, res) => {
-    try {
-      const modelPath = path.resolve(process.cwd(), "breeding_model.json");
-      const fs = require("fs");
-      if (!fs.existsSync(modelPath)) {
-        return res.status(503).json({ available: false, error: "Modello non ancora generato" });
-      }
-      const m = JSON.parse(fs.readFileSync(modelPath, "utf-8"));
-      const v = getValidationInfo(m);
-      res.json({
-        available: true,
-        trained_at: m.trained_at,
-        n_samples: m.n_samples,
-        cv_r2_score: m.cv_r2_score,
-        cv_auc_poor: m.cv_auc_poor,
-        feature_importances: m.feature_importances,
-        validation_status: v.validation_status,
-        is_decision_support_ready: v.is_decision_support_ready,
-        validation_criteria: v.validation_criteria,
-        methodology_notice: v.methodology_notice,
-      });
-    } catch (e: any) {
-      res.status(500).json({ available: false, error: e?.message });
-    }
-  });
 
   // ──────────────────────────────────────────────
   // GET /api/horses — paginated, filterable horse database

@@ -172,6 +172,10 @@ export interface Prediction {
   expected_grade: string;
   prob_top: number;     // probabilita' di un figlio di alto livello (score >= 60)
   prob_poor: number;    // probabilita' di un figlio scarso (score < 20)
+  // Versione 3, verificata su tutti i nati (anche chi non corre). Le due
+  // probabilita' qui sopra vengono da una curva teorica e non sono verificate:
+  // restano per compatibilita', il sito mostra queste.
+  puledro: PrevisionePuledro;
 }
 
 /** Funzione di ripartizione normale, per le probabilita'. */
@@ -239,6 +243,7 @@ export function predictPair(db: DB, stallion: string, mare: string): Prediction 
     expected_grade: gradeFromScore(expected),
     prob_top: Math.round((1 - normCdf((60 - expected) / sd)) * 1000) / 10,
     prob_poor: Math.round(normCdf((20 - expected) / sd) * 1000) / 10,
+    puledro: predictPuledro(db, stallion, mare),
   };
 }
 
@@ -357,3 +362,161 @@ export function explain(p: Prediction, inb: InbreedingResult, fee: number | null
 }
 
 export { GRADE_LIST, gradeFromScore };
+
+// ── Previsione dei puledri, versione 3 ────────────────────────────────
+// Due probabilita' per OGNI puledro nato, contando anche chi non corre:
+//   prob_corre : arriva alle corse
+//   prob_buono : diventa un buon cavallo (25% migliore dei nati dell'anno)
+// Pesi e taratura arrivano da puledri_model.json (scripts/puledri_model.py);
+// il calcolo qui deve restare identico a _costruisci() dello script.
+
+interface PuledriModel {
+  versione: number;
+  base: { corre: number; buono: number };
+  k: Record<string, number>;
+  informazioni: string[];
+  pesi: { corre: number[]; buono: number[] };
+  taratura: { corre: number[]; buono: number[] };
+  soglie_buono: Record<string, number>;
+  sperimentale: boolean;
+  stato: string;
+}
+
+let PULEDRI: PuledriModel | null = null;
+let PULEDRI_VERIFICA: any = null;
+
+export function loadPuledriModel(root = process.cwd()): boolean {
+  try {
+    PULEDRI = JSON.parse(fs.readFileSync(path.join(root, "puledri_model.json"), "utf8"));
+  } catch { PULEDRI = null; }
+  try {
+    PULEDRI_VERIFICA = JSON.parse(fs.readFileSync(path.join(root, "puledri_verifica.json"), "utf8"));
+  } catch { PULEDRI_VERIFICA = null; }
+  return PULEDRI !== null;
+}
+export function getPuledriVerifica(): any { return PULEDRI_VERIFICA; }
+
+interface Conto { n: number; c: number; b: number }
+interface Archivio {
+  quando: number;
+  padre: Map<string, Conto>;
+  madre: Map<string, Conto>;
+  padreMadre: Map<string, Conto>;
+  infoCavallo: Map<string, { anno: number | null; padre: string; madre: string }>;
+}
+let ARCHIVIO: Archivio | null = null;
+const DURATA_ARCHIVIO_MS = 60 * 60 * 1000;
+
+/** Conti per padre, madre e padre della madre, letti una volta all'ora. */
+function archivio(db: DB, m: PuledriModel): Archivio {
+  if (ARCHIVIO && Date.now() - ARCHIVIO.quando < DURATA_ARCHIVIO_MS) return ARCHIVIO;
+  const righe = db.prepare(`
+    SELECT h.sire AS padre, h.dam AS madre, COALESCE(d.sire, '') AS padre_madre,
+           COALESCE(h.career_races, 0) > 0 AS corre,
+           CASE WHEN COALESCE(h.career_races, 0) > 0 AND r.score >= CAST(t.value AS REAL)
+                THEN 1 ELSE 0 END AS buono
+    FROM horses h
+    JOIN json_each(?) t ON t.key = CAST(h.birth_year AS TEXT)
+    LEFT JOIN horse_ratings r ON r.name = h.name AND r.birth_year = h.birth_year
+                             AND r.rating_mode = 'performance'
+    LEFT JOIN horses d ON d.rowid = (SELECT rowid FROM horses WHERE name = h.dam LIMIT 1)
+    WHERE COALESCE(h.horse_class, 'athlete') <> 'breeder'
+      AND h.name NOT GLOB '* ([A-Z]*)'
+      AND COALESCE(TRIM(h.sire), '') <> '' AND COALESCE(TRIM(h.dam), '') <> ''
+  `).all(JSON.stringify(m.soglie_buono)) as any[];
+  const somma = (mp: Map<string, Conto>, k: string, r: any) => {
+    if (!k) return;
+    const v = mp.get(k) ?? { n: 0, c: 0, b: 0 };
+    v.n += 1; v.c += r.corre ? 1 : 0; v.b += r.buono ? 1 : 0;
+    mp.set(k, v);
+  };
+  const a: Archivio = { quando: Date.now(), padre: new Map(), madre: new Map(), padreMadre: new Map(), infoCavallo: new Map() };
+  for (const r of righe) {
+    somma(a.padre, r.padre, r);
+    somma(a.madre, r.madre, r);
+    somma(a.padreMadre, r.padre_madre, r);
+  }
+  ARCHIVIO = a;
+  return a;
+}
+
+function quota(c: Conto | undefined, campo: "corre" | "buono", base: number, k: number) {
+  const n = c?.n ?? 0;
+  if (n <= 0) return { q: base, n: 0 };
+  const s = campo === "corre" ? c!.c : c!.b;
+  const w = n / (n + k);
+  return { q: base + w * (s / n - base), n };
+}
+const logit = (p: number) => { const x = Math.min(Math.max(p, 1e-4), 1 - 1e-4); return Math.log(x / (1 - x)); };
+const sigm = (z: number) => 1 / (1 + Math.exp(-z));
+
+export interface PrevisionePuledro {
+  disponibile: boolean;
+  prob_corre: number | null;     // su 100
+  prob_buono: number | null;     // su 100
+  media_buono: number;           // su 100: un puledro qualsiasi
+  figli_padre: number;
+  figli_madre: number;
+  sperimentale: boolean;
+  stato: string;
+}
+
+export function predictPuledro(db: DB, stallion: string, mare: string): PrevisionePuledro {
+  const m = PULEDRI;
+  if (!m) {
+    return { disponibile: false, prob_corre: null, prob_buono: null, media_buono: 25,
+             figli_padre: 0, figli_madre: 0, sperimentale: true, stato: "modello non disponibile" };
+  }
+  const a = archivio(db, m);
+  const S = stallion.trim().toUpperCase();
+  const M = mare.trim().toUpperCase();
+  const info = db.prepare("SELECT birth_year, sire, dam FROM horses WHERE name = ? LIMIT 1").get(M) as any;
+  const annoPuledro = new Date().getFullYear() + 1;
+  const usa = new Set(m.informazioni);
+  const out: Record<string, number> = {};
+  for (const campo of ["corre", "buono"] as const) {
+    const base = m.base[campo];
+    const qp = quota(a.padre.get(S), campo, base, m.k.padre);
+    const v = [1, logit(qp.q)];
+    const qm = quota(a.madre.get(M), campo, base, m.k.madre);
+    if (usa.has("madre")) v.push(logit(qm.q));
+    if (usa.has("nonna")) {
+      const nonna = info?.dam ? String(info.dam).toUpperCase() : "";
+      v.push(logit(qm.n === 0 && nonna ? quota(a.madre.get(nonna), campo, base, m.k.nonna).q : base));
+    }
+    if (usa.has("padre_madre")) {
+      const pm = info?.sire ? String(info.sire).toUpperCase() : "";
+      v.push(logit(pm ? quota(a.padreMadre.get(pm), campo, base, m.k.padre_madre).q : base));
+    }
+    if (usa.has("eta_madre")) {
+      const e = info?.birth_year ? annoPuledro - info.birth_year : null;
+      const ok = e !== null && e >= 2 && e <= 30;
+      v.push(ok ? 0 : 1, ok && e! <= 5 ? 1 : 0, ok && e! >= 15 ? 1 : 0, ok ? (e! - 10) / 5 : 0);
+    }
+    if (usa.has("parto")) {
+      const parto = 1 + (a.madre.get(M)?.n ?? 0);
+      v.push(parto === 1 ? 1 : 0, Math.min(parto, 8) / 8);
+    }
+    const w = m.pesi[campo];
+    if (w.length !== v.length) {
+      // pesi e informazioni non combaciano: meglio nessuna cifra che una sbagliata
+      return { disponibile: false, prob_corre: null, prob_buono: null, media_buono: 25,
+               figli_padre: qp.n, figli_madre: qm.n, sperimentale: true, stato: "modello non coerente" };
+    }
+    const p = sigm(v.reduce((s, x, i) => s + x * w[i], 0));
+    const t = m.taratura[campo];
+    out[campo] = sigm(t[0] + t[1] * logit(p));
+    out["n_padre"] = qp.n;
+    out["n_madre"] = qm.n;
+  }
+  return {
+    disponibile: true,
+    prob_corre: Math.round(out.corre * 100),
+    prob_buono: Math.round(out.buono * 100),
+    media_buono: Math.round(m.base.buono * 100),
+    figli_padre: out.n_padre,
+    figli_madre: out.n_madre,
+    sperimentale: m.sperimentale,
+    stato: m.stato,
+  };
+}

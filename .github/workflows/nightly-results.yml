@@ -43,7 +43,7 @@ jobs:
           GITHUB_REPO: statippica
         run: python nightly_update.py
 
-      # Consigliere di allevamento e valore di carriera: prima si rifacevano a
+      # Consigliere di allevamento, previsione dei puledri e valore di carriera: prima si rifacevano a
       # mano e restavano fermi. Ora si ricalcolano ogni notte sull'archivio
       # appena aggiornato (circa 2 minuti). Se qualcosa va storto non blocca il
       # resto: resta online la versione della notte prima.
@@ -55,6 +55,7 @@ jobs:
           python3 scripts/career_table.py > /dev/null
           python3 scripts/career_model.py > /dev/null
           python3 scripts/advisor_model.py > /dev/null
+          python3 scripts/puledri_model.py > /dev/null
           python3 scripts/controlla_calcoli_consigliere.py
       - name: Pubblica consigliere e valore di carriera
         if: steps.consigliere.outcome == 'success'
@@ -63,7 +64,7 @@ jobs:
           git config user.email "nightly@statippica.bot"
           git config user.name "StatIppica Nightly"
           git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
-          git add advisor_model.json advisor_backtest.json career_value_model.json
+          git add advisor_model.json advisor_backtest.json career_value_model.json puledri_model.json puledri_verifica.json
           if git diff --cached --quiet; then
             echo "Nessun cambiamento nei calcoli."
           else

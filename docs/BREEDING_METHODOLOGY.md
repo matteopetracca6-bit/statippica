@@ -1,3 +1,12 @@
+> **Ottobre 2026 — documento storico.** Il modello descritto qui (alberi di
+> decisione addestrati ogni settimana, `breeding_model.json`) e' stato tolto:
+> sugli anni mai visti indovinava peggio di dare a tutti il voto medio. Al suo
+> posto c'e' la previsione dei puledri versione 3 (`scripts/puledri_model.py`):
+> probabilita' di arrivare alle corse e di diventare un buon cavallo, verificata
+> su tutti i nati 2020-2022 compresi quelli che non corrono, con regole fissate
+> prima della prova. Il risultato e' in `puledri_verifica.json` e nella pagina
+> "Il consiglio funziona davvero?" del sito.
+
 # Modello breeding — metodologia e stato di validazione
 
 Documento di riferimento per il modulo "stima accoppiamento" (stallone × fattrice).

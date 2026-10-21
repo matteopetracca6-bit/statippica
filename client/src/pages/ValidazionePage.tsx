@@ -17,6 +17,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import { BookOpen, FlaskConical, Ruler, Target, TrendingUp } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
+import VerificaPuledri, { type VerificaPuledriDati } from "../components/VerificaPuledri";
 
 const MUTED = "hsl(210 8% 45%)";
 const DIM = "hsl(210 8% 35%)";
@@ -77,6 +78,7 @@ interface Validation {
     sintesi: string; implicazione_modello: string;
     perche_la_precisione_e_bassa: string; fonti: Fonte[];
   };
+  puledri?: VerificaPuledriDati | null;
 }
 
 function Section({ title, icon, children, sub }: {
@@ -199,6 +201,19 @@ export default function ValidazionePage() {
           l&apos;ordine che propone somiglia a quello vero, il metodo funziona.
         </Spiegazione>
       </div>
+
+      {data.puledri && (
+        <Section
+          title="La prova su tutti i puledri nati"
+          icon={<Target size={17} />}
+        >
+          <VerificaPuledri v={data.puledri} />
+        </Section>
+      )}
+
+      <h2 style={{ fontSize: "13px", fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 14px" }}>
+        Il voto atteso, solo fra chi corre
+      </h2>
 
       <Section
         title="Come e' stata fatta la prova"

@@ -36,6 +36,8 @@ export interface Prediction {
   confidence_label: string;
   sire: { effect: number; n_offspring: number; avg_score: number | null; source: string };
   dam: { effect: number; n_offspring: number; avg_score: number | null; source: string };
+  /** Versione 3: verificata su tutti i nati, compresi quelli che non corrono. */
+  puledro?: { disponibile: boolean; prob_buono: number | null; prob_corre: number | null; media_buono: number };
 }
 
 export interface InbreedingDetail {
@@ -149,8 +151,21 @@ export function PredictionCard({ p }: { p: Prediction }) {
       {/* Probabilita' e contributi */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px" }}>
         {[
-          { label: "Figlio di alto livello", value: `${p.prob_top.toFixed(0)}%`, color: "hsl(100 60% 55%)", note: "voto 60 o piu'" },
-          { label: "Figlio deludente", value: `${p.prob_poor.toFixed(0)}%`, color: "hsl(0 60% 58%)", note: "voto sotto 20" },
+          // Prima qui c'erano "alto livello" e "deludente", ricavati da una curva
+          // teorica mai verificata. Ora due probabilita' provate su oltre 6.000
+          // puledri mai visti, contando anche chi non corre.
+          {
+            label: "Diventa un buon cavallo",
+            value: p.puledro?.prob_buono != null ? `${p.puledro.prob_buono} su 100` : "—",
+            color: "hsl(100 60% 55%)",
+            note: `25% migliore dei nati dell'anno · un puledro qualsiasi: ${p.puledro?.media_buono ?? 25} su 100`,
+          },
+          {
+            label: "Arriva alle corse",
+            value: p.puledro?.prob_corre != null ? `${p.puledro.prob_corre} su 100` : "—",
+            color: "hsl(210 10% 80%)",
+            note: "almeno una corsa in carriera",
+          },
           {
             label: "Indizio dal padre",
             value: p.sire.avg_score !== null ? p.sire.avg_score.toFixed(1) : "—",

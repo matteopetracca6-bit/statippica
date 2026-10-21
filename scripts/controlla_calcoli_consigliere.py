@@ -5,6 +5,8 @@ Controlla i tre calcoli rifatti ogni notte prima di pubblicarli:
   * advisor_model.json      pesi del Consigliere di allevamento
   * advisor_backtest.json   la sua verifica sul passato
   * career_value_model.json valore di carriera (tavola dei guadagni per eta')
+  * puledri_model.json      previsione dei puledri (arriva alle corse? diventa buono?)
+  * puledri_verifica.json   la sua prova sui nati mai visti
 
 Se un file e' rotto o incompleto (per esempio l'archivio era parziale) esce con
 errore e il flusso notturno NON lo pubblica: resta online la versione di prima.
@@ -50,12 +52,37 @@ def main() -> int:
     except Exception as e:
         errori.append(f"career_value_model.json non leggibile: {e}")
 
+    LUNGHEZZE = {"madre": 1, "nonna": 1, "padre_madre": 1, "eta_madre": 4, "parto": 2}
+    try:
+        pm = carica("puledri_model.json")
+        attese = 2 + sum(LUNGHEZZE.get(g, 99) for g in pm.get("informazioni", []))
+        for campo in ("corre", "buono"):
+            if len(pm.get("pesi", {}).get(campo, [])) != attese:
+                errori.append(f"puledri_model.json: pesi '{campo}' non coerenti con le informazioni")
+            if len(pm.get("taratura", {}).get(campo, [])) != 2:
+                errori.append(f"puledri_model.json: taratura '{campo}' mancante")
+        if len(pm.get("soglie_buono", {})) < 8:
+            errori.append("puledri_model.json: mancano le soglie per annata")
+        if not isinstance(pm.get("sperimentale"), bool):
+            errori.append("puledri_model.json: manca lo stato sperimentale")
+    except Exception as e:
+        errori.append(f"puledri_model.json non leggibile: {e}")
+    try:
+        pv = carica("puledri_verifica.json")
+        if (pv.get("n_prova") or 0) < 3000:
+            errori.append(f"puledri_verifica.json: prova su troppi pochi nati ({pv.get('n_prova')})")
+        if not pv.get("regole") or not pv.get("buono", {}).get("fasce"):
+            errori.append("puledri_verifica.json: mancano regole o fasce")
+    except Exception as e:
+        errori.append(f"puledri_verifica.json non leggibile: {e}")
+
     if errori:
         for e in errori:
             print("::error::" + e)
         return 1
     print(f"Calcoli in ordine: consigliere su {b['n_train']} + {b['n_test']} cavalli, "
-          f"{len(c['fasce'])} fasce di valore di carriera.")
+          f"{len(c['fasce'])} fasce di valore di carriera; puledri provati su "
+          f"{pv['n_prova']} nati, stato: {pv.get('stato')}.")
     return 0
 
 

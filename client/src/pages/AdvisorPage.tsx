@@ -41,13 +41,14 @@ interface AdvisorResult {
   budget_max?: number;
   candidates?: Candidate[];
   validazione?: {
-    validation_status: string;
-    is_decision_support_ready: boolean;
-    validation_criteria?: {
-      min_r2_decision?: number;
-      tetto_teorico_r2?: number;
-      segnale_misurato_r2?: number;
-    };
+    stato: string;
+    sperimentale: boolean;
+    riserva?: string | null;
+    auc_buono: number | null;
+    auc_solo_padre: number | null;
+    n_prova: number;
+    anni_prova?: { verifica: number[] };
+    annata_di_conferma?: number;
   } | null;
 }
 
@@ -71,6 +72,10 @@ interface Candidate {
   typical_low?: number;
   typical_high?: number;
   prob_top?: number;
+  /** Su 100 puledri di questa coppia, quanti diventano buoni (25% migliore dei nati). */
+  prob_buono?: number | null;
+  /** Su 100 puledri di questa coppia, quanti arrivano alle corse. */
+  prob_corre?: number | null;
   confidence_label?: string;
   value_index?: number;
   inbreeding_pct?: number;
@@ -239,6 +244,8 @@ interface CompareRow {
   typical_high: number;
   prob_top: number;
   prob_poor: number;
+  prob_buono: number | null;
+  prob_corre: number | null;
   confidence_label: string;
   n_offspring_sire: number;
   inbreeding_pct: number;
@@ -299,8 +306,8 @@ function ComparePanel({ mare, stallions, onClear }: { mare: string; stallions: s
                 <th style={{ ...th, textAlign: "left" }}>Stallone</th>
                 <th style={th}>Voto atteso</th>
                 <th style={th}>Fascia tipica</th>
-                <th style={th}>Alto livello</th>
-                <th style={th}>Deludente</th>
+                <th style={th}>Buon cavallo</th>
+                <th style={th}>Arriva alle corse</th>
                 <th style={th}>Consang.</th>
                 <th style={th}>Monta</th>
                 <th style={th}>Qualita' per euro</th>
@@ -334,8 +341,8 @@ function ComparePanel({ mare, stallions, onClear }: { mare: string; stallions: s
                     <td style={{ ...td, color: "hsl(210 8% 58%)" }} className="tabular">
                       {r.typical_low.toFixed(0)}–{r.typical_high.toFixed(0)}
                     </td>
-                    <td style={{ ...td, color: "hsl(100 55% 52%)" }} className="tabular">{r.prob_top.toFixed(0)}%</td>
-                    <td style={{ ...td, color: "hsl(0 60% 58%)" }} className="tabular">{r.prob_poor.toFixed(0)}%</td>
+                    <td style={{ ...td, color: "hsl(100 55% 52%)" }} className="tabular">{r.prob_buono != null ? `${r.prob_buono} su 100` : "—"}</td>
+                    <td style={{ ...td, color: "hsl(210 8% 62%)" }} className="tabular">{r.prob_corre != null ? `${r.prob_corre} su 100` : "—"}</td>
                     <td style={{ ...td, color: r.inbreeding_level === "nessuna" ? "hsl(210 8% 45%)" : "hsl(35 85% 58%)" }} className="tabular">
                       {r.inbreeding_pct > 0 ? `${r.inbreeding_pct.toFixed(2)}%` : "—"}
                     </td>
@@ -391,12 +398,12 @@ export default function AdvisorPage() {
     <div className="page-shell">
       {/* Header */}
       <IntestazionePagina icona={Sparkles} colore="hsl(280 60% 60%)" titolo="Advisor Allevatore" etichetta="sperimentale" margineSotto={24}
-        sottotitolo="Per una fattrice, gli stalloni compatibili in ordine di voto atteso del puledro: un ordine di massima, non una previsione.">
-        Scegli una fattrice: per ogni stallone compatibile vedrai il voto che
-        il modello si aspetta dal puledro, con quanto è larga l'incertezza
-        intorno a quel voto, la consanguineità e la tassa di monta. È un
-        ordine di massima per restringere una lista, non una previsione: il
-        perché è spiegato nell'avviso sopra i risultati.
+        sottotitolo="Per una fattrice, gli stalloni compatibili in ordine di quanti puledri su 100 diventano buoni cavalli: una tendenza, non una promessa.">
+        Scegli una fattrice: per ogni stallone compatibile vedrai quanti
+        puledri su 100 di quella coppia diventano buoni cavalli e quanti
+        arrivano alle corse, il voto atteso fra chi corre, la consanguineità e
+        la tassa di monta. Serve a restringere una lista, non a garantire un
+        puledro: il perché è spiegato nell'avviso sopra i risultati.
       </IntestazionePagina>
 
       {/* Form */}
@@ -507,35 +514,38 @@ export default function AdvisorPage() {
               il modello non supera la verifica chi legge deve saperlo qui,
               sopra i numeri, non in una pagina di metodo che potrebbe non
               aprire mai. */}
-          {data.validazione && !data.validazione.is_decision_support_ready && (
-            <div style={{
-              background: "hsl(35 90% 10%)", border: "1px solid hsl(35 90% 45% / 0.55)",
-              borderRadius: "12px", padding: "14px 18px", marginBottom: "18px",
-              fontSize: "12.5px", lineHeight: 1.65, color: "hsl(35 35% 88%)",
-            }}>
-              <strong style={{ color: "hsl(35 95% 62%)" }}>
-                Strumento sperimentale, non usarlo per decidere una monta.
-              </strong>
-              <Spiegazione titolo="Perché" compatta>
-              Prevedere la carriera di un singolo puledro dai genitori e' quasi
-              impossibile, e non per un difetto di questo programma: il puledro
-              prende meta' dei geni da ciascun genitore, ma quali meta' e' un
-              sorteggio, e due fratelli pieni hanno carriere diverse. Sui dati
-              di questo archivio il legame tra genitori e figlio spiega circa il{" "}
-              {data.validazione.validation_criteria?.segnale_misurato_r2 != null
-                ? `${(data.validazione.validation_criteria.segnale_misurato_r2 * 100).toFixed(1)}%`
-                : "4%"}{" "}
-              dei risultati, e il massimo teorico e' intorno al{" "}
-              {data.validazione.validation_criteria?.tetto_teorico_r2 != null
-                ? `${(data.validazione.validation_criteria.tetto_teorico_r2 * 100).toFixed(0)}%`
-                : "15%"}.
-              I voti attesi qui sotto vanno letti come un ordine approssimativo,
-              non come una previsione. Per scegliere uno stallone, la strada che
-              funziona e' un'altra: guardare com'e' andata la sua progenie, sulla
-              sua scheda, dove e' scritto anche su quanti figli poggia il voto.
-              </Spiegazione>
+          {/* L'avviso resta sempre visibile, anche con le regole superate:
+              per il singolo puledro la previsione indica una tendenza, e il
+              risultato aspetta la conferma su un'annata mai guardata. */}
+          <div style={{
+            background: "hsl(35 90% 10%)", border: "1px solid hsl(35 90% 45% / 0.55)",
+            borderRadius: "12px", padding: "14px 18px", marginBottom: "18px",
+            fontSize: "12.5px", lineHeight: 1.65, color: "hsl(35 35% 88%)",
+          }}>
+            <strong style={{ color: "hsl(35 95% 62%)" }}>
+              Previsione sperimentale: indica una tendenza, non il destino del singolo puledro.
+            </strong>
+            <div style={{ marginTop: "4px" }}>
+              Accanto a ogni stallone leggi quanti puledri su 100 di questa coppia
+              diventano buoni cavalli (fra il 25% migliore dei nati dell'anno) e
+              quanti arrivano alle corse. Un puledro qualsiasi diventa buono 25
+              volte su 100.
             </div>
-          )}
+            <Spiegazione titolo="Quanto ci si può fidare" compatta>
+            La previsione e' stata provata su {data.validazione?.n_prova?.toLocaleString("it-IT") ?? "oltre 6.000"}{" "}
+            puledri nati fra il 2020 e il 2022, mai visti dal modello, compresi
+            quelli che non hanno mai corso. Le fasce sono risultate vere: quando
+            dice 37 su 100, i buoni cavalli sono stati circa 37 su 100. Ma il
+            vantaggio su chi guarda solo il padre e' piccolo
+            {data.validazione?.auc_buono != null && data.validazione?.auc_solo_padre != null
+              ? ` (${data.validazione.auc_buono.toFixed(3).replace(".", ",")} contro ${data.validazione.auc_solo_padre.toFixed(3).replace(".", ",")}, dove 0,5 e' tirare a sorte e 1 e' indovinare sempre)`
+              : ""}
+            : due fratelli pieni hanno carriere diverse, e allenamento, guidatore,
+            salute e sorte contano piu' dei genitori.
+            {data.validazione?.riserva ? <> {data.validazione.riserva}</> : null}
+            {" "}Il voto atteso, in piu', e' calcolato solo su chi corre.
+            </Spiegazione>
+          </div>
 
           {/* Fattrice info */}
           <div style={{
@@ -626,7 +636,7 @@ export default function AdvisorPage() {
                     </Link>
 
                     {/* Stats badges */}
-                    <div style={{ display: "flex", gap: "10px", flex: 1, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "10px", flex: 1, alignItems: "center", flexWrap: "wrap" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                         <Euro size={11} style={{ color: "hsl(51 80% 55%)" }} />
                         <span className="tabular" style={{ fontSize: "12px", color: c.stud_fee_eur ? "hsl(51 80% 58%)" : "hsl(210 8% 42%)" }}>
@@ -645,6 +655,20 @@ export default function AdvisorPage() {
                           <GradeBadge grade={c.expected_grade || "—"} size="sm" />
                           <span style={{ fontSize: "10px", color: "hsl(210 8% 45%)" }}>
                             atteso {c.typical_low?.toFixed(0)}–{c.typical_high?.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+                      {c.prob_buono != null && (
+                        <div title="Su 100 puledri di questa coppia, quanti diventano buoni cavalli e quanti arrivano alle corse" style={{
+                          display: "flex", alignItems: "baseline", gap: "2px 6px", flexWrap: "wrap",
+                          padding: "2px 8px", borderRadius: "5px",
+                          background: "hsl(100 50% 30% / 0.14)", border: "1px solid hsl(100 50% 40% / 0.3)",
+                        }}>
+                          <span className="tabular" style={{ fontSize: "12.5px", fontWeight: 800, color: "hsl(100 60% 58%)", whiteSpace: "nowrap" }}>
+                            {c.prob_buono} su 100
+                          </span>
+                          <span style={{ fontSize: "10px", color: "hsl(210 8% 50%)", whiteSpace: "nowrap" }}>
+                            buoni · {c.prob_corre} corrono
                           </span>
                         </div>
                       )}

@@ -1,0 +1,289 @@
+{
+ "versione": 3,
+ "domanda": "Per ogni puledro nato: arriva alle corse? diventa un buon cavallo?",
+ "definizione_buono": "Fra il 25% migliore di tutti i nati del suo anno, contando come ultimi quelli che non hanno mai corso.",
+ "anni_scelta": {
+  "impara_fino_a": 2016,
+  "misura": [
+   2017,
+   2019
+  ]
+ },
+ "anni_prova": {
+  "impara_fino_a": 2019,
+  "verifica": [
+   2020,
+   2022
+  ]
+ },
+ "n_impara": 14118,
+ "n_prova": 6463,
+ "copertura_prova": [
+  {
+   "anno": 2020,
+   "in_archivio": 2050,
+   "nati_ufficiali": null,
+   "quota": null
+  },
+  {
+   "anno": 2021,
+   "in_archivio": 2140,
+   "nati_ufficiali": 2192,
+   "quota": 0.976
+  },
+  {
+   "anno": 2022,
+   "in_archivio": 2273,
+   "nati_ufficiali": 2368,
+   "quota": 0.96
+  }
+ ],
+ "scelta_informazioni": [
+  {
+   "informazione": "Solo il padre (punto di partenza)",
+   "auc": 0.5824,
+   "tenuta": true
+  },
+  {
+   "informazione": "Produzione della madre: quanti suoi figli corrono e quanti diventano buoni",
+   "chiave": "madre",
+   "auc": 0.5989,
+   "guadagno": 0.0165,
+   "tenuta": true
+  },
+  {
+   "informazione": "Linea materna: produzione della nonna quando la madre non ha figli noti",
+   "chiave": "nonna",
+   "auc": 0.5986,
+   "guadagno": -0.0004,
+   "tenuta": false
+  },
+  {
+   "informazione": "Padre della madre: quanto rendono le figlie di quello stallone come fattrici",
+   "chiave": "padre_madre",
+   "auc": 0.6019,
+   "guadagno": 0.003,
+   "tenuta": false
+  },
+  {
+   "informazione": "Eta' della madre al parto",
+   "chiave": "eta_madre",
+   "auc": 0.6004,
+   "guadagno": 0.0015,
+   "tenuta": false
+  },
+  {
+   "informazione": "Numero del parto (primo figlio, secondo, ...)",
+   "chiave": "parto",
+   "auc": 0.5927,
+   "guadagno": -0.0062,
+   "tenuta": false
+  },
+  {
+   "informazione": "Incrocio fra la linea del padre e il padre della madre",
+   "chiave": "incrocio",
+   "auc": 0.5989,
+   "guadagno": -0.0,
+   "tenuta": false
+  },
+  {
+   "informazione": "Consanguineita' (antenati in comune)",
+   "chiave": "inbreeding",
+   "tenuta": false,
+   "esclusa_perche": "dato presente per il 31% di chi corre e per il 0% di chi non corre: la sua presenza rivela gia' il risultato"
+  }
+ ],
+ "informazioni_usate": [
+  "madre"
+ ],
+ "corre": {
+  "auc_modello": 0.6047,
+  "auc_solo_padre": 0.5923,
+  "brier_modello": 0.208,
+  "brier_costante": 0.2091,
+  "quota_reale": 0.7029,
+  "quota_prevista": 0.7749,
+  "contro_solo_padre": {
+   "vantaggio": 0.0124,
+   "intervallo95": [
+    0.003,
+    0.0212
+   ],
+   "significativo": true,
+   "giri": 2000
+  },
+  "fasce": [
+   {
+    "quinto": 1,
+    "n": 1293,
+    "previsto": 0.6819,
+    "reale": 0.5808,
+    "scarto": -0.1011
+   },
+   {
+    "quinto": 2,
+    "n": 1293,
+    "previsto": 0.723,
+    "reale": 0.6636,
+    "scarto": -0.0594
+   },
+   {
+    "quinto": 3,
+    "n": 1293,
+    "previsto": 0.7693,
+    "reale": 0.7193,
+    "scarto": -0.0501
+   },
+   {
+    "quinto": 4,
+    "n": 1292,
+    "previsto": 0.8153,
+    "reale": 0.743,
+    "scarto": -0.0722
+   },
+   {
+    "quinto": 5,
+    "n": 1292,
+    "previsto": 0.8851,
+    "reale": 0.808,
+    "scarto": -0.077
+   }
+  ],
+  "per_anno": [
+   {
+    "anno": 2020,
+    "n": 2050,
+    "quota_reale": 0.7337,
+    "quota_prevista": 0.7713,
+    "auc_modello": 0.6048,
+    "auc_solo_padre": 0.5941
+   },
+   {
+    "anno": 2021,
+    "n": 2140,
+    "quota_reale": 0.6958,
+    "quota_prevista": 0.7748,
+    "auc_modello": 0.5942,
+    "auc_solo_padre": 0.5791
+   },
+   {
+    "anno": 2022,
+    "n": 2273,
+    "quota_reale": 0.6819,
+    "quota_prevista": 0.7782,
+    "auc_modello": 0.6163,
+    "auc_solo_padre": 0.6026
+   }
+  ]
+ },
+ "buono": {
+  "auc_modello": 0.6161,
+  "auc_solo_padre": 0.6052,
+  "brier_modello": 0.1813,
+  "brier_costante": 0.1874,
+  "quota_reale": 0.2499,
+  "quota_prevista": 0.2604,
+  "contro_solo_padre": {
+   "vantaggio": 0.0109,
+   "intervallo95": [
+    0.0025,
+    0.0186
+   ],
+   "significativo": true,
+   "giri": 2000
+  },
+  "fasce": [
+   {
+    "quinto": 1,
+    "n": 1293,
+    "previsto": 0.182,
+    "reale": 0.15,
+    "scarto": -0.0319
+   },
+   {
+    "quinto": 2,
+    "n": 1293,
+    "previsto": 0.2204,
+    "reale": 0.2181,
+    "scarto": -0.0023
+   },
+   {
+    "quinto": 3,
+    "n": 1293,
+    "previsto": 0.2327,
+    "reale": 0.2359,
+    "scarto": 0.0032
+   },
+   {
+    "quinto": 4,
+    "n": 1292,
+    "previsto": 0.2853,
+    "reale": 0.2763,
+    "scarto": -0.009
+   },
+   {
+    "quinto": 5,
+    "n": 1292,
+    "previsto": 0.3817,
+    "reale": 0.3692,
+    "scarto": -0.0125
+   }
+  ],
+  "per_anno": [
+   {
+    "anno": 2020,
+    "n": 2050,
+    "quota_reale": 0.2498,
+    "quota_prevista": 0.2571,
+    "auc_modello": 0.6179,
+    "auc_solo_padre": 0.613
+   },
+   {
+    "anno": 2021,
+    "n": 2140,
+    "quota_reale": 0.25,
+    "quota_prevista": 0.2592,
+    "auc_modello": 0.6018,
+    "auc_solo_padre": 0.5916
+   },
+   {
+    "anno": 2022,
+    "n": 2273,
+    "quota_reale": 0.2499,
+    "quota_prevista": 0.2644,
+    "auc_modello": 0.6291,
+    "auc_solo_padre": 0.611
+   }
+  ],
+  "auc_consiglio_di_oggi": 0.607,
+  "contro_consiglio_di_oggi": {
+   "vantaggio": 0.0091,
+   "intervallo95": [
+    0.002,
+    0.0161
+   ],
+   "significativo": true,
+   "giri": 2000
+  }
+ },
+ "regole": {
+  "A": {
+   "testo": "Batte 'solo il padre' con vantaggio sicuro",
+   "superata": true
+  },
+  "B": {
+   "testo": "Fasce vere: scarto massimo 5 punti per quinto",
+   "superata": true
+  },
+  "C": {
+   "testo": "Batte 'solo il padre' in ciascun anno di prova",
+   "superata": true
+  }
+ },
+ "stato": "regole superate con riserva",
+ "sperimentale": true,
+ "riserva": "La prima prova, senza taratura, sbagliava le fasce di 5,6 punti. La taratura e' stata aggiunta dopo, stimata sui nati 2017-2019 e non sulla prova, ma l'idea e' venuta guardando il risultato. Per togliere la scritta 'sperimentale' serve una conferma sui nati 2023, mai guardati, quando avranno 4 anni.",
+ "annata_di_conferma": 2023,
+ "nota": "Le regole sono state fissate prima della prova finale e non si cambiano dopo.",
+ "come_leggere_auc": "Prendi due puledri a caso, uno diventato buono e uno no: e' la quota di volte in cui il metodo mette piu' in alto quello giusto. 0,50 e' tirare a sorte, 1 e' indovinare sempre."
+}
