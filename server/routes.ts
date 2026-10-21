@@ -17,7 +17,7 @@ import fs from "fs";
 import { ensureGenealogy } from "./vpFetch";
 import {
   loadAdvisorModel, getAdvisorModel, getAdvisorBacktest,
-  loadPuledriModel, getPuledriVerifica,
+  loadPuledriModel, getPuledriVerifica, predictPuledro,
   predictPair, inbreeding, explain,
 } from "./advisorEngine";
 import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
@@ -2625,7 +2625,14 @@ export function registerRoutes(httpServer: Server, app: Express) {
           if (budget_max && s.stud_fee_eur > budget_max) return false;
           return true;
         })
-        .map((s: any) => {
+        // Prima si sceglie con la probabilita' di un buon cavallo, che costa
+        // poco (conti gia' in memoria); il calcolo completo, che e' lento,
+        // si fa solo sui 15 scelti. Valutare tutti gli stalloni per intero
+        // faceva aspettare 20-30 secondi sul sito pubblico.
+        .map((s: any) => ({ s, pb: predictPuledro(db, s.name, fattriceUpper).prob_buono ?? -1 }))
+        .sort((a: any, b: any) => (b.pb - a.pb) || ((b.s.avg_score ?? 0) - (a.s.avg_score ?? 0)))
+        .slice(0, 15)
+        .map(({ s }: any) => {
           // Ogni candidato viene ora valutato SULLA FATTRICE scelta:
           // stesso stallone + fattrice diversa = risultato diverso.
           const p = predictPair(db, s.name, fattriceUpper);
