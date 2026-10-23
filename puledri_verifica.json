@@ -54,22 +54,22 @@
   {
    "informazione": "Linea materna: produzione della nonna quando la madre non ha figli noti",
    "chiave": "nonna",
-   "auc": 0.5986,
+   "auc": 0.5985,
    "guadagno": -0.0004,
    "tenuta": false
   },
   {
    "informazione": "Padre della madre: quanto rendono le figlie di quello stallone come fattrici",
    "chiave": "padre_madre",
-   "auc": 0.6019,
-   "guadagno": 0.003,
+   "auc": 0.6018,
+   "guadagno": 0.0029,
    "tenuta": false
   },
   {
    "informazione": "Eta' della madre al parto",
    "chiave": "eta_madre",
-   "auc": 0.6004,
-   "guadagno": 0.0015,
+   "auc": 0.6003,
+   "guadagno": 0.0014,
    "tenuta": false
   },
   {
@@ -82,8 +82,8 @@
   {
    "informazione": "Incrocio fra la linea del padre e il padre della madre",
    "chiave": "incrocio",
-   "auc": 0.5989,
-   "guadagno": -0.0,
+   "auc": 0.5986,
+   "guadagno": -0.0003,
    "tenuta": false
   },
   {
@@ -177,17 +177,17 @@
   ]
  },
  "buono": {
-  "auc_modello": 0.6161,
-  "auc_solo_padre": 0.6052,
+  "auc_modello": 0.6167,
+  "auc_solo_padre": 0.6056,
   "brier_modello": 0.1813,
   "brier_costante": 0.1874,
   "quota_reale": 0.2499,
   "quota_prevista": 0.2604,
   "contro_solo_padre": {
-   "vantaggio": 0.0109,
+   "vantaggio": 0.0111,
    "intervallo95": [
-    0.0025,
-    0.0186
+    0.0026,
+    0.0187
    ],
    "significativo": true,
    "giri": 2000
@@ -197,36 +197,36 @@
     "quinto": 1,
     "n": 1293,
     "previsto": 0.182,
-    "reale": 0.1485,
-    "scarto": -0.0335
+    "reale": 0.1477,
+    "scarto": -0.0342
    },
    {
     "quinto": 2,
     "n": 1293,
     "previsto": 0.2204,
-    "reale": 0.2181,
-    "scarto": -0.0023
+    "reale": 0.2173,
+    "scarto": -0.003
    },
    {
     "quinto": 3,
     "n": 1293,
     "previsto": 0.2327,
-    "reale": 0.2374,
-    "scarto": 0.0047
+    "reale": 0.2382,
+    "scarto": 0.0055
    },
    {
     "quinto": 4,
     "n": 1292,
     "previsto": 0.2853,
-    "reale": 0.2763,
-    "scarto": -0.009
+    "reale": 0.2779,
+    "scarto": -0.0074
    },
    {
     "quinto": 5,
     "n": 1292,
     "previsto": 0.3817,
-    "reale": 0.3692,
-    "scarto": -0.0125
+    "reale": 0.3684,
+    "scarto": -0.0133
    }
   ],
   "per_anno": [
@@ -243,24 +243,24 @@
     "n": 2140,
     "quota_reale": 0.25,
     "quota_prevista": 0.2592,
-    "auc_modello": 0.6018,
-    "auc_solo_padre": 0.5916
+    "auc_modello": 0.6032,
+    "auc_solo_padre": 0.5928
    },
    {
     "anno": 2022,
     "n": 2273,
     "quota_reale": 0.2499,
     "quota_prevista": 0.2644,
-    "auc_modello": 0.6291,
-    "auc_solo_padre": 0.611
+    "auc_modello": 0.6296,
+    "auc_solo_padre": 0.6111
    }
   ],
-  "auc_consiglio_di_oggi": 0.607,
+  "auc_consiglio_di_oggi": 0.6072,
   "contro_consiglio_di_oggi": {
-   "vantaggio": 0.0091,
+   "vantaggio": 0.0095,
    "intervallo95": [
-    0.002,
-    0.0161
+    0.0023,
+    0.0165
    ],
    "significativo": true,
    "giri": 2000
