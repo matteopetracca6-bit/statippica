@@ -257,6 +257,39 @@ async function controllaArchivio(): Promise<void> {
 const app = express();
 const httpServer = createServer(app);
 
+// ── Avvio veloce ─────────────────────────────────────────────────────────
+// PERCHE'. Il piano gratuito addormenta il sito dopo un quarto d'ora senza
+// visite. Al risveglio il vecchio codice NON rispondeva a nessuno finche' non
+// aveva controllato l'archivio con GitHub e, se mancava, scaricato e aperto
+// 30 MB compressi: chi apriva il sito vedeva solo una pagina bianca che
+// girava. Ora il sito risponde subito:
+//  - con un archivio buono gia' presente parte subito, e il controllo
+//    "ce n'e' uno piu' nuovo?" si fa dopo, a sito acceso (il cambio di
+//    archivio a sito acceso e' sicuro, vedi scaricaArchivio);
+//  - senza archivio mostra una pagina "sto preparando i dati" che si
+//    ricarica da sola, invece di lasciare il visitatore davanti al nulla.
+let sitoPronto = false;
+const PAGINA_ATTESA = `<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="5"><title>StatIppica · un attimo</title>
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+background:#0d1014;color:#d7dde4;font-family:system-ui,-apple-system,Segoe UI,sans-serif;text-align:center;padding:24px}
+.c{max-width:420px}.t{font-size:22px;font-weight:800;color:#3fd6dc;letter-spacing:.04em;margin-bottom:10px}
+.r{width:34px;height:34px;border:3px solid #22303a;border-top-color:#3fd6dc;border-radius:50%;
+margin:18px auto;animation:g 1s linear infinite}@keyframes g{to{transform:rotate(360deg)}}
+p{font-size:14px;line-height:1.6;color:#9aa6b2;margin:0}</style></head>
+<body><div class="c"><div class="t">STATIPPICA</div><div class="r"></div>
+<p>Sto preparando l'archivio delle corse.<br>La pagina si apre da sola fra pochi secondi.</p></div></body></html>`;
+app.use((req, res, next) => {
+  if (sitoPronto) return next();
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Retry-After", "5");
+  if (req.path.startsWith("/api")) {
+    return res.status(503).json({ preparazione: true, messaggio: "Sto preparando l'archivio, riprova fra pochi secondi." });
+  }
+  return res.status(503).type("html").send(PAGINA_ATTESA);
+});
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -311,8 +344,23 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Prima di tutto: senza archivio il sito non ha niente da mostrare.
-  await assicuraArchivio();
+  const port = parseInt(process.env.PORT || "5000", 10);
+  const produzione = process.env.NODE_ENV === "production";
+
+  // Si risponde subito: finche' i dati non sono pronti, con la pagina di attesa.
+  await new Promise<void>(ok => httpServer.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+    log(`serving on port ${port}`);
+    ok();
+  }));
+
+  // Senza archivio il sito non ha niente da mostrare: in quel caso si aspetta.
+  // Con un archivio buono si parte subito e il confronto con quello pubblicato
+  // si fa appena acceso, senza far aspettare nessuno.
+  const aperto = path.resolve(process.cwd(), "data.db");
+  const archivioPresente = archivioSembraBuono(aperto) && targaSalvata(aperto) !== null;
+  if (!archivioPresente) {
+    await assicuraArchivio();
+  }
 
   await registerRoutes(httpServer, app);
 
@@ -332,40 +380,18 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
+  if (produzione) {
     serveStatic(app);
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
+  sitoPronto = true;
+  log("sito pronto");
 
-      if (process.env.NODE_ENV === "production") {
-        setInterval(() => { controllaArchivio().catch(() => {}); }, 20 * 60 * 1000);
-      }
-
-      // Keep-alive: ping self every 2 minutes to prevent sandbox idle shutdown
-      if (process.env.NODE_ENV === "production") {
-        setInterval(() => {
-          const http = require("http");
-          http.get(`http://127.0.0.1:${port}/api/stats`, (res: any) => {
-            res.resume();
-          }).on("error", () => {});
-        }, 2 * 60 * 1000);
-      }
-    },
-  );
+  if (produzione) {
+    if (archivioPresente) controllaArchivio().catch(() => {});
+    setInterval(() => { controllaArchivio().catch(() => {}); }, 20 * 60 * 1000);
+  }
 })();

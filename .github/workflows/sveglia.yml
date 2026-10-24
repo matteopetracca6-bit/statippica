@@ -1,0 +1,37 @@
+name: StatIppica — Sveglia (tiene acceso il sito)
+
+# PERCHE' ESISTE. Il piano gratuito di Render addormenta il sito dopo un
+# quarto d'ora senza visite. Il primo visitatore dopo una pausa aspettava il
+# risveglio: anche un minuto di pagina bianca. Questo lavoro bussa al sito
+# ogni cinque minuti circa, cosi' non arriva mai al quarto d'ora di silenzio.
+#
+# Gira ogni dieci minuti e bussa due volte, a cinque minuti di distanza:
+# GitHub a volte fa partire i lavori programmati in ritardo, e con due colpi
+# per giro un ritardo di qualche minuto non basta a far addormentare il sito.
+#
+# Costi: il progetto e' pubblico, quindi i minuti di GitHub sono gratuiti.
+# Render concede 750 ore al mese di servizio gratuito: un sito sempre acceso
+# ne usa al massimo 744 (mese di 31 giorni), quindi ci sta.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sveglia
+  cancel-in-progress: false
+
+jobs:
+  bussa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Bussa al sito due volte
+        run: |
+          for giro in 1 2; do
+            T=$(curl -s -m 120 -o /dev/null -w '%{http_code} in %{time_total}s' https://statippica.onrender.com/api/stats || echo "nessuna risposta")
+            echo "Colpo $giro: $T"
+            [ "$giro" = 1 ] && sleep 290
+          done
+          exit 0
