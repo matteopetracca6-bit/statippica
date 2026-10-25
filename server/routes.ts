@@ -999,13 +999,26 @@ export function registerRoutes(httpServer: Server, app: Express) {
         LIMIT 1
       `).get(name) as any;
 
+      // Le righe di stallion_pedigree prese un tempo dal web, non verificate,
+      // erano a volte sbagliate (FILIPP ROC figlio di VARENNE invece che di
+      // URONOMETRO): le corregge ogni notte scripts/correggi_genealogie_stalloni.py.
+      // Una riga ancora non verificata non riempie le caselle dei nonni.
+      const fonteSp = String(spRow?.source ?? "");
+      const spVerificata = !!spRow && (fonteSp === "" || fonteSp === "UNIRE" || fonteSp === "ANACT"
+        || fonteSp === "Trottoweb" || fonteSp.startsWith("Verificata:") || fonteSp === "Archivio corse");
+      const ugualeN = (x: any, y: any) => !!x && !!y && String(x).trim().toUpperCase() === String(y).trim().toUpperCase();
+      const padreArch = horseSelf ? (horseSelf.sire || horseSelf.unire_sire || null) : null;
+      const madreArch = horseSelf ? (horseSelf.dam || horseSelf.unire_dam || null) : null;
+      // I nonni dalla riga verificata solo se padre (o madre) coincidono.
+      const spLatoPadre = spVerificata && ugualeN(spRow?.sire, padreArch) ? spRow : null;
+      const spLatoMadre = spVerificata && ugualeN(spRow?.dam, madreArch) ? spRow : null;
       const pedigree = (horseSelf && (horseSelf.sire || horseSelf.unire_sire)) ? {
-        sire: horseSelf.sire || horseSelf.unire_sire || null,
-        dam: horseSelf.dam || horseSelf.unire_dam || null,
-        sire_sire: horseSelf.sire_sire || horseSelf.sire_unire_sire || null,
-        sire_dam: horseSelf.sire_dam || horseSelf.sire_unire_dam || null,
-        dam_sire: horseSelf.dam_sire || horseSelf.dam_unire_sire || null,
-        dam_dam: horseSelf.dam_dam || horseSelf.dam_unire_dam || null,
+        sire: padreArch,
+        dam: madreArch || (spLatoPadre?.dam ?? null),
+        sire_sire: horseSelf.sire_sire || horseSelf.sire_unire_sire || spLatoPadre?.sire_sire || null,
+        sire_dam: horseSelf.sire_dam || horseSelf.sire_unire_dam || spLatoPadre?.sire_dam || null,
+        dam_sire: horseSelf.dam_sire || horseSelf.dam_unire_sire || spLatoMadre?.dam_sire || null,
+        dam_dam: horseSelf.dam_dam || horseSelf.dam_unire_dam || spLatoMadre?.dam_dam || null,
       } : spRow ? {
         sire: spRow.sire || null,
         dam: spRow.dam || null,

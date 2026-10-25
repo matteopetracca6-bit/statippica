@@ -3123,6 +3123,21 @@ SIGLA_NOME_PAESE = {
 }
 
 
+def phase_correggi_genealogie_stalloni(conn: sqlite3.Connection) -> None:
+    """Sostituisce le genealogie di stalloni prese dal web (source "Web search",
+    "Wikipedia"...) con quelle del registro ufficiale UNIRE: alcune erano
+    sbagliate (FILIPP ROC figlio di VARENNE invece che di URONOMETRO).
+    Lavora solo sulle righe non ancora verificate, quindi di solito non fa
+    nulla. Un errore qui non deve fermare la notte."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+        import correggi_genealogie_stalloni as cg
+        conn.commit()
+        cg.correggi(conn)
+    except Exception as e:
+        print(f"[GENEALOGIE] saltata: {e}", file=sys.stderr)
+
+
 def phase_normalize_country(conn: sqlite3.Connection) -> None:
     """Riporta il campo paese a una scrittura sola, la sigla di tre lettere."""
     totale = 0
@@ -5200,6 +5215,7 @@ def main():
         phase_recover_undated(conn)     # FASE 2e: ripesca le date residue dalla fonte
         phase_vp_qualifiche(conn)       # FASE 2f: qualifiche giovani + allevatori
         phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
+        phase_correggi_genealogie_stalloni(conn)  # FASE 2g-bis: genealogie web -> registro UNIRE
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
