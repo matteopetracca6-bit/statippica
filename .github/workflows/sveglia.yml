@@ -1,13 +1,17 @@
 name: StatIppica — Sveglia (tiene acceso il sito)
 
 # PERCHE' ESISTE. Il piano gratuito di Render addormenta il sito dopo un
-# quarto d'ora senza visite. Il primo visitatore dopo una pausa aspettava il
-# risveglio: anche un minuto di pagina bianca. Questo lavoro bussa al sito
-# ogni cinque minuti circa, cosi' non arriva mai al quarto d'ora di silenzio.
+# quarto d'ora senza visite, e il primo visitatore dopo una pausa aspetta il
+# risveglio.
 #
-# Gira ogni dieci minuti e bussa due volte, a cinque minuti di distanza:
-# GitHub a volte fa partire i lavori programmati in ritardo, e con due colpi
-# per giro un ritardo di qualche minuto non basta a far addormentare il sito.
+# PERCHE' COSI'. La prima versione partiva ogni 10 minuti e bussava due volte.
+# Ma GitHub non rispetta gli orari dei lavori programmati: la notte del 25
+# ottobre 2026 l'ha fatta partire solo alle 23:29, 01:28 e 06:34 (ora UTC),
+# con buchi di due ore e piu', e il sito si e' addormentato.
+# Ora ogni giro resta acceso quasi sei ore (il massimo concesso) e bussa ogni
+# 4 minuti. Un giro nuovo viene chiesto ogni ora: se uno e' gia' in corso,
+# il nuovo aspetta in fila e parte appena il primo finisce. Basta quindi che
+# GitHub faccia partire almeno un giro ogni sei ore perche' non ci siano buchi.
 #
 # Costi: il progetto e' pubblico, quindi i minuti di GitHub sono gratuiti.
 # Render concede 750 ore al mese di servizio gratuito: un sito sempre acceso
@@ -15,7 +19,7 @@ name: StatIppica — Sveglia (tiene acceso il sito)
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -25,13 +29,20 @@ concurrency:
 jobs:
   bussa:
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 355
     steps:
-      - name: Bussa al sito due volte
+      - name: Bussa al sito ogni 4 minuti per quasi sei ore
         run: |
-          for giro in 1 2; do
-            T=$(curl -s -m 120 -o /dev/null -w '%{http_code} in %{time_total}s' https://statippica.onrender.com/api/stats || echo "nessuna risposta")
-            echo "Colpo $giro: $T"
-            [ "$giro" = 1 ] && sleep 290
+          inizio=$(date +%s)
+          colpi=0; lenti=0
+          while [ $(( $(date +%s) - inizio )) -lt $(( 345 * 60 )) ]; do
+            T=$(curl -s -m 120 -o /dev/null -w '%{http_code} %{time_total}' https://statippica.onrender.com/api/stats || echo "000 0")
+            colpi=$((colpi+1))
+            codice=${T%% *}; tempo=${T##* }
+            # Un colpo lento vuol dire che il sito stava dormendo: si annota.
+            if [ "${tempo%%.*}" -ge 10 ] 2>/dev/null; then lenti=$((lenti+1)); fi
+            echo "$(date -u '+%H:%M') colpo $colpi: risposta $codice in ${tempo}s"
+            sleep 240
           done
+          echo "Fine giro: $colpi colpi, $lenti risvegli lenti."
           exit 0
