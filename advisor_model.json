@@ -1,13 +1,13 @@
 {
  "version": 2,
  "trained_on": 16727,
- "population_mean": 48.013,
+ "population_mean": 48.0136,
  "k_sire": 8.0,
  "k_dam": 2.0,
- "intercept": -9.548624,
- "w_sire": 0.863366,
- "w_dam": 0.322408,
- "residual_sd": 21.8905,
+ "intercept": -9.545799,
+ "w_sire": 0.86342,
+ "w_dam": 0.322294,
+ "residual_sd": 21.8906,
  "backtest_summary": {
   "spearman": 0.162,
   "mae": 17.2,

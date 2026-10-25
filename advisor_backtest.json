@@ -13,9 +13,9 @@
  "population_mean": 49.74,
  "test_mean": 45.3,
  "coefficients": {
-  "intercept": -9.3529,
-  "sire": 0.8642,
-  "dam": 0.3128
+  "intercept": -9.3519,
+  "sire": 0.8643,
+  "dam": 0.3127
  },
  "models": [
   {
@@ -23,7 +23,7 @@
    "note": "Il modello del sito: indizio del padre e indizio della madre, calcolati solo sui cavalli nati prima del taglio.",
    "leaky": false,
    "mae": 17.2,
-   "pearson": 0.167,
+   "pearson": 0.166,
    "spearman": 0.162,
    "top_decile": {
     "top_mean": 51.12,
@@ -65,7 +65,7 @@
    "note": "Dare a tutti lo stesso voto medio: il minimo sindacale, serve come pavimento.",
    "leaky": false,
    "mae": 17.15,
-   "pearson": -0.0,
+   "pearson": 0.0,
    "spearman": 0.0,
    "top_decile": {
     "top_mean": 42.18,
@@ -128,9 +128,9 @@
    {
     "contro": "Fama del padre",
     "domanda": "L'Advisor batte chi sceglie guardando il nome del padre?",
-    "vantaggio": 0.0194,
+    "vantaggio": 0.0195,
     "intervallo95": [
-     0.0071,
+     0.0072,
      0.0329
     ],
     "quota_ricampionamenti_sfavorevoli": 0.001,
@@ -143,7 +143,7 @@
     "avvertenza": "Il prezzo di oggi e' stato fissato dopo aver visto questi risultati, quindi gioca in casa. Se l'Advisor lo batte comunque, il confronto e' conservativo.",
     "vantaggio": 0.0802,
     "intervallo95": [
-     0.0493,
+     0.0494,
      0.1109
     ],
     "quota_ricampionamenti_sfavorevoli": 0.0,
@@ -259,7 +259,7 @@
   },
   {
    "pred": 46.4,
-   "actual": 39.5
+   "actual": 39.6
   },
   {
    "pred": 49.4,
@@ -939,7 +939,7 @@
   },
   {
    "pred": 55.5,
-   "actual": 64.3
+   "actual": 64.4
   },
   {
    "pred": 47.5,
@@ -1098,7 +1098,7 @@
    "actual": 29.5
   },
   {
-   "pred": 57.3,
+   "pred": 57.4,
    "actual": 53.4
   },
   {
@@ -1279,7 +1279,7 @@
   },
   {
    "pred": 51.3,
-   "actual": 55.9
+   "actual": 56.0
   },
   {
    "pred": 48.4,
@@ -1407,7 +1407,7 @@
   },
   {
    "pred": 47.7,
-   "actual": 40.9
+   "actual": 41.0
   },
   {
    "pred": 49.2,
@@ -1427,7 +1427,7 @@
   },
   {
    "pred": 56.4,
-   "actual": 45.1
+   "actual": 45.2
   },
   {
    "pred": 59.4,
@@ -1778,7 +1778,7 @@
    "actual": 23.5
   },
   {
-   "pred": 57.5,
+   "pred": 57.6,
    "actual": 46.2
   },
   {
@@ -1794,7 +1794,7 @@
    "actual": 8.4
   },
   {
-   "pred": 42.1,
+   "pred": 42.2,
    "actual": 21.1
   },
   {
@@ -1883,7 +1883,7 @@
   },
   {
    "pred": 52.2,
-   "actual": 31.1
+   "actual": 31.2
   },
   {
    "pred": 49.2,
@@ -2403,7 +2403,7 @@
   },
   {
    "pred": 62.3,
-   "actual": 41.9
+   "actual": 42.0
   },
   {
    "pred": 59.4,
@@ -2787,7 +2787,7 @@
   },
   {
    "pred": 58.3,
-   "actual": 67.6
+   "actual": 67.7
   },
   {
    "pred": 54.3,
@@ -2859,7 +2859,7 @@
   },
   {
    "pred": 51.6,
-   "actual": 40.1
+   "actual": 40.2
   },
   {
    "pred": 53.6,
@@ -2962,7 +2962,7 @@
    "actual": 31.6
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 44.4
   },
   {
@@ -3107,7 +3107,7 @@
   },
   {
    "pred": 50.1,
-   "actual": 73.6
+   "actual": 73.7
   },
   {
    "pred": 52.6,
@@ -3542,7 +3542,7 @@
    "actual": 34.5
   },
   {
-   "pred": 45.5,
+   "pred": 45.6,
    "actual": 33.4
   },
   {
@@ -3655,7 +3655,7 @@
   },
   {
    "pred": 57.1,
-   "actual": 45.8
+   "actual": 45.9
   },
   {
    "pred": 48.7,
@@ -3859,7 +3859,7 @@
   },
   {
    "pred": 60.2,
-   "actual": 50.8
+   "actual": 50.9
   },
   {
    "pred": 54.1,
@@ -4122,7 +4122,7 @@
    "actual": 45.1
   },
   {
-   "pred": 48.8,
+   "pred": 48.9,
    "actual": 7.7
   },
   {
@@ -4206,7 +4206,7 @@
    "actual": 66.6
   },
   {
-   "pred": 42.8,
+   "pred": 42.9,
    "actual": 12.6
   },
   {
@@ -4366,7 +4366,7 @@
    "actual": 66.6
   },
   {
-   "pred": 55.0,
+   "pred": 55.1,
    "actual": 78.3
   },
   {
@@ -4446,7 +4446,7 @@
    "actual": 34.3
   },
   {
-   "pred": 57.1,
+   "pred": 57.2,
    "actual": 71.5
   },
   {
@@ -4478,7 +4478,7 @@
    "actual": 5.9
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 43.0
   },
   {
@@ -4590,7 +4590,7 @@
    "actual": 61.9
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 45.7
   },
   {
@@ -4630,7 +4630,7 @@
    "actual": 5.9
   },
   {
-   "pred": 58.1,
+   "pred": 58.2,
    "actual": 72.1
   },
   {
@@ -4675,7 +4675,7 @@
   },
   {
    "pred": 49.2,
-   "actual": 42.6
+   "actual": 42.7
   },
   {
    "pred": 53.6,
@@ -5066,7 +5066,7 @@
    "actual": 56.5
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 73.4
   },
   {
@@ -5234,7 +5234,7 @@
    "actual": 66.3
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 70.5
   },
   {
@@ -5422,7 +5422,7 @@
    "actual": 26.6
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 25.6
   },
   {
@@ -5498,7 +5498,7 @@
    "actual": 77.7
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 44.7
   },
   {
@@ -6019,7 +6019,7 @@
   },
   {
    "pred": 45.0,
-   "actual": 66.8
+   "actual": 66.9
   },
   {
    "pred": 51.9,
@@ -6134,7 +6134,7 @@
    "actual": 45.2
   },
   {
-   "pred": 52.1,
+   "pred": 52.0,
    "actual": 41.9
   },
   {
