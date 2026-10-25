@@ -3123,6 +3123,94 @@ SIGLA_NOME_PAESE = {
 }
 
 
+def phase_doppioni_stesso_giorno(conn: sqlite3.Connection) -> int:
+    """Unisce le gare registrate due volte: stesso cavallo, stesso giorno,
+    stessa pista, distanza, tempo ed esito.
+
+    PERCHE'. Ottobre 2026: GIS DELL'OLMO aveva 32 corse nel 2025 invece di 16,
+    e il terzo posto del 24/06/2026 compariva due volte. In tutto l'archivio
+    erano 658 righe in piu' su 141 cavalli. Una copia era quella vecchia (pista
+    in sigla, con guidatore e numero di partenza), l'altra arrivata dopo dalla
+    scheda di carriera (codice data_numero, senza guidatore). Il controllo in
+    _insert_races guarda se la data c'e' gia', ma quando la seconda copia e'
+    entrata la prima non aveva ancora una data uguale; poi l'ha avuta, e le
+    due sono rimaste affiancate. Questa fase le ripesca ogni notte, qualunque
+    sia la strada da cui sono entrate.
+
+    COSA NON TOCCA. Un cavallo puo' correre due volte nello stesso giorno:
+    batteria e finale (Lotteria di Agnano, Gran Premi a Montecatini e
+    Montegiorgio). Quelle gare hanno esito o tempo diversi, quindi non si
+    somigliano e restano. E se due righe identiche hanno numero di corsa o
+    numero di partenza entrambi noti e diversi, sono due gare: restano.
+
+    Di ogni gruppo si tiene la riga piu' ricca, le si danno i dati che le
+    mancano dalle altre (premio piu' alto, guidatore, numeri) e si cancellano
+    le copie. Poi si ricalcola la carriera dei cavalli toccati.
+    """
+    righe = conn.execute("""
+        SELECT r.id, r.horse_name, r.race_date, r.track, r.distance, r.time_km,
+               r.placement_raw, COALESCE(r.prize_net, 0), COALESCE(r.prize_gross, 0),
+               r.driver, r.race_number, r.shoes, r.start_pos, r.total_starters, r.race_code
+        FROM races r
+        JOIN (SELECT horse_name AS h, race_date AS d FROM races
+              WHERE race_date IS NOT NULL AND TRIM(race_date) <> ''
+              GROUP BY horse_name, race_date HAVING COUNT(*) > 1) x
+          ON r.horse_name = x.h AND r.race_date = x.d
+        ORDER BY r.id
+    """).fetchall()
+    campi = ("id", "horse_name", "race_date", "track", "distance", "time_km", "placement_raw",
+             "prize_net", "prize_gross", "driver", "race_number", "shoes", "start_pos",
+             "total_starters", "race_code")
+    gruppi: dict = {}
+    for t in righe:
+        r = dict(zip(campi, t))
+        chiave = (r["horse_name"], r["race_date"]) + _race_identity(
+            r["track"], r["distance"], r["time_km"], 0, r["placement_raw"], with_prize=False)
+        gruppi.setdefault(chiave, []).append(r)
+
+    def _diversi(rs: list, campo: str) -> bool:
+        noti = {x[campo] for x in rs if x[campo] not in (None, "", 0)}
+        return len(noti) > 1
+
+    cancellate: list = []
+    toccati: set = set()
+    for rs in gruppi.values():
+        if len(rs) < 2:
+            continue
+        if _diversi(rs, "race_number") or _diversi(rs, "start_pos"):
+            continue   # due gare vere dello stesso giorno
+        tenuta = max(rs, key=lambda x: (_richness(x), x["prize_net"] > 0, -x["id"]))
+        altre = [x for x in rs if x is not tenuta]
+        def primo(campo):
+            for x in [tenuta] + altre:
+                if x[campo] not in (None, ""):
+                    return x[campo]
+            return None
+        codice = next((x["race_code"] for x in rs if re.search(r"_R\d+$", str(x["race_code"] or ""))),
+                      tenuta["race_code"])
+        conn.execute("""UPDATE races SET prize_net=?, prize_gross=?, driver=?, race_number=?,
+                               shoes=?, start_pos=?, total_starters=?, race_code=?
+                        WHERE id=?""",
+                     (max(x["prize_net"] for x in rs), max(x["prize_gross"] for x in rs),
+                      primo("driver"), primo("race_number"), primo("shoes"), primo("start_pos"),
+                      primo("total_starters"), codice, tenuta["id"]))
+        cancellate.extend(x["id"] for x in altre)
+        toccati.add(tenuta["horse_name"])
+
+    for i in range(0, len(cancellate), 500):
+        pezzo = cancellate[i:i + 500]
+        conn.execute(f"DELETE FROM races WHERE id IN ({','.join('?' * len(pezzo))})", pezzo)
+    for nome in toccati:
+        try:
+            _update_horse_career_stats(conn, nome)
+        except sqlite3.Error:
+            pass
+    conn.commit()
+    print(f"[DOPPIONI] gare registrate due volte nello stesso giorno: {len(cancellate)} copie "
+          f"tolte su {len(toccati)} cavalli", file=sys.stderr)
+    return len(cancellate)
+
+
 def phase_correggi_genealogie_stalloni(conn: sqlite3.Connection) -> None:
     """Sostituisce le genealogie di stalloni prese dal web (source "Web search",
     "Wikipedia"...) con quelle del registro ufficiale UNIRE: alcune erano
@@ -5212,6 +5300,7 @@ def main():
         # Il rating va ricalcolato in ogni caso: qualunque modalità può aver
         # cambiato dati che influenzano i punteggi.
         phase_repair_race_dates(conn)   # FASE 2d: ripara date mancanti e doppioni
+        phase_doppioni_stesso_giorno(conn)  # FASE 2d-bis: stessa gara registrata due volte
         phase_recover_undated(conn)     # FASE 2e: ripesca le date residue dalla fonte
         phase_vp_qualifiche(conn)       # FASE 2f: qualifiche giovani + allevatori
         phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
