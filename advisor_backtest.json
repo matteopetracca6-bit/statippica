@@ -172,7 +172,7 @@
    "spearman_advisor": 0.122,
    "spearman_solo_padre": 0.122,
    "spearman_con_nonna_materna": 0.133,
-   "n_con_nonna_informativa": 2139,
+   "n_con_nonna_informativa": 2140,
    "nota_nonna": "Quando la fattrice non ha figli valutati, l'Advisor guarda la produzione della nonna materna. Questa riga misura se serve."
   }
  ],

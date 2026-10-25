@@ -4,9 +4,9 @@
  "population_mean": 48.0183,
  "k_sire": 8.0,
  "k_dam": 2.0,
- "intercept": -9.465763,
- "w_sire": 0.86229,
- "w_dam": 0.321782,
+ "intercept": -9.465294,
+ "w_sire": 0.862292,
+ "w_dam": 0.321769,
  "residual_sd": 21.8956,
  "backtest_summary": {
   "spearman": 0.162,
