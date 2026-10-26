@@ -16,7 +16,7 @@
    2022
   ]
  },
- "n_impara": 14116,
+ "n_impara": 14115,
  "n_prova": 6463,
  "copertura_prova": [
   {
@@ -41,49 +41,49 @@
  "scelta_informazioni": [
   {
    "informazione": "Solo il padre (punto di partenza)",
-   "auc": 0.5829,
+   "auc": 0.5832,
    "tenuta": true
   },
   {
    "informazione": "Produzione della madre: quanti suoi figli corrono e quanti diventano buoni",
    "chiave": "madre",
-   "auc": 0.5995,
+   "auc": 0.5997,
    "guadagno": 0.0166,
    "tenuta": true
   },
   {
    "informazione": "Linea materna: produzione della nonna quando la madre non ha figli noti",
    "chiave": "nonna",
-   "auc": 0.5989,
-   "guadagno": -0.0006,
+   "auc": 0.599,
+   "guadagno": -0.0008,
    "tenuta": false
   },
   {
    "informazione": "Padre della madre: quanto rendono le figlie di quello stallone come fattrici",
    "chiave": "padre_madre",
    "auc": 0.6018,
-   "guadagno": 0.0023,
+   "guadagno": 0.0021,
    "tenuta": false
   },
   {
    "informazione": "Eta' della madre al parto",
    "chiave": "eta_madre",
-   "auc": 0.6011,
-   "guadagno": 0.0016,
+   "auc": 0.6017,
+   "guadagno": 0.002,
    "tenuta": false
   },
   {
    "informazione": "Numero del parto (primo figlio, secondo, ...)",
    "chiave": "parto",
-   "auc": 0.5932,
-   "guadagno": -0.0062,
+   "auc": 0.5933,
+   "guadagno": -0.0065,
    "tenuta": false
   },
   {
    "informazione": "Incrocio fra la linea del padre e il padre della madre",
    "chiave": "incrocio",
-   "auc": 0.599,
-   "guadagno": -0.0005,
+   "auc": 0.5992,
+   "guadagno": -0.0006,
    "tenuta": false
   },
   {
@@ -97,17 +97,17 @@
   "madre"
  ],
  "corre": {
-  "auc_modello": 0.6048,
+  "auc_modello": 0.6046,
   "auc_solo_padre": 0.5923,
   "brier_modello": 0.2081,
   "brier_costante": 0.2091,
   "quota_reale": 0.7029,
   "quota_prevista": 0.7751,
   "contro_solo_padre": {
-   "vantaggio": 0.0124,
+   "vantaggio": 0.0122,
    "intervallo95": [
-    0.003,
-    0.0213
+    0.0027,
+    0.021
    ],
    "significativo": true,
    "giri": 2000
@@ -116,30 +116,30 @@
    {
     "quinto": 1,
     "n": 1293,
-    "previsto": 0.682,
-    "reale": 0.5824,
-    "scarto": -0.0997
+    "previsto": 0.6821,
+    "reale": 0.5816,
+    "scarto": -0.1005
    },
    {
     "quinto": 2,
     "n": 1293,
     "previsto": 0.7232,
-    "reale": 0.6659,
-    "scarto": -0.0573
+    "reale": 0.662,
+    "scarto": -0.0612
    },
    {
     "quinto": 3,
     "n": 1293,
     "previsto": 0.7695,
-    "reale": 0.7146,
-    "scarto": -0.0549
+    "reale": 0.7208,
+    "scarto": -0.0487
    },
    {
     "quinto": 4,
     "n": 1292,
     "previsto": 0.8155,
-    "reale": 0.7438,
-    "scarto": -0.0717
+    "reale": 0.7423,
+    "scarto": -0.0732
    },
    {
     "quinto": 5,
@@ -155,7 +155,7 @@
     "n": 2050,
     "quota_reale": 0.7337,
     "quota_prevista": 0.7715,
-    "auc_modello": 0.6049,
+    "auc_modello": 0.6041,
     "auc_solo_padre": 0.5942
    },
    {
@@ -163,7 +163,7 @@
     "n": 2140,
     "quota_reale": 0.6958,
     "quota_prevista": 0.775,
-    "auc_modello": 0.5943,
+    "auc_modello": 0.5944,
     "auc_solo_padre": 0.5791
    },
    {
@@ -177,17 +177,17 @@
   ]
  },
  "buono": {
-  "auc_modello": 0.6163,
-  "auc_solo_padre": 0.6052,
-  "brier_modello": 0.1814,
-  "brier_costante": 0.1875,
-  "quota_reale": 0.25,
-  "quota_prevista": 0.2607,
+  "auc_modello": 0.6162,
+  "auc_solo_padre": 0.6045,
+  "brier_modello": 0.1813,
+  "brier_costante": 0.1874,
+  "quota_reale": 0.2499,
+  "quota_prevista": 0.2603,
   "contro_solo_padre": {
-   "vantaggio": 0.0111,
+   "vantaggio": 0.0117,
    "intervallo95": [
-    0.0026,
-    0.0187
+    0.0031,
+    0.0192
    ],
    "significativo": true,
    "giri": 2000
@@ -196,71 +196,71 @@
    {
     "quinto": 1,
     "n": 1293,
-    "previsto": 0.1818,
+    "previsto": 0.1815,
     "reale": 0.1508,
-    "scarto": -0.031
+    "scarto": -0.0307
    },
    {
     "quinto": 2,
     "n": 1293,
-    "previsto": 0.2204,
-    "reale": 0.2158,
-    "scarto": -0.0046
+    "previsto": 0.22,
+    "reale": 0.2127,
+    "scarto": -0.0074
    },
    {
     "quinto": 3,
     "n": 1293,
-    "previsto": 0.2328,
-    "reale": 0.2382,
-    "scarto": 0.0054
+    "previsto": 0.2324,
+    "reale": 0.2413,
+    "scarto": 0.0089
    },
    {
     "quinto": 4,
     "n": 1292,
-    "previsto": 0.2857,
-    "reale": 0.2771,
-    "scarto": -0.0087
+    "previsto": 0.2853,
+    "reale": 0.2763,
+    "scarto": -0.0089
    },
    {
     "quinto": 5,
     "n": 1292,
-    "previsto": 0.3829,
+    "previsto": 0.3824,
     "reale": 0.3684,
-    "scarto": -0.0145
+    "scarto": -0.014
    }
   ],
   "per_anno": [
    {
     "anno": 2020,
     "n": 2050,
-    "quota_reale": 0.2502,
-    "quota_prevista": 0.2574,
-    "auc_modello": 0.6168,
+    "quota_reale": 0.2498,
+    "quota_prevista": 0.257,
+    "auc_modello": 0.6186,
     "auc_solo_padre": 0.6125
    },
    {
     "anno": 2021,
     "n": 2140,
     "quota_reale": 0.25,
-    "quota_prevista": 0.2595,
-    "auc_modello": 0.6032,
-    "auc_solo_padre": 0.5928
+    "quota_prevista": 0.2592,
+    "auc_modello": 0.6029,
+    "auc_solo_padre": 0.5923
    },
    {
     "anno": 2022,
     "n": 2273,
     "quota_reale": 0.2499,
-    "quota_prevista": 0.2648,
-    "auc_modello": 0.6293,
-    "auc_solo_padre": 0.6105
+    "quota_prevista": 0.2643,
+    "auc_modello": 0.6278,
+    "auc_solo_padre": 0.6088
    }
   ],
-  "auc_consiglio_di_oggi": 0.6069,
+  "auc_consiglio_di_oggi": 0.6068,
   "contro_consiglio_di_oggi": {
    "vantaggio": 0.0094,
    "intervallo95": [
-    0.0023,
-    0.0163
+    0.0022,
+    0.0164
    ],
    "significativo": true,
    "giri": 2000
