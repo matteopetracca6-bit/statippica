@@ -24,7 +24,7 @@ import IntestazionePagina from "../components/IntestazionePagina";
 const MUTED = "hsl(210 8% 55%)";
 const TESTO = "hsl(210 10% 90%)";
 const ORO = "hsl(38 80% 58%)";
-const CARD: React.CSSProperties = { background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 18%)", borderRadius: 12, padding: "16px 18px" };
+const CARD: React.CSSProperties = { padding: "16px 18px" };
 const euro = (n: number | null | undefined) => (n == null ? "—" : "€" + Math.round(n).toLocaleString("it-IT"));
 const num = (n: number) => Math.round(n).toLocaleString("it-IT");
 const pct = (p: number | null | undefined) => (p == null ? "—" : p < 0.01 && p > 0 ? "<1%" : `${Math.round(p * 100)}%`);
@@ -38,7 +38,7 @@ const PER_PAGINA = 40;
 
 function Numero({ valore, etichetta, nota, colore }: { valore: string; etichetta: string; nota?: string; colore?: string }) {
   return (
-    <div style={{ ...CARD, padding: "14px 16px" }}>
+    <div className="pannello" style={{ ...CARD, padding: "14px 16px" }}>
       <div className="tabular" style={{ fontSize: 24, fontWeight: 800, color: colore ?? TESTO, lineHeight: 1.15 }}>{valore}</div>
       <div style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", marginTop: 4 }}>{etichetta}</div>
       {nota && <div style={{ fontSize: 11.5, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>{nota}</div>}
@@ -101,7 +101,7 @@ function ElencoLotti({ lotti }: { lotti: any[] }) {
           <input type="checkbox" checked={soloVenduti} onChange={e => { setSoloVenduti(e.target.checked); setPagina(1); }} /> solo venduti
         </label>
       </div>
-      <div style={{ ...CARD, padding: 0, overflowX: "auto" }}>
+      <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto" }}>
         <table className="tabella-tenere">
           <thead><tr>
             <th>Puledro</th><th className="nascondi-mobile">Padre × madre</th><th className="nascondi-mobile">Asta</th>
@@ -171,7 +171,7 @@ export default function GenerazionePage() {
         quelli del singolo puledro sono un intervallo largo, non una previsione.
       </IntestazionePagina>
 
-      {error ? <div style={{ ...CARD, color: MUTED, fontSize: 13 }}>La simulazione non è ancora disponibile.</div>
+      {error ? <div className="pannello" style={{ ...CARD, color: MUTED, fontSize: 13 }}>La simulazione non è ancora disponibile.</div>
         : !d ? <Sagoma cornice righe={8} />
         : (() => {
           const g = d.generazione_intera, a = d.puledri_in_asta, pr = d.prova_sul_passato;
@@ -189,7 +189,7 @@ export default function GenerazionePage() {
                   nota={piu2 != null ? `Circa il ${piu2}% in più della generazione ${ult.generazione}: i premi per i giovani sono quasi fissi e i puledri sono meno.` : undefined} />
               </div>
 
-              <div style={{ ...CARD, padding: 0, overflowX: "auto", marginTop: 10 }}>
+              <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto", marginTop: 10 }}>
                 <table className="tabella-tenere">
                   <thead><tr><th>Generazione</th><th className="num">Nati</th><th className="num">2 anni, per nato</th><th className="num">3 anni, per nato</th></tr></thead>
                   <tbody>
@@ -218,7 +218,7 @@ export default function GenerazionePage() {
                 <Numero valore={pct(a.ripaga_entro_3_anni_medio)} etichetta="probabilità media di ripagarsi entro i 3 anni" colore="hsl(0 60% 62%)"
                   nota="Senza rivendita, valore da riproduttore e corse dopo i 3 anni: è un conto prudente." />
               </div>
-              <div style={{ ...CARD, padding: 0, overflowX: "auto", marginTop: 10 }}>
+              <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto", marginTop: 10 }}>
                 <table className="tabella-tenere">
                   <thead><tr><th>Asta</th><th className="num nascondi-mobile">Venduti</th><th className="num">Prezzo medio</th><th className="num">Premi attesi</th><th className="num">Ripaga</th></tr></thead>
                   <tbody>
@@ -236,7 +236,7 @@ export default function GenerazionePage() {
                 Dei {pa.venduti_ritrovati} puledri venduti, {pa.gia_ripagati_a_ottobre_2026} hanno già ripagato prezzo e allenamento:
                 costati in media {euro(pa.prezzo_medio_venduti)}, hanno vinto finora {euro(pa.premi_2_e_3_anni_finora_medi_venduti)}.
               </p>
-              <div style={{ ...CARD, padding: 0, overflowX: "auto" }}>
+              <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto" }}>
                 <table className="tabella-tenere">
                   <thead><tr><th>Prezzo pagato</th><th className="num nascondi-mobile">Puledri</th><th className="num nascondi-mobile">Corsi a 2 anni</th>
                     <th className="num">2 anni (media)</th><th className="num nascondi-mobile">2 anni (tipico)</th><th className="num">3 anni finora</th></tr></thead>

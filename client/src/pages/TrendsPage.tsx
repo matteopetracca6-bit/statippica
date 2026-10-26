@@ -118,11 +118,8 @@ export default function TrendsPage() {
         <>
           {/* Grade distribution by year — stacked bar chart */}
           {view === "grades" && (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "24px",
-              transition: "border-color 0.3s",
-            }}>
+            <div className="pannello" style={{ padding: "24px",
+              transition: "border-color 0.3s" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                 <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Distribuzione voti per anno di nascita
@@ -225,10 +222,7 @@ export default function TrendsPage() {
 
           {/* Earnings by year — bar chart with hover details */}
           {view === "earnings" && (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "24px",
-            }}>
+            <div className="pannello" style={{ padding: "24px" }}>
               <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Guadagno medio per anno di nascita
               </div>
@@ -266,10 +260,7 @@ export default function TrendsPage() {
 
           {/* Races per year — bar chart with hover */}
           {view === "races" && (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "24px",
-            }}>
+            <div className="pannello" style={{ padding: "24px" }}>
               <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Gare e cavalli per anno
               </div>
@@ -297,10 +288,7 @@ export default function TrendsPage() {
 
           {/* Top tracks — interactive horizontal bars */}
           {view === "tracks" && (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "24px",
-            }}>
+            <div className="pannello" style={{ padding: "24px" }}>
               <div style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Top ippodromi per numero di gare
               </div>

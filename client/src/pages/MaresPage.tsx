@@ -200,7 +200,7 @@ export default function MaresPage() {
           Nessuna fattrice corrisponde ai filtri scelti.
         </div>
       ) : (
-        <div style={{ overflowX: "auto", border: "1px solid hsl(220 10% 16%)", borderRadius: "10px", background: "hsl(220 12% 9%)" }}>
+        <div className="pannello" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>

@@ -15,8 +15,7 @@ import GradeBadge from "./GradeBadge";
 import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 50%)";
-const CARD: React.CSSProperties = {
-  background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "14px", padding: "22px 24px",
+const CARD: React.CSSProperties = { padding: "22px 24px",
 };
 const tempo = (t: number) => `1'${t.toFixed(1).replace(".", "\"")}`;
 const data = (d: string) => d ? d.split("-").reverse().slice(0, 2).join("/") : "";
@@ -77,7 +76,7 @@ export default function CavalliDelMomento() {
         </span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))", gap: "16px" }}>
-        <div style={CARD}>
+        <div className="pannello" style={CARD}>
           {titolo(Flame, "In forma", "hsl(25 90% 58%)")}
           <div style={{ fontSize: "12px", color: MUTED, marginBottom: "10px" }}>Più vittorie e piazzamenti nei primi tre nell'ultimo mese, con almeno 2 corse.</div>
           {isLoading || !d ? <div className="skeleton" style={{ height: "300px", borderRadius: "8px" }} /> :
@@ -89,7 +88,7 @@ export default function CavalliDelMomento() {
               </Riga>
             ))}
         </div>
-        <div style={CARD}>
+        <div className="pannello" style={CARD}>
           {titolo(Timer, "Nuovo record personale", "hsl(183 60% 55%)")}
           <div style={{ fontSize: "12px", color: MUTED, marginBottom: "10px" }}>Chi nell'ultimo mese ha corso più veloce che mai, con almeno 5 corse cronometrate prima.</div>
           {isLoading || !d ? <div className="skeleton" style={{ height: "300px", borderRadius: "8px" }} /> :

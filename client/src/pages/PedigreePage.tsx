@@ -214,11 +214,8 @@ export default function PedigreePage() {
       </div>
 
       {/* Scelta del cavallo: tendina con ricerca, non piu' solo testo libero */}
-      <div style={{
-        background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-        borderRadius: "12px", padding: "16px 20px", marginBottom: "24px",
-        display: "flex", gap: "16px", alignItems: "flex-end", flexWrap: "wrap",
-      }}>
+      <div className="pannello" style={{ padding: "16px 20px", marginBottom: "24px",
+        display: "flex", gap: "16px", alignItems: "flex-end", flexWrap: "wrap" }}>
         <Dna size={16} style={{ color: "hsl(210 8% 48%)", flexShrink: 0, marginBottom: "12px" }} />
         <NameSelect
           label="Cavallo"
@@ -357,10 +354,7 @@ export default function PedigreePage() {
           </div>
 
           {/* Albero genealogico */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "12px", padding: "20px 16px", overflowX: "auto",
-          }}>
+          <div className="pannello" style={{ padding: "20px 16px", overflowX: "auto" }}>
             <div style={{
               display: "flex", gap: "8px", alignItems: "stretch",
               minWidth: gens >= 5 ? "820px" : gens === 4 ? "700px" : "560px",

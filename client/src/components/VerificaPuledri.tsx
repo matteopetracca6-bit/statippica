@@ -85,7 +85,7 @@ export default function VerificaPuledri({ v }: { v: VerificaPuledriDati }) {
           { k: "Buoni nel quinto meno consigliato", v: b.fasce?.length ? su100(b.fasce[0].reale) : "—",
             n: "i puledri con i genitori meno promettenti" },
         ].map(x => (
-          <div key={x.k} style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px" }}>
+          <div key={x.k} className="pannello" style={{ padding: "14px 16px" }}>
             <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em" }}>{x.k}</div>
             <div style={{ fontSize: "22px", fontWeight: 800, color: CYAN, margin: "3px 0" }}>{x.v}</div>
             <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.4 }}>{x.n}</div>
@@ -100,7 +100,7 @@ export default function VerificaPuledri({ v }: { v: VerificaPuledriDati }) {
       </div>
 
       {/* Le tre regole */}
-      <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
+      <div className="pannello" style={{ padding: "14px 16px", marginBottom: "16px" }}>
         <div style={{ fontSize: "12px", fontWeight: 800, color: TEXT, marginBottom: "8px" }}>
           Le tre regole, fissate prima della prova
         </div>
@@ -121,7 +121,7 @@ export default function VerificaPuledri({ v }: { v: VerificaPuledriDati }) {
 
       {/* Fasce: previsto contro reale */}
       {b.fasce && (
-        <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
+        <div className="pannello" style={{ padding: "14px 16px", marginBottom: "16px" }}>
           <div style={{ fontSize: "12px", fontWeight: 800, color: TEXT, marginBottom: "4px" }}>
             Le fasce sono vere?
           </div>
@@ -148,7 +148,7 @@ export default function VerificaPuledri({ v }: { v: VerificaPuledriDati }) {
       )}
 
       {/* Anno per anno */}
-      <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px", marginBottom: "16px", overflowX: "auto" }}>
+      <div className="pannello" style={{ padding: "14px 16px", marginBottom: "16px", overflowX: "auto" }}>
         <div style={{ fontSize: "12px", fontWeight: 800, color: TEXT, marginBottom: "8px" }}>Anno per anno</div>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "460px" }}>
           <thead>
@@ -178,7 +178,7 @@ export default function VerificaPuledri({ v }: { v: VerificaPuledriDati }) {
       </div>
 
       {/* Informazioni provate */}
-      <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
+      <div className="pannello" style={{ padding: "14px 16px", marginBottom: "16px" }}>
         <div style={{ fontSize: "12px", fontWeight: 800, color: TEXT, marginBottom: "4px" }}>
           Le informazioni provate, una alla volta
         </div>

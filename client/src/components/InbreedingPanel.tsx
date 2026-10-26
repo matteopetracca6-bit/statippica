@@ -44,9 +44,6 @@ interface Consanguineita {
 }
 
 const panelStyle: React.CSSProperties = {
-  border: "1px solid hsl(220 10% 16%)",
-  borderRadius: "12px",
-  background: "hsl(220 12% 9%)",
   padding: "18px 20px",
   marginBottom: "22px",
 };
@@ -86,7 +83,7 @@ export default function InbreedingPanel({ horseName }: { horseName: string }) {
   const closest = intensity(p.closest_cross);
 
   return (
-    <div style={panelStyle}>
+    <div className="pannello" style={panelStyle}>
       <div style={panelTitle}>Consanguineità e genealogia estesa</div>
 
       {/* Griglia invece di una fila che va a capo: su telefono i quattro dati

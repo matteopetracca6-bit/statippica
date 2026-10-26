@@ -35,12 +35,10 @@ export default function CollegamentiCorrelati({ voci }: { voci: Collegamento[] }
           <Link key={v.href} href={v.href}>
             <a
               data-testid={`correlato-${v.href.replace(/\W+/g, "-")}`}
-              style={{
-                display: "block", padding: "13px 15px", borderRadius: "10px",
-                background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 15%)",
+              className="pannello pannello-cliccabile" style={{
+                display: "block", padding: "13px 15px",
                 textDecoration: "none",
-                transition: "border-color 0.15s, background 0.15s, transform 0.15s",
-              }}
+                transition: "border-color 0.15s, background 0.15s, transform 0.15s" }}
               onMouseEnter={e => {
                 e.currentTarget.style.borderColor = "hsl(183 60% 34%)";
                 e.currentTarget.style.background = "hsl(220 12% 12%)";

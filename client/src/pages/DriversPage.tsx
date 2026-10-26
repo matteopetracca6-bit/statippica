@@ -197,7 +197,7 @@ export default function DriversPage() {
       )}
 
       {/* Tabella */}
-      <div style={{ overflowX: "auto", border: BORDER, borderRadius: "10px" }}>
+      <div className="pannello" style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", minWidth: "780px" }}>
           <thead>
             <tr style={{ background: "hsl(220 12% 9%)" }}>

@@ -128,7 +128,7 @@ function ScatterPlot({ points }: { points: { pred: number; actual: number }[] })
     .filter(Boolean) as { x: number; y: number }[];
 
   return (
-    <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px" }}>
+    <div className="pannello" style={{ padding: "14px" }}>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
         <line x1={PAD} y1={H - PAD} x2={W - 12} y2={H - PAD} stroke="hsl(220 10% 20%)" strokeWidth={1} />
         <line x1={PAD} y1={12} x2={PAD} y2={H - PAD} stroke="hsl(220 10% 20%)" strokeWidth={1} />
@@ -226,7 +226,7 @@ export default function ValidazionePage() {
             { k: "Accordo con la realta'", v: advisor.spearman.toFixed(3), n: "0 = a caso, 1 = ordine perfetto" },
             { k: "Guadagno sul podio", v: `+${advisor.top_decile.lift.toFixed(1)}`, n: "punti di voto in piu' nel 10% piu' consigliato" },
           ].map(b => (
-            <div key={b.k} style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px" }}>
+            <div key={b.k} className="pannello" style={{ padding: "14px 16px" }}>
               <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em" }}>{b.k}</div>
               <div style={{ fontSize: "22px", fontWeight: 800, color: CYAN, margin: "3px 0" }}>{b.v}</div>
               <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.4 }}>{b.n}</div>
@@ -240,7 +240,7 @@ export default function ValidazionePage() {
         icon={<TrendingUp size={17} />}
         sub="Ogni riga e' un modo diverso di scegliere lo stallone, messo alla prova sugli stessi puledri. La barra misura quanto l'ordine proposto somiglia a quello reale."
       >
-        <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px" }}>
+        <div className="pannello" style={{ padding: "14px 16px" }}>
           {data.models.map(m => {
             const w = (Math.abs(m.spearman) / (best || 1)) * 100;
             const falsato = m.leaky === true;
@@ -280,7 +280,7 @@ export default function ValidazionePage() {
           icon={<Ruler size={17} />}
           sub={ceil.spiegazione}
         >
-          <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "16px 18px" }}>
+          <div className="pannello" style={{ padding: "16px 18px" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "18px", marginBottom: "14px" }}>
               <div>
                 <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -369,10 +369,8 @@ export default function ValidazionePage() {
             ))}
           </div>
 
-          <div style={{
-            marginTop: "12px", padding: "13px 16px", borderRadius: "10px",
-            background: "hsl(220 12% 7%)", border: BORDER,
-          }}>
+          <div className="pannello" style={{
+            marginTop: "12px", padding: "13px 16px" }}>
             <div style={{ fontSize: "12px", color: TEXT, fontWeight: 700, marginBottom: "4px" }}>
               Prova contro il puro caso
             </div>
@@ -403,7 +401,7 @@ export default function ValidazionePage() {
         >
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "10px" }}>
             {data.segments.map(s => (
-              <div key={s.label} style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "14px 16px" }}>
+              <div key={s.label} className="pannello" style={{ padding: "14px 16px" }}>
                 <div style={{ fontSize: "13px", fontWeight: 700, color: TEXT, marginBottom: "3px" }}>{s.label}</div>
                 <div style={{ fontSize: "11px", color: DIM, marginBottom: "10px" }}>
                   {s.n.toLocaleString("it-IT")} puledri nella prova
@@ -447,7 +445,7 @@ export default function ValidazionePage() {
           icon={<BookOpen size={17} />}
           sub={data.science.sintesi}
         >
-          <div style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "16px 18px", marginBottom: "14px" }}>
+          <div className="pannello" style={{ padding: "16px 18px", marginBottom: "14px" }}>
             <p style={{ fontSize: "12.5px", color: TEXT, lineHeight: 1.65, margin: "0 0 10px" }}>
               {data.science.implicazione_modello}
             </p>
@@ -457,7 +455,7 @@ export default function ValidazionePage() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {data.science.fonti.map(f => (
-              <div key={f.titolo} style={{ background: PANEL, border: BORDER, borderRadius: "10px", padding: "13px 16px" }}>
+              <div key={f.titolo} className="pannello" style={{ padding: "13px 16px" }}>
                 <a href={f.url} target="_blank" rel="noopener noreferrer"
                   style={{ fontSize: "13px", fontWeight: 700, color: CYAN, textDecoration: "none", lineHeight: 1.45 }}>
                   {f.titolo}

@@ -14,7 +14,7 @@ import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 40%)";
 const BORDER = "1px solid hsl(220 10% 18%)";
-const CARD = { background: "hsl(220 12% 10%)", border: BORDER, borderRadius: "12px", padding: "16px 20px" };
+const CARD = { padding: "16px 20px" };
 
 function euro(n: number) {
   return "\u20ac" + Math.round(n).toLocaleString("it-IT");
@@ -59,7 +59,7 @@ export default function TrackPage() {
         {t.prima_gara && <> &middot; dal {t.prima_gara.slice(0, 4)}</>}
       </div>
 
-      <div style={{ ...CARD, marginBottom: "16px" }}>
+      <div className="pannello" style={{ ...CARD, marginBottom: "16px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "16px" }}>
           {[
             { l: "Distanza tipica", v: t.distanza_tipica ? `${t.distanza_tipica} m` : "\u2014", c: "hsl(210 10% 85%)" },
@@ -83,7 +83,7 @@ export default function TrackPage() {
 
       {/* Numero di partenza su questa pista */}
       {t.partenze?.length > 2 && (
-        <div style={{ ...CARD, marginBottom: "16px" }}>
+        <div className="pannello" style={{ ...CARD, marginBottom: "16px" }}>
           <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
             Il numero di partenza su questa pista
           </div>
@@ -110,7 +110,7 @@ export default function TrackPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
         {t.distanze?.length > 0 && (
-          <div style={CARD}>
+          <div className="pannello" style={CARD}>
             <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
               Distanze su cui si corre
             </div>
@@ -131,7 +131,7 @@ export default function TrackPage() {
         )}
 
         {t.guidatori?.length > 0 && (
-          <div style={CARD}>
+          <div className="pannello" style={CARD}>
             <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
               Guidatori piu' vincenti qui
             </div>
@@ -161,7 +161,7 @@ export default function TrackPage() {
       </div>
 
       {t.anni?.length > 1 && (
-        <div style={{ ...CARD, marginTop: "16px" }}>
+        <div className="pannello" style={{ ...CARD, marginTop: "16px" }}>
           <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
             Gare all'anno
           </div>

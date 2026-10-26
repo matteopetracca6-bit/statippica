@@ -68,10 +68,7 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
 
   if (!v.disponibile) {
     return (
-      <div style={{
-        background: "hsl(220 12% 9%)", border: "1px solid hsl(220 10% 16%)",
-        borderRadius: "12px", padding: "16px 18px", marginTop: "16px",
-      }}>
+      <div className="pannello" style={{ padding: "16px 18px", marginTop: "16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "6px" }}>
           <HelpCircle size={15} style={{ color: MUTED }} />
           <span style={{ fontSize: "13px", fontWeight: 700, color: TEXT }}>

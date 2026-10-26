@@ -182,10 +182,7 @@ export default function StallionDirectoryPage() {
           { label: "Monta media", value: `€${stats.avgFee.toLocaleString("it-IT")}`, color: "hsl(51 80% 60%)" },
           { label: "Monta massima", value: `€${stats.maxFee.toLocaleString("it-IT")}`, color: "hsl(0 60% 55%)" },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{
-            background: "hsl(220 12% 12%)", border: "1px solid hsl(220 10% 17%)",
-            borderRadius: "10px", padding: "14px 16px",
-          }}>
+          <div key={label} className="pannello" style={{ padding: "14px 16px" }}>
             <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color }}>{value}</div>
             <div style={{ fontSize: "11px", color: "hsl(210 8% 48%)", marginTop: "4px" }}>{label}</div>
           </div>
@@ -313,28 +310,14 @@ export default function StallionDirectoryPage() {
               <button
                 key={s.name}
                 onClick={() => navigate(`/stallion/${encodeURIComponent(s.name)}`)}
-                style={{
-                  background: "hsl(220 12% 10%)",
-                  border: "1px solid hsl(220 10% 16%)",
-                  borderRadius: "12px",
+                className="pannello pannello-cliccabile" style={{
                   padding: "16px 18px",
                   cursor: "pointer",
                   textAlign: "left",
-                  transition: "background 0.15s, border-color 0.15s, transform 0.15s",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "8px",
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = "hsl(220 12% 13%)";
-                  e.currentTarget.style.borderColor = "hsl(183 40% 25%)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = "hsl(220 12% 10%)";
-                  e.currentTarget.style.borderColor = "hsl(220 10% 16%)";
-                  e.currentTarget.style.transform = "none";
-                }}
+                  gap: "8px" }}
+                
               >
                 {/* Top row: name + grade */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>

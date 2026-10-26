@@ -307,10 +307,7 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Table */}
-      <div style={{
-        background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-        borderRadius: "12px", overflow: "hidden",
-      }}>
+      <div className="pannello" style={{ overflow: "hidden" }}>
         {isLoading ? (
           <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "8px" }}>
             {Array.from({ length: 10 }).map((_, i) => (

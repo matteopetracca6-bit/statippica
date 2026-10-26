@@ -25,7 +25,7 @@ const VERDE = "hsl(145 55% 52%)";
 const ROSSO = "hsl(0 60% 62%)";
 const ORO = "hsl(38 80% 58%)";
 const ACCENTO = "hsl(25 75% 58%)";
-const CARD: React.CSSProperties = { background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 18%)", borderRadius: 12, padding: "16px 18px" };
+const CARD: React.CSSProperties = { padding: "16px 18px" };
 const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−€" : "€") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
 const pc = (p: number | null | undefined) => (p == null ? "—" : p > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`);
 const titolo = (s: string) => (s || "").split(" ").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
@@ -34,7 +34,7 @@ const parametri = () => new URLSearchParams((typeof window !== "undefined" ? win
 
 function Riquadro({ titolo, valore, nota, colore }: { titolo: string; valore: React.ReactNode; nota?: React.ReactNode; colore?: string }) {
   return (
-    <div style={{ ...CARD, padding: "13px 15px" }}>
+    <div className="pannello" style={{ ...CARD, padding: "13px 15px" }}>
       <div style={{ fontSize: 11.5, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{titolo}</div>
       <div className="tabular" style={{ fontSize: 23, fontWeight: 800, color: colore ?? TESTO, marginTop: 4, lineHeight: 1.15 }}>{valore}</div>
       {nota && <div style={{ fontSize: 11.5, color: MUTED, marginTop: 5, lineHeight: 1.5 }}>{nota}</div>}
@@ -68,7 +68,7 @@ function Compro() {
 
   return (
     <div style={{ display: "grid", gap: 14, gridTemplateColumns: "minmax(0, 1fr)" }}>
-      <div style={CARD}>
+      <div className="pannello" style={CARD}>
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))" }}>
           <div style={etich}>Padre<NameSelect value={padre} endpoint="/api/search/stallion" placeholder="Stallone (almeno 2 lettere)" onChange={n => setPadre((n || "").toUpperCase())} /></div>
           <div style={etich}>Madre (facoltativa)<NameSelect value={madre} endpoint="/api/search/mare" placeholder="Fattrice" onChange={n => setMadre((n || "").toUpperCase())} /></div>
@@ -93,7 +93,7 @@ function Compro() {
         </div>
       </div>
 
-      {!padre && <div style={{ ...CARD, color: MUTED, fontSize: 13, lineHeight: 1.6 }}>
+      {!padre && <div className="pannello" style={{ ...CARD, color: MUTED, fontSize: 13, lineHeight: 1.6 }}>
         Scegli il padre (e se vuoi la madre). Per i puledri delle aste 2026 il prezzo massimo è già nella tabella di <Link href="/generazione-m" style={{ color: ORO }}>Aste e generazione M</Link>.
       </div>}
       {padre && !d && isFetching && <Sagoma riquadri={4} />}
@@ -130,7 +130,7 @@ function Compro() {
           )}
         </div>
 
-        <div style={CARD}>
+        <div className="pannello" style={CARD}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: TESTO, margin: "0 0 4px" }}>Caso per caso</h2>
           <Spiegazione compatta>
             Ogni riga è un modo in cui può andare la sua carriera, con la probabilità che viene dai figli del padre{d.madre ? " e della madre" : ""} e i premi veri dei cavalli
@@ -168,7 +168,7 @@ function Compro() {
           </Spiegazione>
         </div>
 
-        <div style={CARD}>
+        <div className="pannello" style={CARD}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: TESTO, margin: "0 0 4px" }}>Se lo paghi…</h2>
           <Spiegazione compatta>
             Per ogni prezzo: in quanti casi su 100 i premi coprono prezzo e allenamento, e l'utile medio.
@@ -217,7 +217,7 @@ export default function PuledroPage() {
         <button style={bottone(modo === "vendo")} onClick={() => setModo("vendo")}>Lo vendo: vendere o far correre</button>
       </div>
       {modo === "compro" ? <Compro /> : (
-        <div style={CARD}>
+        <div className="pannello" style={CARD}>
           <Spiegazione compatta>
             All'asta yearling, verso i 18 mesi, l'allevatore sceglie: incassare subito o tenere il puledro e pagarne l'allenamento.
             Allevamento e monta sono ormai spesi e non cambiano la scelta. Conviene vendere quando il prezzo supera il valore del puledro in pista,

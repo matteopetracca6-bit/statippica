@@ -4,6 +4,7 @@ import Wordmark from "./Wordmark";
 import FasciaNotizie from "./FasciaNotizie";
 import NavBar from "./NavBar";
 import RicercaGlobale, { PulsanteRicerca, ricordaPercorso } from "./RicercaGlobale";
+import { coloreDiPagina } from "@/lib/sezioni";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -80,7 +81,9 @@ export default function Layout({ children }: LayoutProps) {
       <NavBar />
 
       {/* Main content area */}
+      {/* I riquadri della pagina prendono il colore della sua sezione. */}
       <main ref={areaContenuto} style={{
+        ...(coloreDiPagina(percorso) ? { ["--colore-pagina" as any]: coloreDiPagina(percorso) } : {}),
         flex: 1,
         overflow: "auto",
         overscrollBehavior: "contain",

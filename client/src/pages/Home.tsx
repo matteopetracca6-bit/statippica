@@ -8,7 +8,7 @@ import GradeBadge from "../components/GradeBadge";
 import CavalliDelMomento from "../components/CavalliDelMomento";
 import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
-import EsploraCategorie from "../components/EsploraCategorie";
+import EsploraCategorie, { trasparente } from "../components/EsploraCategorie";
 import BandieraCavallo from "@/components/BandieraCavallo";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
@@ -139,37 +139,34 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── KPI CARDS ─── */}
+      {/* ─── NUMERI DELL'ARCHIVIO ───
+          Stesso aspetto delle cinque categorie qui sopra: riga di colore a
+          sinistra, velatura nell'angolo, e al passaggio si sollevano. Ognuno
+          apre la pagina dove quei numeri si vedono per esteso. */}
       <div className="page-shell">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+        <div className="numeri-home">
           {[
-            { label: "Cavalli", value: stats?.totalHorses ?? 0, icon: Users, color: "hsl(183 100% 45%)" },
-            { label: "Gare archiviate", value: stats?.totalRaces ?? 0, icon: Flag, color: "hsl(51 100% 55%)" },
-            { label: "Stalloni analizzati", value: stats?.totalStallions ?? 0, icon: TrendingUp, color: "hsl(30 80% 55%)" },
-            { label: "Cavalli votati", value: totalPerf, icon: Zap, color: "hsl(120 60% 50%)" },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "14px", padding: "18px 20px",
-              display: "flex", alignItems: "center", gap: "14px",
-              transition: "border-color 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = color + "40"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "hsl(220 10% 16%)"}
-            >
-              <div style={{
-                width: 40, height: 40, borderRadius: "10px", background: color + "1a",
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-              }}>
-                <Icon size={20} style={{ color }} />
-              </div>
-              <div>
-                <div className="tabular" style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 92%)", lineHeight: 1.1 }}>
-                  {isLoading ? "—" : <AnimatedNumber value={value} />}
-                </div>
-                <div style={{ fontSize: "11px", color: "hsl(210 8% 50%)", marginTop: "2px" }}>{label}</div>
-              </div>
-            </div>
+            { label: "Cavalli", nota: "in attività e ritirati", value: stats?.totalHorses ?? 0, icon: Users, color: "hsl(51 80% 55%)", href: "/leaderboard" },
+            { label: "Gare archiviate", nota: "un arrivo per ogni cavallo", value: stats?.totalRaces ?? 0, icon: Flag, color: "hsl(0 60% 55%)", href: "/ippodromi" },
+            { label: "Stalloni analizzati", nota: "giudicati sui figli", value: stats?.totalStallions ?? 0, icon: TrendingUp, color: "hsl(120 60% 50%)", href: "/stalloni" },
+            { label: "Cavalli votati", nota: "con un voto da SSS a F", value: totalPerf, icon: Zap, color: "hsl(183 70% 52%)", href: "/metodo" },
+          ].map(({ label, nota, value, icon: Icon, color, href }) => (
+            <Link key={label} href={href}>
+              <a className="pannello pannello-cliccabile numero-home" style={{ ["--colore-pannello" as any]: color }}
+                 data-testid={`numero-${label.toLowerCase().replace(/ /g, "-")}`}>
+                <span className="numero-home-icona" style={{ background: trasparente(color, 0.12) }}>
+                  <Icon size={22} style={{ color }} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span className="tabular numero-home-valore">
+                    {isLoading ? "—" : <AnimatedNumber value={value} />}
+                  </span>
+                  <span className="numero-home-nome">{label}</span>
+                  <span className="numero-home-nota">{nota}</span>
+                </span>
+                <ChevronRight size={16} className="numero-home-freccia" style={{ color }} />
+              </a>
+            </Link>
           ))}
         </div>
       </div>
@@ -189,10 +186,7 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))", gap: "16px" }}>
 
           {/* Top stallions */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "14px", padding: "22px 24px",
-          }}>
+          <div className="pannello" style={{ ["--colore-pannello" as any]: "hsl(120 60% 50%)", padding: "22px 24px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Trophy size={16} style={{ color: "hsl(51 80% 55%)" }} />
@@ -200,7 +194,7 @@ export default function Home() {
                   Top Stalloni
                 </span>
               </div>
-              <Link href="/stallioni">
+              <Link href="/stalloni">
                 <a style={{ fontSize: "11px", color: "hsl(183 80% 55%)", textDecoration: "none", display: "flex", alignItems: "center", gap: "3px" }}>
                   Tutti <ChevronRight size={12} />
                 </a>
@@ -244,10 +238,7 @@ export default function Home() {
           </div>
 
           {/* Champion per generation */}
-          <div style={{
-            background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-            borderRadius: "14px", padding: "22px 24px",
-          }}>
+          <div className="pannello" style={{ ["--colore-pannello" as any]: "hsl(51 80% 55%)", padding: "22px 24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <Crown size={16} style={{ color: "hsl(51 100% 55%)" }} />
               <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>

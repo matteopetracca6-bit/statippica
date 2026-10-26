@@ -18,7 +18,7 @@ import BandieraCavallo from "@/components/BandieraCavallo";
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 40%)";
 const BORDER = "1px solid hsl(220 10% 18%)";
-const CARD = { background: "hsl(220 12% 10%)", border: BORDER, borderRadius: "12px", padding: "16px 20px" };
+const CARD = { padding: "16px 20px" };
 
 function euro(n: number) {
   return "\u20ac" + Math.round(n).toLocaleString("it-IT");
@@ -74,7 +74,7 @@ export default function DriverPage() {
       </div>
 
       {/* I numeri principali */}
-      <div style={{ ...CARD, marginBottom: "16px" }}>
+      <div className="pannello" style={{ ...CARD, marginBottom: "16px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "16px" }}>
           <div>
             <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
@@ -143,7 +143,7 @@ export default function DriverPage() {
 
       {/* Andamento negli anni */}
       {d.anni?.length > 1 && (
-        <div style={{ ...CARD, marginTop: "16px" }}>
+        <div className="pannello" style={{ ...CARD, marginTop: "16px" }}>
           <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
             Andamento negli anni
           </div>
@@ -169,7 +169,7 @@ export default function DriverPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: "16px", marginTop: "16px" }}>
         {/* Piste */}
         {d.piste?.length > 0 && (
-          <div style={CARD}>
+          <div className="pannello" style={CARD}>
             <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
               <MapPin size={12} /> Dove corre
             </div>
@@ -195,7 +195,7 @@ export default function DriverPage() {
 
         {/* Cavalli */}
         {d.cavalli?.length > 0 && (
-          <div style={CARD}>
+          <div className="pannello" style={CARD}>
             <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
               Cavalli guidati piu' spesso
             </div>

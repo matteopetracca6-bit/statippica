@@ -105,7 +105,7 @@ export default function PesoCosti({ mensile, monta, prezzo }: { mensile: number;
         {d.voci.map(v => {
           const impossibile = !v.ricavo && v.per_il_pareggio > 100;
           return (
-            <div key={v.chiave} style={{ background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 15%)", borderRadius: "10px", padding: "10px 12px" }}>
+            <div key={v.chiave} className="pannello" style={{ padding: "10px 12px" }}>
               <div style={{ fontSize: "12px", color: MUTED }}>{v.nome}</div>
               <div className="tabular" style={{ fontSize: "18px", fontWeight: 800, margin: "3px 0 1px",
                                                  color: d.utile_medio >= 0 ? ESITO_COLORE.profitto : impossibile ? ESITO_COLORE.perdita : ESITO_COLORE.pareggio }}>

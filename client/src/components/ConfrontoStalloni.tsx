@@ -57,7 +57,7 @@ export default function ConfrontoStalloni() {
   const gMed = mediana(righe.map(r => r.guadagno_atteso));
 
   return (
-    <div style={{ background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "14px", padding: "18px 20px", marginBottom: "20px" }}>
+    <div className="pannello" style={{ padding: "18px 20px", marginBottom: "20px" }}>
       <button onClick={() => setAperto(a => !a)} aria-expanded={aperto}
         style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
         <Scale size={16} style={{ color: "hsl(160 60% 50%)" }} />

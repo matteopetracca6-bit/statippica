@@ -24,7 +24,7 @@ import { testoProb } from "@/lib/probCopre";
 import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 55%)";
-const CARD: React.CSSProperties = { background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 18%)", borderRadius: 12, padding: "16px 18px" };
+const CARD: React.CSSProperties = { padding: "16px 18px" };
 const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const titolo = (s: string) => s.split(" ").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
 const ETICHETTA: Record<string, string> = { profitto: "Profitto", pareggio: "Pareggio", perdita: "Perdita" };
@@ -68,7 +68,7 @@ function ElencoCavalli({ mensile }: { mensile: string }) {
   });
   if (!d) return <Sagoma cornice righe={8} />;
   if (!d.totale && !cerca && !esito && !etaMin && !etaMax && !sesso) return (
-    <div style={{ ...CARD, color: MUTED, fontSize: 13 }}>Le stime arrivano con l'aggiornamento automatico della notte.</div>
+    <div className="pannello" style={{ ...CARD, color: MUTED, fontSize: 13 }}>Le stime arrivano con l'aggiornamento automatico della notte.</div>
   );
   const sel: React.CSSProperties = { background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 22%)", borderRadius: 8, color: "hsl(210 10% 90%)", padding: "6px 9px", fontSize: 12.5, fontFamily: "inherit" };
   return (
@@ -108,7 +108,7 @@ function ElencoCavalli({ mensile }: { mensile: string }) {
         </select>
       </div>
 
-      <div style={{ ...CARD, padding: 0, overflowX: "auto", opacity: isFetching ? 0.65 : 1, transition: "opacity .2s" }}>
+      <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto", opacity: isFetching ? 0.65 : 1, transition: "opacity .2s" }}>
         <table className="tabella-tenere">
           <thead><tr>
             <th>Cavallo</th><th className="num">Età</th><th className="nascondi-mobile">Padre</th>
@@ -169,7 +169,7 @@ function PerStallone({ mensile }: { mensile: string }) {
         </select>
         <span style={{ marginLeft: "auto" }}>{righe.length} stalloni</span>
       </div>
-      <div style={{ ...CARD, padding: 0, overflowX: "auto", opacity: isFetching ? 0.65 : 1 }}>
+      <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto", opacity: isFetching ? 0.65 : 1 }}>
         <table className="tabella-tenere">
           <thead><tr>
             <th>Stallone</th><th className="num">Figli in attività</th><th>Probabilità media di coprire</th>
@@ -226,7 +226,7 @@ export default function TenerePage() {
         i dettagli sono in <Link href="/controllo" style={{ color: "hsl(145 55% 52%)" }}>Controllo a posteriori</Link>.
       </IntestazionePagina>
 
-      <div style={{ ...CARD, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, marginBottom: 16 }}>
+      <div className="pannello" style={{ ...CARD, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, marginBottom: 16 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "hsl(210 10% 85%)" }}>
           Costo al mese di allenamento e mantenimento €
           <input type="number" min={100} step={100} inputMode="numeric" value={mensileScritto} onChange={e => setMensileScritto(e.target.value)}

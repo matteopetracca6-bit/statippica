@@ -115,7 +115,7 @@ function SimulationPanel({ stallion, mare }: { stallion: string; mare: string })
   const roiPositive = sim.roi.roi_pct >= 0;
 
   return (
-    <div style={{ marginTop: "12px", padding: "16px 18px", background: "hsl(220 12% 8%)", borderRadius: "10px", border: "1px solid hsl(220 10% 14%)" }}>
+    <div className="pannello" style={{ marginTop: "12px", padding: "16px 18px" }}>
       {/* Voto atteso con fascia di incertezza */}
       {sim.prediction && <PredictionCard p={sim.prediction} />}
       {sim.reasons && <ReasonsList reasons={sim.reasons} />}
@@ -407,11 +407,8 @@ export default function AdvisorPage() {
       </IntestazionePagina>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} style={{
-        background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-        borderRadius: "12px", padding: "22px", marginBottom: "24px",
-        display: "flex", gap: "14px", flexWrap: "wrap", alignItems: "flex-end",
-      }}>
+      <form onSubmit={handleSubmit} className="pannello" style={{ padding: "22px", marginBottom: "24px",
+        display: "flex", gap: "14px", flexWrap: "wrap", alignItems: "flex-end" }}>
         <div style={{ flex: "1 1 300px" }}>
           {/* Tendina di scelta: prima bisognava sapere a memoria il nome esatto */}
           <NameSelect
@@ -471,7 +468,7 @@ export default function AdvisorPage() {
       {data && !data.found && (
         <div>
           {(data.suggestions?.length ?? 0) > 0 ? (
-            <div style={{ background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "12px", padding: "20px 22px" }}>
+            <div className="pannello" style={{ padding: "20px 22px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px", color: "hsl(25 55% 55%)", fontSize: "13px" }}>
                 <AlertCircle size={16} /> Fattrice non trovata esattamente. Intendevi:
               </div>

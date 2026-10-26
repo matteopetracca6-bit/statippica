@@ -80,3 +80,32 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Il consiglio di accoppiamento provato su puledri mai visti: perché resta sperimentale" },
   ] },
 ];
+
+/**
+ * Il colore di una pagina, per i suoi riquadri. Ogni pagina prende il colore
+ * che ha nel menu e nella pagina iniziale; le schede di dettaglio prendono
+ * quello dell'elenco da cui si arriva (un cavallo come la classifica, uno
+ * stallone come gli stalloni, ...). Anche gli indirizzi vecchi, che portano
+ * alla stessa pagina, hanno il suo colore.
+ */
+const ALIAS: Record<string, string> = {
+  "/horse": "/leaderboard", "/cavalli": "/leaderboard",
+  "/stallion": "/stalloni", "/stallioni": "/stalloni",
+  "/fattrice": "/fattrici",
+  "/allevamenti": "/allevamento", "/allevatori": "/allevamento", "/allevatore": "/allevamento",
+  "/validazione-advisor": "/validazione",
+  "/trend": "/ippodromi", "/piste": "/ippodromi", "/ippodromo": "/ippodromi",
+  "/guidatore": "/guidatori",
+  "/controllo-a-posteriori": "/controllo",
+  "/portafoglio": "/scuderia",
+  "/prezzo-massimo": "/puledro", "/vendere": "/puledro",
+  "/break-even": "/pareggio",
+  "/aste": "/generazione-m",
+  "/metodo-e-dati": "/metodo",
+};
+export function coloreDiPagina(percorso: string): string | null {
+  const primo = "/" + (percorso.split("?")[0].split("/")[1] ?? "");
+  const href = ALIAS[primo] ?? primo;
+  for (const g of GRUPPI) for (const sc of g.schede) if (sc.href === href) return sc.colore;
+  return null;
+}

@@ -22,7 +22,7 @@ const MUTED = "hsl(210 8% 58%)";
 const DIM = "hsl(210 8% 42%)";
 const TESTO = "hsl(210 10% 80%)";
 const BORDER = "1px solid hsl(220 10% 18%)";
-const CARD = { background: "hsl(220 12% 10%)", border: BORDER, borderRadius: "12px", padding: "18px 22px" };
+const CARD = { padding: "18px 22px" };
 
 function data(d?: string | null) {
   if (!d) return "\u2014";
@@ -50,7 +50,7 @@ function n(x?: number | null) {
 /** Ogni sezione è una tendina chiusa: si legge il titolo e si apre quella che serve. */
 function Sezione({ titolo, children }: { titolo: string; children: React.ReactNode }) {
   return (
-    <details className="sezione-metodo" style={{ ...CARD, marginBottom: "12px", padding: 0 }}>
+    <details className="sezione-metodo pannello" style={{ ...CARD, marginBottom: "12px", padding: 0 }}>
       <summary style={{ padding: "14px 22px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, listStyle: "none" }}>
         <ChevronDown size={16} className="freccia-metodo" style={{ color: "hsl(183 60% 55%)", flexShrink: 0, transition: "transform .2s" }} />
         <h2 style={{ fontSize: "15.5px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: 0 }}>{titolo}</h2>
@@ -101,7 +101,7 @@ export default function MetodoPage() {
         sottotitolo="Da dove vengono i numeri del sito, come si calcola ogni voto e cosa non se ne può concludere. Apri la sezione che ti serve." />
 
       {/* STATO DAL VIVO */}
-      <section style={{ ...CARD, marginBottom: "20px", borderColor: "hsl(183 60% 30% / 0.5)" }}>
+      <section className="pannello" style={{ ...CARD, marginBottom: "20px", borderColor: "hsl(183 60% 30% / 0.5)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
           <RefreshCw size={15} style={{ color: "hsl(183 75% 55%)" }} />
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: 0 }}>L'archivio adesso</h2>

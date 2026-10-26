@@ -155,7 +155,7 @@ export default function QualifichePage() {
             { label: "Tempo medio", value: stats.tempo_medio != null ? `1.${stats.tempo_medio.toFixed(1)}` : "—" },
             { label: "Miglior tempo", value: stats.tempo_migliore != null ? `1.${stats.tempo_migliore.toFixed(1)}` : "—" },
           ].map(k => (
-            <div key={k.label} style={{ border: "1px solid hsl(220 10% 16%)", borderRadius: "10px", background: "hsl(220 12% 9%)", padding: "12px 14px" }}>
+            <div key={k.label} className="pannello" style={{ padding: "12px 14px" }}>
               <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", color: "hsl(210 8% 55%)", marginBottom: "4px" }}>
                 {k.label}
               </div>
@@ -226,7 +226,7 @@ export default function QualifichePage() {
           Nessuna prova corrisponde ai filtri scelti.
         </div>
       ) : (
-        <div style={{ overflowX: "auto", border: "1px solid hsl(220 10% 16%)", borderRadius: "10px", background: "hsl(220 12% 9%)" }}>
+        <div className="pannello" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -334,7 +334,7 @@ export default function QualifichePage() {
               <div
                 key={s.sire}
                 onClick={() => navigate(`/stallion/${encodeURIComponent(s.sire)}`)}
-                style={{ border: "1px solid hsl(220 10% 16%)", borderRadius: "10px", background: "hsl(220 12% 9%)", padding: "11px 13px", cursor: "pointer" }}
+                className="pannello" style={{ padding: "11px 13px", cursor: "pointer" }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "hsl(51 80% 62%)" }}>

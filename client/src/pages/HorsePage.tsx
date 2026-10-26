@@ -120,9 +120,6 @@ interface HorseStats {
 }
 
 const panelStyle: React.CSSProperties = {
-  background: "hsl(220 12% 10%)",
-  border: "1px solid hsl(220 10% 16%)",
-  borderRadius: "12px",
   padding: "20px 22px",
   marginBottom: "22px",
 };
@@ -138,12 +135,8 @@ const panelTitle: React.CSSProperties = {
 
 function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div style={{
-      background: "hsl(220 12% 12%)",
-      border: "1px solid hsl(220 10% 17%)",
-      borderRadius: "10px",
-      padding: "14px 16px",
-    }}>
+    <div className="pannello" style={{
+      padding: "14px 16px" }}>
       <div className="tabular" style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 90%)", lineHeight: 1.2 }}>{value}</div>
       {sub && <div className="tabular" style={{ fontSize: "11px", color: "hsl(183 80% 55%)", marginTop: "2px" }}>{sub}</div>}
       <div style={{ fontSize: "11px", color: "hsl(210 8% 48%)", marginTop: "4px" }}>{label}</div>
@@ -179,20 +172,16 @@ function NavArrow({ direction, neighbor, onClick }: {
   return (
     <button
       onClick={() => onClick(neighbor.name, neighbor.birth_year)}
-      style={{
+      className="pannello pannello-cliccabile" style={{
         display: "flex",
         alignItems: "center",
         gap: "8px",
         padding: "10px 14px",
-        borderRadius: "10px",
-        background: "hsl(220 12% 12%)",
-        border: "1px solid hsl(220 10% 18%)",
         cursor: "pointer",
         flex: 1,
         maxWidth: "240px",
         justifyContent: isNext ? "flex-end" : "flex-start",
-        transition: "background 0.15s, border-color 0.15s",
-      }}
+        transition: "background 0.15s, border-color 0.15s" }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(220 12% 16%)"; e.currentTarget.style.borderColor = "hsl(183 40% 30%)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "hsl(220 12% 12%)"; e.currentTarget.style.borderColor = "hsl(220 10% 18%)"; }}
     >
@@ -454,7 +443,7 @@ export default function HorsePage() {
 
       {/* Genealogy */}
       {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (
-        <div id="sez-genealogia" style={panelStyle}>
+        <div id="sez-genealogia" className="pannello" style={panelStyle}>
           <div style={panelTitle}>Genealogia (clicca per navigare)</div>
           <div className="genealogia-griglia" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
@@ -503,7 +492,7 @@ export default function HorsePage() {
           anni resta ferma in meno di un caso su tre. */}
       {horse.rating_mode === "performance" &&
         (horse.grade_annata || horse.affidabilita_voto?.disponibile) && (
-        <div id="sez-voto" style={panelStyle}>
+        <div id="sez-voto" className="pannello" style={panelStyle}>
           <div style={panelTitle}>Come leggere questo voto</div>
 
           {/* Tre dati su una riga sola: le due letture del voto e quanto
@@ -601,7 +590,7 @@ export default function HorsePage() {
           gare fuori confine ma non dice quale paese, percio' si puo' dividere
           Italia da estero e non oltre. */}
       {(horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0 && (
-        <div id="sez-dove" style={panelStyle}>
+        <div id="sez-dove" className="pannello" style={panelStyle}>
           <div style={panelTitle}>Dove ha corso</div>
           {/* Aggiunto il premio medio per gara: e' il dato che spiega da solo
               perche' la divisione conta, e prima stava solo nella prosa. */}
@@ -643,7 +632,7 @@ export default function HorsePage() {
       {/* I cavalli storici vanno spiegati, altrimenti il loro voto sembra
           confrontabile con quello dei cavalli in attivita' e non lo e'. */}
       {eStorico && (
-        <div style={{ ...panelStyle, borderLeft: "3px solid hsl(51 70% 50%)" }}>
+        <div className="pannello" style={{ ...panelStyle, borderLeft: "3px solid hsl(51 70% 50%)" }}>
           <div style={panelTitle}>Voto storico, non confrontabile con i cavalli in gara</div>
           {/* L'avvertenza resta in chiaro: e' il punto, non un dettaglio. Il
               perche' tecnico va invece sotto la tendina. */}
@@ -666,7 +655,7 @@ export default function HorsePage() {
 
       {/* Percentile bars */}
       {horse.rating_mode === "performance" && (
-        <div id="sez-percentili" style={panelStyle}>
+        <div id="sez-percentili" className="pannello" style={panelStyle}>
           <div style={panelTitle}>Percentili generazione {horse.birth_year}</div>
           <PercentileBar label="Guadagni" value={horse.earn_percentile} />
           <PercentileBar label="Miglior tempo" value={horse.time_percentile} />
@@ -715,7 +704,7 @@ export default function HorsePage() {
 
       {/* Year-by-year breakdown */}
       {stats?.yearlyStats && stats.yearlyStats.length > 0 && (
-        <div id="sez-anni" style={panelStyle}>
+        <div id="sez-anni" className="pannello" style={panelStyle}>
           <div style={panelTitle}>Carriera anno per anno</div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
@@ -756,7 +745,7 @@ export default function HorsePage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
         {horse.races?.length ? (<>
         {/* Last races */}
-        <div id="sez-gare" style={panelStyle}>
+        <div id="sez-gare" className="pannello" style={panelStyle}>
           <div style={panelTitle}>Ultime gare</div>
           {horse.races?.length ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -804,7 +793,7 @@ export default function HorsePage() {
         </>) : null}
         {horse.siblings?.length ? (<>
         {/* Siblings */}
-        <div style={panelStyle}>
+        <div className="pannello" style={panelStyle}>
           <div style={panelTitle}>Fratellastri top (stesso padre)</div>
           {horse.siblings?.length ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -839,7 +828,7 @@ export default function HorsePage() {
         <div id="sez-ippodromi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginTop: "0" }}>
           {/* Best races */}
           {stats.bestRaces.length > 0 && (
-            <div style={panelStyle}>
+            <div className="pannello" style={panelStyle}>
               <div style={panelTitle}>Migliori gare (per premio)</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {stats.bestRaces.map((r, i) => (
@@ -878,7 +867,7 @@ export default function HorsePage() {
 
           {/* Track stats */}
           {stats.trackStats.length > 0 && (
-            <div style={panelStyle}>
+            <div className="pannello" style={panelStyle}>
               <div style={panelTitle}>Statistiche per ippodromo</div>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>

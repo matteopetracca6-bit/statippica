@@ -64,14 +64,10 @@ function eur(v: number | null | undefined): string {
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div style={{
-      background: "hsl(220 12% 10%)",
-      border: "1px solid hsl(220 10% 16%)",
-      borderRadius: "10px",
+    <div className="pannello" style={{
       padding: "12px 14px",
       minWidth: "140px",
-      flex: "1 1 140px",
-    }}>
+      flex: "1 1 140px" }}>
       <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", color: "hsl(210 8% 55%)", fontWeight: 700 }}>
         {label}
       </div>
@@ -150,11 +146,8 @@ export default function MarePage() {
           <Stat label="Guadagno medio figli" value={eur(s.avg_earnings)} />
         </div>
       ) : (
-        <div style={{
-          border: "1px solid hsl(220 10% 16%)", background: "hsl(220 12% 10%)",
-          borderRadius: "10px", padding: "14px", marginBottom: "22px",
-          fontSize: "13px", color: "hsl(210 8% 65%)",
-        }}>
+        <div className="pannello" style={{ padding: "14px", marginBottom: "22px",
+          fontSize: "13px", color: "hsl(210 8% 65%)" }}>
           Nessun figlio ha ancora un voto, quindi non è possibile calcolare il voto della progenie.
         </div>
       )}
@@ -176,11 +169,8 @@ export default function MarePage() {
           {s?.own_grade && <Stat label="Suo voto da atleta" value={s.own_grade} />}
         </div>
       ) : (
-        <div style={{
-          border: "1px solid hsl(220 10% 16%)", background: "hsl(220 12% 10%)",
-          borderRadius: "10px", padding: "14px", marginBottom: "24px",
-          fontSize: "13px", color: "hsl(210 8% 65%)",
-        }}>
+        <div className="pannello" style={{ padding: "14px", marginBottom: "24px",
+          fontSize: "13px", color: "hsl(210 8% 65%)" }}>
           Carriera non ancora recuperata. Il lavoro notturno recupera i totali dei riproduttori a
           gruppi: questa fattrice è in coda.
         </div>
@@ -190,7 +180,7 @@ export default function MarePage() {
       <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 10px" }}>
         Progenie ({data.offspring.length})
       </h2>
-      <div style={{ overflowX: "auto", border: "1px solid hsl(220 10% 16%)", borderRadius: "10px", background: "hsl(220 12% 9%)" }}>
+      <div className="pannello" style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

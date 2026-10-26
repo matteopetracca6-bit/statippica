@@ -25,7 +25,7 @@ const COLORE = "hsl(265 45% 68%)";
 const MUTED = "hsl(210 8% 55%)";
 const TESTO = "hsl(210 10% 90%)";
 const ORO = "hsl(45 85% 58%)";
-const CARD: React.CSSProperties = { background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 18%)", borderRadius: 12, padding: "16px 18px" };
+const CARD: React.CSSProperties = { padding: "16px 18px" };
 const griglia: React.CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(210px, 100%), 1fr))", marginBottom: 12 };
 
 const num = (n: number | null | undefined) => n == null ? "—" : Math.round(n).toLocaleString("it-IT");
@@ -39,7 +39,7 @@ const NOME_TERZO: Record<string, string> = { basso: "Il terzo più basso", medio
 
 function Numero({ valore, etichetta, nota, colore }: { valore: string; etichetta: string; nota?: React.ReactNode; colore?: string }) {
   return (
-    <div style={{ ...CARD, padding: "14px 16px" }}>
+    <div className="pannello" style={{ ...CARD, padding: "14px 16px" }}>
       <div className="tabular" style={{ fontSize: 24, fontWeight: 800, color: colore ?? TESTO, lineHeight: 1.15 }}>{valore}</div>
       <div style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", marginTop: 4 }}>{etichetta}</div>
       {nota && <div style={{ fontSize: 11.5, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>{nota}</div>}
@@ -55,7 +55,7 @@ function Titoletto({ children, id }: { children: React.ReactNode; id?: string })
 function Calibrazione({ righe, etichetta }: { righe: { da: number; a: number; detta: number; vera: number; n: number }[]; etichetta: string }) {
   const max = Math.max(...righe.flatMap(r => [r.detta, r.vera]), 1);
   return (
-    <div style={{ ...CARD, display: "grid", gap: 10 }}>
+    <div className="pannello" style={{ ...CARD, display: "grid", gap: 10 }}>
       <div style={{ display: "flex", gap: 16, fontSize: 11.5, color: MUTED, flexWrap: "wrap" }}>
         <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: "hsl(210 8% 45%)", marginRight: 5 }} />detto dalla stima</span>
         <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: COLORE, marginRight: 5 }} />successo davvero</span>
@@ -99,7 +99,7 @@ export default function ControlloPage() {
   if (!d) return <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>{intestazione}<Sagoma riquadri={4} /></div>;
   if (d.message || !d.principale) return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>{intestazione}
-      <div style={{ ...CARD, color: MUTED, fontSize: 13 }}>Il controllo non è ancora stato calcolato su questo archivio.</div></div>
+      <div className="pannello" style={{ ...CARD, color: MUTED, fontSize: 13 }}>Il controllo non è ancora stato calcolato su questo archivio.</div></div>
   );
 
   const p = d.principale, t = p.tenere, sc = p.scuderie, a = d.asta_2024;
@@ -110,7 +110,7 @@ export default function ControlloPage() {
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>
       {intestazione}
 
-      <div style={{ ...CARD, borderColor: "hsl(265 45% 68% / 0.45)", fontSize: 13.5, lineHeight: 1.65, color: "hsl(210 10% 86%)" }}>
+      <div className="pannello" style={{ ...CARD, borderColor: "hsl(265 45% 68% / 0.45)", fontSize: 13.5, lineHeight: 1.65, color: "hsl(210 10% 86%)" }}>
         <b style={{ color: COLORE }}>In breve.</b> Sui cavalli già in corsa le stime reggono: dei cavalli dati «in perdita» solo {pct(perdita.hanno_coperto)} ha poi coperto
         la spesa, e il totale dei premi stimati ({milioni(t.premi_totali_stimati)}) è vicino a quello vero ({milioni(t.premi_totali_veri)}).
         Anche il rischio della scuderia è misurato bene. Sui puledri dell'asta invece la stima azzecca il totale ma non sa dire quali andranno meglio:
@@ -127,7 +127,7 @@ export default function ControlloPage() {
           nota="Gli altri sono rimasti sotto: chi è dato in utile non è sicuro." />
         <Numero valore={milioni(t.premi_totali_veri)} etichetta={`premi veri, contro ${milioni(t.premi_totali_stimati)} stimati`} colore={ORO} />
       </div>
-      <div style={{ ...CARD, padding: 0, overflowX: "auto" }}>
+      <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto" }}>
         <table className="tabella-tenere">
           <thead><tr><th>Cosa diceva il sito</th><th className="num">Cavalli</th><th className="num">Premi stimati</th><th className="num">Premi veri</th>
             <th className="num nascondi-mobile">Valore tipico</th><th className="num">Hanno coperto {euro(d.costo_anno)}</th></tr></thead>
@@ -191,7 +191,7 @@ export default function ControlloPage() {
 
       {d.altre_date?.length > 0 && <>
         <h3 style={{ fontSize: 14, fontWeight: 700, color: TESTO, margin: "20px 0 8px" }}>Lo stesso controllo in altre date</h3>
-        <div style={{ ...CARD, padding: 0, overflowX: "auto" }}>
+        <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto" }}>
           <table className="tabella-tenere">
             <thead><tr><th>Data</th><th className="num">«In perdita» che hanno coperto</th><th className="num">«In utile» che hanno coperto</th>
               <th className="num nascondi-mobile">Premi stimati / veri</th><th className="num">Scuderie in pari, detto / vero</th></tr></thead>
@@ -224,7 +224,7 @@ export default function ControlloPage() {
 
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
           {[["Divisi per la stima del sito", a.per_terzi_di_stima], ["Divisi per il prezzo pagato", a.per_terzi_di_prezzo]].map(([nome, righe]: any) => (
-            <div key={nome} style={{ ...CARD, padding: 0, overflowX: "auto" }}>
+            <div key={nome} className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto" }}>
               <div style={{ padding: "12px 14px 4px", fontSize: 13, fontWeight: 700, color: TESTO }}>{nome}</div>
               <table className="tabella-tenere">
                 <thead><tr><th>Gruppo</th><th className="num">Da – a</th><th className="num">Premi veri medi</th><th className="num nascondi-mobile">Hanno corso a 2 anni</th></tr></thead>
@@ -247,7 +247,7 @@ export default function ControlloPage() {
 
         {a.migliori?.length > 0 && <>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: TESTO, margin: "20px 0 8px" }}>I dieci che hanno vinto di più</h3>
-          <div style={{ ...CARD, padding: 0, overflowX: "auto" }}>
+          <div className="pannello" style={{ ...CARD, padding: 0, overflowX: "auto" }}>
             <table className="tabella-tenere">
               <thead><tr><th>Puledro</th><th className="nascondi-mobile">Padre</th><th className="num">Pagato</th><th className="num nascondi-mobile">Stima</th><th className="num">Vinto finora</th></tr></thead>
               <tbody>
@@ -279,7 +279,7 @@ export default function ControlloPage() {
 
       {/* 4. CONCLUSIONI */}
       <Titoletto id="conclusioni">4. Cosa ne segue</Titoletto>
-      <div style={{ ...CARD, fontSize: 13.5, lineHeight: 1.7, color: "hsl(210 10% 86%)" }}>
+      <div className="pannello" style={{ ...CARD, fontSize: 13.5, lineHeight: 1.7, color: "hsl(210 10% 86%)" }}>
         <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
           <li><b>Tenere o fermare</b> si può usare: un cavallo dato «in perdita» si ripaga circa una volta su venti.</li>
           <li><b>La tua scuderia</b> dà un rischio credibile: la forchetta fra anno brutto e anno buono contiene il risultato vero quasi 8 volte su 10, come promesso.</li>

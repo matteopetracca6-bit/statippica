@@ -122,10 +122,7 @@ export default function CalendarPage() {
           ))}
         </div>
       ) : !data || data.races.length === 0 ? (
-        <div style={{
-          background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-          borderRadius: "14px", padding: "48px 24px", textAlign: "center",
-        }}>
+        <div className="pannello" style={{ padding: "48px 24px", textAlign: "center" }}>
           <AlertCircle size={32} style={{ color: "hsl(210 8% 40%)", marginBottom: "12px" }} />
           <p style={{ fontSize: "15px", color: "hsl(210 8% 55%)", margin: "0 0 8px" }}>
             {data?.note || "Nessuna gara in calendario."}
@@ -142,10 +139,7 @@ export default function CalendarPage() {
             const top3 = race.entries.slice(0, 3);
             const trackName = TRACK_NAMES[race.track] || (race.track.charAt(0) + race.track.slice(1).toLowerCase());
             return (
-              <div key={key} style={{
-                background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-                borderRadius: "14px", overflow: "hidden",
-              }}>
+              <div key={key} className="pannello" style={{ overflow: "hidden" }}>
                 {/* Race header */}
                 <div
                   onClick={() => setExpandedRace(expanded ? null : key)}
@@ -357,11 +351,8 @@ export default function CalendarPage() {
 
       {/* Disclaimer */}
       {scheda === "prossime" && data && data.races.length > 0 && (
-        <div style={{
-          marginTop: "20px", padding: "14px 18px",
-          background: "hsl(220 12% 8%)", borderRadius: "10px",
-          border: "1px solid hsl(220 10% 14%)",
-        }}>
+        <div className="pannello" style={{
+          marginTop: "20px", padding: "14px 18px" }}>
           <Spiegazione titolo="Come è fatto il conto e cosa non dice" compatta>
             {data.pronostico
               ? "La percentuale è la probabilità di arrivare nei primi tre, stimata da un modello di apprendimento automatico (XGBoost) con quello che si sa prima della partenza: forma recente, premi, tempi, guidatore dichiarato per la corsa, numero di partenza e confronto con gli avversari. In ogni corsa le percentuali sommano a tre, perché i posti sono tre. È una lettura statistica, non un consiglio di scommessa: non conosciamo le quote né lo stato del cavallo il giorno della gara."

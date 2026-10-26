@@ -32,8 +32,7 @@ import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 
 const MUTED = "hsl(210 8% 55%)";
 const BORDER = "1px solid hsl(220 10% 18%)";
-const CARD: React.CSSProperties = {
-  background: "hsl(220 12% 10%)", border: BORDER, borderRadius: "12px", padding: "18px 20px",
+const CARD: React.CSSProperties = { padding: "18px 20px",
 };
 import { ESITO_COLORE as COLORE_ESITO } from "@/lib/esiti";
 import LegendaEsiti from "../components/LegendaEsiti";
@@ -56,7 +55,7 @@ function Esito({ e }: { e: string | null | undefined }) {
 
 function Riquadro({ titolo, valore, nota, colore }: { titolo: string; valore: React.ReactNode; nota: string; colore?: string }) {
   return (
-    <div style={{ ...CARD, padding: "14px 16px" }}>
+    <div className="pannello" style={{ ...CARD, padding: "14px 16px" }}>
       <div style={{ fontSize: "11.5px", color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>{titolo}</div>
       <div style={{ fontSize: "22px", fontWeight: 800, color: colore ?? "hsl(210 10% 92%)", fontVariantNumeric: "tabular-nums" }}>{valore}</div>
       <div style={{ fontSize: "12px", color: MUTED, lineHeight: 1.5, marginTop: "4px" }}>{nota}</div>
@@ -156,7 +155,7 @@ export default function PareggioPage() {
       ]} />
 
       {/* IPOTESI */}
-      <div id="sez-ipotesi" style={{ ...CARD, marginBottom: "18px" }}>
+      <div id="sez-ipotesi" className="pannello" style={{ ...CARD, marginBottom: "18px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 12px" }}>Le tue ipotesi</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "22px", alignItems: "flex-end" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px", color: MUTED, minWidth: "260px" }}>
@@ -221,7 +220,7 @@ export default function PareggioPage() {
       </div>
 
       {/* TABELLA PER VOTO */}
-      {!manca && <div id="sez-voti" style={{ ...CARD, marginBottom: "18px" }}>
+      {!manca && <div id="sez-voti" className="pannello" style={{ ...CARD, marginBottom: "18px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Voto per voto</h2>
         <Spiegazione compatta>
           Il cavallo tipico di ogni voto, con il costo calcolato sulle sue stagioni reali. "Pareggio" vuol dire
@@ -256,7 +255,7 @@ export default function PareggioPage() {
       </div>}
 
       {/* QUANTO PESA OGNI COSTO */}
-      <div id="sez-pesi" style={{ ...CARD, marginBottom: "18px" }}>
+      <div id="sez-pesi" className="pannello" style={{ ...CARD, marginBottom: "18px" }}>
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Quanto pesa ogni costo</h2>
         <Spiegazione compatta>
           Con le tue ipotesi, quale voce sposta di più il risultato di un cavallo qualunque: dove conviene risparmiare, e cosa servirebbe per andare in pari.
@@ -266,7 +265,7 @@ export default function PareggioPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: "14px", marginBottom: "18px" }}>
         {/* UN CAVALLO */}
-        <div id="sez-cavallo" style={CARD}>
+        <div id="sez-cavallo" className="pannello" style={CARD}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un cavallo: tenerlo o fermarlo?</h2>
           <Spiegazione compatta>
             Confronta quello che ha vinto negli ultimi 12 mesi con quanto costa in un anno, e fa il bilancio della carriera fin qui.
@@ -282,7 +281,7 @@ export default function PareggioPage() {
                 <span style={{ color: MUTED }}> · {cv.gare} gare in {cv.stagioni} stagioni · {euro(cv.guadagni_carriera)} vinti</span>
                 {!cv.voto_da_corsa && <div style={{ color: MUTED, fontSize: "12px" }}>Non ha ancora corso: il voto viene solo dalla genealogia.</div>}
               </div>
-              <div style={{ background: "hsl(220 12% 8%)", border: BORDER, borderRadius: "10px", padding: "10px 12px" }}>
+              <div className="pannello" style={{ padding: "10px 12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
                   <b style={{ fontSize: "13px" }}>Tenerlo un altro anno</b><Esito e={cv.gestione.esito} />
                 </div>
@@ -292,7 +291,7 @@ export default function PareggioPage() {
                     : <>Ultimi 12 mesi: {euro(cv.gestione.rendimento_annuo)} in {cv.ultimi_12_mesi.gare} gare, contro {euro(cv.gestione.costo_annuo)} di costo annuo ({euro(cv.gestione.differenza)}).</>}
                 </div>
               </div>
-              <div style={{ background: "hsl(220 12% 8%)", border: BORDER, borderRadius: "10px", padding: "10px 12px" }}>
+              <div className="pannello" style={{ padding: "10px 12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
                   <b style={{ fontSize: "13px" }}>Bilancio della carriera</b>{cv.carriera && <Esito e={cv.carriera.esito} />}
                 </div>
@@ -309,7 +308,7 @@ export default function PareggioPage() {
         </div>
 
         {/* UN INCROCIO */}
-        <div id="sez-incrocio" style={CARD}>
+        <div id="sez-incrocio" className="pannello" style={CARD}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un incrocio: conviene farlo?</h2>
           <Spiegazione compatta>
             Pesa ogni esito possibile del puledro, dal voto SSS al "non corre mai", con quanto è successo ai figli
@@ -368,7 +367,7 @@ export default function PareggioPage() {
 
       {/* VENDERE O FAR CORRERE: spostato in "Quanto vale un puledro", dove sta
           insieme al prezzo massimo (e' lo stesso conto visto da chi compra). */}
-      <div id="vendere" style={{ ...CARD, marginBottom: "18px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+      <div id="vendere" className="pannello" style={{ ...CARD, marginBottom: "18px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ flex: "1 1 320px" }}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un puledro: comprarlo, venderlo o farlo correre?</h2>
           <Spiegazione compatta>

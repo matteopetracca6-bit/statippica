@@ -37,7 +37,7 @@ function Titolo({ testo }: { testo: string }) {
 function Blocco({ titolo, esito, valore, nota }: { titolo: string; esito?: string | null; valore: string; nota: React.ReactNode }) {
   const c = esito ? COLORE[esito] : "hsl(210 10% 88%)";
   return (
-    <div style={{ background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 15%)", borderRadius: "10px", padding: "12px 14px" }}>
+    <div className="pannello" style={{ padding: "12px 14px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
         <span style={{ fontSize: "12px", color: MUTED }}>{titolo}</span>
         {esito && <span style={{ fontSize: "11px", fontWeight: 700, color: c, border: `1px solid ${c.replace(/\)$/, " / 0.4)")}`, borderRadius: "999px", padding: "1px 8px" }}>{NOME[esito]}</span>}

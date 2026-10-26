@@ -151,7 +151,7 @@ export default function VendereOCorrere({ nome, anno, mensile = 1200, inScheda =
 
   if (inScheda) {
     return (
-      <div style={{ background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "12px", padding: "18px 22px", marginBottom: "22px" }}>
+      <div className="pannello" style={{ padding: "18px 22px", marginBottom: "22px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
           <Gavel size={15} style={{ color: GIALLO }} />
           <span style={{ fontSize: "12px", fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>Vendere o far correre?</span>

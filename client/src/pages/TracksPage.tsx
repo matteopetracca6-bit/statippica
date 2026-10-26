@@ -101,10 +101,8 @@ export default function TracksPage() {
 
       {/* IL NUMERO DI PARTENZA: prima di tutto, perche' e' il dato piu' netto. */}
       {data.partenze?.length > 0 && (
-        <div style={{
-          background: "hsl(220 12% 10%)", border: BORDER, borderRadius: "12px",
-          padding: "18px 20px", marginBottom: "24px",
-        }}>
+        <div className="pannello" style={{
+          padding: "18px 20px", marginBottom: "24px" }}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>
             Quanto conta il numero di partenza
           </h2>
@@ -165,10 +163,8 @@ export default function TracksPage() {
         {righe.map(t => (
           <Link key={t.track} href={`/ippodromo/${encodeURIComponent(t.track)}`}>
             <a style={{ textDecoration: "none" }}>
-              <div style={{
-                background: "hsl(220 12% 10%)", border: BORDER, borderRadius: "11px",
-                padding: "14px 16px", height: "100%",
-              }}>
+              <div className="pannello" style={{
+                padding: "14px 16px", height: "100%" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px", marginBottom: "10px" }}>
                   <div style={{ fontSize: "14px", fontWeight: 700, color: "hsl(210 10% 88%)", letterSpacing: "0.02em" }}>
                     {t.nome}

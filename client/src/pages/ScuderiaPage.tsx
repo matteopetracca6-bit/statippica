@@ -23,7 +23,7 @@ const VERDE = "hsl(145 55% 52%)";
 const ROSSO = "hsl(0 60% 62%)";
 const ORO = "hsl(38 80% 58%)";
 const ACCENTO = "hsl(190 65% 52%)";
-const CARD: React.CSSProperties = { background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 18%)", borderRadius: 12, padding: "16px 18px" };
+const CARD: React.CSSProperties = { padding: "16px 18px" };
 const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−€" : "€") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
 const pc = (p: number | null | undefined) => (p == null ? "—" : p > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`);
 const titolo = (s: string) => (s || "").split(" ").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
@@ -31,7 +31,7 @@ const colSaldo = (n: number) => (n >= 0 ? VERDE : ROSSO);
 
 function Riquadro({ titolo, valore, nota, colore }: { titolo: string; valore: React.ReactNode; nota?: React.ReactNode; colore?: string }) {
   return (
-    <div style={{ ...CARD, padding: "13px 15px" }}>
+    <div className="pannello" style={{ ...CARD, padding: "13px 15px" }}>
       <div style={{ fontSize: 11.5, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{titolo}</div>
       <div className="tabular" style={{ fontSize: 23, fontWeight: 800, color: colore ?? TESTO, marginTop: 4, lineHeight: 1.15 }}>{valore}</div>
       {nota && <div style={{ fontSize: 11.5, color: MUTED, marginTop: 5, lineHeight: 1.5 }}>{nota}</div>}
@@ -91,7 +91,7 @@ function Aggiungi() {
   };
   const anni = [0, 1, 2].map(k => new Date().getFullYear() - k);
   return (
-    <div style={CARD}>
+    <div className="pannello" style={CARD}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
         <b style={{ fontSize: 13.5, color: TESTO, marginRight: 4 }}>Aggiungi</b>
         <button style={scheda(tipo === "cavallo")} onClick={() => setTipo("cavallo")}>un cavallo dell'archivio</button>
@@ -171,14 +171,14 @@ export default function ScuderiaPage() {
       <Aggiungi />
 
       {vuota && (
-        <div style={{ ...CARD, marginTop: 14, color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.7 }}>
+        <div className="pannello" style={{ ...CARD, marginTop: 14, color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.7 }}>
           La scuderia è vuota. Aggiungi un cavallo qui sopra, oppure usa il bottone «Aggiungi alla scuderia» nella scheda di un cavallo,
           in <Link href="/tenere" style={{ color: ORO }}>Tenere o fermare</Link>, nei lotti di <Link href="/generazione-m" style={{ color: ORO }}>Aste e generazione M</Link> e
           in <Link href="/puledro" style={{ color: ORO }}>Quanto vale un puledro</Link>.
         </div>
       )}
       {!vuota && !d && isFetching && <div style={{ marginTop: 14 }}><Sagoma riquadri={4} grafico={120} /></div>}
-      {!vuota && error && <div style={{ ...CARD, marginTop: 14, color: ROSSO, fontSize: 13 }}>Non riesco a calcolare la scuderia adesso. Riprova tra poco.</div>}
+      {!vuota && error && <div className="pannello" style={{ ...CARD, marginTop: 14, color: ROSSO, fontSize: 13 }}>Non riesco a calcolare la scuderia adesso. Riprova tra poco.</div>}
 
       {!vuota && d && !d.vuota && t && <>
         <Titoletto nota={<>Ogni cavallo è simulato {d.simulazioni.toLocaleString("it-IT")} volte, con quanto hanno vinto davvero i cavalli con una stima simile alla sua. Poi si sommano i cavalli.</>}>
@@ -192,7 +192,7 @@ export default function ScuderiaPage() {
           <Riquadro titolo="Chiude in pari" colore={t.prob_in_pari >= 50 ? VERDE : t.prob_in_pari >= 25 ? ORO : ROSSO} valore={`${pc(t.prob_in_pari)} dei casi`}
                     nota={<>perde più di metà delle spese nel {pc(t.prob_perde_meta)} dei casi</>} />
         </div>
-        <div style={{ ...CARD, marginTop: 10 }}>
+        <div className="pannello" style={{ ...CARD, marginTop: 10 }}>
           <Istogramma colonne={t.istogramma} />
           <p style={{ fontSize: 12.5, color: MUTED, margin: "10px 0 0", lineHeight: 1.6 }}>
             In un anno su dieci va peggio di <b style={{ color: TESTO }}>{euro(t.saldo_basso)}</b>, in uno su dieci meglio di <b style={{ color: TESTO }}>{euro(t.saldo_alto)}</b>.
@@ -201,7 +201,7 @@ export default function ScuderiaPage() {
 
         <Titoletto nota="Quanto la scuderia dipende da pochi cavalli, e cosa cambia se si fermano quelli che non coprono il loro costo.">Il rischio della scuderia</Titoletto>
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))" }}>
-          <div style={CARD}>
+          <div className="pannello" style={CARD}>
             <b style={{ fontSize: 13.5, color: TESTO }}>Quanto dipende da un cavallo</b>
             <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>
               Il <b>{pc(rs.quota_migliore)}</b> dei premi attesi viene da <b>{titolo(rs.migliore)}</b>.
@@ -209,14 +209,14 @@ export default function ScuderiaPage() {
               {rs.quota_migliore >= 50 && " Un infortunio o un calo di quel cavallo pesa su tutto il bilancio."}
             </p>
           </div>
-          <div style={CARD}>
+          <div className="pannello" style={CARD}>
             <b style={{ fontSize: 13.5, color: TESTO }}>Più cavalli non vuol dire meno rischio</b>
             <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>
               Un cavallo di questa scuderia copre il suo costo in media nel {pc(t.prob_media_singolo)} dei casi; la scuderia intera chiude in pari nel {pc(t.prob_in_pari)}.
               Avere più cavalli rende il risultato meno ballerino, ma se ognuno in media perde, la scuderia perde con più sicurezza.
             </p>
           </div>
-          <div style={CARD}>
+          <div className="pannello" style={CARD}>
             <b style={{ fontSize: 13.5, color: TESTO }}>Se fermi chi non rende</b>
             {rs.da_fermare.length && rs.dopo_aver_fermato ? (
               <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>

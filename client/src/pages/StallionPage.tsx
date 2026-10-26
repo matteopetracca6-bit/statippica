@@ -112,9 +112,6 @@ function conAlfa(hsl: string, alfa: number): string {
 
 
 const panelStyle: React.CSSProperties = {
-  background: "hsl(220 12% 10%)",
-  border: "1px solid hsl(220 10% 16%)",
-  borderRadius: "12px",
   padding: "20px 22px",
   marginBottom: "22px",
 };
@@ -241,20 +238,16 @@ function StallionNavArrow({ direction, neighbor, onClick }: {
   return (
     <button
       onClick={() => onClick(neighbor.name)}
-      style={{
+      className="pannello pannello-cliccabile" style={{
         display: "flex",
         alignItems: "center",
         gap: "8px",
         padding: "10px 14px",
-        borderRadius: "10px",
-        background: "hsl(220 12% 12%)",
-        border: "1px solid hsl(220 10% 18%)",
         cursor: "pointer",
         flex: 1,
         maxWidth: "240px",
         justifyContent: isNext ? "flex-end" : "flex-start",
-        transition: "background 0.15s, border-color 0.15s",
-      }}
+        transition: "background 0.15s, border-color 0.15s" }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(220 12% 16%)"; e.currentTarget.style.borderColor = "hsl(183 40% 30%)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "hsl(220 12% 12%)"; e.currentTarget.style.borderColor = "hsl(220 10% 18%)"; }}
     >
@@ -437,10 +430,7 @@ export default function StallionPage() {
           {/* Scheda monta: dati del catalogo stalloni della stagione */}
           {stallion.stud && (stallion.stud.stud_farm_address || stallion.stud.record_1600
             || stallion.stud.record_2000 || stallion.stud.catalog_sire || stallion.stud.catalog_notes) && (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "18px 22px", marginBottom: "18px",
-            }}>
+            <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }}>
               <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "hsl(183 60% 55%)", marginBottom: "12px" }}>
                 {["active", "da_concordare", "free"].includes(stallion.stud.stud_status || "")
                   ? "STAGIONE DI MONTA"
@@ -487,11 +477,8 @@ export default function StallionPage() {
 
           {/* Rating card */}
           {!stallion.no_offspring_data && stallion.final_score != null && (
-            <div style={{
-              background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)",
-              borderRadius: "12px", padding: "18px 22px", marginBottom: "18px",
-              display: "flex", alignItems: "center", gap: "28px", flexWrap: "wrap",
-            }}>
+            <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px",
+              display: "flex", alignItems: "center", gap: "28px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                 <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Rating Stallone</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
@@ -581,10 +568,7 @@ export default function StallionPage() {
               { label: "Win rate medio", value: stallion.avg_win_rate != null ? `${stallion.avg_win_rate.toFixed(1)}%` : "—" },
               ...(stallion.stud?.progeny_earnings_2024 ? [{ label: "Prod. 2024", value: `€${(stallion.stud.progeny_earnings_2024 / 1000).toFixed(0)}k` }] : []),
             ].map(({ label, value }) => (
-              <div key={label} style={{
-                background: "hsl(220 12% 12%)", border: "1px solid hsl(220 10% 17%)",
-                borderRadius: "10px", padding: "14px 16px",
-              }}>
+              <div key={label} className="pannello" style={{ padding: "14px 16px" }}>
                 <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>{value}</div>
                 <div style={{ fontSize: "11px", color: "hsl(210 8% 48%)", marginTop: "4px" }}>{label}</div>
               </div>
@@ -593,7 +577,7 @@ export default function StallionPage() {
 
           {/* Genealogy */}
           {stallion.pedigree && (stallion.pedigree.sire || stallion.pedigree.dam) && (
-            <div style={panelStyle}>
+            <div className="pannello" style={panelStyle}>
               <div style={panelTitle}>Genealogia (clicca per navigare tra stalloni)</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
@@ -613,7 +597,7 @@ export default function StallionPage() {
           )}
 
           {/* Grade distribution */}
-          <div style={panelStyle}>
+          <div className="pannello" style={panelStyle}>
             <div style={panelTitle}>Distribuzione figli (in corsa)</div>
             <div style={{ display: "flex", height: "24px", borderRadius: "4px", overflow: "hidden", gap: "2px", marginBottom: "10px" }}>
               {GRADE_ORDER.map(g => {
@@ -644,7 +628,7 @@ export default function StallionPage() {
 
           {/* Offspring by year (new panel) */}
           {stats?.offspringByYear && stats.offspringByYear.length > 0 && (
-            <div style={panelStyle}>
+            <div className="pannello" style={panelStyle}>
               <div style={panelTitle}>Produzione per anno</div>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
@@ -672,7 +656,7 @@ export default function StallionPage() {
           )}
 
           {/* Top children */}
-          <div style={panelStyle}>
+          <div className="pannello" style={panelStyle}>
             <div style={panelTitle}>Top prodotti (per guadagni)</div>
             {/* Otto colonne non si stringono sotto una certa larghezza: invece
                 di tagliarle fuori dallo schermo, la tabella scorre dentro il
@@ -715,7 +699,7 @@ export default function StallionPage() {
 
           {/* Grade earnings map (context for ROI) */}
           {stats?.gradeEarnings && stats.gradeEarnings.length > 0 && (
-            <div style={panelStyle}>
+            <div className="pannello" style={panelStyle}>
               <div style={panelTitle}>Guadagni medi per voto (tutta la popolazione)</div>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 {GRADE_ORDER.map(g => {

@@ -51,10 +51,7 @@ export default function RiquadroRating() {
   const sel = data?.voti.find(v => v.voto === scelto);
 
   return (
-    <div className="riquadro-rating" style={{
-      background: "hsl(220 12% 10%)", border: `1px solid ${aperto ? "hsl(183 60% 55% / 0.45)" : "hsl(220 10% 16%)"}`,
-      borderRadius: "14px", padding: "22px 24px", transition: "border-color 0.2s",
-    }}>
+    <div className={`riquadro-rating pannello${aperto ? " aperto" : ""}`} style={{ padding: "22px 24px" }}>
       <button onClick={() => apri()} aria-expanded={aperto}
         style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", width: "100%", marginBottom: "16px" }}>
         <Activity size={16} style={{ color: "hsl(183 60% 55%)" }} />

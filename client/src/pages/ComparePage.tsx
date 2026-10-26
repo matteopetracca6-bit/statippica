@@ -222,11 +222,8 @@ export default function ComparePage() {
       </div>
 
       {/* Search bar */}
-      <div style={{
-        display: "flex", gap: "20px", alignItems: "flex-start",
-        background: "hsl(220 14% 9%)", border: "1px solid hsl(220 10% 16%)",
-        borderRadius: "12px", padding: "20px", marginBottom: "28px",
-      }}>
+      <div className="pannello" style={{
+        display: "flex", gap: "20px", alignItems: "flex-start", padding: "20px", marginBottom: "28px" }}>
         <HorseSearch value="" onChange={setSel1} label="Cavallo 1" />
         <div style={{
           flexShrink: 0, alignSelf: "flex-end", paddingBottom: "10px",
@@ -252,10 +249,7 @@ export default function ComparePage() {
 
       {/* Comparison table */}
       {ready && (
-        <div style={{
-          background: "hsl(220 14% 9%)", border: "1px solid hsl(220 10% 16%)",
-          borderRadius: "14px", overflow: "hidden",
-        }}>
+        <div className="pannello" style={{ overflow: "hidden" }}>
           {/* Horse headers */}
           <div style={{
             display: "grid", gridTemplateColumns: "1fr 160px 1fr",
