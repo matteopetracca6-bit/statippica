@@ -321,20 +321,27 @@ export function stimaDaGradini(
   r: RigaValoreResiduo,
   giaGuadagnato: number,
 ): StimaCarriera {
-  const medio = Math.max(0, r.residuo);
-  // Cifra principale: il caso TIPICO (mediana delle carriere simulate).
-  // La media e' tirata su dai pochi che vanno molto bene: per un cavallo
-  // modesto la mediana descrive meglio cosa aspettarsi.
+  // Cifra principale: la MEDIA. Ottobre 2026: prima era il caso tipico (la
+  // mediana), ma per i cavalli modesti la mediana e' quasi sempre 0, perche'
+  // piu' di meta' dei simili smette di vincere: GIOIA BAN mostrava "0 €,
+  // non vincera' piu' molto" mentre il riquadro dei premi attesi diceva 982 €
+  // nei prossimi 12 mesi. Succedeva a 2.687 cavalli su 5.680. La media invece
+  // comincia proprio da quei 12 mesi (primo_anno = stima del modello dei premi)
+  // e ci aggiunge gli anni dopo, quindi non puo' mai stare sotto. E' anche la
+  // cifra provata sul passato: cavalli visti a fine 2022, nei quattro anni
+  // dopo previsti 16.382 € in media, veri 15.981 € (valore_carriera.py --prova).
+  // Il caso tipico resta come informazione in piu'.
+  const medio = Math.max(0, r.residuo, r.primo_anno ?? 0);
   const tipico = Math.max(0, r.p50 ?? medio);
-  const quota = tipico + giaGuadagnato > 0 ? tipico / (tipico + giaGuadagnato) : 0;
+  const quota = medio + giaGuadagnato > 0 ? medio / (medio + giaGuadagnato) : 0;
   let anni: { eta: number; prob_attivo: number; atteso: number }[] = [];
   try { anni = JSON.parse(r.prossimi_anni || "[]"); } catch { anni = []; }
 
   let giudizio: Giudizio;
   let titolo: string;
-  if (tipico <= 0 || r.prob_zero >= 0.5) {
+  if (medio < 1000) {
     giudizio = "quasi_finito"; titolo = "Probabilmente non vincera' piu' molto";
-  } else if (tipico < 5000) {
+  } else if (medio < 5000) {
     giudizio = "in_calo"; titolo = "Ancora qualche corsa, ma rende poco";
   } else if (quota >= 0.6) { giudizio = "giovane"; titolo = "Il grosso deve ancora arrivare"; }
   else if (quota >= 0.3) { giudizio = "nel_pieno"; titolo = "Nel pieno della carriera"; }
@@ -348,12 +355,11 @@ export function stimaDaGradini(
       ? `Confrontato con ${r.n_simili.toLocaleString("it-IT")} cavalli del passato con voto ` +
         `${r.voto} alla stessa eta' e premi simili nell'ultimo anno. `
       : "") +
-    `Per tutto il resto della carriera, nel caso tipico circa ${EURO(tipico)}: ` +
-    `meta' di quei cavalli ha vinto meno, meta' di piu'.${zero} ` +
-    `La media e' piu' alta, ${EURO(medio)}, perche' i pochi che vanno molto ` +
-    `bene la tirano su. Nell'ultimo anno ha vinto ${EURO(r.premi_12_mesi)}; ` +
-    `per i prossimi dodici mesi il modello dei premi dice in media ` +
-    `${EURO(r.primo_anno)}. Stagioni ancora attese: circa ` +
+    `Per tutto il resto della carriera, in media circa ${EURO(medio)}: ` +
+    `${EURO(r.primo_anno)} nei prossimi dodici mesi (la stima del modello dei ` +
+    `premi) e il resto negli anni dopo. Nell'ultimo anno ha vinto ` +
+    `${EURO(r.premi_12_mesi)}. Il caso tipico e' ${EURO(tipico)}: meta' dei cavalli ` +
+    `simili ha vinto meno, meta' di piu'.${zero} Stagioni ancora attese: circa ` +
     `${r.anni_attesi.toFixed(1).replace(".", ",")}.`;
 
   return {
@@ -368,7 +374,7 @@ export function stimaDaGradini(
     quota_futura: Math.round(quota * 1000) / 1000,
     tipico_a_questa_eta: 0,
     rendimento_vs_pari: 1,
-    residuo_personalizzato: tipico,
+    residuo_personalizzato: medio,
     giudizio, titolo, spiegazione,
     prossimi_anni: anni.map(a => ({
       eta: a.eta, prob_attivo: a.prob_attivo,

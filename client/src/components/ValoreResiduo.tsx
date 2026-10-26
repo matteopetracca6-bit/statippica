@@ -129,11 +129,11 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
             {euro(v.residuo_personalizzato)}
           </div>
           <div style={{ fontSize: "11px", color: MUTED }}>
-            {nuova ? "ancora da incassare, caso tipico" : "ancora da incassare"}
+            {nuova ? "ancora da incassare, in media" : "ancora da incassare"}
           </div>
           <div className="tabular" style={{ fontSize: "10.5px", color: DIM, marginTop: "2px" }}>
             {nuova
-              ? `in media ${euro(v.residuo_medio ?? 0)}: pochi casi buoni alzano la media`
+              ? `${euro(v.primo_anno ?? 0)} nei prossimi 12 mesi · caso tipico ${euro(v.residuo_mediano)}`
               : scostamento
                 ? `${euro(v.residuo_mediano)} per la sua fascia, riproporzionato`
                 : `fascia ${euro(v.residuo_p25)} – ${euro(v.residuo_p75)}`}
@@ -244,9 +244,13 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
             stessa del riquadro «Premi attesi nei prossimi 12 mesi».
           </p>
           <p style={{ margin: "0 0 8px" }}>
-            La cifra grande è il caso tipico: metà dei cavalli simili ha vinto meno, metà
-            di più. Le cifre anno per anno sono medie, e pochi cavalli che vanno molto
-            bene le tirano su. Nella metà centrale dei casi il totale sta fra{" "}
+            La cifra grande è la media: parte dai premi attesi nei prossimi 12 mesi e
+            aggiunge quello che i cavalli simili hanno vinto negli anni dopo, quindi non
+            può stare sotto il riquadro dei premi attesi. Nella prova sul passato di ottobre 2026, sui cavalli
+            visti a fine 2022, nei quattro anni successivi ha previsto in media 16.382 €
+            contro 15.981 € veri. La media è tirata su dai pochi cavalli che vanno molto
+            bene: il caso tipico, cioè quello di metà classifica fra i simili, è{" "}
+            {euro(v.residuo_mediano)}. Nella metà centrale dei casi il totale sta fra{" "}
             {euro(v.residuo_p25)} e {euro(v.residuo_p75)}
             {(v.prob_zero ?? 0) >= 0.05 ? `; nel ${Math.round((v.prob_zero ?? 0) * 100)}% dei casi non vince più nulla` : ""}.
           </p>
