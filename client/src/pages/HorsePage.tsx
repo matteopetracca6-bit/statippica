@@ -13,7 +13,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { COLORE_VOTO, COLORE_SCHEDA_VOTO, classeVoto } from "@/lib/coloreVoto";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal } from "lucide-react";
+import { palmares, nomeGara, GARE_GP, type VittoriaGP } from "@/data/granPremi";
 
 // Cavalli con un cuoricino viola accanto al nome. CHICCA ROSS e' stata il
 // cavallo di riferimento su cui e' stato provato il voto.
@@ -132,6 +133,45 @@ const panelTitle: React.CSSProperties = {
   letterSpacing: "0.06em",
   marginBottom: "14px",
 };
+
+/** Le vittorie del cavallo nei grandi premi, raggruppate per corsa. */
+function Palmares({ nome, anno }: { nome: string; anno: number }) {
+  const vittorie = palmares(nome, anno);
+  if (!vittorie.length) return null;
+  const perGara = new Map<string, VittoriaGP[]>();
+  for (const v of vittorie) perGara.set(v.gara, [...(perGara.get(v.gara) ?? []), v]);
+  const ordine = GARE_GP.map(g => g.id).filter(id => perGara.has(id))
+    .sort((a, b) => perGara.get(b)!.length - perGara.get(a)!.length || perGara.get(a)![0].anno - perGara.get(b)![0].anno);
+  return (
+    <div className="pannello" style={panelStyle}>
+      <div style={{ ...panelTitle, display: "flex", alignItems: "center", gap: "8px" }}>
+        <Medal size={15} color="hsl(45 90% 60%)" />
+        Palmares · {vittorie.length} {vittorie.length === 1 ? "grande premio vinto" : "grandi premi vinti"}
+      </div>
+      <div className="palmares-lista">
+        {ordine.map(id => {
+          const vs = perGara.get(id)!;
+          return (
+            <a key={id} href={`#/gran-premi?gara=${id}`} className="palmares-voce collegamento-scheda">
+              <Trophy size={16} color="hsl(45 90% 60%)" />
+              <span style={{ fontWeight: 700, color: "hsl(210 10% 92%)" }}>{nomeGara(id)}</span>
+              {vs.length > 1 && <span style={{ fontSize: "12px", color: "hsl(45 90% 66%)", fontWeight: 700 }}>×{vs.length}</span>}
+              <span className="anni">
+                {vs.map(v => (
+                  <span key={v.anno + (v.divisione ?? "")} className="anno"
+                        title={[v.data ? v.data.split("-").reverse().join("/") : null, v.pista, v.driver, v.tempo].filter(Boolean).join(" · ")}>
+                    {v.anno}
+                  </span>
+                ))}
+              </span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -431,6 +471,7 @@ export default function HorsePage() {
       </div>
 
       <IndiceSezioni voci={[
+        { id: "sez-palmares", testo: "Palmares" },
         { id: "sez-genealogia", testo: "Genealogia" },
         { id: "sez-valore", testo: "Quanto può guadagnare" },
         { id: "sez-previsioni", testo: "Previsioni" },
@@ -443,6 +484,9 @@ export default function HorsePage() {
         { id: "sez-gare", testo: "Ultime gare" },
         { id: "sez-ippodromi", testo: "Migliori gare e piste" },
       ]} />
+
+      {/* Palmares: le vittorie nei grandi premi (albo d'oro dal 2014). */}
+      <section id="sez-palmares"><Palmares nome={horse.name} anno={horse.birth_year} /></section>
 
       {/* Genealogy */}
       {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (

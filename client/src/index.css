@@ -982,3 +982,41 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .scheda-voto:is(.voto-SSS, .voto-SS, .voto-S) .testata-cavallo::before { background: var(--metallo); }
 .scheda-voto:is(.voto-SSS, .voto-SS, .voto-S) .testata-cavallo { border-color: color-mix(in srgb, var(--c) 30%, hsl(220 10% 17%)); }
 @media (prefers-reduced-motion: reduce) { .scheda-voto.voto-SSS .pannello { animation: none; } }
+
+/* ---------- Gran Premi: albo d'oro ---------- */
+.griglia-gran-premi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.tabella-gp { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabella-gp th {
+  text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  color: hsl(210 8% 50%); padding: 6px 8px; border-bottom: 1px solid hsl(210 10% 20%);
+}
+.tabella-gp td { padding: 6px 8px; border-bottom: 1px solid hsl(210 10% 15%); vertical-align: top; white-space: nowrap; }
+.tabella-gp td:nth-child(2) { white-space: normal; }
+.tabella-gp tbody tr:hover td { background: hsl(45 80% 50% / 0.05); }
+.tabella-gp tbody tr:last-child td { border-bottom: none; }
+
+/* Palmares nella scheda del cavallo */
+.palmares-lista { display: flex; flex-direction: column; gap: 8px; }
+.palmares-voce {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 12px; border-radius: 10px;
+  background: linear-gradient(90deg, hsl(45 85% 55% / 0.12), hsl(45 85% 55% / 0.02));
+  border: 1px solid hsl(45 80% 55% / 0.22);
+}
+.palmares-voce .anni { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.palmares-voce .anno {
+  font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px;
+  color: hsl(45 90% 66%); background: hsl(45 80% 50% / 0.14); font-variant-numeric: tabular-nums;
+}
+.tabella-gp .solo-stretto { display: none; }
+.tabella-gp td:nth-child(2) .collegamento-scheda, .tabella-gp td:nth-child(2) > span { white-space: nowrap; }
+@media (max-width: 560px) {
+  .tabella-gp .solo-largo { display: none; }
+  .tabella-gp .solo-stretto { display: block; }
+  .tabella-gp td:nth-child(2) { white-space: normal; }
+}

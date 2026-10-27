@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -65,6 +65,8 @@ export const GRUPPI: Gruppo[] = [
     schede: [
     { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)",
       descrizione: "Prossime gare con iscritti, voti e probabilità di arrivare nei primi tre" },
+    { href: "/gran-premi", label: "Gran Premi", nota: "I vincitori delle grandi corse dal 2014", icon: Medal, colore: "hsl(45 90% 58%)",
+      descrizione: "Derby, Lotteria, Nazioni e le altre grandi corse: tutti i vincitori dal 2014 a oggi" },
     { href: "/ippodromi", label: "Ippodromi e trend", nota: "Le piste italiane e i numeri negli anni", icon: MapPin, colore: "hsl(95 55% 52%)",
       descrizione: "Le piste italiane, quanto pesa il numero di partenza e come cambiano i numeri negli anni" },
     { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(200 70% 58%)",
@@ -103,6 +105,7 @@ const ALIAS: Record<string, string> = {
   "/break-even": "/pareggio",
   "/aste": "/generazione-m",
   "/metodo-e-dati": "/metodo",
+  "/albo-doro": "/gran-premi", "/palmares": "/gran-premi",
 };
 export function coloreDiPagina(percorso: string): string | null {
   const pezzi = percorso.split("?")[0].split("/");
