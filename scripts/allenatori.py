@@ -123,6 +123,60 @@ def nome_visibile(a: str) -> str:
     return " ".join(parole).replace("Societa'", "Società")
 
 
+# Una stessa scuderia compare nei risultati ufficiali con nomi scritti in modi
+# diversi negli anni: "GOCCIADORO ALESSANDRO", "GOCCIADORO ALESSANDRO SRL SOC AL",
+# "GOCCIADORO ALESSANDRO SRL SOC.DI ALL.TO"... Per il sito sono lo stesso
+# allenatore: si tolgono le parole della forma societaria e si confrontano le
+# parole rimaste, in qualunque ordine (MATTEINI MANUELE = MANUELE MATTEINI).
+PAROLE_SOCIETA = {"SRL", "SRLS", "RLS", "SR", "SAS", "SNC", "SPA", "SS", "SOC", "SOCIETA",
+                  "ALL", "ALLTO", "TO", "ALLEN", "ALLENAMENTO", "ALLE", "AL", "C", "&",
+                  "SC", "SCUD", "ERRATO"}
+NON_DISTINTIVE = {"TEAM", "RACING"}
+
+
+def parole_base(raw: str) -> list[str]:
+    """Le parole del nome senza la forma societaria, nell'ordine originale."""
+    t = raw.upper().replace("S.A.S", "SAS").replace("S.R.L", "SRL").replace("S.N.C", "SNC")
+    t = re.sub(r"[.\-,()]", " ", t)
+    parole = t.split()
+    out: list[str] = []
+    for i, p in enumerate(parole):
+        q = p.replace("'", "")
+        if q in PAROLE_SOCIETA:
+            continue
+        if q == "DI":
+            prima = parole[i - 1].replace("'", "") if i else ""
+            dopo = parole[i + 1].replace("'", "") if i + 1 < len(parole) else ""
+            if prima in {"SAS", "SRL", "SRLS", "SNC"}:
+                break            # "TEAM EHLERT SAS DI EHLERT HOLGER": il resto e' il titolare
+            if prima in PAROLE_SOCIETA or dopo in PAROLE_SOCIETA or not dopo:
+                continue
+        if p not in out:
+            out.append(p)
+    return out
+
+
+def unisci_nomi(nomi: dict[str, int]) -> dict[str, str]:
+    """{nome ufficiale: numero di corse} -> {nome ufficiale: nome unico}."""
+    gruppi: dict[frozenset, list[str]] = defaultdict(list)
+    base: dict[str, list[str]] = {}
+    for raw in nomi:
+        b = parole_base(raw)
+        chiave = frozenset(x for x in b if x not in NON_DISTINTIVE)
+        if len(b) < 1 or all(len(x.strip("'")) <= 1 for x in chiave) or not chiave:
+            b, chiave = raw.split(), frozenset([raw])
+        base[raw] = b
+        gruppi[chiave].append(raw)
+    mappa: dict[str, str] = {}
+    for membri in gruppi.values():
+        # Il nome mostrato e' quello della variante usata piu' spesso.
+        migliore = max(membri, key=lambda r: (nomi[r], r))
+        unico = " ".join(base[migliore])
+        for r in membri:
+            mappa[r] = unico
+    return mappa
+
+
 # ── Tabelle ─────────────────────────────────────────────────────────────────
 
 def crea_tabelle(conn: sqlite3.Connection) -> None:
@@ -223,9 +277,13 @@ def raccogli(conn: sqlite3.Connection, minuti: float) -> dict:
 
 def abbina(conn: sqlite3.Connection) -> dict:
     """Scrive l'allenatore sulle corse dell'archivio."""
+    conteggi = dict(conn.execute(
+        "SELECT allenatore, COUNT(*) FROM allenatori_corse GROUP BY allenatore").fetchall())
+    mappa = unisci_nomi(conteggi)
+    log(f"[ALLENATORI] nomi ufficiali: {len(conteggi)}, allenatori dopo l'unione: {len(set(mappa.values()))}")
     per_giorno: dict[tuple[str, str], set] = defaultdict(set)
     for d, k, a in conn.execute("SELECT data, chiave, allenatore FROM allenatori_corse"):
-        per_giorno[(d, k)].add(a)
+        per_giorno[(d, k)].add(mappa.get(a, a))
 
     aggiornamenti, ambigui, senza = [], 0, 0
     for rid, d, nome, attuale in conn.execute("""
