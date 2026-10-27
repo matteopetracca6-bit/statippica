@@ -32,3 +32,12 @@ export function LinkGuidatore({ nome }: { nome?: string | null }) {
       onClick={(e: React.MouseEvent) => e.stopPropagation()}>{nome}</Link>
   );
 }
+
+/** Nome dell'allenatore che apre la sua scheda. `chiave` e' il nome ufficiale in maiuscolo. */
+export function LinkAllenatore({ chiave, nome }: { chiave?: string | null; nome?: string | null }) {
+  if (!chiave) return null;
+  return (
+    <Link href={`/allenatore/${encodeURIComponent(chiave)}`} className="collegamento-scheda"
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}>{nome || chiave}</Link>
+  );
+}

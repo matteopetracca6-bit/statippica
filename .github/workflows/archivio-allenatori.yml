@@ -1,0 +1,117 @@
+name: StatIppica — Allenatori (ogni notte)
+
+# Raccoglie l'allenatore di ogni cavallo in ogni corsa dai risultati ufficiali
+# MASAF / Grande Ippica Italiana (dal 2016), lo scrive sulle corse
+# dell'archivio, calcola le schede degli allenatori e ripubblica l'archivio.
+#
+# La prima volta legge tutte le giornate dal 2016 (circa mezz'ora, dieci
+# pagine alla volta). Dalle notti dopo legge solo le giornate nuove e quelle
+# degli ultimi sette giorni, che la fonte puo' ancora correggere: un paio di
+# minuti. Se dovesse servire piu' tempo del previsto, si ferma prima del limite
+# di GitHub, salva quello che ha letto e riprende la notte dopo.
+#
+# Parte alle 03:15 UTC, dopo il lavoro notturno dei risultati (00:30 UTC):
+# cosi' trova gia' le corse del giorno prima. Se quel lavoro non ha ancora
+# finito, lo aspetta (aspetta_turno.sh) e parte dalla sua copia.
+
+on:
+  schedule:
+    - cron: "15 3 * * *"
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova, senza pubblicare niente"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write # serve per pubblicare l'archivio aggiornato nel rilascio
+  actions: read # serve per vedere se un altro lavoro sta gia' pubblicando
+
+jobs:
+  allenatori:
+    runs-on: ubuntu-latest
+    name: Raccogli allenatori e pubblica
+    timeout-minutes: 340
+    steps:
+      - name: Segna l'ora di partenza
+        run: echo "PARTENZA=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+
+      - name: Raccogli gli allenatori e calcola le schede
+        # Il tempo per leggere e' quello che resta fino a 300 minuti dalla
+        # partenza (l'attesa del turno compresa), con un minimo di 10: cosi'
+        # resta sempre il margine per pubblicare prima del limite di 340.
+        run: |
+          PASSATI=$(( ($(date +%s) - PARTENZA) / 60 ))
+          RESTANO=$(( 300 - PASSATI ))
+          [ "$RESTANO" -lt 10 ] && RESTANO=10
+          echo "Minuti a disposizione per leggere: $RESTANO"
+          python3 scripts/allenatori.py --db data.db --minuti "$RESTANO"
+
+      - name: Controlla il risultato
+        run: |
+          python3 - <<'PY'
+          import sqlite3, sys
+          c = sqlite3.connect('data.db')
+          tot, con = c.execute("""SELECT COUNT(*), COUNT(trainer) FROM races
+                                   WHERE race_date >= '2016-01-01' AND track != 'ESTERO'""").fetchone()
+          lette, = c.execute("SELECT COUNT(*) FROM allenatori_date_lette").fetchone()
+          schede, = c.execute("SELECT COUNT(*) FROM trainer_stats").fetchone()
+          print(f"corse dal 2016: {tot}, con allenatore: {con} ({100*con/max(tot,1):.1f}%)")
+          print(f"date lette: {lette}, schede allenatori: {schede}")
+          if schede < 50 or con == 0:
+              print("::error::troppo pochi allenatori: la raccolta non e' andata a buon fine.")
+              sys.exit(1)
+          # Quando tutte le date sono lette, quasi ogni corsa deve avere
+          # l'allenatore: se no l'abbinamento dei nomi si e' rotto.
+          date_tot, = c.execute("""SELECT COUNT(DISTINCT race_date) FROM races
+                                    WHERE race_date >= '2016-01-01' AND track != 'ESTERO'""").fetchone()
+          if lette >= date_tot - 10 and con < 0.95 * tot:
+              print(f"::error::solo il {100*con/tot:.1f}% delle corse ha l'allenatore.")
+              sys.exit(1)
+          for nome, n, v, p in c.execute("""SELECT nome, n_corse, n_vittorie, pct_vittorie
+                                              FROM trainer_stats ORDER BY n_vittorie DESC LIMIT 10"""):
+              print(f"  {nome:40} {n:6} corse {v:5} vittorie ({p}%)")
+          PY
+
+      - name: Pubblica l'archivio aggiornato
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          bash scripts/pubblica_archivio.sh
+          echo "Archivio aggiornato pubblicato."
+
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" \
+            -d '{}' | head -c 300
+          echo

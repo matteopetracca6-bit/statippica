@@ -676,13 +676,17 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT track AS code, nome AS name, n_gare
         FROM track_stats WHERE UPPER(nome) LIKE ? OR track LIKE ?
         ORDER BY n_gare DESC LIMIT 3`).all(dentro, dentro), [] as any[]) : [];
+      const allenatori = vpTableExists(db, "trainer_stats") ? prova(() => db.prepare(`
+        SELECT allenatore AS name, nome, n_corse
+        FROM trainer_stats WHERE allenatore LIKE ?
+        ORDER BY allenatore LIKE ? DESC, n_corse DESC LIMIT 4`).all(dentro, inizio), [] as any[]) : [];
       // Allevatori: dalla seconda fonte, con quanti cavalli hanno allevato.
       const allevatori = vpTableExists(db, "vp_horse_breeder") ? prova(() => db.prepare(`
         SELECT breeder_name AS name, COUNT(DISTINCT horse_name) AS n_cavalli
         FROM vp_horse_breeder WHERE breeder_name != '' AND UPPER(breeder_name) LIKE ?
         GROUP BY breeder_name
         ORDER BY UPPER(breeder_name) LIKE ? DESC, n_cavalli DESC LIMIT 3`).all(dentro, inizio), [] as any[]) : [];
-      res.json({ cavalli, stalloni, fattrici, guidatori, ippodromi, allevatori });
+      res.json({ cavalli, stalloni, fattrici, guidatori, allenatori, ippodromi, allevatori });
     } finally {
       db.close();
     }
@@ -3656,6 +3660,140 @@ export function registerRoutes(httpServer: Server, app: Express) {
       `).all(nome) as any[];
 
       res.json({ ...d, piste, cavalli, anni });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // ALLENATORI
+  //
+  // L'allenatore arriva dai risultati ufficiali (dal 2016) e sta sulla
+  // colonna races.trainer; le schede sono in trainer_stats. Tutto lo prepara
+  // scripts/allenatori.py, ogni notte.
+  // ══════════════════════════════════════════════════════════════
+
+  function haAllenatori(db: any): boolean {
+    if (!vpTableExists(db, "trainer_stats")) return false;
+    const col = db.prepare("PRAGMA table_info(races)").all() as any[];
+    return col.some((c: any) => c.name === "trainer");
+  }
+
+  app.get("/api/allenatori", pronta(), (_req, res) => {
+    const db = getDb();
+    try {
+      if (!haAllenatori(db)) return res.json({ disponibile: false, allenatori: [] });
+      const allenatori = db.prepare(`
+        SELECT allenatore, nome, n_corse, n_corse_recenti, n_cavalli, n_cavalli_recenti,
+               n_vittorie, n_primi_tre, pct_vittorie, pct_primi_tre, premi_totali,
+               premi_per_corsa, premi_12_mesi, vittorie_12_mesi, prima_corsa, ultima_corsa,
+               ippodromo_top, attivo, effetto, n_confronti, affidabilita, affidabilita_txt
+        FROM trainer_stats ORDER BY n_vittorie DESC`).all();
+      const cop = db.prepare(`SELECT COUNT(*) AS n, COUNT(trainer) AS con, MAX(CASE WHEN trainer IS NOT NULL THEN race_date END) AS ultima
+                              FROM races WHERE race_date >= '2016-01-01' AND track != 'ESTERO'`).get() as any;
+      res.json({ disponibile: true, n: allenatori.length, allenatori,
+                 copertura: cop.n ? Math.round(1000 * cop.con / cop.n) / 10 : 0, aggiornato_al: cop.ultima });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  app.get("/api/allenatore/:name", (req, res) => {
+    const db = getDb();
+    try {
+      const nome = decodeURIComponent(req.params.name).toUpperCase();
+      if (!haAllenatori(db)) return res.status(503).json({ error: "dati allenatori non ancora raccolti" });
+      const t = db.prepare("SELECT * FROM trainer_stats WHERE allenatore = ?").get(nome) as any;
+      if (!t) return res.status(404).json({ error: "allenatore non trovato" });
+
+      const anni = db.prepare(`
+        SELECT substr(race_date, 1, 4) AS anno, COUNT(*) AS n_corse,
+               COUNT(DISTINCT horse_name) AS n_cavalli,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(AVG(CASE WHEN placement = 1 THEN 100.0 ELSE 0 END), 1) AS pct_vittorie,
+               ROUND(AVG(CASE WHEN placement <= 3 THEN 100.0 ELSE 0 END), 1) AS pct_primi_tre,
+               ROUND(SUM(COALESCE(prize_net, 0))) AS premi
+        FROM races WHERE trainer = ? GROUP BY anno ORDER BY anno`).all(nome);
+
+      const piste = db.prepare(`
+        SELECT track, COUNT(*) AS n_corse,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(AVG(CASE WHEN placement = 1 THEN 100.0 ELSE 0 END), 1) AS pct_vittorie
+        FROM races WHERE trainer = ? GROUP BY track HAVING COUNT(*) >= 5
+        ORDER BY n_corse DESC LIMIT 12`).all(nome);
+
+      // I cavalli: prima quelli allenati negli ultimi 18 mesi, poi gli altri.
+      const cavalli = db.prepare(`
+        SELECT r.horse_name AS nome,
+               (SELECT h.birth_year FROM horses h WHERE h.name = r.horse_name LIMIT 1) AS anno,
+               COUNT(*) AS n_corse,
+               SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(SUM(COALESCE(r.prize_net, 0))) AS premi,
+               MIN(r.race_date) AS dal, MAX(r.race_date) AS al,
+               (SELECT grade FROM horse_ratings hr WHERE hr.name = r.horse_name
+                  AND hr.rating_mode = 'performance' LIMIT 1) AS grade
+        FROM races r WHERE r.trainer = ?
+        GROUP BY r.horse_name
+        ORDER BY (MAX(r.race_date) >= date('now', '-18 months')) DESC, premi DESC
+        LIMIT 60`).all(nome);
+
+      const guidatori = db.prepare(`
+        SELECT driver, COUNT(*) AS n_corse,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(AVG(CASE WHEN placement = 1 THEN 100.0 ELSE 0 END), 1) AS pct_vittorie,
+               ROUND(AVG(CASE WHEN placement <= 3 THEN 100.0 ELSE 0 END), 1) AS pct_primi_tre
+        FROM races WHERE trainer = ? AND driver IS NOT NULL AND TRIM(driver) != ''
+        GROUP BY driver HAVING COUNT(*) >= 5 ORDER BY n_corse DESC LIMIT 10`).all(nome);
+
+      const ultime = db.prepare(`
+        SELECT r.race_date, r.track, r.horse_name, r.placement, r.driver, r.time_km, r.distance,
+               r.prize_net, (SELECT h.birth_year FROM horses h WHERE h.name = r.horse_name LIMIT 1) AS anno
+        FROM races r WHERE r.trainer = ? ORDER BY r.race_date DESC, r.race_number DESC LIMIT 20`).all(nome);
+
+      // Vittorie con il loro giorno: il sito le confronta con i Gran Premi.
+      const vittorie = db.prepare(`
+        SELECT race_date AS data, horse_name AS cavallo FROM races
+        WHERE trainer = ? AND placement = 1 AND COALESCE(prize_gross, prize_net, 0) >= 10000`).all(nome);
+
+      res.json({ ...t, anni, piste, cavalli, guidatori, ultime, vittorie });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // Gli allenatori di un cavallo nel tempo, con il rendimento con ciascuno.
+  app.get("/api/horse-trainers/:name", (req, res) => {
+    const db = getDb();
+    try {
+      const nome = decodeURIComponent(req.params.name);
+      if (!haAllenatori(db)) return res.json({ disponibile: false, periodi: [] });
+      const righe = db.prepare(`
+        SELECT race_date, trainer, placement, COALESCE(prize_net, 0) AS premio
+        FROM races WHERE horse_name = ? AND trainer IS NOT NULL ORDER BY race_date`).all(nome) as any[];
+      // Periodi consecutivi con lo stesso allenatore.
+      const periodi: any[] = [];
+      for (const r of righe) {
+        const ult = periodi[periodi.length - 1];
+        if (ult && ult.allenatore === r.trainer) {
+          ult.al = r.race_date; ult.n_corse++; ult.premi += r.premio;
+          if (r.placement === 1) ult.vittorie++;
+          if (r.placement != null && r.placement <= 3) ult.primi_tre++;
+        } else {
+          periodi.push({ allenatore: r.trainer, dal: r.race_date, al: r.race_date, n_corse: 1,
+                         vittorie: r.placement === 1 ? 1 : 0,
+                         primi_tre: r.placement != null && r.placement <= 3 ? 1 : 0, premi: r.premio });
+        }
+      }
+      const nomi = new Map<string, any>();
+      for (const p of periodi) {
+        if (!nomi.has(p.allenatore)) {
+          nomi.set(p.allenatore, db.prepare("SELECT nome FROM trainer_stats WHERE allenatore = ?").get(p.allenatore));
+        }
+        const s = nomi.get(p.allenatore);
+        p.nome = s?.nome ?? null;          // null: troppo poche corse per una scheda
+        p.premi = Math.round(p.premi);
+      }
+      res.json({ disponibile: true, periodi });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally { db.close(); }

@@ -1030,3 +1030,24 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   box-shadow: 0 0 14px hsl(45 90% 55% / 0.10);
 }
 .coppa-gp.piccola { width: 34px; height: 34px; border-radius: 9px; }
+
+/* Allenatori: periodi nella scheda del cavallo e tabelle della scheda allenatore */
+.allenatori-cavallo { display: flex; flex-direction: column; gap: 8px; }
+.allenatori-cavallo .periodo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 9px 12px; border-radius: 10px;
+  background: hsl(220 12% 10%); border: 1px solid hsl(220 10% 17%);
+}
+.allenatori-cavallo .periodo.attuale {
+  background: linear-gradient(90deg, hsl(28 85% 55% / 0.13), hsl(28 85% 55% / 0.02));
+  border-color: hsl(28 85% 55% / 0.35);
+}
+.allenatori-cavallo .numeri { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: hsl(210 8% 62%); }
+.allenatori-cavallo .etichetta-attuale {
+  margin-left: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 1px 7px; border-radius: 999px; color: hsl(28 90% 68%); background: hsl(28 85% 55% / 0.16);
+}
+@media (max-width: 560px) {
+  .tabella-allenatore .solo-largo { display: none; }
+  .allenatori-cavallo .numeri { gap: 10px; }
+}

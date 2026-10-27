@@ -43,6 +43,8 @@ const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const GranPremiPage = lazy(() => import("./pages/GranPremiPage"));
 const DriversPage = lazy(() => import("./pages/DriversPage"));
 const DriverPage = lazy(() => import("./pages/DriverPage"));
+const AllenatoriPage = lazy(() => import("./pages/AllenatoriPage"));
+const AllenatorePage = lazy(() => import("./pages/AllenatorePage"));
 const TracksPage = lazy(() => import("./pages/TracksPage"));
 const MetodoPage = lazy(() => import("./pages/MetodoPage"));
 const TrackPage = lazy(() => import("./pages/TrackPage"));
@@ -93,6 +95,8 @@ export default function App() {
                   plurale, perche' e' l'errore di battitura piu' probabile. */}
               <Route path="/guidatori" component={DriversPage} />
               <Route path="/guidatore/:name" component={DriverPage} />
+              <Route path="/allenatori" component={AllenatoriPage} />
+              <Route path="/allenatore/:name" component={AllenatorePage} />
               <Route path="/ippodromi" component={IppodromiTrendPage} />
               <Route path="/pareggio" component={PareggioPage} />
               <Route path="/tenere" component={TenerePage} />

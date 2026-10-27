@@ -7,14 +7,14 @@ import AggiungiScuderia from "../components/AggiungiScuderia";
 import IndiceSezioni from "../components/IndiceSezioni";
 import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
-import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
+import { LinkPista, LinkGuidatore, LinkAllenatore } from "../components/Collegamenti";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { COLORE_VOTO, COLORE_SCHEDA_VOTO, classeVoto } from "@/lib/coloreVoto";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { CoppaGara } from "@/components/CoppaGara";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal, Timer } from "lucide-react";
 import { palmares, nomeGara, GARE_GP, type VittoriaGP } from "@/data/granPremi";
 
 // Cavalli con un cuoricino viola accanto al nome. CHICCA ROSS e' stata il
@@ -134,6 +134,52 @@ const panelTitle: React.CSSProperties = {
   letterSpacing: "0.06em",
   marginBottom: "14px",
 };
+
+/** Chi ha allenato il cavallo nel tempo (dal 2016), con il rendimento con ciascuno. */
+function AllenatoriCavallo({ nome }: { nome: string }) {
+  const { data } = useQuery<{ disponibile: boolean; periodi: any[] }>({
+    queryKey: ["/api/horse-trainers", nome],
+    queryFn: () => apiRequest("GET", `/api/horse-trainers/${encodeURIComponent(nome)}`).then(r => r.json()),
+    staleTime: 10 * 60_000,
+  });
+  const periodi = data?.periodi ?? [];
+  if (!periodi.length) return null;
+  const anno = (d: string) => d.slice(0, 4);
+  const mese = (d: string) => new Date(d).toLocaleDateString("it-IT", { month: "short", year: "numeric" });
+  const attuale = periodi[periodi.length - 1];
+  return (
+    <div className="pannello" style={{ ...panelStyle, ["--colore-pannello" as any]: "hsl(28 85% 60%)" }}>
+      <div style={{ ...panelTitle, display: "flex", alignItems: "center", gap: "8px" }}>
+        <Timer size={15} color="hsl(28 85% 60%)" />
+        {periodi.length === 1 ? "Allenatore" : `Allenatori · ${new Set(periodi.map(p => p.allenatore)).size} dal ${anno(periodi[0].dal)}`}
+      </div>
+      <div className="allenatori-cavallo">
+        {[...periodi].reverse().map((p, i) => (
+          <div key={i} className={"periodo" + (p === attuale ? " attuale" : "")}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, color: "hsl(210 10% 90%)" }}>
+                {p.nome ? <LinkAllenatore chiave={p.allenatore} nome={p.nome} /> : p.allenatore}
+                {p === attuale && <span className="etichetta-attuale">ultimo</span>}
+              </div>
+              <div style={{ fontSize: "11.5px", color: "hsl(210 8% 52%)" }}>
+                {p.dal === p.al ? mese(p.dal) : `${mese(p.dal)} – ${mese(p.al)}`}
+              </div>
+            </div>
+            <div className="tabular numeri">
+              <span>{p.n_corse} {p.n_corse === 1 ? "corsa" : "corse"}</span>
+              <span style={{ color: "hsl(100 50% 60%)" }}>{p.vittorie} v.</span>
+              <span>{Math.round(100 * p.primi_tre / p.n_corse)}% primi tre</span>
+              <span style={{ color: "hsl(45 80% 62%)" }}>€{p.premi.toLocaleString("it-IT")}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "8px" }}>
+        Dai risultati ufficiali, che riportano l'allenatore dal 2016.
+      </div>
+    </div>
+  );
+}
 
 /** Le vittorie del cavallo nei Gran Premi, raggruppate per corsa. */
 function Palmares({ nome, anno }: { nome: string; anno: number }) {
@@ -473,6 +519,7 @@ export default function HorsePage() {
 
       <IndiceSezioni voci={[
         { id: "sez-palmares", testo: "Palmares" },
+        { id: "sez-allenatori", testo: "Allenatori" },
         { id: "sez-genealogia", testo: "Genealogia" },
         { id: "sez-valore", testo: "Quanto può guadagnare" },
         { id: "sez-previsioni", testo: "Previsioni" },
@@ -488,6 +535,7 @@ export default function HorsePage() {
 
       {/* Palmares: le vittorie nei Gran Premi (albo d'oro dal 2014). */}
       <section id="sez-palmares"><Palmares nome={horse.name} anno={horse.birth_year} /></section>
+      <section id="sez-allenatori"><AllenatoriCavallo nome={horse.name} /></section>
 
       {/* Genealogy */}
       {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (

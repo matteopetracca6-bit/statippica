@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -61,7 +61,7 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Quanto deve vincere un cavallo per ripagarsi: per voto, per cavallo e per incrocio" },
   ] },
   { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)",
-    descrizione: "Calendario con i pronostici, piste italiane e guidatori",
+    descrizione: "Calendario con i pronostici, piste italiane, guidatori e allenatori",
     schede: [
     { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)",
       descrizione: "Prossime gare con iscritti, voti e probabilità di arrivare nei primi tre" },
@@ -71,6 +71,8 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Le piste italiane, quanto pesa il numero di partenza e come cambiano i numeri negli anni" },
     { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(200 70% 58%)",
       descrizione: "Chi porta i cavalli a rendere più del loro solito, a parità di cavallo e di partenza" },
+    { href: "/allenatori", label: "Allenatori", nota: "Corse, vittorie, premi e cavalli dal 2016", icon: Timer, colore: "hsl(28 85% 60%)",
+      descrizione: "Chi allena i cavalli: corse, vittorie, premi, scuderia e Gran Premi vinti dal 2016" },
   ] },
   { nome: "Metodo", icon: BookMarked, colore: "hsl(40 40% 72%)",
     descrizione: "Da dove vengono i numeri e le prove che le stime funzionano",
@@ -99,6 +101,7 @@ const ALIAS: Record<string, string> = {
   "/validazione-advisor": "/validazione",
   "/trend": "/ippodromi", "/piste": "/ippodromi", "/ippodromo": "/ippodromi",
   "/guidatore": "/guidatori",
+  "/allenatore": "/allenatori",
   "/controllo-a-posteriori": "/controllo",
   "/portafoglio": "/scuderia",
   "/prezzo-massimo": "/puledro", "/vendere": "/puledro",
