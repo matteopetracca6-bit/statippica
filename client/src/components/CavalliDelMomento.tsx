@@ -6,6 +6,7 @@
  * record personale al chilometro. Un interruttore mostra solo i giovani di
  * 2 e 3 anni, quelli in crescita.
  */
+import { tempoKm } from "@/lib/record";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -17,7 +18,7 @@ import BandieraCavallo from "@/components/BandieraCavallo";
 const MUTED = "hsl(210 8% 50%)";
 const CARD: React.CSSProperties = { padding: "22px 24px",
 };
-const tempo = (t: number) => `1'${t.toFixed(1).replace(".", "\"")}`;
+const tempo = (t: number) => tempoKm(t);
 const data = (d: string) => d ? d.split("-").reverse().slice(0, 2).join("/") : "";
 
 interface Momento {

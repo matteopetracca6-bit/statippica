@@ -6,6 +6,7 @@
  * fatto in pratica il cavallo tipico (guadagni, gare, vittorie, stagioni,
  * record), con un esempio da aprire.
  */
+import { tempoKm } from "@/lib/record";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -36,7 +37,7 @@ interface Voto {
 }
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("it-IT");
-const record = (r: number | null) => r == null ? "—" : `1'${r.toFixed(1).replace(".", "\"")}`;
+const record = (r: number | null) => tempoKm(r);
 
 export default function RiquadroRating() {
   const [aperto, setAperto] = useState(false);

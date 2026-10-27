@@ -1,4 +1,5 @@
 import NomePista from "@/components/NomePista";
+import { tempoKm } from "@/lib/record";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -334,10 +335,10 @@ export default function ComparePage() {
               <div>
                 <StatRow
                   label="Record km"
-                  v1={h1.record_career}
-                  v2={h2.record_career}
+                  v1={h1.record_career != null ? Number(h1.record_career) : null}
+                  v2={h2.record_career != null ? Number(h2.record_career) : null}
                   better="lower"
-                  format={v => `1:${(v / 10).toFixed(1)}`}
+                  format={v => tempoKm(v)}
                 />
               </div>
             </>

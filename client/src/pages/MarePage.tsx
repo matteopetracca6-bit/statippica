@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { formatRecord } from "@/lib/record";
 import { useLocation, useParams, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
@@ -165,7 +166,7 @@ export default function MarePage() {
           <Stat label="Corse" value={String(ownRaces)} />
           <Stat label="Vittorie" value={String(s?.own_wins ?? own?.career_wins ?? 0)} />
           <Stat label="Guadagni" value={eur(s?.own_earnings ?? own?.career_earnings)} />
-          <Stat label="Record" value={s?.own_record || own?.record_career || "—"} />
+          <Stat label="Record" value={formatRecord(s?.own_record || own?.record_career)} />
           {s?.own_grade && <Stat label="Suo voto da atleta" value={s.own_grade} />}
         </div>
       ) : (
@@ -216,7 +217,7 @@ export default function MarePage() {
                 <td style={{ ...cell, textAlign: "right" }}>{o.career_races ?? "—"}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{o.career_wins ?? "—"}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{eur(o.career_earnings)}</td>
-                <td style={{ ...cell, textAlign: "right" }}>{o.record_career || "—"}</td>
+                <td style={{ ...cell, textAlign: "right" }}>{formatRecord(o.record_career)}</td>
               </tr>
             ))}
           </tbody>

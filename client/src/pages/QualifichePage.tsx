@@ -1,4 +1,5 @@
 import NomePista from "@/components/NomePista";
+import { tempoKm, formatRecord } from "@/lib/record";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -67,8 +68,8 @@ function itDate(d: string): string {
 }
 
 function fmtTime(row: { time_raw: string | null; time_km: number | null }): string {
-  if (row.time_km != null) return `1.${row.time_km.toFixed(1).replace(".", ".")}`;
-  return row.time_raw || "—";
+  if (row.time_km != null) return tempoKm(row.time_km);
+  return row.time_raw ? formatRecord(row.time_raw) : "—";
 }
 
 export default function QualifichePage() {
@@ -153,8 +154,8 @@ export default function QualifichePage() {
             { label: "Cavalli", value: stats.n_cavalli?.toLocaleString("it-IT") },
             { label: "Mai visti in corsa", value: stats.n_nuovi?.toLocaleString("it-IT") },
             { label: "Stalloni padri", value: stats.n_stalloni?.toLocaleString("it-IT") },
-            { label: "Tempo medio", value: stats.tempo_medio != null ? `1.${stats.tempo_medio.toFixed(1)}` : "—" },
-            { label: "Miglior tempo", value: stats.tempo_migliore != null ? `1.${stats.tempo_migliore.toFixed(1)}` : "—" },
+            { label: "Tempo medio", value: stats.tempo_medio != null ? tempoKm(stats.tempo_medio) : "—" },
+            { label: "Miglior tempo", value: stats.tempo_migliore != null ? tempoKm(stats.tempo_migliore) : "—" },
           ].map(k => (
             <div key={k.label} className="pannello" style={{ padding: "12px 14px" }}>
               <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", color: "hsl(210 8% 55%)", marginBottom: "4px" }}>
@@ -342,7 +343,7 @@ export default function QualifichePage() {
                     {i + 1}. {s.sire}
                   </span>
                   <span style={{ fontSize: "14px", fontWeight: 700, color: "hsl(210 10% 92%)", fontVariantNumeric: "tabular-nums" }}>
-                    1.{s.tempo_medio.toFixed(1)}
+                    {tempoKm(s.tempo_medio)}
                   </span>
                 </div>
                 <div style={{ fontSize: "11px", color: "hsl(210 8% 55%)", marginTop: "3px" }}>

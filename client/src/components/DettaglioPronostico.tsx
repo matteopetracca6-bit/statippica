@@ -8,6 +8,7 @@
  * avversari della stessa corsa. In fondo il passaggio che porta dalle stime
  * grezze alle percentuali mostrate: in una corsa i posti nei primi tre sono tre.
  */
+import { tempoKm } from "@/lib/record";
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +21,7 @@ const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 42%)";
 const VERDE = "hsl(150 55% 55%)";
 const ROSSO = "hsl(10 60% 60%)";
-const tempo = (t: number) => `1'${t.toFixed(1).replace(".", "\"")}`;
+const tempo = (t: number) => tempoKm(t);
 const euro = (n: number) => `${Math.round(n).toLocaleString("it-IT")} €`;
 const pct = (n: number) => `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
 

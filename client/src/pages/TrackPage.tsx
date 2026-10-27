@@ -4,6 +4,7 @@ import { colorePista } from "@/lib/piste";
  * partenza su QUESTA pista, distanze su cui si corre, guidatori piu' vincenti.
  */
 
+import { tempoKm } from "@/lib/record";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -64,7 +65,7 @@ export default function TrackPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "16px" }}>
           {[
             { l: "Distanza tipica", v: t.distanza_tipica ? `${t.distanza_tipica} m` : "\u2014", c: "hsl(210 10% 85%)" },
-            { l: "Tempo al km medio", v: t.tempo_km_mediano ? `${t.tempo_km_mediano}"` : "\u2014", c: "hsl(210 10% 85%)" },
+            { l: "Tempo al km medio", v: t.tempo_km_mediano ? tempoKm(t.tempo_km_mediano) : "\u2014", c: "hsl(210 10% 85%)" },
             { l: "Premio medio", v: t.premio_medio ? euro(t.premio_medio) : "\u2014", c: "hsl(51 70% 60%)" },
             { l: "Premio piu' alto", v: t.premio_massimo ? euro(t.premio_massimo) : "\u2014", c: "hsl(51 70% 60%)" },
             { l: "Partenti medi", v: t.partenti_medi ? t.partenti_medi.toFixed(1) : "\u2014", c: "hsl(210 10% 85%)" },
@@ -122,7 +123,7 @@ export default function TrackPage() {
                     <td className="tabular" style={{ padding: "5px 0", color: "hsl(210 10% 82%)", fontWeight: 600 }}>{d.distanza} m</td>
                     <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: MUTED }}>{d.n_gare.toLocaleString("it-IT")} gare</td>
                     <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: "hsl(183 70% 58%)", width: "70px" }}>
-                      {d.tempo_km ? `${d.tempo_km}"` : "\u2014"}
+                      {d.tempo_km ? tempoKm(d.tempo_km) : "\u2014"}
                     </td>
                   </tr>
                 ))}
