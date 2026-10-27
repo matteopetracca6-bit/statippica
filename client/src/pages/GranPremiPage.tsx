@@ -4,6 +4,7 @@ import { Trophy, Search, X } from "lucide-react";
 import { GARE_GP, VITTORIE_GP, type VittoriaGP } from "@/data/granPremi";
 import { LinkPista, LinkGuidatore } from "@/components/Collegamenti";
 import { Spiegazione } from "@/components/Spiegazione";
+import { CoppaGara } from "@/components/CoppaGara";
 
 /**
  * GRAN PREMI: l'albo d'oro delle quindici corse piu' importanti del trotto
@@ -112,7 +113,9 @@ export default function GranPremiPage() {
                 style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 10px", borderRadius: "999px",
                          background: "hsl(45 80% 50% / 0.10)", border: "1px solid hsl(45 80% 55% / 0.35)", color: "hsl(210 10% 90%)",
                          fontSize: "12.5px", cursor: "pointer" }}>
-                <Trophy size={12} color={ORO} /> {x.v.vincitore}
+                <span style={{ display: "inline-flex", gap: "1px" }}>
+                  {Array.from(x.gare).slice(0, 4).map(g => <CoppaGara key={g} gara={g} size={15} />)}
+                </span> {x.v.vincitore}
                 <span style={{ color: ORO, fontWeight: 700 }}>{x.n}</span>
               </button>
             ))}
@@ -151,9 +154,12 @@ export default function GranPremiPage() {
             .sort((a, b) => b.anno - a.anno || (a.divisione ?? "").localeCompare(b.divisione ?? ""));
           return (
             <div key={g.id} id={`gp-${g.id}`} className="pannello" style={{ padding: "16px 18px", ["--colore-pannello" as any]: ORO }}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
-                <h2 style={{ fontSize: "16.5px", fontWeight: 800, color: "hsl(45 85% 66%)", margin: 0 }}>{g.nome}</h2>
-                <span style={{ fontSize: "12px", color: "hsl(210 8% 55%)" }}>{g.info}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div className="coppa-gp"><CoppaGara gara={g.id} size={34} title={g.nome} /></div>
+                <div style={{ minWidth: 0 }}>
+                  <h2 style={{ fontSize: "16.5px", fontWeight: 800, color: "hsl(45 85% 66%)", margin: 0 }}>{g.nome}</h2>
+                  <div style={{ fontSize: "12px", color: "hsl(210 8% 55%)", marginTop: "2px" }}>{g.info}</div>
+                </div>
               </div>
               {g.nota && <div style={{ fontSize: "12px", color: "hsl(210 8% 58%)", marginTop: "4px" }}>{g.nota}</div>}
               <div style={{ overflowX: "auto", marginTop: "10px" }}>

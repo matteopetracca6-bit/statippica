@@ -1020,3 +1020,13 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .tabella-gp .solo-stretto { display: block; }
   .tabella-gp td:nth-child(2) { white-space: normal; }
 }
+
+/* Coppa di ogni Gran Premio: medaglione dorato accanto al titolo. */
+.coppa-gp {
+  width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 35%, hsl(45 90% 55% / 0.16), hsl(45 90% 55% / 0.04) 70%);
+  border: 1px solid hsl(45 80% 55% / 0.30);
+  box-shadow: 0 0 14px hsl(45 90% 55% / 0.10);
+}
+.coppa-gp.piccola { width: 34px; height: 34px; border-radius: 9px; }
