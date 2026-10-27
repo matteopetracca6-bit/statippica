@@ -1,3 +1,4 @@
+import NomePista from "@/components/NomePista";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -440,8 +441,8 @@ export default function ComparePage() {
                         display: "flex", justifyContent: "space-between", alignItems: "center",
                         padding: "6px 0", borderBottom: "1px solid hsl(220 10% 10%)", fontSize: "12px",
                       }}>
-                        <span style={{ color: "hsl(210 8% 42%)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {tr.track}
+                        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <NomePista pista={tr.track} colorato />
                         </span>
                         <span style={{ color: "hsl(210 8% 55%)", textAlign: "center", margin: "0 8px" }}>
                           {tr.races}c · {tr.wins}v

@@ -1,3 +1,4 @@
+import NomePista from "./NomePista";
 /**
  * Nomi cliccabili, usati ovunque compaia un guidatore o un ippodromo.
  *
@@ -15,10 +16,12 @@ const SENZA_SCHEDA = new Set(["ESTERO", "ITALIA", ""]);
 
 export function LinkPista({ codice }: { codice?: string | null }) {
   if (!codice) return <>{"\u2014"}</>;
-  if (SENZA_SCHEDA.has(codice.toUpperCase()) || codice.length < 3) return <>{codice}</>;
+  // Ogni pista col suo colore, uguale in tutto il sito (lib/piste.ts).
+  const testo = <NomePista pista={codice} colorato />;
+  if (SENZA_SCHEDA.has(codice.toUpperCase()) || codice.length < 3) return testo;
   return (
     <Link href={`/ippodromo/${encodeURIComponent(codice)}`} className="collegamento-scheda"
-      onClick={(e: React.MouseEvent) => e.stopPropagation()}>{codice}</Link>
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}>{testo}</Link>
   );
 }
 

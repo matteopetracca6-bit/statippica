@@ -1,3 +1,4 @@
+import { colorePista } from "@/lib/piste";
 /**
  * Scheda di un singolo ippodromo: numeri della pista, effetto del numero di
  * partenza su QUESTA pista, distanze su cui si corre, guidatori piu' vincenti.
@@ -50,7 +51,7 @@ export default function TrackPage() {
         </a>
       </Link>
 
-      <h1 style={{ fontSize: "26px", fontWeight: 800, color: "hsl(210 10% 91%)", margin: "0 0 4px", letterSpacing: "0.02em" }}>
+      <h1 style={{ fontSize: "26px", fontWeight: 800, color: colorePista(t.nome), margin: "0 0 4px", letterSpacing: "0.02em" }}>
         {t.nome}
       </h1>
       <div style={{ color: MUTED, fontSize: "12.5px", marginBottom: "18px" }}>

@@ -1,3 +1,4 @@
+import { colorePista, colorePistaTenue } from "@/lib/piste";
 import { useState, useEffect } from "react";
 import { Spiegazione } from "../components/Spiegazione";
 import { Link } from "wouter";
@@ -139,7 +140,7 @@ export default function CalendarPage() {
             const top3 = race.entries.slice(0, 3);
             const trackName = TRACK_NAMES[race.track] || (race.track.charAt(0) + race.track.slice(1).toLowerCase());
             return (
-              <div key={key} className="pannello" style={{ overflow: "hidden" }}>
+              <div key={key} className="pannello" style={{ overflow: "hidden", ["--colore-pannello" as any]: colorePista(race.track) }}>
                 {/* Race header */}
                 <div
                   onClick={() => setExpandedRace(expanded ? null : key)}
@@ -154,7 +155,8 @@ export default function CalendarPage() {
                   {/* Date badge */}
                   <div style={{
                     minWidth: "64px", textAlign: "center",
-                    background: "hsl(220 12% 8%)", borderRadius: "10px", padding: "8px 10px",
+                    background: colorePistaTenue(race.track, 0.1), border: `1px solid ${colorePistaTenue(race.track, 0.3)}`,
+                    borderRadius: "10px", padding: "8px 10px",
                   }}>
                     <div style={{ fontSize: "11px", color: "hsl(210 8% 50%)", textTransform: "uppercase" }}>
                       {formatDate(race.race_date).split(" ")[0]}
@@ -170,8 +172,8 @@ export default function CalendarPage() {
                   {/* Track + time */}
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <MapPin size={14} style={{ color: "hsl(183 60% 55%)" }} />
-                      <span style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>
+                      <MapPin size={14} style={{ color: colorePista(race.track) }} />
+                      <span style={{ fontSize: "15px", fontWeight: 700, color: colorePista(race.track) }}>
                         {trackName}
                       </span>
                     </div>

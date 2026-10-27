@@ -1,3 +1,4 @@
+import { colorePista } from "./piste";
 /**
  * Le sezioni del sito, in un posto solo.
  *
@@ -104,7 +105,10 @@ const ALIAS: Record<string, string> = {
   "/metodo-e-dati": "/metodo",
 };
 export function coloreDiPagina(percorso: string): string | null {
-  const primo = "/" + (percorso.split("?")[0].split("/")[1] ?? "");
+  const pezzi = percorso.split("?")[0].split("/");
+  const primo = "/" + (pezzi[1] ?? "");
+  // La scheda di un ippodromo prende il colore di quell'ippodromo.
+  if (primo === "/ippodromo" && pezzi[2]) return colorePista(decodeURIComponent(pezzi[2]));
   const href = ALIAS[primo] ?? primo;
   for (const g of GRUPPI) for (const sc of g.schede) if (sc.href === href) return sc.colore;
   return null;

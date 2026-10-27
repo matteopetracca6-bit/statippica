@@ -1,3 +1,4 @@
+import { colorePista } from "@/lib/piste";
 /**
  * La fascia di notizie che scorre in alto nella home, come i titoli di borsa.
  *
@@ -51,9 +52,11 @@ function migliaia(n: number) {
 
 function Pista({ nome, codice }: { nome: string; codice: string | null }) {
   const testo = titolo(nome);
+  // Il colore della pista, lo stesso del calendario e delle schede.
+  const c = colorePista(nome);
   return codice
-    ? <Link href={`/ippodromo/${encodeURIComponent(codice)}`} className="notizia-link" style={{ color: VERDE }}>{testo}</Link>
-    : <span style={{ color: VERDE }}>{testo}</span>;
+    ? <Link href={`/ippodromo/${encodeURIComponent(codice)}`} className="notizia-link" style={{ color: c }}>{testo}</Link>
+    : <span style={{ color: c }}>{testo}</span>;
 }
 
 function Voce({ colore, etichetta, children }: { colore: string; etichetta: string; children: React.ReactNode }) {

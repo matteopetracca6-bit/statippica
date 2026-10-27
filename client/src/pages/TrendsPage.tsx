@@ -1,3 +1,4 @@
+import { colorePista } from "@/lib/piste";
 import { useQuery } from "@tanstack/react-query";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { LineChart } from "lucide-react";
@@ -312,7 +313,7 @@ export default function TrendsPage() {
                     }}>{i + 1}</span>
                     <span style={{
                       flex: 1, fontSize: "13px", fontWeight: hoveredTrack === i ? 700 : 500,
-                      color: hoveredTrack === i ? "hsl(210 10% 90%)" : "hsl(210 10% 75%)",
+                      color: colorePista(t.track),
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       transition: "all 0.15s",
                     }}>
@@ -322,9 +323,8 @@ export default function TrendsPage() {
                       <div className="barra-destra" style={{
                         animationDelay: `${Math.min(i, 14) * 45}ms`,
                         height: "100%", width: `${(t.n_races / maxTrackRaces) * 100}%`,
-                        background: hoveredTrack === i
-                          ? "linear-gradient(90deg, hsl(183 90% 55%), hsl(183 70% 45%))"
-                          : "linear-gradient(90deg, hsl(183 80% 45%), hsl(183 60% 35%))",
+                        background: colorePista(t.track),
+                        opacity: hoveredTrack === i ? 1 : 0.75,
                         borderRadius: "4px",
                         transition: "all 0.3s ease",
                       }} />

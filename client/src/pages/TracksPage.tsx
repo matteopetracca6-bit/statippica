@@ -1,3 +1,4 @@
+import { colorePista } from "@/lib/piste";
 /**
  * Pagina degli ippodromi.
  *
@@ -163,10 +164,10 @@ export default function TracksPage() {
         {righe.map(t => (
           <Link key={t.track} href={`/ippodromo/${encodeURIComponent(t.track)}`}>
             <a style={{ textDecoration: "none" }}>
-              <div className="pannello" style={{
-                padding: "14px 16px", height: "100%" }}>
+              <div className="pannello pannello-cliccabile" style={{
+                ["--colore-pannello" as any]: colorePista(t.track), padding: "14px 16px", height: "100%" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "hsl(210 10% 88%)", letterSpacing: "0.02em" }}>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: colorePista(t.track), letterSpacing: "0.02em" }}>
                     {t.nome}
                   </div>
                   {!t.attivo && (

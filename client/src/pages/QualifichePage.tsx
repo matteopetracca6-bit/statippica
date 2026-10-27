@@ -1,3 +1,4 @@
+import NomePista from "@/components/NomePista";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -273,7 +274,7 @@ export default function QualifichePage() {
                     {fmtTime(r)}
                   </td>
                   <td style={cell}>{itDate(r.qual_date)}</td>
-                  <td style={cell}>{r.track || "—"}</td>
+                  <td style={cell}>{r.track ? <NomePista pista={r.track} colorato /> : "—"}</td>
                   <td style={cell}>
                     {r.sire ? (
                       <span

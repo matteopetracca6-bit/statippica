@@ -1,3 +1,4 @@
+import NomePista from "@/components/NomePista";
 /**
  * PREVISIONI SULLA SCHEDA DEL CAVALLO (modelli XGBoost).
  *
@@ -125,7 +126,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
           {d.prossima ? (
             <div style={{ ...riquadro, display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center" }}>
               <div style={{ minWidth: 150 }}>
-                <div style={{ fontSize: 12, color: MUTED }}>{giorno(d.prossima.data)} · {PISTE[d.prossima.pista] ?? titolo(d.prossima.pista)} · {d.prossima.ora}</div>
+                <div style={{ fontSize: 12, color: MUTED }}>{giorno(d.prossima.data)} · <NomePista pista={d.prossima.pista} testo={PISTE[d.prossima.pista] ?? titolo(d.prossima.pista)} colorato /> · {d.prossima.ora}</div>
                 <div className="tabular" style={{ fontSize: 24, fontWeight: 800, color: "hsl(183 70% 60%)" }}>
                   {d.prossima.prob != null ? `${Math.round(d.prossima.prob)}%` : "—"}
                 </div>
@@ -147,7 +148,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
               <div style={{ fontSize: 11, color: DIM, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Com'è andata nelle ultime corse</div>
               {d.storico.map((s: any, i: number) => (
                 <div key={i} className="vc-riga" style={{ gridTemplateColumns: "1.3fr 1fr .8fr 20px" }}>
-                  <span>{giorno(s.data)} · {titolo(s.pista)}{s.tipo === "ricostruito" && <small style={{ color: "hsl(40 60% 60%)" }}>ricostruita</small>}</span>
+                  <span>{giorno(s.data)} · <NomePista pista={s.pista} testo={titolo(s.pista)} colorato />{s.tipo === "ricostruito" && <small style={{ color: "hsl(40 60% 60%)" }}>ricostruita</small>}</span>
                   <span className="tabular"><span className="barretta"><span style={{ width: `${Math.min(100, s.prob)}%` }} /></span>{Math.round(s.prob)}%</span>
                   <span className="tabular" style={{ color: s.top3 ? "hsl(150 55% 60%)" : MUTED }}>{s.arrivo ?? "—"}</span>
                   <span>{s.top3 ? <Check size={14} color="hsl(150 55% 55%)" /> : <X size={14} color="hsl(10 60% 55%)" />}</span>

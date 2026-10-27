@@ -1,3 +1,4 @@
+import { colorePista } from "@/lib/piste";
 /**
  * VERIFICA GARA PER GARA.
  *
@@ -162,7 +163,7 @@ function Riepilogo({ d, giorni }: { d: Risposta; giorni: number }) {
             <div className="barre-orizz">
               {(d.piste ?? []).slice(0, 10).map(p => (
                 <div key={p.pista} className="riga">
-                  <span>{titolo(p.pista)}<small style={{ display: "block", color: DIM, fontSize: 10 }}>{p.corse} corse</small></span>
+                  <span style={{ color: colorePista(p.pista) }}>{titolo(p.pista)}<small style={{ display: "block", color: DIM, fontSize: 10 }}>{p.corse} corse</small></span>
                   <span className="traccia"><i style={{ width: `${(p.quota_favoriti ?? 0) * 0.8}%`, background: "hsl(183 60% 48%)" }} /><b>{p1(p.quota_favoriti)}</b></span>
                 </div>
               ))}
@@ -291,10 +292,10 @@ export default function VerificaGare() {
             const ap = aperta === k;
             const col = coloreSegno(c.favoriti_a_segno, c.favoriti_noti);
             return (
-              <div key={k} className="verifica-corsa">
+              <div key={k} className="verifica-corsa pannello" style={{ ["--colore-pannello" as any]: colorePista(c.pista) }}>
                 <button className="verifica-corsa-testa" onClick={() => setAperta(ap ? null : k)} aria-expanded={ap}>
                   <span className="vc-data">{data(c.race_date)}</span>
-                  <span className="vc-pista"><MapPin size={12} /> {titolo(c.pista)}{c.corsa ? ` · ${c.corsa}` : c.numero ? ` · corsa ${c.numero}` : ""}</span>
+                  <span className="vc-pista" style={{ color: colorePista(c.pista) }}><MapPin size={12} style={{ color: colorePista(c.pista) }} /> {titolo(c.pista)}{c.corsa ? ` · ${c.corsa}` : c.numero ? ` · corsa ${c.numero}` : ""}</span>
                   {c.tipo === "ricostruito" && <span className="vc-tipo">ricostruita</span>}
                   {c.incompleto && <span className="vc-tipo" title="Il pronostico non aveva tutti i partenti: non conta nella media">incompleto</span>}
                   {c.favoriti_noti < 3 && c.controllo?.esito !== "recuperato" && (

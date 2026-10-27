@@ -1,3 +1,4 @@
+import NomePista from "@/components/NomePista";
 /**
  * Scheda di un singolo guidatore.
  *
@@ -179,7 +180,7 @@ export default function DriverPage() {
                   <tr key={p.track}>
                     <td style={{ padding: "5px 0", color: "hsl(210 10% 80%)" }}>
                       <Link href={`/ippodromo/${encodeURIComponent(p.track)}`}>
-                        <a style={{ color: "hsl(210 10% 80%)", textDecoration: "none" }}>{p.track}</a>
+                        <a style={{ textDecoration: "none" }}><NomePista pista={p.track} colorato /></a>
                       </Link>
                     </td>
                     <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: MUTED }}>{p.n_gare} gare</td>
