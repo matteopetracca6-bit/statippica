@@ -925,3 +925,60 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .numero-home-freccia { display: none; }
 }
 .riquadro-rating.aperto { border-color: color-mix(in srgb, var(--c) 55%, hsl(220 10% 17%)); }
+
+/* ── Scheda del cavallo secondo il voto ──────────────────────────────────
+   Ottobre 2026: i riquadri della scheda di un cavallo prendono il colore del
+   suo voto (--colore-pannello lo mette HorsePage). In piu' ogni fascia ha il
+   suo stile, cosi' a colpo d'occhio si capisce che cavallo e':
+   - SSS, SS, S: riga a sinistra metallica (oro, argento, bronzo), contorno
+     velato del metallo e un leggero bagliore; SSS brilla piano.
+   - A, B, C: riga piena del colore del voto, come gli altri riquadri.
+   - D, E, F: riga sempre piu' sottile e velatura sempre piu' spenta.
+   Solo i riquadri di primo livello: quelli dentro un altro restano semplici. */
+.scheda-voto { --velo: 7%; }
+.scheda-voto.voto-SSS { --metallo: linear-gradient(180deg, hsl(52 100% 72%), hsl(42 95% 46%) 45%, hsl(50 100% 66%) 75%, hsl(40 90% 42%)); --velo: 11%; }
+.scheda-voto.voto-SS  { --metallo: linear-gradient(180deg, hsl(0 0% 96%), hsl(215 8% 58%) 45%, hsl(0 0% 88%) 75%, hsl(215 8% 50%)); --velo: 8%; }
+.scheda-voto.voto-S   { --metallo: linear-gradient(180deg, hsl(32 90% 72%), hsl(22 65% 38%) 45%, hsl(30 80% 62%) 75%, hsl(20 60% 34%)); --velo: 9%; }
+.scheda-voto.voto-D   { --velo: 5%; }
+.scheda-voto.voto-E   { --velo: 4%; }
+.scheda-voto.voto-F   { --velo: 2%; }
+
+.scheda-voto:is(.voto-SSS, .voto-SS, .voto-S) .pannello:not(.pannello .pannello) {
+  background:
+    var(--metallo) left top / 4px 100% no-repeat,
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--c) var(--velo), transparent), transparent 60%),
+    hsl(220 12% 10%);
+  border-color: color-mix(in srgb, var(--c) 28%, hsl(220 10% 17%));
+  box-shadow: 0 0 0 0 transparent, 0 10px 34px -22px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.scheda-voto:is(.voto-SSS, .voto-SS, .voto-S) .pannello:not(.pannello .pannello):hover {
+  border-color: color-mix(in srgb, var(--c) 65%, hsl(220 10% 17%));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 25%, transparent), 0 14px 40px -18px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.scheda-voto.voto-SSS .pannello:not(.pannello .pannello) { animation: pannello-entra .32s ease-out both, bagliore-oro 4.5s ease-in-out .4s infinite; }
+@keyframes bagliore-oro {
+  0%, 100% { box-shadow: 0 10px 34px -22px hsl(48 100% 55% / .55); }
+  50%      { box-shadow: 0 0 0 1px hsl(48 100% 55% / .18), 0 12px 38px -18px hsl(48 100% 55% / .7); }
+}
+
+.scheda-voto:is(.voto-A, .voto-B, .voto-C) .pannello:not(.pannello .pannello) {
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--c) var(--velo), transparent), transparent 60%),
+    hsl(220 12% 10%);
+}
+.scheda-voto:is(.voto-D, .voto-E, .voto-F) .pannello:not(.pannello .pannello) {
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--c) var(--velo), transparent), transparent 60%),
+    hsl(220 12% 10%);
+}
+.scheda-voto.voto-D .pannello:not(.pannello .pannello) { box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--c) 60%, transparent); }
+.scheda-voto.voto-E .pannello:not(.pannello .pannello) { box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--c) 50%, transparent); }
+.scheda-voto.voto-F .pannello:not(.pannello .pannello) { box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--c) 45%, transparent); }
+.scheda-voto:is(.voto-D, .voto-E, .voto-F) .pannello:not(.pannello .pannello):hover {
+  box-shadow: inset 3px 0 0 0 var(--c), 0 12px 30px -16px color-mix(in srgb, var(--c) 30%, transparent);
+}
+
+/* La testata del cavallo: la stessa riga metallica per SSS, SS e S. */
+.scheda-voto:is(.voto-SSS, .voto-SS, .voto-S) .testata-cavallo::before { background: var(--metallo); }
+.scheda-voto:is(.voto-SSS, .voto-SS, .voto-S) .testata-cavallo { border-color: color-mix(in srgb, var(--c) 30%, hsl(220 10% 17%)); }
+@media (prefers-reduced-motion: reduce) { .scheda-voto.voto-SSS .pannello { animation: none; } }

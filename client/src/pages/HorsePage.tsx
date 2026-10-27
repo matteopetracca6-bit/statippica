@@ -10,7 +10,7 @@ import { useRoute, useLocation, Link } from "wouter";
 import { LinkPista, LinkGuidatore } from "../components/Collegamenti";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { COLORE_VOTO } from "@/lib/coloreVoto";
+import { COLORE_VOTO, COLORE_SCHEDA_VOTO, classeVoto } from "@/lib/coloreVoto";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart } from "lucide-react";
@@ -337,7 +337,10 @@ export default function HorsePage() {
   };
 
   return (
-    <div className="page-shell fade-in">
+    // Tutti i riquadri della scheda prendono il colore del voto del cavallo
+    // (index.css, "Scheda del cavallo secondo il voto").
+    <div className={`page-shell fade-in scheda-voto ${classeVoto(horse.grade)}`}
+      style={COLORE_SCHEDA_VOTO[horse.grade ?? ""] ? { ["--colore-pannello" as any]: COLORE_SCHEDA_VOTO[horse.grade ?? ""] } : undefined}>
       {/* Top bar: back + search */}
       <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "16px" }}>
         <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
