@@ -19,7 +19,7 @@ const SPIEGAZIONI: Record<string, string> = {
   rendimento: "Premio medio vinto per ogni corsa, contro i nati nello stesso anno (almeno 5 corse)",
   costanza: "Quante volte arriva nei primi tre, contro i nati nello stesso anno (almeno 5 corse)",
   classe: "Livello delle corse disputate, stimato dal premio del vincitore, contro i nati nello stesso anno",
-  durata: "Stagioni corse rispetto a quelle possibili per la sua età",
+  frequenza: "Quante corse fa in media in una stagione in cui corre, contro i nati nello stesso anno (almeno 5 corse)",
   pedigree: "Valore di padre (60%) e madre (40%) come riproduttori, contro gli altri riproduttori con figli in gara",
 };
 

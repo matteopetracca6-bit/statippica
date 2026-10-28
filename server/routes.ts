@@ -169,8 +169,8 @@ function gradeColor(grade: string): string {
 // Ogni punta e' un numero da 0 a 100 che dice quanti cavalli confrontabili
 // questo cavallo lascia dietro di se'. Le liste di confronto si calcolano una
 // volta e si tengono per mezz'ora: sono qualche decina di migliaia di numeri.
-type MisureGare = { rendimento: number; classe: number | null; costanza: number };
-type ListeRadar = { perAnno: Map<number, { rendimento: number[]; classe: number[]; costanza: number[] }>;
+type MisureGare = { rendimento: number; classe: number | null; costanza: number; frequenza: number };
+type ListeRadar = { perAnno: Map<number, { rendimento: number[]; classe: number[]; costanza: number[]; frequenza: number[] }>;
                     perCavallo: Map<string, MisureGare>; stalloni: number[]; fattrici: number[]; quando: number };
 let listeRadar: ListeRadar | null = null;
 function ordinati(v: number[]) { return v.filter(x => x != null && isFinite(x)).sort((a, b) => a - b); }
@@ -187,30 +187,32 @@ function percentileIn(lista: number[] | undefined, x: number | null | undefined)
 const QUOTA_POSTO = `CASE placement WHEN 1 THEN 1.0 WHEN 2 THEN 0.475 WHEN 3 THEN 0.259 WHEN 4 THEN 0.13 WHEN 5 THEN 0.087 END`;
 function prendiListeRadar(db: any): ListeRadar {
   if (listeRadar && Date.now() - listeRadar.quando < 30 * 60_000) return listeRadar;
-  const perAnno = new Map<number, { rendimento: number[]; classe: number[]; costanza: number[] }>();
+  const perAnno = new Map<number, { rendimento: number[]; classe: number[]; costanza: number[]; frequenza: number[] }>();
   const perCavallo = new Map<string, MisureGare>();
   // Per ogni cavallo con almeno 5 corse: premio medio per corsa (rendimento),
   // valore medio delle corse disputate, stimato dal premio del vincitore
-  // (classe), e quota di arrivi nei primi tre (costanza). Tutto dalle gare in
+  // (classe), quota di arrivi nei primi tre (costanza) e corse medie per stagione corsa
+  // (frequenza). Tutto dalle gare in
   // archivio, come la testata della scheda.
   const righe = db.prepare(`
     WITH liv AS (SELECT race_date d, track t, race_number n, MAX(prize_net / ${QUOTA_POSTO}) l
                  FROM races WHERE placement BETWEEN 1 AND 5 AND prize_net > 0 AND race_number IS NOT NULL
                  GROUP BY 1, 2, 3),
          g AS (SELECT r.horse_name h, COUNT(*) c, SUM(COALESCE(r.prize_net, 0)) p, AVG(liv.l) cl, COUNT(liv.l) nl,
-                      SUM(CASE WHEN r.placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) t3
+                      SUM(CASE WHEN r.placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) t3,
+                      COUNT(DISTINCT substr(r.race_date, 1, 4)) st
                FROM races r LEFT JOIN liv ON liv.d = r.race_date AND liv.t = r.track AND liv.n = r.race_number
                GROUP BY r.horse_name HAVING COUNT(*) >= 5)
     SELECT g.*, hr.birth_year y FROM g JOIN horse_ratings hr ON hr.name = g.h AND hr.rating_mode = 'performance'`).all() as any[];
   for (const r of righe) {
-    const m: MisureGare = { rendimento: r.p / r.c, classe: r.nl >= 3 ? r.cl : null, costanza: r.t3 / r.c };
+    const m: MisureGare = { rendimento: r.p / r.c, classe: r.nl >= 3 ? r.cl : null, costanza: r.t3 / r.c, frequenza: r.c / Math.max(1, r.st) };
     perCavallo.set(r.h, m);
-    if (!perAnno.has(r.y)) perAnno.set(r.y, { rendimento: [], classe: [], costanza: [] });
+    if (!perAnno.has(r.y)) perAnno.set(r.y, { rendimento: [], classe: [], costanza: [], frequenza: [] });
     const a = perAnno.get(r.y)!;
-    a.rendimento.push(m.rendimento); a.costanza.push(m.costanza);
+    a.rendimento.push(m.rendimento); a.costanza.push(m.costanza); a.frequenza.push(m.frequenza);
     if (m.classe != null) a.classe.push(m.classe);
   }
-  perAnno.forEach(a => { a.rendimento = ordinati(a.rendimento); a.classe = ordinati(a.classe); a.costanza = ordinati(a.costanza); });
+  perAnno.forEach(a => { a.rendimento = ordinati(a.rendimento); a.classe = ordinati(a.classe); a.costanza = ordinati(a.costanza); a.frequenza = ordinati(a.frequenza); });
   const colonna = (sql: string) => { try { return ordinati((db.prepare(sql).all() as any[]).map(r => r.v)); } catch { return []; } };
   listeRadar = {
     perAnno, perCavallo,
@@ -237,7 +239,7 @@ function radarCavallo(db: any, horse: any) {
     { chiave: "rendimento", etichetta: "Rendimento", valore: percentileIn(a?.rendimento, m?.rendimento), nota: poche },
     { chiave: "costanza", etichetta: "Costanza", valore: percentileIn(a?.costanza, m?.costanza), nota: poche },
     { chiave: "classe", etichetta: "Classe", valore: percentileIn(a?.classe, m?.classe ?? null), nota: poche },
-    { chiave: "durata", etichetta: "Durata", valore: horse.integrita_percentile ?? null },
+    { chiave: "frequenza", etichetta: "Frequenza", valore: percentileIn(a?.frequenza, m?.frequenza), nota: poche },
     { chiave: "pedigree", etichetta: "Pedigree", valore: pedigree },
   ];
 }
