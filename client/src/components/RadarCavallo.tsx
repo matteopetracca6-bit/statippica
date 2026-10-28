@@ -79,7 +79,6 @@ export default function RadarCavallo({ punte, colore, dimensione = 230 }: {
           <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12} fontWeight={800} fill={colore} opacity={0.9}>{media}</text>
         )}
       </svg>
-      <figcaption>Da 0 a 100: quanti cavalli confrontabili lascia dietro. Al centro la media.</figcaption>
     </figure>
   );
 }

@@ -1108,7 +1108,6 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 /* Grafico a sei punte in testata alla scheda del cavallo. */
 .radar-cavallo { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; margin: -8px 0 -6px !important; }
 .radar-cavallo svg { display: block; max-width: 100%; height: auto; overflow: visible; }
-.radar-cavallo figcaption { font-size: 10.5px; color: hsl(210 8% 42%); margin-top: -4px; text-align: center; max-width: 250px; }
 .radar-cavallo .radar-forma { transform-origin: center; animation: radar-entra .6s cubic-bezier(.22,1,.36,1) both; transform-box: fill-box; }
 @keyframes radar-entra { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .radar-cavallo .radar-forma { animation: none; } }
