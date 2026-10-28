@@ -36,8 +36,6 @@ export default function RadarCavallo({ punte, colore, dimensione = 230 }: {
   };
   const anello = (v: number) => punte.map((_, i) => punto(i, v).join(",")).join(" ");
   const forma = punte.map((p, i) => punto(i, p.valore ?? 0).join(",")).join(" ");
-  const validi = punte.filter(p => p.valore != null);
-  const media = validi.length ? Math.round(validi.reduce((s, p) => s + (p.valore ?? 0), 0) / validi.length) : null;
 
   return (
     <figure className="radar-cavallo" style={{ ["--c-radar" as any]: colore, margin: 0, width: Math.round(dimensione * 300 / 250) }}
@@ -75,9 +73,6 @@ export default function RadarCavallo({ punte, colore, dimensione = 230 }: {
             </g>
           );
         })}
-        {media != null && (
-          <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12} fontWeight={800} fill={colore} opacity={0.9}>{media}</text>
-        )}
       </svg>
     </figure>
   );
