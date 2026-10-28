@@ -4,7 +4,7 @@
  * Ogni punta va da 0 al centro a 100 sul bordo e dice quanti cavalli
  * confrontabili questo cavallo lascia dietro di se' (il calcolo e' nel
  * server, radarCavallo). Il colore e' quello del voto. Una punta senza dato
- * (per esempio il potenziale di un cavallo che non corre piu') resta al
+ * (per esempio un cavallo con meno di 5 corse) resta al
  * centro, tratteggiata, con la scritta "n.d." al posto del numero.
  */
 export interface PuntaRadar {
@@ -15,12 +15,12 @@ export interface PuntaRadar {
 }
 
 const SPIEGAZIONI: Record<string, string> = {
-  guadagni: "Guadagni di carriera, contro i nati nello stesso anno",
-  voto: "Posizione del voto nella sua annata",
-  tempo: "Miglior tempo al km, contro i nati nello stesso anno",
+  velocita: "Miglior tempo al km, contro i nati nello stesso anno",
+  rendimento: "Premio medio vinto per ogni corsa, contro i nati nello stesso anno (almeno 5 corse)",
+  costanza: "Quante volte arriva nei primi tre, contro i nati nello stesso anno (almeno 5 corse)",
+  classe: "Livello delle corse disputate, stimato dal premio del vincitore, contro i nati nello stesso anno",
+  durata: "Stagioni corse rispetto a quelle possibili per la sua età",
   pedigree: "Valore di padre (60%) e madre (40%) come riproduttori, contro gli altri riproduttori con figli in gara",
-  potenziale: "Quanto può ancora guadagnare, contro i cavalli in attività",
-  piazzamenti: "Percentuale di arrivi nei primi tre, contro i nati nello stesso anno (almeno 5 corse)",
 };
 
 export default function RadarCavallo({ punte, colore, dimensione = 230 }: {
