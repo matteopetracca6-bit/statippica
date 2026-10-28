@@ -1039,15 +1039,45 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   background: hsl(220 12% 10%); border: 1px solid hsl(220 10% 17%);
 }
 .allenatori-cavallo .periodo.attuale {
-  background: linear-gradient(90deg, hsl(28 85% 55% / 0.13), hsl(28 85% 55% / 0.02));
-  border-color: hsl(28 85% 55% / 0.35);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 14%, transparent), color-mix(in srgb, var(--c) 2%, transparent));
+  border-color: color-mix(in srgb, var(--c) 40%, transparent);
 }
+.pannello .icona-voto { color: var(--c); flex-shrink: 0; }
 .allenatori-cavallo .numeri { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: hsl(210 8% 62%); }
 .allenatori-cavallo .etichetta-attuale {
   margin-left: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-  padding: 1px 7px; border-radius: 999px; color: hsl(28 90% 68%); background: hsl(28 85% 55% / 0.16);
+  padding: 1px 7px; border-radius: 999px;
+  color: color-mix(in srgb, var(--c) 80%, white); background: color-mix(in srgb, var(--c) 18%, transparent);
 }
 @media (max-width: 560px) {
   .tabella-allenatore .solo-largo { display: none; }
   .allenatori-cavallo .numeri { gap: 10px; }
 }
+
+/* ── Scheda del cavallo su due colonne ───────────────────────────────────
+   Ottobre 2026. Da computer la scheda era una colonna sola lunga quasi
+   cinque schermate, con riquadri larghi e mezzi vuoti. Ora:
+   - a sinistra (piu' larga) la carriera: palmares, anno per anno, ultime e
+     migliori gare, genealogia;
+   - a destra le letture: voto, percentili, dove ha corso, stime, allenatori,
+     piste, fratellastri.
+   Sul telefono le due colonne si sciolgono (display: contents) e i riquadri
+   tornano in fila uno sotto l'altro, nell'ordine scritto in --o. */
+.scheda-corpo { display: flex; flex-direction: column; }
+.scheda-col { display: contents; }
+.scheda-corpo .blocco { order: var(--o, 50); min-width: 0; }
+.scheda-corpo .blocco:empty { display: none; }
+@media (min-width: 1180px) {
+  .scheda-voto { --pad-pannello: 16px 18px; --spazio-pannello: 16px; }
+  .scheda-corpo {
+    display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    gap: 0 18px; align-items: start;
+  }
+  .scheda-col { display: flex; flex-direction: column; min-width: 0; }
+  .scheda-corpo .blocco { order: 0; }
+  /* Nella colonna stretta le tabelle stanno piu' strette. */
+  .scheda-col.laterale table td, .scheda-col.laterale table th { padding-left: 6px !important; padding-right: 6px !important; }
+  .scheda-voto .testata-cavallo { margin-bottom: 14px; }
+}
+.barra-scheda { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+@media (min-width: 1180px) { .barra-scheda { margin-bottom: 14px; } }
