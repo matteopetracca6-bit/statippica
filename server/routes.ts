@@ -165,6 +165,72 @@ function gradeColor(grade: string): string {
   return map[grade] ?? "#444";
 }
 
+// ── Le sei punte del grafico in testata alla scheda del cavallo ─────────────
+// Ogni punta e' un numero da 0 a 100 che dice quanti cavalli confrontabili
+// questo cavallo lascia dietro di se'. Le liste di confronto si calcolano una
+// volta e si tengono per mezz'ora: sono qualche decina di migliaia di numeri.
+type ListeRadar = { top3PerAnno: Map<number, number[]>; stalloni: number[]; fattrici: number[];
+                    residui: number[]; quando: number };
+let listeRadar: ListeRadar | null = null;
+function ordinati(v: number[]) { return v.filter(x => x != null && isFinite(x)).sort((a, b) => a - b); }
+function percentileIn(lista: number[] | undefined, x: number | null | undefined): number | null {
+  if (!lista || !lista.length || x == null || !isFinite(x)) return null;
+  let sotto = 0, pari = 0;
+  for (const v of lista) { if (v < x) sotto++; else if (v === x) pari++; }
+  return Math.round(1000 * (sotto + pari / 2) / lista.length) / 10;
+}
+function prendiListeRadar(db: any): ListeRadar {
+  if (listeRadar && Date.now() - listeRadar.quando < 30 * 60_000) return listeRadar;
+  const top3PerAnno = new Map<number, number[]>();
+  // Arrivi nei primi tre contati dalle gare in archivio, come la testata
+  // della scheda: i piazzamenti salvati nelle schede sono spesso vuoti.
+  for (const r of db.prepare(`SELECT h.birth_year y, SUM(CASE WHEN r.placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) q
+                              FROM races r JOIN horse_ratings h ON h.name = r.horse_name AND h.rating_mode = 'performance'
+                              GROUP BY r.horse_name HAVING COUNT(*) >= 5`).all() as any[]) {
+    if (!top3PerAnno.has(r.y)) top3PerAnno.set(r.y, []);
+    top3PerAnno.get(r.y)!.push(r.q);
+  }
+  top3PerAnno.forEach((v, k) => top3PerAnno.set(k, ordinati(v)));
+  const colonna = (sql: string) => { try { return ordinati((db.prepare(sql).all() as any[]).map(r => r.v)); } catch { return []; } };
+  listeRadar = {
+    top3PerAnno,
+    stalloni: colonna(`SELECT final_score v FROM stallion_rating_stats WHERE n_figli_corsi >= 5`),
+    fattrici: colonna(`SELECT final_score v FROM dam_rating_stats WHERE n_valutati >= 2`),
+    residui: colonna(`SELECT residuo v FROM valore_residuo`),
+    quando: Date.now(),
+  };
+  return listeRadar;
+}
+function radarCavallo(db: any, horse: any, inAttivita: boolean) {
+  if (horse.rating_mode !== "performance") return null;
+  const L = prendiListeRadar(db);
+  const uno = (sql: string, ...a: any[]) => { try { return (db.prepare(sql).get(...a) as any)?.v ?? null; } catch { return null; } };
+  // Pedigree: il padre conta 60, la madre 40, ciascuno messo a confronto
+  // con gli altri riproduttori che hanno figli in gara.
+  const pPadre = percentileIn(L.stalloni, uno(`SELECT final_score v FROM stallion_rating_stats WHERE sire = ? AND n_figli_corsi >= 5`, horse.sire));
+  const pMadre = percentileIn(L.fattrici, uno(`SELECT final_score v FROM dam_rating_stats WHERE dam = ? AND n_valutati >= 2`, horse.dam));
+  const pedigree = pPadre != null && pMadre != null ? Math.round(6 * pPadre + 4 * pMadre) / 10 : (pPadre ?? pMadre);
+  const voto = horse.pos_annata && horse.tot_annata
+    ? Math.round(1000 * (1 - (horse.pos_annata - 0.5) / horse.tot_annata)) / 10
+    : (horse.score ?? null);
+  const gare = uno(`SELECT COUNT(*) v FROM races WHERE horse_name = ?`, horse.name) ?? 0;
+  const top3 = gare >= 5
+    ? percentileIn(L.top3PerAnno.get(horse.birth_year), (horse.career_top3 ?? 0) / gare)
+    : null;
+  const potenziale = inAttivita
+    ? percentileIn(L.residui, uno(`SELECT residuo v FROM valore_residuo WHERE horse_name = ?`, horse.name))
+    : null;
+  return [
+    { chiave: "guadagni", etichetta: "Guadagni", valore: horse.earn_percentile ?? null },
+    { chiave: "voto", etichetta: "Voto", valore: voto },
+    { chiave: "tempo", etichetta: "Tempo", valore: horse.time_percentile ?? null },
+    { chiave: "pedigree", etichetta: "Pedigree", valore: pedigree },
+    { chiave: "potenziale", etichetta: "Potenziale", valore: potenziale,
+      nota: inAttivita ? undefined : "non corre più" },
+    { chiave: "piazzamenti", etichetta: "Vitt. + piazz.", valore: top3 },
+  ];
+}
+
 export function registerRoutes(httpServer: Server, app: Express) {
   // Dopo l'avvio il server si chiede da solo le pagine piu' lente, cosi' il
   // primo visitatore trova i conti gia' fatti.
@@ -907,6 +973,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         in_attivita: inAttivita,
         valore_carriera: valoreCarriera,
         affidabilita_voto: affidabilita,
+        radar: radarCavallo(db, horse, !!inAttivita),
       });
     } finally {
       db.close();

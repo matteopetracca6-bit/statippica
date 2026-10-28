@@ -1054,30 +1054,64 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .allenatori-cavallo .numeri { gap: 10px; }
 }
 
-/* ── Scheda del cavallo su due colonne ───────────────────────────────────
-   Ottobre 2026. Da computer la scheda era una colonna sola lunga quasi
-   cinque schermate, con riquadri larghi e mezzi vuoti. Ora:
-   - a sinistra (piu' larga) la carriera: palmares, anno per anno, ultime e
-     migliori gare, genealogia;
-   - a destra le letture: voto, percentili, dove ha corso, stime, allenatori,
-     piste, fratellastri.
-   Sul telefono le due colonne si sciolgono (display: contents) e i riquadri
-   tornano in fila uno sotto l'altro, nell'ordine scritto in --o. */
+/* ── Scheda del cavallo a fasce ──────────────────────────────────────────
+   Ottobre 2026. Prima la scheda da computer era su due colonne: per i cavalli
+   con poche gare la destra finiva molto piu' in basso della sinistra, e in
+   fondo restavano quattro riquadri in fila con mezza pagina vuota accanto.
+   Ora e' fatta a fasce orizzontali, ognuna con i suoi riquadri affiancati:
+   - carriera (palmares, anno per anno, ultime gare) | voto e percentili;
+   - stime economiche, affiancate;
+   - migliori gare, piste, allenatori, fratellastri: quattro riquadri in
+     griglia;
+   - genealogia e consanguineita'.
+   Sul telefono fasce e colonne si sciolgono (display: contents) e i
+   riquadri tornano in fila, nell'ordine scritto in --o. */
 .scheda-corpo { display: flex; flex-direction: column; }
-.scheda-col { display: contents; }
+.scheda-corpo .fascia-scheda, .scheda-col { display: contents; }
 .scheda-corpo .blocco { order: var(--o, 50); min-width: 0; }
 .scheda-corpo .blocco:empty { display: none; }
 @media (min-width: 1180px) {
   .scheda-voto { --pad-pannello: 16px 18px; --spazio-pannello: 16px; }
-  .scheda-corpo {
-    display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-    gap: 0 18px; align-items: start;
-  }
-  .scheda-col { display: flex; flex-direction: column; min-width: 0; }
+  .scheda-corpo .fascia-scheda { display: grid; gap: 0 16px; align-items: start; }
+  .scheda-corpo .fascia-carriera { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
+  .scheda-corpo .fascia-griglia { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+  /* auto-fit: se un riquadro manca, gli altri si allargano e non resta il buco. */
+  .scheda-corpo .fascia-quattro { grid-template-columns: repeat(auto-fit, minmax(calc(50% - 8px), 1fr)); }
+  .scheda-corpo .fascia-genealogia { grid-template-columns: repeat(auto-fit, minmax(calc(50% - 8px), 1fr)); }
+  .scheda-corpo .scheda-col { display: flex; flex-direction: column; min-width: 0; }
   .scheda-corpo .blocco { order: 0; }
-  /* Nella colonna stretta le tabelle stanno piu' strette. */
-  .scheda-col.laterale table td, .scheda-col.laterale table th { padding-left: 6px !important; padding-right: 6px !important; }
+  /* I riquadri affiancati stanno alti uguali, cosi' la fascia non ha buchi. */
+  .scheda-corpo .fascia-griglia { align-items: stretch; }
+  .scheda-corpo .fascia-griglia > .blocco,
+  .scheda-corpo .fascia-griglia > .blocco > section { display: flex; flex-direction: column; }
+  .scheda-corpo .fascia-griglia > .blocco > *,
+  .scheda-corpo .fascia-griglia > .blocco > section > * { flex: 1 1 auto; }
+  .scheda-corpo .fascia-soldi { align-items: start; }
+  .scheda-corpo .fascia-soldi > .blocco > *, .scheda-corpo .fascia-soldi > .blocco > section > * { flex: 0 0 auto; }
+  .scheda-corpo .fascia-griglia table td, .scheda-corpo .fascia-griglia table th { padding-left: 6px !important; padding-right: 6px !important; }
   .scheda-voto .testata-cavallo { margin-bottom: 14px; }
+}
+.scheda-corpo .fascia-scheda > .blocco:empty { display: none !important; }
+@media (min-width: 1180px) {
+  .scheda-corpo .fascia-palmares { display: block; }
+  .scheda-corpo .fascia-palmares .palmares-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 8px 10px; }
+  /* Ultime gare: una riga sola per gara invece di due. */
+  .scheda-corpo .riga-gara { padding: 4px 0 !important; }
+  .scheda-corpo .riga-gara > div:nth-child(2) { display: flex; align-items: baseline; gap: 10px; }
+  .scheda-corpo .riga-gara > div:nth-child(2) > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scheda-corpo .riga-gara > div:nth-child(2) > div:first-child { flex: 0 1 auto; min-width: 0; }
+  .scheda-corpo .riga-gara > div:nth-child(2) > div:last-child { flex: 0 1 auto; min-width: 0; }
 }
 .barra-scheda { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 @media (min-width: 1180px) { .barra-scheda { margin-bottom: 14px; } }
+
+/* Grafico a sei punte in testata alla scheda del cavallo. */
+.radar-cavallo { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; margin: -8px 0 -6px !important; }
+.radar-cavallo svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+.radar-cavallo figcaption { font-size: 10.5px; color: hsl(210 8% 42%); margin-top: -4px; text-align: center; max-width: 250px; }
+.radar-cavallo .radar-forma { transform-origin: center; animation: radar-entra .6s cubic-bezier(.22,1,.36,1) both; transform-box: fill-box; }
+@keyframes radar-entra { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .radar-cavallo .radar-forma { animation: none; } }
+@media (max-width: 760px) {
+  .radar-cavallo { order: 5; width: 100% !important; max-width: 340px; margin: 4px auto 0 !important; }
+}
