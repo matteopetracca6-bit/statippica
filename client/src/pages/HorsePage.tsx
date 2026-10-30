@@ -338,6 +338,56 @@ function HorsePedigreeNode({ label, name, isStallion, highlight }: {
   );
 }
 
+// Lingue di Wikipedia, per dire da dove viene il dato.
+const LINGUA_WIKI: Record<string, string> = { fr: "francese", sv: "svedese", en: "inglese", it: "italiana" };
+
+function soldiMondo(g: { importo: number; valuta: string } | null | undefined) {
+  if (!g) return "—";
+  const n = g.importo.toLocaleString("it-IT");
+  if (g.valuta === "EUR") return `€${n}`;
+  if (g.valuta === "USD") return `$${n}`;
+  if (g.valuta === "SEK") return `${n} kr`;
+  return `${n} ${g.valuta}`;
+}
+
+/* I totali dei cavalli storici vengono dall'anagrafe italiana, che conta solo
+   le corse in Italia. Per i grandi campioni che hanno corso anche all'estero
+   si mostra accanto la carriera intera, presa da Wikipedia con la fonte. */
+function CarrieraMondo({ italia, mondo }: { italia: any; mondo: any }) {
+  if (!mondo) {
+    return (
+      <div className="carriera-mondo vuota">
+        I numeri qui sopra contano solo le corse in Italia: le corse all&apos;estero non sono nell&apos;archivio.
+      </div>
+    );
+  }
+  const uguale = mondo.corse === italia.career_races && mondo.vittorie === italia.career_wins;
+  const pct = mondo.corse ? Math.round((mondo.vittorie / mondo.corse) * 1000) / 10 : null;
+  return (
+    <div className="carriera-mondo">
+      <div className="cm-titolo">
+        {uguale ? "Carriera nel mondo: coincide con quella in Italia" : "In tutto il mondo, estero compreso"}
+        <span className="cm-nota">I numeri sopra contano solo le corse in Italia</span>
+      </div>
+      {!uguale && (
+        <div className="cm-dati">
+          <div><b>{mondo.corse}</b> corse</div>
+          <div><b>{mondo.vittorie}</b> vittorie{pct != null && <span className="cm-sotto"> ({pct.toLocaleString("it-IT")}%)</span>}</div>
+          <div><b style={{ color: "hsl(51 90% 62%)" }}>{soldiMondo(mondo.guadagni)}</b> {mondo.guadagni?.valuta === "SEK" ? "(corone svedesi)" : mondo.guadagni?.valuta === "USD" ? "(dollari)" : ""}</div>
+          {mondo.record && <div>record <b>{mondo.record}</b></div>}
+        </div>
+      )}
+      <div className="cm-fonte">
+        Fonte:{" "}
+        {mondo.fonti.map((f: any, i: number) => (
+          <span key={f.url}>{i > 0 && ", "}<a href={f.url} target="_blank" rel="noreferrer">Wikipedia {LINGUA_WIKI[f.wiki] ?? f.wiki}</a></span>
+        ))}
+        {mondo.altre_corse && <> · altre fonti contano {mondo.altre_corse.join(" o ")} corse</>}
+      </div>
+    </div>
+  );
+}
+
 export default function HorsePage() {
   const [match, params] = useRoute("/horse/:name/:year");
   const [, navigate] = useLocation();
@@ -524,6 +574,7 @@ export default function HorsePage() {
           </div>
           <div><div className="valore">{horse.record_career ? formatRecord(horse.record_career) : "—"}</div><div className="etichetta">Record al km</div></div>
         </div>
+        {eStorico && <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />}
       </div>
 
       <IndiceSezioni voci={[

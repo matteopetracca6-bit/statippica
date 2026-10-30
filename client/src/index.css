@@ -1114,3 +1114,14 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 @media (max-width: 760px) {
   .radar-cavallo { order: 5; width: 100% !important; max-width: 340px; margin: 4px auto 0 !important; }
 }
+
+/* Carriera nel mondo dei campioni storici, sotto i totali italiani. */
+.carriera-mondo { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: hsl(220 14% 9% / .6); border: 1px solid hsl(220 10% 22%); font-size: 13px; color: hsl(210 10% 80%); }
+.carriera-mondo.vuota { font-size: 12px; color: hsl(210 8% 58%); padding: 8px 12px; }
+.carriera-mondo .cm-titolo { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: hsl(210 10% 62%); font-weight: 700; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.carriera-mondo .cm-nota { text-transform: none; letter-spacing: 0; font-weight: 400; color: hsl(210 8% 52%); font-size: 11.5px; }
+.carriera-mondo .cm-dati { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 8px; font-size: 14px; }
+.carriera-mondo .cm-dati b { font-size: 17px; color: hsl(210 15% 94%); }
+.carriera-mondo .cm-sotto { color: hsl(183 60% 55%); font-size: 12px; }
+.carriera-mondo .cm-fonte { margin-top: 8px; font-size: 11.5px; color: hsl(210 8% 52%); }
+.carriera-mondo .cm-fonte a { color: hsl(183 60% 55%); }

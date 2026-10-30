@@ -244,6 +244,23 @@ function radarCavallo(db: any, horse: any) {
   ];
 }
 
+// Totali di carriera in tutto il mondo dei campioni storici, letti ogni notte
+// dalle schede di Wikipedia (scripts/totali_mondiali.py). L'anagrafe italiana
+// conta solo le corse in Italia: per chi ha corso molto all'estero, come
+// VARENNE, quei totali sono molto piu' bassi del vero.
+let totaliMondiali: { quando: number; mtime: number; cavalli: Record<string, any> } | null = null;
+function totaleMondiale(nome: string, anno: number) {
+  const f = path.join(process.cwd(), "totali_mondiali.json");
+  try {
+    const mtime = fs.statSync(f).mtimeMs;
+    if (!totaliMondiali || totaliMondiali.mtime !== mtime) {
+      totaliMondiali = { quando: Date.now(), mtime, cavalli: JSON.parse(fs.readFileSync(f, "utf8")).cavalli ?? {} };
+    }
+  } catch { return null; }
+  const e = totaliMondiali.cavalli[`${nome}|${anno}`];
+  return e && e.esito === "trovato" ? e : null;
+}
+
 export function registerRoutes(httpServer: Server, app: Express) {
   // Dopo l'avvio il server si chiede da solo le pagine piu' lente, cosi' il
   // primo visitatore trova i conti gia' fatti.
@@ -987,6 +1004,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         valore_carriera: valoreCarriera,
         affidabilita_voto: affidabilita,
         radar: radarCavallo(db, horse),
+        totali_mondiali: horse.rating_mode === "storico" ? totaleMondiale(horse.name, horse.birth_year) : null,
       });
     } finally {
       db.close();

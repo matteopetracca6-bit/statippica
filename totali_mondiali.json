@@ -1,0 +1,709 @@
+{
+ "spiegazione": "Totali di carriera in tutto il mondo dei campioni storici, letti dalle schede di Wikipedia. Li aggiorna ogni notte scripts/totali_mondiali.py.",
+ "cavalli": {
+  "ALGIERS HALL|2003": {
+   "nome": "ALGIERS HALL",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ALMA ROC|1997": {
+   "nome": "ALMA ROC",
+   "anno": 1997,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "BARTALI OK|1998": {
+   "nome": "BARTALI OK",
+   "anno": 1998,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "BORDEAUX AS|1998": {
+   "nome": "BORDEAUX AS",
+   "anno": 1998,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "BRADS PHOTO|1997": {
+   "nome": "BRADS PHOTO",
+   "anno": 1997,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "BRANDY DEI FIORI|1998": {
+   "nome": "BRANDY DEI FIORI",
+   "anno": 1998,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "CHEROKEE CHIEF|1999": {
+   "nome": "CHEROKEE CHIEF",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "CHIRONE DEI|1999": {
+   "nome": "CHIRONE DEI",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "CIRDAN|1999": {
+   "nome": "CIRDAN",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "COIS CAF|1999": {
+   "nome": "COIS CAF",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "COKSTILE|2013": {
+   "nome": "COKSTILE",
+   "anno": 2013,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 77,
+   "vittorie": 28,
+   "guadagni": null,
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Cokstile",
+     "url": "https://sv.wikipedia.org/wiki/Cokstile"
+    }
+   ]
+  },
+  "CROWNING CLASSIC|1991": {
+   "nome": "CROWNING CLASSIC",
+   "anno": 1991,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "DAGUET RAPIDE|2000": {
+   "nome": "DAGUET RAPIDE",
+   "anno": 2000,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 32,
+   "vittorie": 19,
+   "guadagni": {
+    "importo": 12651189,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Daguet Rapide",
+     "url": "https://sv.wikipedia.org/wiki/Daguet_Rapide"
+    }
+   ]
+  },
+  "DIGGER CROWN|1997": {
+   "nome": "DIGGER CROWN",
+   "anno": 1997,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 126,
+   "vittorie": 59,
+   "guadagni": {
+    "importo": 3060137,
+    "valuta": "USD"
+   },
+   "record": null,
+   "fonte_corse": "en",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "en",
+     "titolo": "Digger Crown",
+     "url": "https://en.wikipedia.org/wiki/Digger_Crown"
+    }
+   ]
+  },
+  "DOMINATORE D'ORIO|2000": {
+   "nome": "DOMINATORE D'ORIO",
+   "anno": 2000,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "DULAL|2000": {
+   "nome": "DULAL",
+   "anno": 2000,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ECHO' DEI VELTRI|2001": {
+   "nome": "ECHO' DEI VELTRI",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "EL NINO|2001": {
+   "nome": "EL NINO",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "EQUINOX BI|2001": {
+   "nome": "EQUINOX BI",
+   "anno": 2001,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 27,
+   "vittorie": 12,
+   "guadagni": {
+    "importo": 9456037,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Equinox Bi",
+     "url": "https://sv.wikipedia.org/wiki/Equinox_Bi"
+    }
+   ]
+  },
+  "EXPLOIT CAF|2001": {
+   "nome": "EXPLOIT CAF",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30",
+   "motivo": "le schede trovate hanno meno corse o vittorie di quelle gia' contate in Italia"
+  },
+  "FAMOUS NOVEMBER|1992": {
+   "nome": "FAMOUS NOVEMBER",
+   "anno": 1992,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "FELIX DEL NORD|2002": {
+   "nome": "FELIX DEL NORD",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "FITZGERALD BIGI|2002": {
+   "nome": "FITZGERALD BIGI",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "FRISKY BIEFFE|2002": {
+   "nome": "FRISKY BIEFFE",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "FRULLINO JET|2002": {
+   "nome": "FRULLINO JET",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "FUSETTA|2002": {
+   "nome": "FUSETTA",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "GHIACCIO DEL NORD|2003": {
+   "nome": "GHIACCIO DEL NORD",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "GHIBELLINO|2003": {
+   "nome": "GHIBELLINO",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "GIULIA GRIF|2003": {
+   "nome": "GIULIA GRIF",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "GORNIZ|2003": {
+   "nome": "GORNIZ",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "IDOLE DI POGGIO|2004": {
+   "nome": "IDOLE DI POGGIO",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "IGOR FONT|2004": {
+   "nome": "IGOR FONT",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ILARIA JET|2004": {
+   "nome": "ILARIA JET",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "INDU' JET|2004": {
+   "nome": "INDU' JET",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "INFINITIF|2004": {
+   "nome": "INFINITIF",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "IRINA|2004": {
+   "nome": "IRINA",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ISLAND EFFE|2004": {
+   "nome": "ISLAND EFFE",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ISMOS FP|2004": {
+   "nome": "ISMOS FP",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "KRAMER BOY|1993": {
+   "nome": "KRAMER BOY",
+   "anno": 1993,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 61,
+   "vittorie": 29,
+   "guadagni": {
+    "importo": 14431899,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Kramer Boy",
+     "url": "https://sv.wikipedia.org/wiki/Kramer_Boy"
+    }
+   ]
+  },
+  "LA VIDA LOCA|2005": {
+   "nome": "LA VIDA LOCA",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "LANA DEL RIO|2005": {
+   "nome": "LANA DEL RIO",
+   "anno": 2005,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 47,
+   "vittorie": 18,
+   "guadagni": null,
+   "record": null,
+   "fonte_corse": "it",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "it",
+     "titolo": "Lana del Rio",
+     "url": "https://it.wikipedia.org/wiki/Lana_del_Rio"
+    }
+   ]
+  },
+  "LEBEN RL|2005": {
+   "nome": "LEBEN RL",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "LEGENDARY LOVER K|1997": {
+   "nome": "LEGENDARY LOVER K",
+   "anno": 1997,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 90,
+   "vittorie": 35,
+   "guadagni": {
+    "importo": 16509648,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Legendary Lover K.",
+     "url": "https://sv.wikipedia.org/wiki/Legendary_Lover_K."
+    }
+   ]
+  },
+  "LESTER|2005": {
+   "nome": "LESTER",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "LETS GO|1999": {
+   "nome": "LETS GO",
+   "anno": 1999,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 72,
+   "vittorie": 25,
+   "guadagni": {
+    "importo": 1113355,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Lets Go (travhäst)",
+     "url": "https://sv.wikipedia.org/wiki/Lets_Go_%28travh%C3%A4st%29"
+    }
+   ]
+  },
+  "LIBECCIO GRIF|2005": {
+   "nome": "LIBECCIO GRIF",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "LIGHT KRONOS|2005": {
+   "nome": "LIGHT KRONOS",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "LOONEY TUNES|2005": {
+   "nome": "LOONEY TUNES",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "LOVER POWER|2005": {
+   "nome": "LOVER POWER",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "MACK GRACE SM|2006": {
+   "nome": "MACK GRACE SM",
+   "anno": 2006,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 113,
+   "vittorie": 56,
+   "guadagni": {
+    "importo": 1707175,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Mack Grace Sm",
+     "url": "https://sv.wikipedia.org/wiki/Mack_Grace_Sm"
+    }
+   ]
+  },
+  "MAGO D'AMORE|2006": {
+   "nome": "MAGO D'AMORE",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "MERCKX OK|2006": {
+   "nome": "MERCKX OK",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "MIRTILLO ROSSO|2006": {
+   "nome": "MIRTILLO ROSSO",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "MOSES ROB|2006": {
+   "nome": "MOSES ROB",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "NAD AL SHEBA|2007": {
+   "nome": "NAD AL SHEBA",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "NAPOLEON BAR|2007": {
+   "nome": "NAPOLEON BAR",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "NESTA EFFE|2007": {
+   "nome": "NESTA EFFE",
+   "anno": 2007,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 63,
+   "vittorie": 22,
+   "guadagni": {
+    "importo": 789405,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Nesta Effe",
+     "url": "https://sv.wikipedia.org/wiki/Nesta_Effe"
+    }
+   ]
+  },
+  "OBAMA GAR|2008": {
+   "nome": "OBAMA GAR",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "OPAL VIKING|2000": {
+   "nome": "OPAL VIKING",
+   "anno": 2000,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 113,
+   "vittorie": 54,
+   "guadagni": {
+    "importo": 2133811,
+    "valuta": "EUR"
+   },
+   "record": "1.10.6",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Opal Viking",
+     "url": "https://fr.wikipedia.org/wiki/Opal_Viking"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Opal Viking",
+     "url": "https://sv.wikipedia.org/wiki/Opal_Viking"
+    }
+   ]
+  },
+  "ORSIA|2008": {
+   "nome": "ORSIA",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "OWEN'S CLUB|2008": {
+   "nome": "OWEN'S CLUB",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "PEACE OF MIND|2009": {
+   "nome": "PEACE OF MIND",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "PRINCESS GRIF|2009": {
+   "nome": "PRINCESS GRIF",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "PRUSSIA|2009": {
+   "nome": "PRUSSIA",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "RADIOFRECCIA FI|2010": {
+   "nome": "RADIOFRECCIA FI",
+   "anno": 2010,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "RINGOSTARR TREB|2010": {
+   "nome": "RINGOSTARR TREB",
+   "anno": 2010,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 96,
+   "vittorie": 33,
+   "guadagni": {
+    "importo": 16576315,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Ringostarr Treb",
+     "url": "https://sv.wikipedia.org/wiki/Ringostarr_Treb"
+    }
+   ]
+  },
+  "SIGNORELLI|1992": {
+   "nome": "SIGNORELLI",
+   "anno": 1992,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "SMERALDA JET|2011": {
+   "nome": "SMERALDA JET",
+   "anno": 2011,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "SOLERID|1992": {
+   "nome": "SOLERID",
+   "anno": 1992,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "TOME DE SOUSA|1993": {
+   "nome": "TOME DE SOUSA",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "TOPKAPI AS|1993": {
+   "nome": "TOPKAPI AS",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "TOSS OUT|1990": {
+   "nome": "TOSS OUT",
+   "anno": 1990,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "UNIFORZ|1994": {
+   "nome": "UNIFORZ",
+   "anno": 1994,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "URONOMETRO|1994": {
+   "nome": "URONOMETRO",
+   "anno": 1994,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "VARENNE|1995": {
+   "nome": "VARENNE",
+   "anno": 1995,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 73,
+   "vittorie": 62,
+   "guadagni": {
+    "importo": 6035666,
+    "valuta": "EUR"
+   },
+   "record": "1.09.1",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Varenne (cheval)",
+     "url": "https://fr.wikipedia.org/wiki/Varenne_%28cheval%29"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Varenne (häst)",
+     "url": "https://sv.wikipedia.org/wiki/Varenne_%28h%C3%A4st%29"
+    },
+    {
+     "wiki": "en",
+     "titolo": "Varenne",
+     "url": "https://en.wikipedia.org/wiki/Varenne"
+    },
+    {
+     "wiki": "it",
+     "titolo": "Varenne",
+     "url": "https://it.wikipedia.org/wiki/Varenne"
+    }
+   ]
+  },
+  "VENERE OK|1995": {
+   "nome": "VENERE OK",
+   "anno": 1995,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "VIDAR|1995": {
+   "nome": "VIDAR",
+   "anno": 1995,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "WESGATE CROWN|1991": {
+   "nome": "WESGATE CROWN",
+   "anno": 1991,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ZAMBESI FLASH|1996": {
+   "nome": "ZAMBESI FLASH",
+   "anno": 1996,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ZUCCHERO OM|1996": {
+   "nome": "ZUCCHERO OM",
+   "anno": 1996,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  }
+ },
+ "aggiornato_il": "2026-10-30"
+}

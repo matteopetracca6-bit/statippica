@@ -1,0 +1,65 @@
+name: StatIppica — Totali mondiali dei campioni storici (ogni notte)
+
+# Per i campioni storici (voto SSS, SS e S) l'archivio ha solo i totali
+# dell'anagrafe italiana, che contano le corse in Italia. Ogni notte questo
+# lavoro ne controlla un gruppo su Wikipedia (francese, svedese, inglese,
+# italiana), legge corse, vittorie, guadagni e record dell'intera carriera e li
+# salva in totali_mondiali.json con l'indirizzo della fonte. Vedi
+# scripts/totali_mondiali.py per i controlli che evitano il cavallo sbagliato.
+#
+# L'archivio lo legge soltanto, non lo ripubblica: per questo non aspetta il
+# turno degli altri lavori. Il file aggiornato va su main e il sito si
+# ripubblica con il deploy al push.
+
+on:
+  schedule:
+    - cron: "40 4 * * *"
+  workflow_dispatch:
+    inputs:
+      quanti:
+        description: "Quanti cavalli controllare"
+        required: false
+        default: "60"
+
+permissions:
+  contents: read
+
+jobs:
+  totali:
+    runs-on: ubuntu-latest
+    name: Controlla un gruppo di campioni
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+
+      - name: Leggi i totali mondiali
+        run: python3 scripts/totali_mondiali.py --db data.db --quanti "${{ inputs.quanti || '60' }}" --minuti 25
+
+      - name: Pubblica il file aggiornato
+        run: |
+          git config user.email "nightly@statippica.bot"
+          git config user.name "StatIppica Nightly"
+          git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
+          git add totali_mondiali.json
+          if git diff --cached --quiet; then
+            echo "Nessun cambiamento."
+          else
+            # Il messaggio NON inizia con "nightly update": cosi' il deploy al
+            # push ripubblica il sito con i totali nuovi.
+            git commit -q -m "Totali mondiali dei campioni storici $(date -u '+%Y-%m-%d')"
+            for i in 1 2 3; do
+              git pull -q --rebase origin main && git push -q origin main && break
+              sleep 10
+            done
+          fi
