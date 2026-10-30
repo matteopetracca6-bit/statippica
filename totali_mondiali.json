@@ -19,8 +19,20 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "BEAUTY AMERICA|1998": {
+   "nome": "BEAUTY AMERICA",
+   "anno": 1998,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "BORDEAUX AS|1998": {
    "nome": "BORDEAUX AS",
+   "anno": 1998,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "BOSS DI JESOLO|1998": {
+   "nome": "BOSS DI JESOLO",
    "anno": 1998,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
@@ -34,6 +46,12 @@
   "BRANDY DEI FIORI|1998": {
    "nome": "BRANDY DEI FIORI",
    "anno": 1998,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "CANTOR PF|1999": {
+   "nome": "CANTOR PF",
+   "anno": 1999,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
@@ -136,6 +154,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "DONADONI OK|2000": {
+   "nome": "DONADONI OK",
+   "anno": 2000,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "DULAL|2000": {
    "nome": "DULAL",
    "anno": 2000,
@@ -150,6 +174,12 @@
   },
   "EL NINO|2001": {
    "nome": "EL NINO",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ELDORA KING|2001": {
+   "nome": "ELDORA KING",
    "anno": 2001,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
@@ -182,6 +212,39 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30",
    "motivo": "le schede trovate hanno meno corse o vittorie di quelle gia' contate in Italia"
+  },
+  "FACE TIME BOURBON|2015": {
+   "nome": "FACE TIME BOURBON",
+   "anno": 2015,
+   "esito": "trovato",
+   "letto_il": "2026-10-30",
+   "corse": 43,
+   "vittorie": 35,
+   "guadagni": {
+    "importo": 3421865,
+    "valuta": "EUR"
+   },
+   "record": "1.09.1",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Face Time Bourbon",
+     "url": "https://fr.wikipedia.org/wiki/Face_Time_Bourbon"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Face Time Bourbon",
+     "url": "https://sv.wikipedia.org/wiki/Face_Time_Bourbon"
+    }
+   ]
+  },
+  "FAIRBANK GI|2002": {
+   "nome": "FAIRBANK GI",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
   },
   "FAMOUS NOVEMBER|1992": {
    "nome": "FAMOUS NOVEMBER",
@@ -239,6 +302,12 @@
   },
   "GORNIZ|2003": {
    "nome": "GORNIZ",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "GWINETH DUKE|2003": {
+   "nome": "GWINETH DUKE",
    "anno": 2003,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
@@ -412,6 +481,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "LORENZ DEL RONCO|2005": {
+   "nome": "LORENZ DEL RONCO",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "LOVER POWER|2005": {
    "nome": "LOVER POWER",
    "anno": 2005,
@@ -452,9 +527,21 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "MIGUEL WF|2006": {
+   "nome": "MIGUEL WF",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "MIRTILLO ROSSO|2006": {
    "nome": "MIRTILLO ROSSO",
    "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "MOCAMBO|1987": {
+   "nome": "MOCAMBO",
+   "anno": 1987,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
@@ -472,6 +559,12 @@
   },
   "NAPOLEON BAR|2007": {
    "nome": "NAPOLEON BAR",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "NAPOLEONE LANS|2007": {
+   "nome": "NAPOLEONE LANS",
    "anno": 2007,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
@@ -537,9 +630,21 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "OWEN CR|2008": {
+   "nome": "OWEN CR",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "OWEN'S CLUB|2008": {
    "nome": "OWEN'S CLUB",
    "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "PASCIA' LEST|2009": {
+   "nome": "PASCIA' LEST",
+   "anno": 2009,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
@@ -567,6 +672,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "REGENT LB|1991": {
+   "nome": "REGENT LB",
+   "anno": 1991,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "RINGOSTARR TREB|2010": {
    "nome": "RINGOSTARR TREB",
    "anno": 2010,
@@ -589,6 +700,12 @@
     }
    ]
   },
+  "SANTIAGO D'ETE|2011": {
+   "nome": "SANTIAGO D'ETE",
+   "anno": 2011,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "SIGNORELLI|1992": {
    "nome": "SIGNORELLI",
    "anno": 1992,
@@ -601,9 +718,27 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "SNAPPY TRIO|1992": {
+   "nome": "SNAPPY TRIO",
+   "anno": 1992,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
   "SOLERID|1992": {
    "nome": "SOLERID",
    "anno": 1992,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "SONIA|2011": {
+   "nome": "SONIA",
+   "anno": 2011,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "SUGAR REY|2011": {
+   "nome": "SUGAR REY",
+   "anno": 2011,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
@@ -694,6 +829,12 @@
   },
   "ZAMBESI FLASH|1996": {
    "nome": "ZAMBESI FLASH",
+   "anno": 1996,
+   "esito": "non_trovato",
+   "letto_il": "2026-10-30"
+  },
+  "ZOMBI DEI|1996": {
+   "nome": "ZOMBI DEI",
    "anno": 1996,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
