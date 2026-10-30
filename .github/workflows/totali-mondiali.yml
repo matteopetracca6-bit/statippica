@@ -22,7 +22,7 @@ on:
         default: "60"
 
 permissions:
-  contents: read
+  contents: write # serve per pubblicare totali_mondiali.json su main
 
 jobs:
   totali:
@@ -32,6 +32,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          # Con questa chiave il push fa partire il deploy del sito; con quella
+          # standard di GitHub i push non avviano altri lavori.
+          token: ${{ secrets.GH_NIGHTLY_TOKEN }}
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -50,7 +54,6 @@ jobs:
         run: |
           git config user.email "nightly@statippica.bot"
           git config user.name "StatIppica Nightly"
-          git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
           git add totali_mondiali.json
           if git diff --cached --quiet; then
             echo "Nessun cambiamento."
@@ -59,7 +62,11 @@ jobs:
             # push ripubblica il sito con i totali nuovi.
             git commit -q -m "Totali mondiali dei campioni storici $(date -u '+%Y-%m-%d')"
             for i in 1 2 3; do
-              git pull -q --rebase origin main && git push -q origin main && break
+              if git pull -q --rebase origin main && git push -q origin main; then
+                echo "Totali pubblicati."; exit 0
+              fi
               sleep 10
             done
+            echo "::error::non sono riuscito a pubblicare totali_mondiali.json"
+            exit 1
           fi
