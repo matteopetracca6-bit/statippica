@@ -1,108 +1,108 @@
 {
   "periodo": {
     "da": "2025-01-01",
-    "a": "2026-10-17",
-    "corse": 4767,
-    "partenze": 41604
+    "a": "2026-10-29",
+    "corse": 4927,
+    "partenze": 42941
   },
   "trattenuta_media": 0.253,
   "noi": {
-    "auc": 0.7402,
-    "log_loss": 0.5704,
-    "brier": 0.1895,
-    "tre_scelti_a_segno": 0.5399,
-    "primo_scelto_nei_tre": 0.6306
+    "auc": 0.7434,
+    "log_loss": 0.5676,
+    "brier": 0.1886,
+    "tre_scelti_a_segno": 0.5443,
+    "primo_scelto_nei_tre": 0.6367
   },
   "mercato": {
-    "auc": 0.75,
-    "log_loss": 0.5812,
-    "brier": 0.1908,
-    "tre_scelti_a_segno": 0.5589,
-    "primo_scelto_nei_tre": 0.6671
+    "auc": 0.7506,
+    "log_loss": 0.5803,
+    "brier": 0.1906,
+    "tre_scelti_a_segno": 0.56,
+    "primo_scelto_nei_tre": 0.6692
   },
-  "a_caso": 0.3805,
+  "a_caso": 0.3809,
   "insieme": {
     "allenato_su": "2025",
     "provato_su": "2026",
-    "corse_prova": 2103,
+    "corse_prova": 2258,
     "solo_noi": {
-      "auc": 0.7397,
-      "log_loss": 0.5905,
-      "brier": 0.192,
-      "tre_scelti_a_segno": 0.5465,
-      "primo_scelto_nei_tre": 0.6282
+      "auc": 0.743,
+      "log_loss": 0.5842,
+      "brier": 0.1908,
+      "tre_scelti_a_segno": 0.5533,
+      "primo_scelto_nei_tre": 0.6382
     },
     "solo_mercato": {
-      "auc": 0.7477,
-      "log_loss": 0.5724,
-      "brier": 0.1893,
-      "tre_scelti_a_segno": 0.5626,
-      "primo_scelto_nei_tre": 0.6586
+      "auc": 0.7491,
+      "log_loss": 0.5702,
+      "brier": 0.1887,
+      "tre_scelti_a_segno": 0.5647,
+      "primo_scelto_nei_tre": 0.6639
     },
     "mercato_piu_noi": {
-      "auc": 0.7582,
-      "log_loss": 0.5726,
-      "brier": 0.1859,
-      "tre_scelti_a_segno": 0.5677,
-      "primo_scelto_nei_tre": 0.6757
+      "auc": 0.7599,
+      "log_loss": 0.5685,
+      "brier": 0.1852,
+      "tre_scelti_a_segno": 0.5743,
+      "primo_scelto_nei_tre": 0.6825
     },
-    "peso_mercato": 0.42,
-    "peso_noi": 0.468
+    "peso_mercato": 0.4,
+    "peso_noi": 0.472
   },
   "accordo": {
-    "favoriti_in_comune": 0.704,
+    "favoriti_in_comune": 0.714,
     "in_comune": {
-      "n": 9999,
-      "nei_tre": 0.604
+      "n": 10476,
+      "nei_tre": 0.606
     },
     "solo_nostri": {
-      "n": 4196,
-      "nei_tre": 0.388,
-      "stima_noi": 0.476,
-      "stima_mercato": 0.301
+      "n": 4198,
+      "nei_tre": 0.39,
+      "stima_noi": 0.483,
+      "stima_mercato": 0.302
     },
     "solo_del_mercato": {
-      "n": 4196,
-      "nei_tre": 0.452,
-      "stima_noi": 0.337,
-      "stima_mercato": 0.552
+      "n": 4198,
+      "nei_tre": 0.445,
+      "stima_noi": 0.336,
+      "stima_mercato": 0.548
     }
   },
   "disaccordo": [
     {
       "fascia": "noi molto sotto il mercato",
-      "n": 5109,
-      "stima_noi": 0.43,
-      "stima_mercato": 0.732,
-      "reale": 0.573
+      "n": 4959,
+      "stima_noi": 0.425,
+      "stima_mercato": 0.724,
+      "reale": 0.561
     },
     {
       "fascia": "noi sotto",
-      "n": 4871,
-      "stima_noi": 0.436,
-      "stima_mercato": 0.582,
-      "reale": 0.494
+      "n": 5138,
+      "stima_noi": 0.434,
+      "stima_mercato": 0.58,
+      "reale": 0.488
     },
     {
       "fascia": "d'accordo (meno di 10 punti)",
-      "n": 20530,
-      "stima_noi": 0.281,
-      "stima_mercato": 0.269,
-      "reale": 0.275
+      "n": 21747,
+      "stima_noi": 0.28,
+      "stima_mercato": 0.271,
+      "reale": 0.277
     },
     {
       "fascia": "noi sopra",
-      "n": 7461,
-      "stima_noi": 0.336,
-      "stima_mercato": 0.193,
-      "reale": 0.263
+      "n": 7495,
+      "stima_noi": 0.348,
+      "stima_mercato": 0.204,
+      "reale": 0.277
     },
     {
       "fascia": "noi molto sopra il mercato",
-      "n": 3633,
-      "stima_noi": 0.442,
-      "stima_mercato": 0.179,
-      "reale": 0.318
+      "n": 3602,
+      "stima_noi": 0.454,
+      "stima_mercato": 0.19,
+      "reale": 0.329
     }
   ],
   "calibrazione": {
@@ -110,130 +110,130 @@
       {
         "da": 0,
         "a": 0.1,
-        "n": 4239,
-        "stimato": 0.06,
-        "reale": 0.057
+        "n": 5096,
+        "stimato": 0.058,
+        "reale": 0.062
       },
       {
         "da": 0.1,
         "a": 0.2,
-        "n": 7077,
-        "stimato": 0.152,
-        "reale": 0.153
+        "n": 7191,
+        "stimato": 0.151,
+        "reale": 0.16
       },
       {
         "da": 0.2,
         "a": 0.3,
-        "n": 7739,
+        "n": 7695,
         "stimato": 0.25,
-        "reale": 0.248
+        "reale": 0.255
       },
       {
         "da": 0.3,
         "a": 0.4,
-        "n": 7283,
-        "stimato": 0.349,
-        "reale": 0.346
+        "n": 6970,
+        "stimato": 0.35,
+        "reale": 0.34
       },
       {
         "da": 0.4,
         "a": 0.5,
-        "n": 6151,
-        "stimato": 0.448,
-        "reale": 0.453
+        "n": 6040,
+        "stimato": 0.449,
+        "reale": 0.454
       },
       {
         "da": 0.5,
         "a": 0.6,
-        "n": 4648,
+        "n": 4722,
         "stimato": 0.548,
-        "reale": 0.548
+        "reale": 0.529
       },
       {
         "da": 0.6,
         "a": 0.7,
-        "n": 2832,
-        "stimato": 0.645,
-        "reale": 0.641
+        "n": 3218,
+        "stimato": 0.646,
+        "reale": 0.643
       },
       {
         "da": 0.7,
         "a": 0.8,
-        "n": 1250,
+        "n": 1506,
         "stimato": 0.741,
-        "reale": 0.734
+        "reale": 0.738
       },
       {
         "da": 0.8,
         "a": 1,
-        "n": 385,
-        "stimato": 0.882,
-        "reale": 0.686
+        "n": 503,
+        "stimato": 0.875,
+        "reale": 0.718
       }
     ],
     "mercato": [
       {
         "da": 0,
         "a": 0.1,
-        "n": 8688,
+        "n": 8938,
         "stimato": 0.056,
         "reale": 0.094
       },
       {
         "da": 0.1,
         "a": 0.2,
-        "n": 7919,
+        "n": 8184,
         "stimato": 0.147,
-        "reale": 0.203
+        "reale": 0.204
       },
       {
         "da": 0.2,
         "a": 0.3,
-        "n": 5802,
+        "n": 5989,
         "stimato": 0.248,
-        "reale": 0.296
+        "reale": 0.294
       },
       {
         "da": 0.3,
         "a": 0.4,
-        "n": 4518,
-        "stimato": 0.349,
-        "reale": 0.367
+        "n": 4650,
+        "stimato": 0.348,
+        "reale": 0.366
       },
       {
         "da": 0.4,
         "a": 0.5,
-        "n": 3581,
+        "n": 3694,
         "stimato": 0.449,
         "reale": 0.449
       },
       {
         "da": 0.5,
         "a": 0.6,
-        "n": 2974,
+        "n": 3065,
         "stimato": 0.548,
-        "reale": 0.509
+        "reale": 0.507
       },
       {
         "da": 0.6,
         "a": 0.7,
-        "n": 2569,
-        "stimato": 0.649,
-        "reale": 0.538
+        "n": 2661,
+        "stimato": 0.648,
+        "reale": 0.541
       },
       {
         "da": 0.7,
         "a": 0.8,
-        "n": 2208,
+        "n": 2279,
         "stimato": 0.749,
-        "reale": 0.638
+        "reale": 0.639
       },
       {
         "da": 0.8,
         "a": 1,
-        "n": 3345,
+        "n": 3481,
         "stimato": 0.889,
-        "reale": 0.714
+        "reale": 0.717
       }
     ]
   },
@@ -241,31 +241,31 @@
     {
       "mese": "2025-01",
       "corse": 177,
-      "noi": 0.497,
+      "noi": 0.503,
       "mercato": 0.524
     },
     {
       "mese": "2025-02",
       "corse": 166,
-      "noi": 0.5,
+      "noi": 0.516,
       "mercato": 0.548
     },
     {
       "mese": "2025-03",
       "corse": 216,
-      "noi": 0.517,
+      "noi": 0.509,
       "mercato": 0.551
     },
     {
       "mese": "2025-04",
       "corse": 250,
-      "noi": 0.521,
+      "noi": 0.531,
       "mercato": 0.556
     },
     {
       "mese": "2025-05",
       "corse": 288,
-      "noi": 0.562,
+      "noi": 0.552,
       "mercato": 0.568
     },
     {
@@ -276,102 +276,102 @@
     },
     {
       "mese": "2025-07",
-      "corse": 214,
-      "noi": 0.536,
+      "corse": 215,
+      "noi": 0.53,
       "mercato": 0.56
     },
     {
       "mese": "2025-08",
       "corse": 219,
-      "noi": 0.54,
+      "noi": 0.539,
       "mercato": 0.559
     },
     {
       "mese": "2025-09",
-      "corse": 248,
-      "noi": 0.548,
+      "corse": 249,
+      "noi": 0.545,
       "mercato": 0.566
     },
     {
       "mese": "2025-10",
-      "corse": 239,
-      "noi": 0.543,
-      "mercato": 0.576
+      "corse": 241,
+      "noi": 0.545,
+      "mercato": 0.575
     },
     {
       "mese": "2025-11",
       "corse": 211,
-      "noi": 0.528,
+      "noi": 0.536,
       "mercato": 0.537
     },
     {
       "mese": "2025-12",
-      "corse": 225,
-      "noi": 0.55,
+      "corse": 226,
+      "noi": 0.568,
       "mercato": 0.55
     },
     {
       "mese": "2026-01",
-      "corse": 205,
-      "noi": 0.553,
-      "mercato": 0.571
+      "corse": 206,
+      "noi": 0.549,
+      "mercato": 0.57
     },
     {
       "mese": "2026-02",
-      "corse": 222,
-      "noi": 0.532,
+      "corse": 225,
+      "noi": 0.542,
       "mercato": 0.548
     },
     {
       "mese": "2026-03",
-      "corse": 222,
-      "noi": 0.547,
-      "mercato": 0.562
+      "corse": 225,
+      "noi": 0.556,
+      "mercato": 0.56
     },
     {
       "mese": "2026-04",
-      "corse": 181,
-      "noi": 0.538,
-      "mercato": 0.564
+      "corse": 184,
+      "noi": 0.531,
+      "mercato": 0.56
     },
     {
       "mese": "2026-05",
       "corse": 181,
-      "noi": 0.56,
+      "noi": 0.591,
       "mercato": 0.586
     },
     {
       "mese": "2026-06",
       "corse": 194,
-      "noi": 0.562,
+      "noi": 0.558,
       "mercato": 0.572
     },
     {
       "mese": "2026-07",
       "corse": 226,
-      "noi": 0.535,
+      "noi": 0.524,
       "mercato": 0.527
     },
     {
       "mese": "2026-08",
       "corse": 275,
-      "noi": 0.546,
+      "noi": 0.558,
       "mercato": 0.557
     },
     {
       "mese": "2026-09",
       "corse": 248,
-      "noi": 0.541,
+      "noi": 0.559,
       "mercato": 0.56
     },
     {
       "mese": "2026-10",
-      "corse": 149,
-      "noi": 0.562,
-      "mercato": 0.595
+      "corse": 294,
+      "noi": 0.563,
+      "mercato": 0.599
     }
   ],
-  "modello": "top3-xgb-v3",
-  "fonte_quote": "Hippoweb, archivio risultati di trotto: quota finale vincente del totalizzatore",
-  "calcolato_il": "2026-10-19"
+  "modello": "top3-xgb-v4",
+  "calcolato_il": "2026-10-30",
+  "fonte_quote": "Hippoweb, archivio risultati di trotto: quota finale vincente del totalizzatore"
 }

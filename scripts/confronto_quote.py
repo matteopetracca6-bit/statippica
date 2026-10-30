@@ -160,7 +160,8 @@ def prepara(conn, previsioni=None):
     m = pd.concat(righe, ignore_index=True)
     x = x.merge(m, on=["gara", "cavallo"])
     # La nostra stima normalizzata per corsa, come nel calendario.
-    x["noi"] = pt.normalizza_per_gara(x["p"].to_numpy(), x["gara"].to_numpy(), x["partenti"].to_numpy())
+    x["noi"] = pt.normalizza_per_gara(x["p"].to_numpy(), x["gara"].to_numpy(), x["partenti"].to_numpy(),
+                                     pt._temperatura_salvata())
     return x
 
 

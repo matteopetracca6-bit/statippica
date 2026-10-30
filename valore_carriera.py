@@ -232,20 +232,35 @@ class Simili:
 
 
 def stima(simili: Simili, eta: int, premi12: float, attesi_modello: float | None,
-          voto: int) -> dict:
+          voto: int, anni_2_4: float | None = None) -> dict:
     """Valore residuo: `eta` = eta' di oggi, `premi12` = premi degli ultimi
-    dodici mesi, `voto` = gruppo di voto (0 = SSS ... 7 = F)."""
+    dodici mesi, `voto` = gruppo di voto (0 = SSS ... 7 = F).
+    `anni_2_4`: premi attesi dal secondo al quarto anno secondo il modello
+    XGBoost del valore residuo (valore_residuo_ml.py), se adottato."""
     cur = int(_gradino(np.array([max(premi12, 0.0)]))[0])
-    r = simili.stima(eta, cur, voto)
-    anni, tot = r["anni"], r["totali"]
+    chiave = (eta, cur, voto)
+    cache = simili.__dict__.setdefault("_cache", {})
+    if chiave not in cache:
+        cache[chiave] = simili.stima(eta, cur, voto)
+    r = cache[chiave]
+    anni, tot = [dict(a) for a in r["anni"]], r["totali"]
     if not anni:
         return {}
     primo_simili = anni[0]["atteso"]
     primo = attesi_modello if attesi_modello is not None else primo_simili
+    # Anni dal secondo al quarto: dal modello, se c'e'; ogni anno si scala
+    # nella stessa proporzione, cosi' la forma della curva resta quella dei simili.
+    sim_24 = sum(a["atteso"] for a in anni[1:4])
+    spost_24 = 0.0
+    if anni_2_4 is not None and len(anni) > 1:
+        f = anni_2_4 / sim_24 if sim_24 > 0 else None
+        for i, a in enumerate(anni[1:4]):
+            a["atteso"] = a["atteso"] * f if f is not None else anni_2_4 / len(anni[1:4])
+        spost_24 = anni_2_4 - sim_24
     dopo = sum(a["atteso"] for a in anni[1:])
     # Il caso tipico viene dai simili; il primo anno lo si allinea al modello
     # dei premi spostando i totali della differenza (mai sotto zero).
-    spost = primo - primo_simili
+    spost = primo - primo_simili + spost_24
     tot = np.clip(tot + spost * (tot > 0), 0, None)
     return {
         "gradino": NOMI_GRADINI[cur],
@@ -289,6 +304,16 @@ def phase_valore_residuo(conn: sqlite3.Connection, oggi: date | None = None) -> 
         modello = dict(conn.execute("SELECT horse_name, premi_attesi FROM stima_premi").fetchall())
     except sqlite3.Error:
         pass
+    # Anni 2-4 dal modello XGBoost del valore residuo, solo se ha superato la
+    # prova sul passato (altrimenti restano i simili, come prima).
+    ml24, via = {}, "simili"
+    try:
+        import valore_residuo_ml as vrm
+        via = vrm.scelta()
+        if via != "simili":
+            ml24 = vrm.stima_anni_2_4(conn, oggi)
+    except Exception as e:  # noqa: BLE001  mai bloccare la notte per questo
+        print(f"[VALORE RESIDUO] modello anni 2-4 non disponibile: {e!r}", file=sys.stderr)
     conn.execute("DROP TABLE IF EXISTS valore_residuo")
     conn.execute("""CREATE TABLE valore_residuo (
         horse_name TEXT PRIMARY KEY, eta INTEGER, premi_12_mesi REAL, gradino TEXT,
@@ -302,13 +327,17 @@ def phase_valore_residuo(conn: sqlite3.Connection, oggi: date | None = None) -> 
         eta, premi12 = int(x["eta"]), float(x["premi"])
         voto = LETTERA_GRUPPO.get(str(lettere.get(x["nome"]) or ""), int(x["voto"]))
         att = modello.get(x["nome"])
-        if att is None:
-            chiave = (eta, int(x["stato"]), voto)
-            if chiave not in cache:
-                cache[chiave] = stima(simili, eta, premi12, None, voto)
-            v = cache[chiave]
-        else:
-            v = stima(simili, eta, premi12, float(att), voto)
+        a24 = None
+        if via == "xgboost_tranne_sss" and voto == 0:
+            pass   # SSS: restano i simili (il modello li sottostima)
+        elif x["nome"] in ml24:
+            if via in ("xgboost", "xgboost_tranne_sss"):
+                a24 = ml24[x["nome"]]
+            else:   # media fra simili e modello
+                base = stima(simili, eta, premi12, None, voto)
+                sim24 = sum(a["atteso"] for a in base.get("prossimi_anni", [])[1:4]) if base else None
+                a24 = 0.5 * (ml24[x["nome"]] + sim24) if sim24 is not None else ml24[x["nome"]]
+        v = stima(simili, eta, premi12, None if att is None else float(att), voto, a24)
         if not v:
             continue
         righe.append((x["nome"], eta, premi12, v["gradino"], v["primo_anno"], v["primo_anno_fonte"],

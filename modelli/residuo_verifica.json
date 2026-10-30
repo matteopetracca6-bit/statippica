@@ -1,0 +1,231 @@
+{
+  "modello": "residuo-xgb-v1",
+  "giorno_prova": "2022-10-30",
+  "anni_veri": "2024-2026 (dal secondo al quarto anno)",
+  "cavalli": 5520,
+  "fotografie_allenamento": 41452,
+  "allenato_fino_a": "2018-10-01",
+  "alberi": 159,
+  "simili": {
+    "errore_medio": 10739,
+    "media_stimata": 9721,
+    "media_vera": 9502,
+    "correlazione_rango": 0.5779
+  },
+  "xgboost": {
+    "errore_medio": 9934,
+    "media_stimata": 8861,
+    "media_vera": 9502,
+    "correlazione_rango": 0.6403
+  },
+  "media_simili_xgboost": {
+    "errore_medio": 10109,
+    "media_stimata": 9291,
+    "media_vera": 9502,
+    "correlazione_rango": 0.6241
+  },
+  "xgboost_tranne_sss": {
+    "errore_medio": 10155,
+    "media_stimata": 9601,
+    "media_vera": 9502,
+    "correlazione_rango": 0.6394
+  },
+  "per_voto": {
+    "SSS": {
+      "cavalli": 83,
+      "vero": 116791,
+      "simili": 88199,
+      "xgboost": 38973,
+      "media": 63586,
+      "errore_media": 108157,
+      "errore_simili": 121888,
+      "errore_xgboost": 107222
+    },
+    "SS-S": {
+      "cavalli": 733,
+      "vero": 22704,
+      "simili": 23537,
+      "xgboost": 20259,
+      "media": 21898,
+      "errore_media": 22602,
+      "errore_simili": 24369,
+      "errore_xgboost": 21466
+    },
+    "A": {
+      "cavalli": 1169,
+      "vero": 10336,
+      "simili": 10228,
+      "xgboost": 10059,
+      "media": 10143,
+      "errore_media": 10370,
+      "errore_simili": 10900,
+      "errore_xgboost": 10144
+    },
+    "B": {
+      "cavalli": 1028,
+      "vero": 5728,
+      "simili": 7089,
+      "xgboost": 7417,
+      "media": 7253,
+      "errore_media": 6474,
+      "errore_simili": 6782,
+      "errore_xgboost": 6396
+    },
+    "C": {
+      "cavalli": 1087,
+      "vero": 4765,
+      "simili": 4672,
+      "xgboost": 5521,
+      "media": 5096,
+      "errore_media": 5893,
+      "errore_simili": 6102,
+      "errore_xgboost": 5936
+    },
+    "D": {
+      "cavalli": 651,
+      "vero": 2358,
+      "simili": 3603,
+      "xgboost": 3987,
+      "media": 3795,
+      "errore_media": 3876,
+      "errore_simili": 3857,
+      "errore_xgboost": 4005
+    },
+    "E": {
+      "cavalli": 520,
+      "vero": 1997,
+      "simili": 3069,
+      "xgboost": 4033,
+      "media": 3551,
+      "errore_media": 3370,
+      "errore_simili": 3133,
+      "errore_xgboost": 3687
+    },
+    "F": {
+      "cavalli": 249,
+      "vero": 1566,
+      "simili": 3309,
+      "xgboost": 3021,
+      "media": 3165,
+      "errore_media": 3201,
+      "errore_simili": 3271,
+      "errore_xgboost": 3184
+    }
+  },
+  "per_eta": {
+    "2": {
+      "cavalli": 641,
+      "vero": 17346,
+      "simili": 19836,
+      "xgboost": 20556,
+      "media": 20196
+    },
+    "3": {
+      "cavalli": 1359,
+      "vero": 11640,
+      "simili": 11268,
+      "xgboost": 10749,
+      "media": 11008
+    },
+    "4": {
+      "cavalli": 1169,
+      "vero": 8779,
+      "simili": 8623,
+      "xgboost": 8205,
+      "media": 8414
+    },
+    "5": {
+      "cavalli": 811,
+      "vero": 6648,
+      "simili": 8024,
+      "xgboost": 6410,
+      "media": 7217
+    },
+    "6": {
+      "cavalli": 540,
+      "vero": 13224,
+      "simili": 7325,
+      "xgboost": 5166,
+      "media": 6246
+    },
+    "7": {
+      "cavalli": 407,
+      "vero": 3419,
+      "simili": 4937,
+      "xgboost": 3659,
+      "media": 4298
+    },
+    "8": {
+      "cavalli": 284,
+      "vero": 3623,
+      "simili": 7541,
+      "xgboost": 4170,
+      "media": 5855
+    },
+    "9": {
+      "cavalli": 136,
+      "vero": 1573,
+      "simili": 2946,
+      "xgboost": 2873,
+      "media": 2909
+    },
+    "10": {
+      "cavalli": 172,
+      "vero": 474,
+      "simili": 3112,
+      "xgboost": 2806,
+      "media": 2959
+    }
+  },
+  "peso_variabili": [
+    {
+      "variabile": "premio_medio365",
+      "peso": 0.3113
+    },
+    {
+      "variabile": "premi90",
+      "peso": 0.0998
+    },
+    {
+      "variabile": "n90",
+      "peso": 0.0687
+    },
+    {
+      "variabile": "liv5",
+      "peso": 0.0613
+    },
+    {
+      "variabile": "giorni_ferma",
+      "peso": 0.0571
+    },
+    {
+      "variabile": "eta",
+      "peso": 0.0414
+    },
+    {
+      "variabile": "maschio",
+      "peso": 0.0374
+    },
+    {
+      "variabile": "top3_365",
+      "peso": 0.0344
+    },
+    {
+      "variabile": "castrone",
+      "peso": 0.0317
+    },
+    {
+      "variabile": "anni_attivita",
+      "peso": 0.0275
+    }
+  ],
+  "adottato": true,
+  "scelta": "media_simili_xgboost",
+  "esito": "adottato (media_simili_xgboost): sbaglia meno dei simili sugli stessi cavalli",
+  "produzione": {
+    "fotografie": 117305,
+    "fino_a": "2022-10-31",
+    "scarto_lettore_relativo": 1.2170136773638446e-05
+  },
+  "verificato_il": "2026-10-30"
+}
