@@ -876,9 +876,12 @@ export default function HorsePage() {
               }}>
                 Stagioni corse:{" "}
                 <strong style={{ color: "hsl(210 10% 92%)" }}>
-                  {horse.stagioni_corse} su {horse.stagioni_possibili}
+                  {Math.min(horse.stagioni_corse, horse.stagioni_possibili)} su {horse.stagioni_possibili}
                 </strong>{" "}
-                <span style={{ color: "var(--muted)" }}>possibili alla sua età</span>
+                <span style={{ color: "var(--muted)" }}>possibili fino ai 7 anni</span>
+                {horse.stagioni_corse > horse.stagioni_possibili && (
+                  <span style={{ color: "var(--muted)" }}> · {horse.stagioni_corse} in tutto</span>
+                )}
               </div>
             )}
 
@@ -892,8 +895,8 @@ export default function HorsePage() {
               <p style={{ margin: 0 }}>
                 &laquo;Stagioni corse&raquo; misura quante annate il cavallo è rimasto in
                 attivit&agrave;, &laquo;continuit&agrave; per la sua et&agrave;&raquo; lo rapporta
-                a quante avrebbe potuto correrne. La seconda serve a non punire un tre anni per
-                non avere ancora la carriera di un nove anni. Il voto tiene conto di entrambe:
+                a quante avrebbe potuto correrne fino ai 7 anni. La seconda serve a non punire un tre anni per
+                non avere ancora la carriera di un nove anni, e a non punire chi smette a 7 anni, per esempio per andare in razza. Il voto tiene conto di entrambe:
                 una carriera lunga vale pi&ugrave; di una stagione brillante.
               </p>
             </Spiegazione>

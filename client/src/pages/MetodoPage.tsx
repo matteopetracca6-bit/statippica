@@ -181,7 +181,7 @@ export default function MetodoPage() {
             <tr><td>Record</td><td>10%</td><td>il miglior tempo al chilometro</td></tr>
             <tr><td>Vittorie</td><td>7,5%</td><td>quota di corse vinte, corretta per il numero di corse</td></tr>
             <tr><td>Tenuta</td><td>11,25%</td><td>quante stagioni ha corso</td></tr>
-            <tr><td>Continuita'</td><td>11,25%</td><td>stagioni corse su quelle che poteva correre</td></tr>
+            <tr><td>Continuita'</td><td>11,25%</td><td>stagioni corse su quelle che poteva correre fino ai 7 anni</td></tr>
           </tbody>
         </table>
         <p>

@@ -263,7 +263,15 @@ PESO_INTEGRITA = 0.1125  # stagioni corse su quelle che poteva correre
 RICHIAMO_VITTORIE = 20
 
 # Oltre questa eta' non si pretende che un cavallo sia ancora in pista.
-ETA_FINE_CARRIERA = 10
+#
+# Ottobre 2026: era 10. Con 10 chi smetteva a 7 anni perdeva punti di
+# "integrita'" per tre stagioni che nessuno si aspetta: succede soprattutto
+# alle femmine che vanno in razza (UNE ETOILE GAR, 2015-2020, risultava 6
+# stagioni su 9 e perdeva circa 4 punti contro un cavallo da 7 su 7). Con 7 le
+# stagioni "possibili" sono quelle dai 2 ai 7 anni: chi corre oltre non perde
+# niente, e la tenuta in assoluto (stagioni corse in tutto) premia comunque le
+# carriere lunghe.
+ETA_FINE_CARRIERA = 7
 
 # Soglie rating cavalli (performance) — calcolate dinamicamente sui percentili
 # del dataset reale (sostituite a runtime da build_horse_grade_thresholds).
@@ -2709,7 +2717,7 @@ def phase_ratings(conn: sqlite3.Connection):
         return round(bisect.bisect_right(tenuta_pool, stagioni) / n_ten * 100, 2)
 
     integrita_pool = sorted(
-        stagioni_corse.get((r[0] or "").strip().upper(), 0) / stagioni_possibili(r[1])
+        min(1.0, stagioni_corse.get((r[0] or "").strip().upper(), 0) / stagioni_possibili(r[1]))
         for r in pool)
     n_int = len(integrita_pool)
 
@@ -2787,7 +2795,9 @@ def phase_ratings(conn: sqlite3.Connection):
         # uguale: la prima da' sola svantaggerebbe i giovani, la seconda da'
         # sola darebbe pieni voti a un due anni con una sola stagione.
         tenuta = tenuta_pct(st_corse)
-        integrita = integrita_pct(st_corse / st_poss)
+        # Tetto a 1: chi corre anche dopo i 7 anni ha gia' la continuita' piena,
+        # il di piu' lo premia la tenuta in assoluto.
+        integrita = integrita_pct(min(1.0, st_corse / st_poss))
 
         guadagni = (QUOTA_GUADAGNI_SCALA * earn_scala(career_earnings or 0)
                     + (1 - QUOTA_GUADAGNI_SCALA) * ep)
