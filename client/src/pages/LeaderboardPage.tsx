@@ -1,13 +1,26 @@
+/**
+ * CAVALLI E CLASSIFICA.
+ *
+ * Tre classifiche, tre popolazioni: i cavalli in gara (voto dalle corse), il
+ * solo pedigree (cavalli senza carriera, voto dal padre e dalla madre) e gli
+ * storici (solo totali di carriera, scala a parte). Layout a due colonne come
+ * le altre pagine rifatte: elenco a sinistra, scheda del cavallo a destra.
+ * I filtri meno usati stanno in un pannello che si apre, per non coprire la
+ * classifica con dieci menu a tendina.
+ */
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
+import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "../components/GradeBadge";
-import { ChevronLeft, ChevronRight, SortAsc } from "lucide-react";
+import { Trophy, Search, X, ChevronLeft, ChevronRight, ArrowRight, SlidersHorizontal } from "lucide-react";
 import { formatRecord } from "@/lib/record";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
+import CavalloCaricamento from "../components/CavalloCaricamento";
+import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro, isNum } from "../components/DueColonne";
 
 interface LeaderboardRow {
   name: string;
@@ -20,14 +33,17 @@ interface LeaderboardRow {
   country?: string | null;
   sex?: string | null;
   score: number;
-  earn_percentile: number;
-  time_percentile: number;
-  sire_percentile: number;
+  earn_percentile: number | null;
+  time_percentile: number | null;
+  sire_percentile: number | null;
   career_races: number;
   career_wins: number;
   career_earnings: number;
   record_career: string;
-  win_rate: number;
+  win_rate: number | null;
+  gare_italia?: number | null; gare_estero?: number | null;
+  vitt_italia?: number | null; vitt_estero?: number | null;
+  guad_italia?: number | null; guad_estero?: number | null;
 }
 
 interface LeaderboardData {
@@ -38,7 +54,9 @@ interface LeaderboardData {
   countries?: string[];
 }
 
+const COLORE = "hsl(51 80% 55%)";
 const GRADES = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWidth: "100%", whiteSpace: "nowrap" as const };
 
 // Nel filtro le sigle secche dicono poco a chi non le conosce. EST resta la
 // sigla: nell'archivio non e' chiaro se indichi l'Estonia o una generica
@@ -49,12 +67,108 @@ const NOMI_PAESE: Record<string, string> = {
   GER: "Germania", CAN: "Canada", USA: "Stati Uniti",
 };
 
+const MODI: { v: string; l: string; sotto: string }[] = [
+  { v: "performance", l: "In gara", sotto: "voto dalle corse" },
+  { v: "pedigree", l: "Pedigree", sotto: "senza carriera, voto da padre e madre" },
+  { v: "storico", l: "Storici", sotto: "solo totali di carriera, scala a parte" },
+];
+
+const MIN_RACES_SOLID = 4;
+const LIMIT = 25;
+
+const stileSelect: React.CSSProperties = {
+  background: "var(--ed-fondo)", border: "1px solid var(--ed-bordo)", borderRadius: 9, padding: "8px 10px",
+  color: "var(--ed-testo)", fontSize: 12.5, outline: "none", cursor: "pointer", fontFamily: "inherit", minWidth: 0, width: "100%",
+};
+
+function Percentile({ titolo, valore, nota }: { titolo: string; valore: number | null; nota: string }) {
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+        <span style={{ color: "var(--ed-testo)", fontWeight: 600 }}>{titolo}</span>
+        <span className="tabular" style={{ color: isNum(valore) ? COLORE : "var(--ed-fioco)", fontWeight: 700 }}>{isNum(valore) ? `${num(valore, 0)}%` : "—"}</span>
+      </div>
+      <Barretta valore={valore} max={100} />
+      <div style={{ fontSize: 10.5, color: "var(--ed-fioco)", marginTop: 3 }}>{nota}</div>
+    </div>
+  );
+}
+
+function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: string; voto: string; onClose?: () => void }) {
+  const lettera = (voto === "annata" ? r.grade_annata : r.grade) ?? r.grade ?? "N/A";
+  const corse = r.career_races ?? 0;
+  const haEstero = (r.gare_estero ?? 0) > 0;
+  return (
+    <div className="ed-dettaglio" data-testid="scheda-cavallo">
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="ed-etich">{r.sex === "F" ? "Femmina" : r.sex === "M" ? "Maschio" : "Cavallo"} · nato nel {r.birth_year}{r.country ? ` · ${NOMI_PAESE[r.country] ?? r.country}` : ""}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>
+            <BandieraCavallo nome={r.name} paese={r.country} />
+            <span style={{ fontSize: 20, fontWeight: 800, color: COLORE, overflowWrap: "anywhere" }}>{r.name}</span>
+            <GradeBadge grade={lettera} size="md" />
+          </div>
+          {r.sire && (
+            <div style={{ fontSize: 12.5, color: "var(--ed-muto)", marginTop: 3 }}>
+              figlio di <Link href={`/stallion/${encodeURIComponent(r.sire)}`} className="collegamento-scheda">{r.sire}</Link>
+            </div>
+          )}
+          {voto === "annata" && r.grade_annata && r.grade_annata !== r.grade && (
+            <div style={{ fontSize: 11.5, color: "var(--ed-muto)", marginTop: 4 }}>Contro tutti i cavalli il voto è {r.grade}: è lo stesso punteggio, letto in un altro confronto.</div>
+          )}
+        </div>
+        {onClose && <button className="ed-chiudi" onClick={onClose} aria-label="Chiudi"><X size={15} /></button>}
+      </div>
+
+      {corse > 0 && corse < MIN_RACES_SOLID && mode !== "pedigree" && (
+        <div style={{ marginTop: 10, fontSize: 12, color: "hsl(38 85% 62%)", background: "hsl(38 60% 18% / .5)", border: "1px solid hsl(38 50% 28%)", borderRadius: 8, padding: "7px 10px" }}>
+          Voto calcolato su {corse} {corse === 1 ? "corsa" : "corse"}: poco affidabile.
+        </div>
+      )}
+
+      <div className="ed-cifre" style={{ marginTop: 14, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+        <Cifra titolo="Punti" valore={num(r.score, 1)} colore={COLORE}
+          sotto={mode === "performance" && r.pos_annata && r.tot_annata ? `${num(r.pos_annata)}° su ${num(r.tot_annata)} nati nel ${r.birth_year}` : mode === "pedigree" ? "da padre e madre" : mode === "storico" ? "fra i cavalli storici" : undefined} />
+        <Cifra titolo="Guadagni" valore={euro(r.career_earnings)} colore="hsl(45 80% 62%)"
+          sotto={haEstero ? `${euro(r.guad_italia)} in Italia, ${euro(r.guad_estero)} all'estero` : undefined} />
+        <Cifra titolo="Corse e vittorie" valore={corse ? `${num(corse)} · ${num(r.career_wins)}` : "—"}
+          sotto={corse ? `${isNum(r.win_rate) ? num(r.win_rate, 1) : "—"}% vinte${haEstero ? ` · ${num(r.gare_estero)} all'estero` : ""}` : "non ha corso"} />
+        <Cifra titolo="Record" valore={r.record_career ? formatRecord(r.record_career) : "—"} colore="hsl(183 70% 60%)" />
+      </div>
+
+      {mode !== "pedigree" && (isNum(r.earn_percentile) || isNum(r.time_percentile) || isNum(r.sire_percentile)) && (
+        <>
+          <div className="ed-etich" style={{ margin: "16px 0 8px" }}>Da dove vengono i punti</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Percentile titolo="Guadagni" valore={r.earn_percentile} nota="quota di cavalli che hanno guadagnato meno" />
+            <Percentile titolo="Velocità" valore={r.time_percentile} nota="quota di cavalli con un record più lento" />
+            {mode === "performance" && <Percentile titolo="Padre" valore={r.sire_percentile} nota="quanto vale il padre fra gli stalloni" />}
+          </div>
+        </>
+      )}
+      {mode === "pedigree" && (
+        <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--ed-muto)", lineHeight: 1.55 }}>
+          Questo cavallo non ha ancora una carriera: il voto è una stima che viene da quanto valgono il padre e la madre, non da come corre.
+        </div>
+      )}
+
+      <Link href={`/horse/${encodeURIComponent(r.name)}/${r.birth_year}`}>
+        <a data-testid="link-scheda-cavallo" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, background: COLORE, color: "hsl(220 13% 7%)",
+          borderRadius: 9, padding: "9px 14px", fontWeight: 800, fontSize: 13, textDecoration: "none" }}>
+          Scheda completa <ArrowRight size={14} />
+        </a>
+      </Link>
+    </div>
+  );
+}
+
 export default function LeaderboardPage() {
-  const [location] = useLocation();
+  const desktop = useDesktop();
   const urlParams = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
-  
+
   const [year, setYear] = useState<string>(urlParams.get("year") ?? "");
   const [grade, setGrade] = useState<string>(urlParams.get("grade") ?? "");
+  const [sireTesto, setSireTesto] = useState("");
   const [sireFilter, setSireFilter] = useState<string>("");
   const [mode, setMode] = useState<string>("performance");
   const [sort, setSort] = useState<string>("score");
@@ -62,15 +176,12 @@ export default function LeaderboardPage() {
   // questo interruttore tiene in classifica solo chi ha una carriera vera.
   const [solidOnly, setSolidOnly] = useState(false);
   const [page, setPage] = useState(1);
-  const LIMIT = 25;
-  const MIN_RACES_SOLID = 4;
+  const [aperto, setAperto] = useState<string | null>(null);
+  const [filtriAperti, setFiltriAperti] = useState(false);
 
   const { data: years } = useQuery<number[]>({
     queryKey: ["/api/leaderboard/years", mode],
-    queryFn: async () => {
-      const r = await apiRequest("GET", `/api/leaderboard/years?mode=${mode}`);
-      return r.json();
-    },
+    queryFn: async () => (await apiRequest("GET", `/api/leaderboard/years?mode=${mode}`)).json(),
   });
 
   // Dove ha corso. Filtra soltanto, non tocca il voto.
@@ -83,20 +194,19 @@ export default function LeaderboardPage() {
   const [voto, setVoto] = useState<string>("globale");
 
   // Tornando alla lettura globale, l'ordinamento per posizione in annata non
-  // ha piu' senso: senza questo la lista resterebbe ordinata su un dato che
-  // non e' piu' mostrato.
+  // ha piu' senso.
   useEffect(() => {
     if (voto !== "annata" && sort === "annata") setSort("score");
   }, [voto, sort]);
 
-  // Filtri assorbiti dalla pagina Cavalli, che mostrava la stessa tabella con
-  // una manciata di filtri diversi. Due pagine per la stessa cosa obbligavano
-  // a sceglierne una e rinunciare ai filtri dell'altra.
+  const [testo, setTesto] = useState("");
   const [cerca, setCerca] = useState<string>("");
   const [paese, setPaese] = useState<string>("");
   const [sesso, setSesso] = useState<string>("");
 
-  useEffect(() => { setPage(1); }, [year, grade, sireFilter, mode, sort, solidOnly, dove, voto, cerca, paese, sesso]);
+  useEffect(() => { const id = setTimeout(() => setCerca(testo.trim().toUpperCase()), 400); return () => clearTimeout(id); }, [testo]);
+  useEffect(() => { const id = setTimeout(() => setSireFilter(sireTesto.trim().toUpperCase()), 400); return () => clearTimeout(id); }, [sireTesto]);
+  useEffect(() => { setPage(1); setAperto(null); }, [year, grade, sireFilter, mode, sort, solidOnly, dove, voto, cerca, paese, sesso]);
 
   const params = new URLSearchParams();
   if (year) params.set("year", year);
@@ -109,46 +219,55 @@ export default function LeaderboardPage() {
   if (solidOnly) params.set("min_races", String(MIN_RACES_SOLID));
   if (dove) params.set("dove", dove);
   if (voto === "annata") params.set("voto", "annata");
-  if (cerca.trim()) params.set("q", cerca.trim());
+  if (cerca) params.set("q", cerca);
   if (paese) params.set("country", paese);
   if (sesso) params.set("sex", sesso);
 
   const { data, isLoading } = useQuery<LeaderboardData>({
     queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove, voto, cerca, paese, sesso],
-    queryFn: async () => {
-      const r = await apiRequest("GET", `/api/leaderboard?${params}`);
-      return r.json();
-    },
+    queryFn: async () => (await apiRequest("GET", `/api/leaderboard?${params}`)).json(),
+    placeholderData: prev => prev,
   });
 
-  const totalPages = data ? Math.ceil(data.total / LIMIT) : 1;
+  const rows = data?.rows ?? [];
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
+  const chiave = (r: LeaderboardRow) => `${r.name}|${r.birth_year}`;
+  const scelto = aperto ?? (desktop && rows.length ? chiave(rows[0]) : null);
+  const sceltoR = rows.find(r => chiave(r) === scelto) ?? null;
+  const modo = MODI.find(m => m.v === mode)!;
 
-  const filterStyle = {
-    background: "hsl(220 12% 12%)",
-    border: "1px solid hsl(220 10% 20%)",
-    borderRadius: "8px",
-    padding: "8px 12px",
-    color: "hsl(210 10% 80%)",
-    fontSize: "13px",
-    outline: "none",
-    cursor: "pointer",
-  } as React.CSSProperties;
+  const nFiltri = [year, sireFilter, solidOnly, paese, sesso, dove].filter(Boolean).length;
+  const azzera = () => {
+    setYear(""); setGrade(""); setSireTesto(""); setSireFilter(""); setSolidOnly(false);
+    setTesto(""); setCerca(""); setPaese(""); setSesso(""); setDove("");
+  };
+  const ordini: [string, string][] = [
+    ["score", "Punti"], ["earnings", "Guadagni"], ["wins", "Vittorie"], ["races", "Gare"], ["name", "Nome"],
+    ...(mode === "performance" && voto === "annata" ? [["annata", "Primi d'annata"] as [string, string]] : []),
+  ];
 
   return (
-    <div className="page-shell">
-      {/* Header */}
-      <div style={{ marginBottom: "22px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>Cavalli e classifica</h1>
-        <p style={{ fontSize: "13px", color: "hsl(210 8% 48%)" }}>
-          {data?.total != null ? `${data.total.toLocaleString("it-IT")} cavalli` : "—"} · {
-            mode === "performance" ? "in gara"
-              : mode === "storico" ? "cavalli storici, confrontati fra loro"
-                : "solo pedigree"}{
-            mode === "performance" && voto === "annata" ? " · voto letto nella sua annata" : ""}
-        </p>
-        {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
-            il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
-        {mode === "storico" && (
+    <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
+      <style>{CSS_DUE_COLONNE}</style>
+      <IntestazionePagina icona={Trophy} colore={COLORE} titolo="Cavalli e classifica" margineSotto={16}
+        sottotitolo="Tutti i cavalli valutati, con voti e filtri.">
+        Tre classifiche separate: i cavalli in gara, votati sulle corse; quelli senza carriera, votati sul pedigree; e gli storici,
+        di cui conosciamo solo i totali e che hanno una scala a parte. Tocca una riga per aprire la scheda del cavallo.
+      </IntestazionePagina>
+
+      <div className="ed-cifre" style={{ marginBottom: 16 }}>
+        <Cifra titolo="In questo elenco" valore={data ? num(data.total) : "—"} sotto={nFiltri || grade || cerca ? "con i filtri scelti" : "tutti"} />
+        <Cifra titolo="Classifica" valore={modo.l} colore={COLORE} sotto={modo.sotto} />
+        {mode === "performance" && (
+          <Cifra titolo="Voto letto" valore={voto === "annata" ? "Fra coetanei" : "Contro tutti"} colore="hsl(51 80% 68%)"
+            sotto={voto === "annata" ? "solo con i nati nello stesso anno" : "con tutte le generazioni insieme"} />
+        )}
+      </div>
+
+      {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
+          il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
+      {mode === "storico" && (
+        <div style={{ marginBottom: 12 }}>
           <Spiegazione titolo="Perché questi cavalli hanno una scala a parte" compatta>
             Di questi cavalli l&apos;archivio conosce i totali di carriera ma non le singole
             gare, perche&apos; per gli anni in cui hanno corso non esistono online. Sono
@@ -156,11 +275,12 @@ export default function LeaderboardPage() {
             voti non si possono paragonare a quelli dei cavalli in gara oggi, che correvano
             in un&apos;altra epoca e con altri montepremi.
           </Spiegazione>
-        )}
-        {/* Il voto d'annata non e' un voto nuovo: e' lo stesso punteggio letto
-            contro i coetanei. Senza spiegarlo, un cavallo che passa da B a SS
-            sembrerebbe essere stato promosso. */}
-        {mode === "performance" && voto === "annata" && (
+        </div>
+      )}
+      {/* Il voto d'annata non e' un voto nuovo: e' lo stesso punteggio letto
+          contro i coetanei. */}
+      {mode === "performance" && voto === "annata" && (
+        <div style={{ marginBottom: 12 }}>
           <Spiegazione titolo="Come si legge" compatta>
             Ogni cavallo e&apos; confrontato solo con i nati nel suo stesso anno, che hanno
             avuto lo stesso tempo per correre. Il punteggio non cambia, cambia con chi viene
@@ -168,299 +288,155 @@ export default function LeaderboardPage() {
             meno stagioni alle spalle. Fra i nati nel 2023, il 63% sale di lettera guardandoli
             fra coetanei.
           </Spiegazione>
-        )}
-      </div>
-
-      {/* Filters */}
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px", alignItems: "center" }}>
-        {/* Mode */}
-        <div style={{ display: "flex", background: "hsl(220 12% 12%)", border: "1px solid hsl(220 10% 20%)", borderRadius: "8px", overflow: "hidden" }}>
-          {[{ v: "performance", l: "In gara" }, { v: "pedigree", l: "Pedigree" }, { v: "storico", l: "Storici" }].map(({ v, l }) => (
-            <button key={v} onClick={() => setMode(v)} style={{
-              padding: "8px 14px", fontSize: "13px", background: mode === v ? "hsl(183 100% 38% / 0.2)" : "none",
-              color: mode === v ? "hsl(183 80% 65%)" : "hsl(210 8% 55%)",
-              border: "none", cursor: "pointer", fontWeight: mode === v ? 600 : 400, transition: "all 0.15s",
-            }}>{l}</button>
-          ))}
         </div>
+      )}
 
+      <div className="ed-barra">
+        <div className="ed-segm" role="group" aria-label="Classifica">
+          {MODI.map(m => <button key={m.v} aria-pressed={mode === m.v} onClick={() => setMode(m.v)}>{m.l}</button>)}
+        </div>
         {/* Le due letture del voto, in evidenza accanto alla scelta della
-            classifica: e' una decisione su COSA si sta guardando, non un
-            filtro fra tanti. Nascosta in un menu' a tendina passava inosservata,
-            e chi guarda i giovani vedeva solo la lettura che li penalizza.
-            Non compare per gli storici (hanno una scala loro) ne' per il
-            pedigree (non ha annate da confrontare). */}
+            classifica: e' una decisione su COSA si sta guardando. Non compare
+            per gli storici ne' per il pedigree. */}
         {mode === "performance" && (
-          <div style={{ display: "flex", background: "hsl(220 12% 12%)", border: "1px solid hsl(51 40% 28%)", borderRadius: "8px", overflow: "hidden" }}
-               data-testid="toggle-voto">
+          <div className="ed-segm" role="group" aria-label="Lettura del voto" data-testid="toggle-voto">
             {[{ v: "globale", l: "Contro tutti" }, { v: "annata", l: "Nella sua annata" }].map(({ v, l }) => (
-              <button key={v} onClick={() => setVoto(v)}
-                title={v === "annata"
-                  ? "Confronta ogni cavallo solo con i nati nel suo stesso anno"
-                  : "Confronta ogni cavallo con tutte le generazioni insieme"}
-                style={{
-                  padding: "8px 14px", fontSize: "13px",
-                  background: voto === v ? "hsl(51 75% 55% / 0.18)" : "none",
-                  color: voto === v ? "hsl(51 80% 68%)" : "hsl(210 8% 55%)",
-                  border: "none", cursor: "pointer",
-                  fontWeight: voto === v ? 600 : 400, transition: "all 0.15s", whiteSpace: "nowrap",
-                }}>{l}</button>
+              <button key={v} aria-pressed={voto === v} onClick={() => setVoto(v)}
+                title={v === "annata" ? "Confronta ogni cavallo solo con i nati nel suo stesso anno" : "Confronta ogni cavallo con tutte le generazioni insieme"}>{l}</button>
             ))}
           </div>
         )}
+      </div>
 
-        {/* Ricerca per nome, dalla pagina Cavalli. */}
-        <input
-          value={cerca}
-          onChange={e => setCerca(e.target.value.toUpperCase())}
-          placeholder="Cerca cavallo..."
-          data-testid="input-cerca"
-          style={{ ...filterStyle, minWidth: "190px" }}
-        />
-
-        {/* Year */}
-        <select value={year} onChange={e => setYear(e.target.value)} style={filterStyle} data-testid="select-year">
-          <option value="">Tutti gli anni</option>
-          {years?.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-
-        {/* Grade */}
-        <select value={grade} onChange={e => setGrade(e.target.value)} style={filterStyle} data-testid="select-grade">
-          <option value="">Tutti i voti</option>
-          {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-        </select>
-
-        {/* Dove ha corso. Non compare per gli storici: di loro l'archivio ha
-            solo i totali di carriera, senza le singole gare, quindi non si sa
-            dove le abbiano corse. */}
-        {mode !== "storico" && (
-          <select value={dove} onChange={e => setDove(e.target.value)} style={filterStyle} data-testid="select-dove">
-            <option value="">Italia ed estero</option>
-            <option value="italia">Solo carriera in Italia</option>
-            <option value="estero">Ha corso anche all&apos;estero</option>
-            <option value="solo_estero">Solo carriera all&apos;estero</option>
-          </select>
-        )}
-
-        {/* Paese e sesso, dalla pagina Cavalli. */}
-        <select value={paese} onChange={e => setPaese(e.target.value)} style={filterStyle} data-testid="select-paese">
-          <option value="">Tutti i paesi</option>
-          {(data?.countries ?? []).map(c => (
-            <option key={c} value={c}>{NOMI_PAESE[c] ?? c}</option>
-          ))}
-        </select>
-
-        <select value={sesso} onChange={e => setSesso(e.target.value)} style={filterStyle} data-testid="select-sesso">
-          <option value="">Maschi e femmine</option>
-          <option value="M">Solo maschi</option>
-          <option value="F">Solo femmine</option>
-        </select>
-
-        {/* Sort */}
-        <select value={sort} onChange={e => setSort(e.target.value)} style={filterStyle} data-testid="select-sort">
-          <option value="score">Ordina: Score</option>
-          <option value="earnings">Ordina: Guadagni</option>
-          <option value="wins">Ordina: Vittorie</option>
-          <option value="races">Ordina: Gare</option>
-          <option value="name">Ordina: Nome</option>
-          {/* Solo con la lettura per annata: mette in cima il primo di ogni
-              generazione, cosi' i giovani non restano sepolti sotto i
-              cavalli maturi. */}
-          {mode === "performance" && voto === "annata" && (
-            <option value="annata">Ordina: Primi della loro annata</option>
-          )}
-        </select>
-
-        {/* Sire filter */}
-        <input
-          value={sireFilter}
-          onChange={e => setSireFilter(e.target.value.toUpperCase())}
-          placeholder="Filtra per stallone..."
-          data-testid="input-sire-filter"
-          style={{ ...filterStyle, minWidth: "180px" }}
-        />
-
-        {/* Solo carriere con abbastanza corse */}
-        <label style={{
-          display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "12px",
-          color: solidOnly ? "hsl(183 70% 60%)" : "hsl(210 8% 55%)", cursor: "pointer", userSelect: "none",
-        }} data-testid="toggle-solid-only">
-          <input
-            type="checkbox"
-            checked={solidOnly}
-            onChange={e => setSolidOnly(e.target.checked)}
-            style={{ accentColor: "hsl(183 70% 50%)", width: "14px", height: "14px", cursor: "pointer" }}
-          />
-          Almeno {MIN_RACES_SOLID} corse
+      <div className="ed-barra" style={{ marginTop: -4 }}>
+        <label className="ed-cerca">
+          <Search size={15} style={{ color: "var(--ed-muto)" }} />
+          <input value={testo} onChange={e => setTesto(e.target.value)} placeholder="Cerca un cavallo" aria-label="Cerca un cavallo" data-testid="input-cerca" />
+          {testo && <button onClick={() => setTesto("")} aria-label="Cancella ricerca" style={{ background: "none", border: "none", color: "var(--ed-muto)", cursor: "pointer", display: "flex", padding: 0 }}><X size={14} /></button>}
         </label>
+        <div className="ed-segm" role="group" aria-label="Ordina per" style={SCORRE} data-testid="select-sort">
+          {ordini.map(([k, t]) => <button key={k} aria-pressed={sort === k} onClick={() => setSort(k)}>{t}</button>)}
+        </div>
+      </div>
 
-        {(year || grade || sireFilter || solidOnly || cerca || paese || sesso || dove) && (
-          <button onClick={() => {
-            setYear(""); setGrade(""); setSireFilter(""); setSolidOnly(false);
-            setCerca(""); setPaese(""); setSesso(""); setDove("");
-          }} style={{
-            fontSize: "12px", color: "hsl(0 62% 55%)", background: "none", border: "none", cursor: "pointer",
-          }}>
-            Reset filtri
-          </button>
+      <div className="ed-barra" style={{ marginTop: -4 }}>
+        <div className="ed-segm" role="group" aria-label="Voto" style={SCORRE} data-testid="select-grade">
+          <button aria-pressed={grade === ""} onClick={() => setGrade("")}>Tutti i voti</button>
+          {GRADES.map(g => <button key={g} aria-pressed={grade === g} onClick={() => setGrade(g)}>{g}</button>)}
+        </div>
+        <button className={`chip-filtro${filtriAperti || nFiltri ? " attivo" : ""}`} onClick={() => setFiltriAperti(v => !v)} data-testid="btn-filtri"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <SlidersHorizontal size={13} /> Altri filtri{nFiltri ? ` (${nFiltri})` : ""}
+        </button>
+        {(nFiltri > 0 || grade || testo) && (
+          <button onClick={azzera} style={{ fontSize: 12, color: "hsl(0 62% 60%)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Azzera filtri</button>
         )}
       </div>
 
-      {/* Table */}
-      <div className="pannello" style={{ overflow: "hidden" }}>
-        {isLoading ? (
-          <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="skeleton" style={{ height: "40px", borderRadius: "6px" }} />
-            ))}
-          </div>
-        ) : (
-          /* L'intestazione era dichiarata "appiccicata in alto" ma non lo
-             era mai: un contenitore con scorrimento orizzontale diventa
-             lui il riferimento, e non scorrendo in verticale la riga dei
-             titoli restava semplicemente in cima alla tabella e usciva
-             dallo schermo. Dando a questo contenitore anche un'altezza
-             massima e lo scorrimento verticale, la riga dei titoli resta
-             davvero visibile mentre si scorrono i cavalli. */
-          <div style={{ overflow: "auto", maxHeight: "calc(100dvh - 300px)", minHeight: "320px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ position: "sticky", top: 0, background: "hsl(220 12% 9%)", zIndex: 2 }}>
-                <tr>
-                  {["#", "Cavallo", "Anno", "Stallone", "Voto", "Score", "Guadagni", "Record", "Win%"].map(h => (
-                    <th key={h} style={{
-                      textAlign: "left", padding: "10px 12px",
-                      fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)",
-                      textTransform: "uppercase", letterSpacing: "0.05em",
-                      borderBottom: "1px solid hsl(220 10% 16%)",
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data?.rows.map((row, i) => {
-                  const rank = (page - 1) * LIMIT + i + 1;
-                  return (
-                    <tr
-                      key={`${row.name}-${row.birth_year}`}
-                      data-testid={`row-horse-${rank}`}
-                      style={{ borderBottom: "1px solid hsl(220 10% 13%)", transition: "background 0.1s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 13%)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "none"}
-                    >
-                      <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(210 8% 38%)", minWidth: "36px" }}>
-                        {rank <= 3 ? ["🥇","🥈","🥉"][rank-1] : rank}
-                      </td>
-                      <td style={{ padding: "10px 12px", minWidth: "160px" }}>
-                        <Link href={`/horse/${encodeURIComponent(row.name)}/${row.birth_year}`}>
-                          <a style={{ fontSize: "13px", fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none", letterSpacing: "0.03em", display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                            <BandieraCavallo nome={row.name} paese={row.country} />
-                            {row.name}
-                          </a>
-                        </Link>
-                      </td>
-                      <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(210 8% 48%)" }}>{row.birth_year}</td>
-                      <td style={{ padding: "10px 12px", minWidth: "120px" }}>
-                        {row.sire ? (
-                          <Link href={`/stallion/${encodeURIComponent(row.sire)}`}>
-                            <a style={{ fontSize: "12px", color: "hsl(183 70% 55%)", textDecoration: "none" }}>{row.sire}</a>
-                          </Link>
-                        ) : "—"}
-                      </td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        {/* Con la lettura per annata si mostra quella lettera,
-                            e sotto si tiene la lettera generale: sono lo
-                            stesso punteggio, e nascondere l'altra farebbe
-                            sembrare che il voto sia cambiato. */}
-                        <GradeBadge
-                          grade={(voto === "annata" ? row.grade_annata : row.grade) ?? row.grade ?? "N/A"}
-                          size="sm"
-                        />
-                        {voto === "annata" && row.grade_annata && row.grade_annata !== row.grade && (
-                          <span
-                            title={`Contro tutti i cavalli questo cavallo e' ${row.grade}`}
-                            style={{ marginLeft: 6, fontSize: 10, color: "var(--muted)" }}
-                          >
-                            ({row.grade} in generale)
-                          </span>
-                        )}
-                        {(row.career_races ?? 0) < MIN_RACES_SOLID && (
-                          <span
-                            title={`Voto calcolato su ${row.career_races ?? 0} corse: poco affidabile`}
-                            style={{
-                              marginLeft: "6px", fontSize: "10px", fontWeight: 600, letterSpacing: "0.03em",
-                              color: "hsl(38 85% 62%)", background: "hsl(38 60% 18%)",
-                              border: "1px solid hsl(38 50% 28%)", borderRadius: "5px", padding: "2px 5px",
-                              verticalAlign: "middle",
-                            }}
-                          >
-                            {row.career_races ?? 0} corse
-                          </span>
-                        )}
-                      </td>
-                      <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(210 8% 58%)" }}>{row.score?.toFixed(1) ?? "—"}</td>
-                      <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(51 80% 58%)", minWidth: "90px" }}>
-                        {row.career_earnings != null ? `€${row.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"}
-                      </td>
-                      <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(183 60% 55%)" }}>
-                        {formatRecord(row.record_career)}
-                      </td>
-                      <td className="tabular" style={{ padding: "10px 12px", fontSize: "12px", color: "hsl(210 8% 48%)" }}>
-                        {row.win_rate != null ? `${row.win_rate.toFixed(1)}%` : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {filtriAperti && (
+        <div className="ed-pannello" style={{ marginBottom: 14, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 10 }} data-testid="pannello-filtri">
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <span className="ed-etich">Anno di nascita</span>
+            <select value={year} onChange={e => setYear(e.target.value)} style={stileSelect} data-testid="select-year">
+              <option value="">Tutti gli anni</option>
+              {years?.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </label>
+          {/* Dove ha corso: non per gli storici, di cui l'archivio non ha le singole gare. */}
+          {mode !== "storico" && (
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+              <span className="ed-etich">Dove ha corso</span>
+              <select value={dove} onChange={e => setDove(e.target.value)} style={stileSelect} data-testid="select-dove">
+                <option value="">Italia ed estero</option>
+                <option value="italia">Solo carriera in Italia</option>
+                <option value="estero">Ha corso anche all&apos;estero</option>
+                <option value="solo_estero">Solo carriera all&apos;estero</option>
+              </select>
+            </label>
+          )}
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <span className="ed-etich">Paese</span>
+            <select value={paese} onChange={e => setPaese(e.target.value)} style={stileSelect} data-testid="select-paese">
+              <option value="">Tutti i paesi</option>
+              {(data?.countries ?? []).map(c => <option key={c} value={c}>{NOMI_PAESE[c] ?? c}</option>)}
+            </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <span className="ed-etich">Sesso</span>
+            <select value={sesso} onChange={e => setSesso(e.target.value)} style={stileSelect} data-testid="select-sesso">
+              <option value="">Maschi e femmine</option>
+              <option value="M">Solo maschi</option>
+              <option value="F">Solo femmine</option>
+            </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <span className="ed-etich">Figli di</span>
+            <input value={sireTesto} onChange={e => setSireTesto(e.target.value)} placeholder="Nome dello stallone" data-testid="input-sire-filter" style={{ ...stileSelect, cursor: "text" }} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: solidOnly ? COLORE : "var(--ed-muto)", cursor: "pointer", alignSelf: "end", paddingBottom: 9 }} data-testid="toggle-solid-only">
+            <input type="checkbox" checked={solidOnly} onChange={e => setSolidOnly(e.target.checked)} style={{ accentColor: COLORE, width: 15, height: 15 }} />
+            Almeno {MIN_RACES_SOLID} corse
+          </label>
+        </div>
+      )}
 
-        {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "14px 20px", borderTop: "1px solid hsl(220 10% 16%)",
-          }}>
-            <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 48%)" }}>
-              Pagina {page} / {totalPages} · {data?.total.toLocaleString("it-IT")} totali
-            </span>
-            <div style={{ display: "flex", gap: "6px" }}>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                data-testid="button-prev-page"
-                style={{
-                  display: "flex", alignItems: "center", gap: "4px",
-                  padding: "6px 12px", borderRadius: "7px", fontSize: "12px",
-                  background: page === 1 ? "none" : "hsl(220 10% 16%)",
-                  border: "1px solid hsl(220 10% 20%)",
-                  color: page === 1 ? "hsl(210 8% 35%)" : "hsl(210 8% 65%)",
-                  cursor: page === 1 ? "not-allowed" : "pointer",
-                }}
-              >
-                <ChevronLeft size={14} /> Prec
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                data-testid="button-next-page"
-                style={{
-                  display: "flex", alignItems: "center", gap: "4px",
-                  padding: "6px 12px", borderRadius: "7px", fontSize: "12px",
-                  background: page === totalPages ? "none" : "hsl(220 10% 16%)",
-                  border: "1px solid hsl(220 10% 20%)",
-                  color: page === totalPages ? "hsl(210 8% 35%)" : "hsl(210 8% 65%)",
-                  cursor: page === totalPages ? "not-allowed" : "pointer",
-                }}
-              >
-                Succ <ChevronRight size={14} />
-              </button>
+      {isLoading && !data ? <CavalloCaricamento label="Carico la classifica..." /> : rows.length === 0 ? (
+        <div className="ed-pannello" style={{ color: "var(--ed-muto)", fontSize: 13 }}>Nessun cavallo corrisponde ai filtri scelti.</div>
+      ) : (
+        <div className="ed-griglia">
+          <div>
+            <div className="ed-lista">
+              {rows.map((r, i) => {
+                const rank = (page - 1) * LIMIT + i + 1;
+                const k = chiave(r);
+                const att = scelto === k;
+                const lettera = (voto === "annata" ? r.grade_annata : r.grade) ?? r.grade ?? "N/A";
+                const corse = r.career_races ?? 0;
+                return (
+                  <div key={k} style={{ minWidth: 0 }}>
+                    <button className="ed-riga" data-attiva={att} onClick={() => setAperto(att && !desktop ? "" : k)} data-testid={`row-horse-${rank}`}>
+                      <span className="ed-pos" data-podio={sort === "score" && rank <= 3}>{rank}</span>
+                      <span style={{ minWidth: 0 }}>
+                        <span className="ed-nome" style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          <BandieraCavallo nome={r.name} paese={r.country} />
+                          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</span>
+                          <GradeBadge grade={lettera} size="sm" />
+                          {corse > 0 && corse < MIN_RACES_SOLID && mode !== "pedigree" && (
+                            <span title={`Voto calcolato su ${corse} corse: poco affidabile`}
+                              style={{ fontSize: 10, fontWeight: 700, color: "hsl(38 85% 62%)", background: "hsl(38 60% 18%)", border: "1px solid hsl(38 50% 28%)", borderRadius: 5, padding: "1px 5px", flexShrink: 0 }}>
+                              {corse} corse
+                            </span>
+                          )}
+                        </span>
+                        <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={r.score} max={100} /></span>
+                        <span className="ed-sotto" style={{ display: "block" }}>
+                          {r.birth_year}{r.sire ? ` · da ${r.sire}` : ""}{corse ? ` · ${corse} corse, ${r.career_wins ?? 0} vinte` : ""}{r.career_earnings ? ` · ${euro(r.career_earnings)}` : ""}
+                        </span>
+                      </span>
+                      <span style={{ textAlign: "right" }}>
+                        <span className="tabular" style={{ display: "block", fontSize: 17, fontWeight: 800, color: COLORE }}>{num(r.score, 1)}</span>
+                        <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)" }}>punti</span>
+                      </span>
+                    </button>
+                    {!desktop && att && <div style={{ marginTop: 6 }}><SchedaCavallo r={r} mode={mode} voto={voto} onClose={() => setAperto("")} /></div>}
+                  </div>
+                );
+              })}
             </div>
+            {totalPages > 1 && (
+              <div className="ed-pagine">
+                <button onClick={() => { setPage(p => Math.max(1, p - 1)); setAperto(null); }} disabled={page <= 1} aria-label="Pagina precedente" data-testid="button-prev-page"><ChevronLeft size={15} /></button>
+                <span>Pagina {page} di {num(totalPages)}</span>
+                <button onClick={() => { setPage(p => Math.min(totalPages, p + 1)); setAperto(null); }} disabled={page >= totalPages} aria-label="Pagina successiva" data-testid="button-next-page"><ChevronRight size={15} /></button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+          {desktop && (sceltoR ? <SchedaCavallo key={scelto!} r={sceltoR} mode={mode} voto={voto} /> : <div className="ed-dettaglio ed-vuoto">Scegli un cavallo dall'elenco.</div>)}
+        </div>
+      )}
+
       <CollegamentiCorrelati voci={[
-        { href: "/advisor", titolo: "Advisor", descrizione: "Simula un accoppiamento e stima costi, premi e prezzo di rivendita del puledro." },
+        { href: "/advisor", titolo: "Advisor", descrizione: "Simula un accoppiamento e stima costi, premi e prezzo di rivendita del puledro (sperimentale)." },
         { href: "/stalloni", titolo: "Catalogo stalloni", descrizione: "Chi sono i padri dei cavalli in classifica, con tasse di monta e produzione." },
         { href: "/trend", titolo: "Trend", descrizione: "Come cambiano voti, guadagni e numero di gare anno per anno." },
       ]} />
