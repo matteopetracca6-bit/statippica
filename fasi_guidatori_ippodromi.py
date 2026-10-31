@@ -150,7 +150,7 @@ NOMI_IPPODROMI = {
     "GARIGLIANO": "Garigliano",
     "FOLLONICA": "Follonica",
     "TREVISO": "Treviso \u2014 Sant'Artemio",
-    "VILLANOVA": "Villanova d'Arda",
+    "VILLANOVA": "Villanova d'Albenga",
     "TRIESTE": "Trieste \u2014 Montebello",
     "PONTECAGNANO": "Pontecagnano",
     "CASARANO": "Casarano",

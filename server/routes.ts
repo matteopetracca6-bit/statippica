@@ -3541,13 +3541,20 @@ export function registerRoutes(httpServer: Server, app: Express) {
         WHERE h.name IS NULL
       `).get() as any).n;
       const topSires = db.prepare(`
-        SELECT sire, COUNT(*) AS n_figli, ROUND(AVG(time_km), 1) AS tempo_medio
+        SELECT sire, COUNT(*) AS n_figli, ROUND(AVG(time_km), 1) AS tempo_medio,
+               MIN(time_km) AS migliore
         FROM vp_qualifiche
         WHERE sire IS NOT NULL AND time_km IS NOT NULL
         GROUP BY sire HAVING COUNT(*) >= 5
-        ORDER BY tempo_medio ASC LIMIT 15
+        ORDER BY tempo_medio ASC LIMIT 40
       `).all();
-      res.json({ ...s, n_nuovi: nuovi, top_sires: topSires });
+      // Quante prove per ogni tempo (al decimo di secondo): serve alla pagina
+      // per dire a ogni cavallo "piu' veloce di quante prove su cento".
+      const distribuzione = db.prepare(`
+        SELECT time_km AS t, COUNT(*) AS n FROM vp_qualifiche
+        WHERE time_km IS NOT NULL GROUP BY time_km ORDER BY time_km
+      `).all();
+      res.json({ ...s, n_nuovi: nuovi, top_sires: topSires, distribuzione });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally { db.close(); }
@@ -3929,6 +3936,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // IPPODROMI
   // ══════════════════════════════════════════════════════════════
 
+  // Nomi delle piste corretti a valle dell'archivio: l'archivio pubblicato li
+  // ricalcola ogni notte dal file fasi_guidatori_ippodromi.py, ma fino al primo
+  // giro dopo una correzione puo' avere ancora il nome vecchio.
+  // Villanova e' Villanova d'Albenga (Savona), non Villanova d'Arda.
+  const NOMI_PISTA_CORRETTI: Record<string, string> = { VILLANOVA: "Villanova d'Albenga" };
+  const correggiNomePista = (t: any) => { if (t && NOMI_PISTA_CORRETTI[t.track]) t.nome = NOMI_PISTA_CORRETTI[t.track]; return t; };
+
   app.get("/api/tracks", pronta(), (_req, res) => {
     const db = getDb();
     try {
@@ -3938,7 +3952,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
       const tracks = db.prepare(`
         SELECT * FROM track_stats ORDER BY n_gare DESC
-      `).all() as any[];
+      `).all().map(correggiNomePista) as any[];
 
       // La tabella dei numeri di partenza complessiva: e' il dato piu' netto
       // che questo archivio contiene, e vale la pena mostrarlo subito.
@@ -3961,7 +3975,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         return res.status(503).json({ error: "dati ippodromi non ancora calcolati" });
       }
 
-      const t = db.prepare("SELECT * FROM track_stats WHERE track = ?").get(codice) as any;
+      const t = correggiNomePista(db.prepare("SELECT * FROM track_stats WHERE track = ?").get(codice)) as any;
       if (!t) return res.status(404).json({ error: "ippodromo non trovato" });
 
       const partenze = db.prepare(`
