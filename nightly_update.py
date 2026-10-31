@@ -5319,6 +5319,11 @@ def main():
             phase_valore_residuo(conn)  # FASE 3h-bis: quanto puo' ancora guadagnare (dopo la 3h)
         except Exception as e:
             print(f"[VALORE RESIDUO] errore: {e}", file=sys.stderr)
+        try:
+            from voto_previsto import phase_voto_previsto
+            phase_voto_previsto(conn)   # FASE 3h-ter: voto previsto a fine carriera (2-4 anni)
+        except Exception as e:
+            print(f"[VOTO PREVISTO] errore: {e}", file=sys.stderr)
         phase_controllo_modelli(conn)  # FASE 3i: controllo mensile dei modelli
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database

@@ -997,8 +997,36 @@ export function registerRoutes(httpServer: Server, app: Express) {
           ? affidabilitaVoto(annoOggi - horse.birth_year, horse.grade)
           : null;
 
+      // Voto previsto a fine carriera (voto_previsto.py): solo per le eta'
+      // in cui la prova sul passato ha battuto il voto attuale.
+      let votoPrevisto: any = null;
+      if (horse.rating_mode === "performance") {
+        try {
+          const vp: any = db.prepare(
+            "SELECT eta, voto_coetanei, voto_previsto, voto_basso, voto_alto, calcolato_il FROM voto_previsto WHERE horse_name = ?"
+          ).get(String(horse.name).trim().toUpperCase());
+          const ver = leggiJsonModelli("voto_previsto_verifica.json");
+          const m = vp && ver?.per_eta?.[String(vp.eta)];
+          if (vp && m && horse.birth_year && Number(vp.eta) === annoOggi - horse.birth_year) {
+            votoPrevisto = {
+              ...vp,
+              prova: {
+                cavalli: ver.per_eta[String(vp.eta)].cavalli,
+                giusta_modello: m.modello.lettera_giusta,
+                giusta_attuale: m.voto_attuale.lettera_giusta,
+                accanto_modello: m.modello.giusta_o_accanto,
+                accanto_attuale: m.voto_attuale.giusta_o_accanto,
+                copertura: m.copertura_intervallo,
+                periodo: ver.periodo_prova,
+              },
+            };
+          }
+        } catch { /* tabella non ancora creata */ }
+      }
+
       res.json({
         ...horse, races, siblings, pedigree,
+        voto_previsto: votoPrevisto,
         anno_ultima_gara: annoUltimaGara,
         in_attivita: inAttivita,
         valore_carriera: valoreCarriera,

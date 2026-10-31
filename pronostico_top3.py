@@ -398,6 +398,10 @@ class Alberi:
         self.obiettivo = lm.get("objective", {}).get("name", "binary:logistic")
         if self.obiettivo.startswith("reg:tweedie"):
             self.margine0 = math.log(base)
+        elif self.obiettivo in ("reg:quantileerror", "reg:squarederror", "reg:absoluteerror"):
+            # Modelli che stimano direttamente un numero (es. il voto previsto):
+            # il punto di partenza e' il numero stesso.
+            self.margine0 = base
         else:
             self.margine0 = math.log(base / (1 - base))
         self.alberi = []

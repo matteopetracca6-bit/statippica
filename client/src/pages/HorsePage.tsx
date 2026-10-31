@@ -72,6 +72,12 @@ interface HorseData {
     n?: number;
     eta_usata?: number;
   } | null;
+  voto_previsto?: {
+    eta: number; voto_coetanei: string; voto_previsto: string; voto_basso: string; voto_alto: string;
+    calcolato_il: string;
+    prova: { cavalli: number; giusta_modello: number; giusta_attuale: number; accanto_modello: number;
+             accanto_attuale: number; copertura: number; periodo: string };
+  } | null;
   sire_percentile: number;
   rating_mode: string;
   win_rate: number;
@@ -715,7 +721,7 @@ export default function HorsePage() {
             coetanei. E l'affidabilita' dice quanto la lettera reggera': a due
             anni resta ferma in meno di un caso su tre. */}
       {horse.rating_mode === "performance" &&
-          (horse.grade_annata || horse.affidabilita_voto?.disponibile) && (
+          (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto) && (
           <div id="sez-voto" className="pannello" style={panelStyle}>
             <div style={panelTitle}>Come leggere questo voto</div>
 
@@ -776,7 +782,52 @@ export default function HorsePage() {
                   </div>
                 </div>
               )}
+
+              {/* Voto previsto a fine carriera (XGBoost, sperimentale): solo dai
+                  2 ai 4 anni, le eta' in cui la prova sul passato ha battuto la
+                  regola "resta com'e' oggi". */}
+              {horse.voto_previsto && (
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>
+                    A fine carriera (stima)
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1, color: "hsl(200 70% 65%)" }}>
+                    {horse.voto_previsto.voto_previsto}
+                  </div>
+                  <div className="tabular" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                    {horse.voto_previsto.voto_basso === horse.voto_previsto.voto_alto
+                      ? "intervallo stretto"
+                      : `tra ${horse.voto_previsto.voto_basso} e ${horse.voto_previsto.voto_alto}`}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {horse.voto_previsto && (
+              <Spiegazione titolo="Come si stima il voto a fine carriera">
+                <p style={{ margin: "0 0 8px" }}>
+                  È una stima sperimentale, non un giudizio. Un modello ha imparato dai cavalli nati
+                  fra il 2012 e il 2016 come cambia il voto dopo i primi anni, guardando corse,
+                  vittorie, piazzamenti, premi, tempi, livello delle corse e i fratelli più vecchi
+                  per parte di padre. Il confronto è con i nati nello stesso anno, e la tenuta non
+                  conta, perché a questa età non si può misurare.
+                </p>
+                <p style={{ margin: "0 0 8px" }}>
+                  Provato sui nati del 2015 e del 2016 ({horse.voto_previsto.prova.cavalli.toLocaleString("it-IT")} cavalli
+                  a {horse.voto_previsto.eta} anni): la lettera finale era quella stimata
+                  nel {Math.round(horse.voto_previsto.prova.giusta_modello * 100)}% dei casi, contro
+                  il {Math.round(horse.voto_previsto.prova.giusta_attuale * 100)}% del voto di allora; quella stimata
+                  o una accanto nel {Math.round(horse.voto_previsto.prova.accanto_modello * 100)}%,
+                  contro il {Math.round(horse.voto_previsto.prova.accanto_attuale * 100)}%.
+                  L&apos;intervallo conteneva la lettera finale
+                  nel {Math.round(horse.voto_previsto.prova.copertura * 100)}% dei casi.
+                </p>
+                <p style={{ margin: 0 }}>
+                  Compare solo dai 2 ai 4 anni: a 5 anni il voto attuale è già quasi definitivo e
+                  la stima non lo batteva in modo netto.
+                </p>
+              </Spiegazione>
+            )}
 
             {(horse.affidabilita_voto?.disponibile || horse.grade_annata) && (
               <Spiegazione titolo="Perché due lettere, e quanto durano">
