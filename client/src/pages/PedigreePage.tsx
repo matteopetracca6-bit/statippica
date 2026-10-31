@@ -5,7 +5,10 @@ import { Link } from "wouter";
 import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "../components/GradeBadge";
 import CavalloCaricamento from "../components/CavalloCaricamento";
-import { Dna } from "lucide-react";
+import { Dna, Network } from "lucide-react";
+import IntestazionePagina from "../components/IntestazionePagina";
+
+const COLORE_PED = "hsl(220 60% 60%)";
 import NameSelect from "../components/NameSelect";
 import InbreedingPanel from "../components/InbreedingPanel";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
@@ -202,16 +205,8 @@ export default function PedigreePage() {
 
   return (
     <div className="page-shell">
-      {/* Header */}
-      <div style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 92%)", marginBottom: "4px" }}>
-          Analisi Pedigree
-        </h1>
-        <p style={{ fontSize: "13px", color: "hsl(210 8% 50%)" }}>
-          Albero genealogico completo fino a cinque generazioni, coefficiente di
-          consanguineita' e incroci ripetuti, per qualunque cavallo in archivio.
-        </p>
-      </div>
+      <IntestazionePagina icona={Network} colore={COLORE_PED} titolo="Pedigree" margineSotto={18}
+        sottotitolo="Albero genealogico fino a cinque generazioni, consanguineità e incroci ripetuti, per qualunque cavallo in archivio." />
 
       {/* Scelta del cavallo: tendina con ricerca, non piu' solo testo libero */}
       <div className="pannello" style={{ padding: "16px 20px", marginBottom: "24px",
@@ -256,6 +251,30 @@ export default function PedigreePage() {
           display: "flex", alignItems: "center", gap: "10px",
         }}>
           Cavallo "{search}" non trovato nel database.
+        </div>
+      )}
+
+      {/* Prima di scegliere un cavallo la pagina era vuota sotto la ricerca:
+          ora spiega cosa si vedra' e propone qualche nome da cui partire. */}
+      {!search && (
+        <div className="pannello" data-testid="pedigree-vuoto" style={{ padding: "22px 24px", display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORE_PED, fontWeight: 800, fontSize: 15 }}>
+              <Network size={17} /> Scegli un cavallo per vedere il suo albero
+            </div>
+            <div style={{ fontSize: 13, color: "hsl(210 8% 62%)", lineHeight: 1.65, marginTop: 8 }}>
+              Si vedono padre, madre e gli antenati fino a cinque generazioni, e, quando c'è, il voto del cavallo scelto.
+              Sotto l'albero c'è il coefficiente di consanguineità e l'elenco degli antenati che compaiono più di una volta.
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "hsl(210 8% 50%)", marginBottom: 8 }}>Per cominciare</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {["VARENNE", "VIVID WISE AS", "FACE TIME BOURBON", "AMORE STECCA"].map(n => (
+                <button key={n} className="chip-filtro" onClick={() => setSearch(n)} data-testid={`esempio-${n}`}>{n}</button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -398,11 +417,6 @@ export default function PedigreePage() {
         </div>
       )}
 
-      {!search && !isLoading && (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "hsl(210 8% 38%)", fontSize: "14px" }}>
-          Cerca un cavallo per visualizzare il suo pedigree.
-        </div>
-      )}
       <CollegamentiCorrelati voci={[
         { href: "/compare", titolo: "Comparazione", descrizione: "Metti due cavalli a confronto su statistiche e carriera." },
         { href: "/advisor", titolo: "Advisor", descrizione: "Verifica un accoppiamento prima di farlo, consanguineita' inclusa." },

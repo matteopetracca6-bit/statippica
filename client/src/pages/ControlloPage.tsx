@@ -95,10 +95,10 @@ export default function ControlloPage() {
     </IntestazionePagina>
   );
 
-  if (error) return <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>{intestazione}<ErroreCaricamento titolo="Controllo a posteriori" cosa="il controllo a posteriori" /></div>;
-  if (!d) return <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>{intestazione}<Sagoma riquadri={4} /></div>;
+  if (error) return <div className="page-shell" style={{ maxWidth: 1240 }}>{intestazione}<ErroreCaricamento titolo="Controllo a posteriori" cosa="il controllo a posteriori" /></div>;
+  if (!d) return <div className="page-shell" style={{ maxWidth: 1240 }}>{intestazione}<Sagoma riquadri={4} /></div>;
   if (d.message || !d.principale) return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>{intestazione}
+    <div className="page-shell" style={{ maxWidth: 1240 }}>{intestazione}
       <div className="pannello" style={{ ...CARD, color: MUTED, fontSize: 13 }}>Il controllo non è ancora stato calcolato su questo archivio.</div></div>
   );
 
@@ -107,7 +107,7 @@ export default function ControlloPage() {
   const perdita = esito("perdita"), profitto = esito("profitto");
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "22px 18px 60px" }}>
+    <div className="page-shell" style={{ maxWidth: 1240 }}>
       {intestazione}
 
       <div className="pannello" style={{ ...CARD, borderColor: "hsl(265 45% 68% / 0.45)", fontSize: 13.5, lineHeight: 1.65, color: "hsl(210 10% 86%)" }}>

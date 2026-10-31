@@ -17,6 +17,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import { BookOpen, FlaskConical, Ruler, Target, TrendingUp } from "lucide-react";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
 import VerificaPuledri, { type VerificaPuledriDati } from "../components/VerificaPuledri";
 
 const MUTED = "hsl(210 8% 45%)";
@@ -189,18 +190,15 @@ export default function ValidazionePage() {
 
   return (
     <div className="page-shell">
-      <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>
-        Il consiglio funziona davvero?
-      </h1>
-      <div style={{ marginBottom: "26px" }}>
-        <Spiegazione titolo="Che cosa dimostra questa pagina" compatta>
-          Un consiglio di accoppiamento e&apos; facile da scrivere e difficile da dimostrare.
-          Questa pagina mette alla prova l&apos;Advisor nell&apos;unico modo onesto: gli si
-          nascondono i puledri nati dopo il {data.cutoff_year}, lo si addestra solo su quelli
-          nati prima, e poi gli si chiede di ordinare i figli che non ha mai visto. Se
-          l&apos;ordine che propone somiglia a quello vero, il metodo funziona.
-        </Spiegazione>
-      </div>
+      <IntestazionePagina icona={FlaskConical} colore={CYAN} titolo="Il consiglio funziona davvero?" margineSotto={22}
+        etichetta="Advisor sperimentale"
+        sottotitolo="La prova dell'Advisor sui puledri che non ha mai visto: se l'ordine che propone somiglia a quello vero, il metodo funziona.">
+        Un consiglio di accoppiamento e&apos; facile da scrivere e difficile da dimostrare.
+        Questa pagina mette alla prova l&apos;Advisor nell&apos;unico modo onesto: gli si
+        nascondono i puledri nati dopo il {data.cutoff_year}, lo si addestra solo su quelli
+        nati prima, e poi gli si chiede di ordinare i figli che non ha mai visto. Se
+        l&apos;ordine che propone somiglia a quello vero, il metodo funziona.
+      </IntestazionePagina>
 
       {data.puledri && (
         <Section

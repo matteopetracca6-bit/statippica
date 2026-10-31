@@ -135,7 +135,7 @@ export default function PareggioPage() {
   });
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "22px 18px 60px" }}>
+    <div className="page-shell">
       <IntestazionePagina icona={Scale} colore="hsl(160 60% 50%)" titolo="Punto di pareggio" margineSotto={20}
         sottotitolo="Quanto deve vincere un cavallo per ripagare quello che costa, e quali voti ci arrivano davvero.">
         I conti usano la carriera reale di {ip.cavalli_osservati.toLocaleString("it-IT")} cavalli nati

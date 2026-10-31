@@ -148,7 +148,7 @@ export default function ScuderiaPage() {
   const bottoneLeggero: React.CSSProperties = { background: "hsl(220 10% 14%)", border: "1px solid hsl(220 10% 22%)", color: "hsl(210 10% 82%)", borderRadius: 8, padding: "6px 11px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" };
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "22px 18px 60px" }}>
+    <div className="page-shell">
       <IntestazionePagina icona={Briefcase} colore={ACCENTO} titolo="La tua scuderia" margineSotto={14}
         sottotitolo="I tuoi cavalli e puledri insieme: cassa dei prossimi 12 mesi, rischio e valore di carriera.">
         Metti insieme i tuoi cavalli e i tuoi puledri. Il sito guarda la scuderia come un'azienda: quanto entra e quanto esce nei prossimi 12 mesi,

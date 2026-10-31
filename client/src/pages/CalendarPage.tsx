@@ -1,6 +1,8 @@
 import { colorePista, colorePistaTenue } from "@/lib/piste";
 import { useState, useEffect } from "react";
 import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
+import { CSS_DUE_COLONNE, Cifra } from "../components/DueColonne";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
@@ -98,22 +100,26 @@ export default function CalendarPage() {
   const raceKey = (r: RaceEvent) => `${r.track}-${r.race_date}-${r.race_time}`;
 
   return (
-    <div className="page-shell">
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
-        <Calendar size={24} style={{ color: "hsl(0 60% 55%)" }} />
-        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: 0 }}>
-          Calendario Gare
-        </h1>
-        {data && data.total > 0 && (
-          <span className="tabular" style={{ fontSize: "13px", color: "hsl(210 8% 50%)", marginLeft: "8px" }}>
-            {data.total} eventi · {data.races.reduce((s, r) => s + r.n_runners, 0)} partenti
-          </span>
-        )}
-      </div>
+    <div className="page-shell ed" style={{ ["--ed-acc" as any]: "hsl(0 60% 58%)" }}>
+      <style>{CSS_DUE_COLONNE}</style>
+      <IntestazionePagina icona={Calendar} colore="hsl(0 60% 58%)" titolo="Calendario gare" margineSotto={16}
+        sottotitolo="Le prossime corse con gli iscritti e il loro voto, e come è andato il pronostico delle gare già corse." />
 
-      <div className="schede-calendario">
-        <button className={`chip-filtro${scheda === "prossime" ? " attivo" : ""}`} onClick={() => setScheda("prossime")}>Prossime gare</button>
-        <button className={`chip-filtro${scheda === "verifica" ? " attivo" : ""}`} onClick={() => setScheda("verifica")}>Com'è andato il pronostico</button>
+      {data && data.total > 0 && scheda === "prossime" && (
+        <div className="ed-cifre" style={{ marginBottom: 16 }}>
+          <Cifra titolo="Corse in programma" valore={data.total.toLocaleString("it-IT")} colore="hsl(0 60% 62%)" />
+          <Cifra titolo="Partenti" valore={data.races.reduce((t, r) => t + r.n_runners, 0).toLocaleString("it-IT")} />
+          <Cifra titolo="Ippodromi" valore={new Set(data.races.map(r => r.track)).size} />
+        </div>
+      )}
+
+      <div className="ed-linguette" role="tablist">
+        <button className="ed-linguetta" role="tab" aria-selected={scheda === "prossime"} onClick={() => setScheda("prossime")} data-testid="tab-prossime">
+          <span><b>Prossime gare</b><small>iscritti e voti</small></span>
+        </button>
+        <button className="ed-linguetta" role="tab" aria-selected={scheda === "verifica"} onClick={() => setScheda("verifica")} data-testid="tab-verifica">
+          <span><b>Com'è andato il pronostico</b><small>le gare già corse</small></span>
+        </button>
       </div>
 
       {scheda === "verifica" ? <VerificaGare /> : loading ? (
