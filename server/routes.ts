@@ -1024,8 +1024,46 @@ export function registerRoutes(httpServer: Server, app: Express) {
         } catch { /* tabella non ancora creata */ }
       }
 
+      // La prova di qualifica: il primo tempo ufficiale, prima del debutto.
+      // Viene dalla seconda fonte (vp_qualifiche). Il nome da solo non basta,
+      // ci sono omonimi: si tiene la prova dell'annata giusta, oppure, se
+      // l'annata non e' segnata, una prova fatta fra 1 e 6 anni dopo la nascita.
+      let qualifica: any = null;
+      if (vpTableExists(db, "vp_qualifiche") && horse.birth_year) {
+        try {
+          const haAnnata = (db.prepare("PRAGMA table_info(vp_qualifiche)").all() as any[]).some(c => c.name === "annata");
+          const filtroAnnata = haAnnata
+            ? "(annata = @anno OR (annata IS NULL AND CAST(substr(qual_date,1,4) AS INTEGER) - @anno BETWEEN 1 AND 6))"
+            : "CAST(substr(qual_date,1,4) AS INTEGER) - @anno BETWEEN 1 AND 6";
+          const prove = db.prepare(`
+            SELECT qual_date, track, time_raw, time_km, trainer
+            FROM vp_qualifiche WHERE horse_name = @nome AND ${filtroAnnata}
+            ORDER BY qual_date ASC
+          `).all({ nome: String(horse.name).trim().toUpperCase(), anno: horse.birth_year }) as any[];
+          if (prove.length) {
+            const q = prove[0];
+            let posizione: number | null = null, suTotale: number | null = null;
+            if (haAnnata && q.time_km) {
+              const r = db.prepare(`
+                SELECT SUM(CASE WHEN time_km < @t THEN 1 ELSE 0 END) + 1 AS pos, COUNT(*) AS n
+                FROM vp_qualifiche WHERE annata = @anno AND time_km IS NOT NULL
+              `).get({ t: q.time_km, anno: horse.birth_year }) as any;
+              if (r?.n >= 50) { posizione = r.pos; suTotale = r.n; }
+            }
+            qualifica = {
+              data: q.qual_date, pista: q.track || null, tempo: q.time_raw || null,
+              allenatore: q.trainer || null,
+              eta: Number(String(q.qual_date).slice(0, 4)) - horse.birth_year,
+              prove: prove.length,
+              posizione_annata: posizione, cavalli_annata: suTotale,
+            };
+          }
+        } catch { /* fonte non ancora pronta */ }
+      }
+
       res.json({
         ...horse, races, siblings, pedigree,
+        qualifica,
         voto_previsto: votoPrevisto,
         anno_ultima_gara: annoUltimaGara,
         in_attivita: inAttivita,

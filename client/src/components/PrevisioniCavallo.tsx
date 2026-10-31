@@ -73,7 +73,7 @@ const PISTE: Record<string, string> = {
 const giorno = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
 
 const pannello: React.CSSProperties = {
-  background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "12px", padding: "18px 22px", marginBottom: "22px",
+  padding: "var(--pad-pannello, 18px 22px)", marginBottom: "var(--spazio-pannello, 22px)",
 };
 const riquadro: React.CSSProperties = { background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 15%)", borderRadius: "10px", padding: "12px 14px" };
 
@@ -118,7 +118,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
   const esito = p ? (p.saldo_atteso >= 0.1 * p.costo_anno ? "profitto" : p.saldo_atteso >= -0.1 * p.costo_anno ? "pareggio" : "perdita") : null;
 
   return (
-    <div id="sez-previsioni" style={pannello}>
+    <div id="sez-previsioni" className="pannello" style={pannello}>
       {/* ── Prossima corsa ── */}
       {(d.prossima || d.storico?.length > 0) && (
         <div style={{ marginBottom: p ? 22 : 0 }}>

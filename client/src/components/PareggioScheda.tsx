@@ -20,8 +20,7 @@ import LegendaEsiti from "./LegendaEsiti";
 const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 
 const pannello: React.CSSProperties = {
-  background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "12px",
-  padding: "18px 22px", marginBottom: "22px",
+  padding: "var(--pad-pannello, 18px 22px)", marginBottom: "var(--spazio-pannello, 22px)",
 };
 
 function Titolo({ testo }: { testo: string }) {
@@ -81,7 +80,7 @@ export function PareggioCavallo({ nome, anno }: { nome: string; anno: number }) 
   const campo = chiedi ? <CampoMonta valore={montaScritta} onChange={setMontaScritta} chi={d.padre ? `${d.padre} (il padre)` : "suo padre"} /> : null;
   if (!d.gare) {
     return (
-      <div style={pannello}>
+      <div className="pannello" style={pannello}>
         <Titolo testo="Punto di pareggio" />
         {campo}
         <div style={{ fontSize: "12.5px", color: MUTED, lineHeight: 1.6 }}>
@@ -94,7 +93,7 @@ export function PareggioCavallo({ nome, anno }: { nome: string; anno: number }) 
     );
   }
   return (
-    <div style={pannello}>
+    <div className="pannello" style={pannello}>
       <Titolo testo="Punto di pareggio" />
       {campo}
       <div style={{ ...griglia, opacity: isFetching ? 0.6 : 1, transition: "opacity .2s" }}>
@@ -143,7 +142,7 @@ export function PareggioStallone({ nome }: { nome: string }) {
   const guadagno = d.guadagno_atteso;
   const chiedi = (d.monta_sconosciuta || montaScritta !== "") && !d.monta_da_catalogo;
   return (
-    <div style={pannello}>
+    <div className="pannello" style={pannello}>
       <Titolo testo="Conviene questa monta?" />
       {chiedi && <CampoMonta valore={montaScritta} onChange={setMontaScritta} chi="questo stallone" />}
       <div style={{ ...griglia, opacity: isFetching ? 0.6 : 1, transition: "opacity .2s" }}>
@@ -179,7 +178,7 @@ export function FigliInAttivita({ nome }: { nome: string }) {
   const s = d?.stalloni?.find((x: any) => x.padre === nome);
   if (!s) return null;
   return (
-    <div style={pannello}>
+    <div className="pannello" style={pannello}>
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
         <Scale size={15} style={{ color: "hsl(145 55% 52%)" }} />
         <span style={{ fontSize: "12px", fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>Figli in attività: prossimi 12 mesi</span>

@@ -60,6 +60,9 @@ const STILE = {
   non_stimabile: { colore: "hsl(210 8% 50%)",  bordo: "hsl(220 10% 18%)", Icona: HelpCircle },
 } as const;
 
+/* Stesso titolo degli altri riquadri della scheda. */
+const TITOLO: React.CSSProperties = { fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em" };
+
 const euro = (v: number) => "€" + Math.round(v).toLocaleString("it-IT");
 
 export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefined }) {
@@ -68,12 +71,10 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
 
   if (!v.disponibile) {
     return (
-      <div className="pannello" style={{ padding: "16px 18px", marginTop: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "6px" }}>
+      <div className="pannello" style={{ padding: "var(--pad-pannello, 18px 22px)", marginBottom: "var(--spazio-pannello, 22px)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
           <HelpCircle size={15} style={{ color: MUTED }} />
-          <span style={{ fontSize: "13px", fontWeight: 700, color: TEXT }}>
-            Quanto puo' ancora guadagnare
-          </span>
+          <span style={TITOLO}>Quanto può ancora guadagnare</span>
         </div>
         <div style={{ fontSize: "12px", color: MUTED, lineHeight: 1.55 }}>
           {v.motivo}
@@ -93,16 +94,12 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
   return (
     <div
       data-testid="pannello-valore-residuo"
-      style={{
-        background: "hsl(220 12% 9%)", border: `1px solid ${bordo}`,
-        borderRadius: "12px", padding: "16px 18px", marginTop: "16px",
-      }}
+      className="pannello"
+      style={{ padding: "var(--pad-pannello, 18px 22px)", marginBottom: "var(--spazio-pannello, 22px)" }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "3px" }}>
-        <Icona size={16} style={{ color: colore }} />
-        <span style={{ fontSize: "13px", fontWeight: 700, color: TEXT }}>
-          Quanto puo' ancora guadagnare
-        </span>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+        <Icona size={15} style={{ color: colore }} />
+        <span style={TITOLO}>Quanto può ancora guadagnare</span>
       </div>
       <div style={{ fontSize: "11px", color: DIM, marginBottom: "14px" }}>
         {nuova

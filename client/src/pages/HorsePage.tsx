@@ -29,6 +29,8 @@ import { formatRecord, tempoKm } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
 import { Spiegazione } from "../components/Spiegazione";
+import NomePista from "../components/NomePista";
+import { nomePista } from "@/lib/piste";
 
 interface HorseData {
   name: string;
@@ -73,6 +75,10 @@ interface HorseData {
     scende?: number;
     n?: number;
     eta_usata?: number;
+  } | null;
+  qualifica?: {
+    data: string; pista: string | null; tempo: string | null; allenatore: string | null;
+    eta: number; prove: number; posizione_annata: number | null; cavalli_annata: number | null;
   } | null;
   voto_previsto?: {
     eta: number; voto_coetanei: string; voto_previsto: string; voto_basso: string; voto_alto: string;
@@ -146,6 +152,41 @@ const panelTitle: React.CSSProperties = {
 };
 
 /** Chi ha allenato il cavallo nel tempo (dal 2016), con il rendimento con ciascuno. */
+/* La prova di qualifica: il primo tempo ufficiale, prima del debutto.
+   Chi si qualifica a 2 anni arriva in media a un voto molto piu' alto di chi
+   si qualifica a 4 (vedi la pagina Qualifiche), percio' l'eta' sta in evidenza. */
+function QualificaCavallo({ q }: { q: HorseData["qualifica"] }) {
+  if (!q) return null;
+  const data = q.data?.length === 10 ? `${q.data.slice(8, 10)}/${q.data.slice(5, 7)}/${q.data.slice(0, 4)}` : q.data;
+  const cella = (titolo: string, valore: React.ReactNode, colore?: string) => (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{titolo}</div>
+      <div className="tabular" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.15, color: colore ?? "hsl(210 10% 92%)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{valore}</div>
+    </div>
+  );
+  return (
+    <div id="sez-qualifica" className="sotto-sezione" data-testid="qualifica-cavallo">
+      <div style={{ ...panelTitle, display: "flex", alignItems: "center", gap: 8 }}>
+        <Timer size={14} className="icona-voto" /> Qualifica
+        <Link href="/qualifiche"><a style={{ marginLeft: "auto", fontSize: 11.5, textTransform: "none", letterSpacing: 0, color: "hsl(183 70% 60%)", textDecoration: "none", fontWeight: 500 }}>Tutte le qualifiche</a></Link>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 14 }}>
+        {cella("Data", data)}
+        {cella("A che età", `${q.eta} ${q.eta === 1 ? "anno" : "anni"}`, q.eta <= 2 ? "hsl(150 60% 55%)" : undefined)}
+        {cella("Tempo al km", q.tempo ?? "—", "hsl(183 70% 60%)")}
+        {cella("Ippodromo", q.pista ? <NomePista pista={q.pista} colorato testo={nomePista(q.pista).charAt(0) + nomePista(q.pista).slice(1).toLowerCase()} /> : "—")}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
+        {q.posizione_annata && q.cavalli_annata
+          ? <>Tempo {q.posizione_annata.toLocaleString("it-IT")}° su {q.cavalli_annata.toLocaleString("it-IT")} della sua annata.</>
+          : null}
+        {q.allenatore ? <> Allenatore alla prova: {q.allenatore}.</> : null}
+        {q.prove > 1 ? <> Prove di qualifica: {q.prove}, qui la prima.</> : null}
+      </div>
+    </div>
+  );
+}
+
 function AllenatoriCavallo({ nome }: { nome: string }) {
   const { data } = useQuery<{ disponibile: boolean; periodi: any[] }>({
     queryKey: ["/api/horse-trainers", nome],
@@ -581,12 +622,12 @@ export default function HorsePage() {
         { id: "sez-palmares", testo: "Palmares" },
         { id: "sez-voto", testo: "Il voto" },
         { id: "sez-percentili", testo: "Percentili" },
+        { id: "sez-qualifica", testo: "Qualifica" },
         { id: "sez-anni", testo: "Anno per anno" },
         { id: "sez-gare", testo: "Ultime gare" },
         { id: "sez-ippodromi", testo: "Migliori gare e piste" },
-        { id: "sez-dove", testo: "Dove ha corso" },
-        { id: "sez-valore", testo: "Quanto può guadagnare" },
         { id: "sez-previsioni", testo: "Previsioni" },
+        { id: "sez-valore", testo: "Quanto può guadagnare" },
         { id: "sez-pareggio", testo: "Pareggio" },
         { id: "sez-vendere", testo: "Vendere o correre" },
         { id: "sez-allenatori", testo: "Allenatori" },
@@ -603,109 +644,47 @@ export default function HorsePage() {
           riquadri tornano in fila nell'ordine scritto in --o (index.css,
           "Scheda del cavallo a fasce"). */}
       <div className="scheda-corpo">
-      {/* Il palmares a tutta larghezza, con i Gran Premi su piu' colonne. */}
+      {/* Ottobre 2026, riordino da computer. La scheda e' fatta a fasce di
+          due riquadri affiancati, alti uguali, tutti con lo stesso stile:
+          voto | carriera; ultime gare | gare e piste; stime economiche;
+          allenatori | fratellastri; genealogia | consanguineita'.
+          Alcuni riquadri piccoli sono stati uniti: voto e percentili, carriera
+          con qualifica e "dove ha corso", migliori gare con le piste.
+          Sul telefono le fasce si sciolgono e i riquadri tornano in fila
+          nell'ordine scritto in --o (index.css, "Scheda del cavallo a fasce"). */}
       <div className="fascia-scheda fascia-palmares">
         <div className="blocco" style={{ ["--o" as any]: 1 }}>
     {/* Palmares: le vittorie nei Gran Premi (albo d'oro dal 2014). */}
     <section id="sez-palmares"><Palmares nome={horse.name} anno={horse.birth_year} /></section>
-        </div>
+                </div>
       </div>
-      {/* Carriera a sinistra, il voto e i percentili a destra. */}
-      <div className="fascia-scheda fascia-carriera">
-        <div className="scheda-col principale">
-          <div className="blocco" style={{ ["--o" as any]: 12 }}>
-      {/* Year-by-year breakdown */}
-      {stats?.yearlyStats && stats.yearlyStats.length > 0 && (
-          <div id="sez-anni" className="pannello" style={panelStyle}>
-            <div style={panelTitle}>Carriera anno per anno</div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
-                    {["Anno", "Corse", "Vitt.", "Piazz.", "Guadagni", "Miglior tempo", "Tempo medio"].map(h => (
-                      <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.yearlyStats.map((y, i) => (
-                    <tr key={y.year} style={{ borderBottom: i < stats.yearlyStats.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
-                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 60%)", fontWeight: 600 }}>{y.year}</td>
-                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.races}</td>
-                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>{y.wins}</td>
-                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.places}</td>
-                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
-                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 70% 55%)" }}>{y.best_time ? tempoKm(y.best_time) : "—"}</td>
-                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.avg_time ? tempoKm(y.avg_time) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div className="fascia-scheda fascia-due">
+        <div className="blocco" style={{ ["--o" as any]: 8 }}>
+      {/* I cavalli storici vanno spiegati, altrimenti il loro voto sembra
+            confrontabile con quello dei cavalli in attivita' e non lo e'. */}
+      {eStorico && (
+          <div className="pannello" style={{ ...panelStyle, borderLeft: "3px solid hsl(51 70% 50%)" }}>
+            <div style={panelTitle}>Voto storico, non confrontabile con i cavalli in gara</div>
+            {/* L'avvertenza resta in chiaro: e' il punto, non un dettaglio. Il
+                perche' tecnico va invece sotto la tendina. */}
+            <div style={{ fontSize: 13, color: "hsl(210 10% 78%)", lineHeight: 1.55, maxWidth: "70ch" }}>
+              Confrontato solo con gli altri cavalli storici, su guadagni, record e percentuale
+              di vittorie.
             </div>
+            <Spiegazione titolo="Perché ha una scala a parte">
+              Di questo cavallo l&apos;archivio conosce i totali di carriera presi
+              dall&apos;anagrafe ufficiale, ma non le singole gare: per gli anni in cui ha corso
+              non esistono online. Confrontarlo con i cavalli di oggi sarebbe doppiamente
+              sbagliato, perche&apos; correvano in un&apos;altra epoca e con altri montepremi.
+              <br />
+              La tenuta, che per i cavalli in attivita&apos; vale un quarto del voto, qui non
+              e&apos; misurabile perche&apos; servirebbero le date delle corse: il suo peso viene
+              ridistribuito sulle tre voci note, mantenendone le proporzioni.
+            </Spiegazione>
           </div>
       )}
-          </div>
-          <div className="blocco" style={{ ["--o" as any]: 13 }}>
-      {/* Riquadri vuoti: una riga sola invece di un pannello grande */}
-      {(!horse.races?.length || !horse.siblings?.length) && (
-          <div className="riga-vuota">
-            {!horse.races?.length && <span>Nessuna gara in archivio.</span>}
-            {!horse.races?.length && !horse.siblings?.length && <span>·</span>}
-            {!horse.siblings?.length && <span>Nessun fratellastro trovato.</span>}
-          </div>
-      )}
-          </div>
-          <div className="blocco" style={{ ["--o" as any]: 15 }}>
-          {horse.races?.length ? (
-          <div id="sez-gare" className="pannello" style={panelStyle}>
-            <div style={panelTitle}>Ultime gare</div>
-            {horse.races?.length ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {horse.races.slice(0, 10).map((r, i) => (
-                  <div key={i} className="riga-gara" style={{
-                    display: "flex", alignItems: "center", gap: "10px",
-                    padding: "7px 0",
-                    borderBottom: i < Math.min(9, horse.races.length - 1) ? "1px solid hsl(220 10% 15%)" : "none",
-                  }}>
-                    <div className="tabular" style={{
-                      minWidth: "24px", height: "24px", borderRadius: "6px",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "11px", fontWeight: 700,
-                      background: r.placement === 1 ? "hsl(51 100% 50% / 0.15)" : r.placement <= 3 ? "hsl(183 60% 40% / 0.15)" : "hsl(220 10% 14%)",
-                      color: r.placement === 1 ? "hsl(51 100% 60%)" : r.placement <= 3 ? "hsl(183 80% 60%)" : "hsl(210 8% 50%)",
-                      border: "1px solid",
-                      borderColor: r.placement === 1 ? "hsl(51 100% 50% / 0.3)" : r.placement <= 3 ? "hsl(183 60% 40% / 0.3)" : "hsl(220 10% 20%)",
-                    }}>
-                      {r.placement_raw ?? r.placement ?? "—"}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "12px", color: "hsl(210 8% 65%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        <LinkPista codice={r.track} /> {r.race_date ? `· ${r.race_date}` : ""}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)" }}>
-                        <LinkGuidatore nome={r.driver} /> {r.distance ? `· ${r.distance}m` : ""}
-                      </div>
-                    </div>
-                    {r.time_km != null && (
-                      <div className="tabular" style={{ fontSize: "11px", color: "hsl(183 70% 55%)", flexShrink: 0 }}>
-                        {tempoKm(r.time_km)}
-                      </div>
-                    )}
-                    {r.prize_net != null && r.prize_net > 0 && (
-                      <div className="tabular" style={{ fontSize: "11px", color: "hsl(51 80% 55%)", flexShrink: 0 }}>
-                        €{r.prize_net.toLocaleString("it-IT", { maximumFractionDigits: 0 })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          ) : null}
-          </div>
-        </div>
-        <div className="scheda-col laterale">
-          <div className="blocco" style={{ ["--o" as any]: 8 }}>
+                {horse.rating_mode === "performance" && (
+          <div className="pannello pannello-unito" style={panelStyle}>
       {/* Le due letture del voto, e quanto quel voto sia gia' definitivo.
 
             Il voto globale confronta il cavallo con tutti, e questo penalizza i
@@ -716,7 +695,7 @@ export default function HorsePage() {
             anni resta ferma in meno di un caso su tre. */}
       {horse.rating_mode === "performance" &&
           (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto) && (
-          <div id="sez-voto" className="pannello" style={panelStyle}>
+          <div id="sez-voto" className="sotto-sezione">
             <div style={panelTitle}>Come leggere questo voto</div>
 
             {/* Tre dati su una riga sola: le due letture del voto e quanto
@@ -849,11 +828,9 @@ export default function HorsePage() {
             )}
           </div>
       )}
-          </div>
-          <div className="blocco" style={{ ["--o" as any]: 10 }}>
-      {/* Percentile bars */}
+                {/* Percentile bars */}
       {horse.rating_mode === "performance" && (
-          <div id="sez-percentili" className="pannello" style={panelStyle}>
+          <div id="sez-percentili" className="sotto-sezione">
             <div style={panelTitle}>Percentili generazione {horse.birth_year}</div>
             <PercentileBar label="Guadagni" value={horse.earn_percentile} />
             <PercentileBar label="Miglior tempo" value={horse.time_percentile} />
@@ -902,9 +879,44 @@ export default function HorsePage() {
             </Spiegazione>
           </div>
       )}
+                    </div>
+      )}
+        </div>
+        <div className="blocco" style={{ ["--o" as any]: 9 }}>
+      {(horse.qualifica || (stats?.yearlyStats?.length ?? 0) > 0 || (horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0) && (
+          <div className="pannello pannello-unito" style={panelStyle}>
+            <QualificaCavallo q={horse.qualifica} />
+      {/* Year-by-year breakdown */}
+      {stats?.yearlyStats && stats.yearlyStats.length > 0 && (
+          <div id="sez-anni" className="sotto-sezione">
+            <div style={panelTitle}>Carriera anno per anno</div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
+                    {["Anno", "Corse", "Vitt.", "Piazz.", "Guadagni", "Miglior tempo", "Tempo medio"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.yearlyStats.map((y, i) => (
+                    <tr key={y.year} style={{ borderBottom: i < stats.yearlyStats.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
+                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 60%)", fontWeight: 600 }}>{y.year}</td>
+                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.races}</td>
+                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>{y.wins}</td>
+                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.places}</td>
+                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
+                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 70% 55%)" }}>{y.best_time ? tempoKm(y.best_time) : "—"}</td>
+                      <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.avg_time ? tempoKm(y.avg_time) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="blocco" style={{ ["--o" as any]: 9 }}>
-      {/* Carriera in Italia e all'estero.
+      )}
+                {/* Carriera in Italia e all'estero.
 
             Una gara all'estero paga in media quasi quattro volte una italiana
             (1.920 euro contro 518), quindi sapere DOVE un cavallo ha guadagnato
@@ -913,7 +925,7 @@ export default function HorsePage() {
             gare fuori confine ma non dice quale paese, percio' si puo' dividere
             Italia da estero e non oltre. */}
       {(horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0 && (
-          <div id="sez-dove" className="pannello" style={panelStyle}>
+          <div id="sez-dove" className="sotto-sezione">
             <div style={panelTitle}>Dove ha corso</div>
             {/* Aggiunto il premio medio per gara: e' il dato che spiega da solo
                 perche' la divisione conta, e prima stava solo nella prosa. */}
@@ -951,68 +963,69 @@ export default function HorsePage() {
             )}
           </div>
       )}
-          </div>
-          <div className="blocco" style={{ ["--o" as any]: 11 }}>
-      {/* I cavalli storici vanno spiegati, altrimenti il loro voto sembra
-            confrontabile con quello dei cavalli in attivita' e non lo e'. */}
-      {eStorico && (
-          <div className="pannello" style={{ ...panelStyle, borderLeft: "3px solid hsl(51 70% 50%)" }}>
-            <div style={panelTitle}>Voto storico, non confrontabile con i cavalli in gara</div>
-            {/* L'avvertenza resta in chiaro: e' il punto, non un dettaglio. Il
-                perche' tecnico va invece sotto la tendina. */}
-            <div style={{ fontSize: 13, color: "hsl(210 10% 78%)", lineHeight: 1.55, maxWidth: "70ch" }}>
-              Confrontato solo con gli altri cavalli storici, su guadagni, record e percentuale
-              di vittorie.
-            </div>
-            <Spiegazione titolo="Perché ha una scala a parte">
-              Di questo cavallo l&apos;archivio conosce i totali di carriera presi
-              dall&apos;anagrafe ufficiale, ma non le singole gare: per gli anni in cui ha corso
-              non esistono online. Confrontarlo con i cavalli di oggi sarebbe doppiamente
-              sbagliato, perche&apos; correvano in un&apos;altra epoca e con altri montepremi.
-              <br />
-              La tenuta, che per i cavalli in attivita&apos; vale un quarto del voto, qui non
-              e&apos; misurabile perche&apos; servirebbero le date delle corse: il suo peso viene
-              ridistribuito sulle tre voci note, mantenendone le proporzioni.
-            </Spiegazione>
-          </div>
-      )}
-          </div>
-        </div>
-      </div>
-      {/* Le stime economiche affiancate. */}
-      <div className="fascia-scheda fascia-griglia fascia-soldi">
-        <div className="blocco" style={{ ["--o" as any]: 4 }}>
-      {/* Valore residuo: quanto puo' ancora guadagnare.
-          Va subito sotto i guadagni di carriera, perche' e' la lettura che
-          serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
-          questo dice cosa gli resta. */}
-      <section id="sez-valore"><ValoreResiduo v={horse.valore_carriera} /></section>
-        </div>
-        <div className="blocco" style={{ ["--o" as any]: 5 }}>
-      {/* Previsioni XGBoost: prossima corsa e premi dei prossimi 12 mesi. */}
-      <PrevisioniCavallo nome={horse.name} anno={horse.birth_year} />
-        </div>
-        <div className="blocco" style={{ ["--o" as any]: 6 }}>
-      {/* Punto di pareggio: ha ripagato quello che e' costato? */}
-      <section id="sez-pareggio"><PareggioCavallo nome={horse.name} anno={horse.birth_year} /></section>
-        </div>
-        <div className="blocco" style={{ ["--o" as any]: 7 }}>
-      {/* Puledro giovane che non ha ancora corso: venderlo all'asta o tenerlo? */}
-      {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 4 && (
-        <section id="sez-vendere"><VendereOCorrere nome={horse.name} anno={horse.birth_year} inScheda /></section>
+                    </div>
       )}
         </div>
       </div>
-      {/* Migliori gare, piste, allenatori, fratellastri. */}
-      <div className="fascia-scheda fascia-griglia fascia-quattro">
+      <div className="fascia-scheda fascia-due">
+        <div className="blocco" style={{ ["--o" as any]: 15 }}>
+          {horse.races?.length ? (
+          <div id="sez-gare" className="pannello" style={panelStyle}>
+            <div style={panelTitle}>Ultime gare</div>
+            {horse.races?.length ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {horse.races.slice(0, 10).map((r, i) => (
+                  <div key={i} className="riga-gara" style={{
+                    display: "flex", alignItems: "center", gap: "10px",
+                    padding: "7px 0",
+                    borderBottom: i < Math.min(9, horse.races.length - 1) ? "1px solid hsl(220 10% 15%)" : "none",
+                  }}>
+                    <div className="tabular" style={{
+                      minWidth: "24px", height: "24px", borderRadius: "6px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontWeight: 700,
+                      background: r.placement === 1 ? "hsl(51 100% 50% / 0.15)" : r.placement <= 3 ? "hsl(183 60% 40% / 0.15)" : "hsl(220 10% 14%)",
+                      color: r.placement === 1 ? "hsl(51 100% 60%)" : r.placement <= 3 ? "hsl(183 80% 60%)" : "hsl(210 8% 50%)",
+                      border: "1px solid",
+                      borderColor: r.placement === 1 ? "hsl(51 100% 50% / 0.3)" : r.placement <= 3 ? "hsl(183 60% 40% / 0.3)" : "hsl(220 10% 20%)",
+                    }}>
+                      {r.placement_raw ?? r.placement ?? "—"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "12px", color: "hsl(210 8% 65%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <LinkPista codice={r.track} /> {r.race_date ? `· ${r.race_date}` : ""}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)" }}>
+                        <LinkGuidatore nome={r.driver} /> {r.distance ? `· ${r.distance}m` : ""}
+                      </div>
+                    </div>
+                    {r.time_km != null && (
+                      <div className="tabular" style={{ fontSize: "11px", color: "hsl(183 70% 55%)", flexShrink: 0 }}>
+                        {tempoKm(r.time_km)}
+                      </div>
+                    )}
+                    {r.prize_net != null && r.prize_net > 0 && (
+                      <div className="tabular" style={{ fontSize: "11px", color: "hsl(51 80% 55%)", flexShrink: 0 }}>
+                        €{r.prize_net.toLocaleString("it-IT", { maximumFractionDigits: 0 })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          ) : null}
+                  </div>
         <div className="blocco" style={{ ["--o" as any]: 17 }}>
+      {stats && (stats.bestRaces.length > 0 || stats.trackStats.length > 0) && (
+          <div id="sez-ippodromi" className="pannello pannello-unito" style={panelStyle}>
           {/* Best races */}
           {stats && stats.bestRaces.length > 0 && (
-            <div id="sez-ippodromi" className="pannello" style={panelStyle}>
+            <div className="sotto-sezione">
               <div style={panelTitle}>Migliori gare (per premio)</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {stats.bestRaces.map((r, i) => (
-                  <div key={i} style={{
+                  <div key={i} className="riga-gara" style={{
                     display: "flex", alignItems: "center", gap: "10px",
                     padding: "7px 0",
                     borderBottom: i < stats.bestRaces.length - 1 ? "1px solid hsl(220 10% 15%)" : "none",
@@ -1044,11 +1057,9 @@ export default function HorsePage() {
               </div>
             </div>
           )}
-        </div>
-        <div className="blocco" style={{ ["--o" as any]: 18 }}>
-          {/* Track stats */}
+                  {/* Track stats */}
           {stats && stats.trackStats.length > 0 && (
-            <div className="pannello" style={panelStyle}>
+            <div className="sotto-sezione">
               <div style={panelTitle}>Statistiche per ippodromo</div>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
@@ -1074,10 +1085,51 @@ export default function HorsePage() {
               </div>
             </div>
           )}
+                  </div>
+      )}
         </div>
+      </div>
+        <div className="blocco" style={{ ["--o" as any]: 13 }}>
+      {/* Riquadri vuoti: una riga sola invece di un pannello grande */}
+      {(!horse.races?.length || !horse.siblings?.length) && (
+          <div className="riga-vuota">
+            {!horse.races?.length && <span>Nessuna gara in archivio.</span>}
+            {!horse.races?.length && !horse.siblings?.length && <span>·</span>}
+            {!horse.siblings?.length && <span>Nessun fratellastro trovato.</span>}
+          </div>
+      )}
+                  </div>
+      <div className="fascia-scheda fascia-soldi">
+        <div className="scheda-col">
+        <div className="blocco" style={{ ["--o" as any]: 5 }}>
+      {/* Previsioni XGBoost: prossima corsa e premi dei prossimi 12 mesi. */}
+      <PrevisioniCavallo nome={horse.name} anno={horse.birth_year} />
+                </div>
+        </div>
+        <div className="scheda-col">
+        <div className="blocco" style={{ ["--o" as any]: 4 }}>
+      {/* Valore residuo: quanto puo' ancora guadagnare.
+          Va subito sotto i guadagni di carriera, perche' e' la lettura che
+          serve a chi valuta un acquisto: quelli sopra dicono cosa ha fatto,
+          questo dice cosa gli resta. */}
+      <section id="sez-valore"><ValoreResiduo v={horse.valore_carriera} /></section>
+                </div>
+        <div className="blocco" style={{ ["--o" as any]: 6 }}>
+      {/* Punto di pareggio: ha ripagato quello che e' costato? */}
+      <section id="sez-pareggio"><PareggioCavallo nome={horse.name} anno={horse.birth_year} /></section>
+                </div>
+        <div className="blocco" style={{ ["--o" as any]: 7 }}>
+      {/* Puledro giovane che non ha ancora corso: venderlo all'asta o tenerlo? */}
+      {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 4 && (
+        <section id="sez-vendere"><VendereOCorrere nome={horse.name} anno={horse.birth_year} inScheda /></section>
+      )}
+                </div>
+        </div>
+      </div>
+      <div className="fascia-scheda fascia-due">
         <div className="blocco" style={{ ["--o" as any]: 14 }}>
       <section id="sez-allenatori"><AllenatoriCavallo nome={horse.name} /></section>
-        </div>
+                </div>
         <div className="blocco" style={{ ["--o" as any]: 16 }}>
         {/* Siblings */}
         {horse.siblings?.length ? (
@@ -1108,14 +1160,13 @@ export default function HorsePage() {
           ) : null}
         </div>
         ) : null}
-        </div>
+                </div>
       </div>
-      {/* Genealogia e consanguineità. */}
-      <div className="fascia-scheda fascia-griglia fascia-genealogia">
+      <div className="fascia-scheda fascia-due">
         <div className="blocco" style={{ ["--o" as any]: 2 }}>
       {/* Genealogy */}
       {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (
-        <div id="sez-genealogia" className="pannello" style={panelStyle}>
+        <div id="sez-genealogia" className="pannello" style={{ ...panelStyle, display: "flex", flexDirection: "column" }}>
           <div style={panelTitle}>Genealogia (clicca per navigare)</div>
           <div className="genealogia-griglia" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
@@ -1131,19 +1182,8 @@ export default function HorsePage() {
               <HorsePedigreeNode label="Nonna mat." name={horse.pedigree.dam_dam} isStallion={false} />
             </div>
           </div>
-        </div>
-      )}
-        </div>
-        <div className="blocco" style={{ ["--o" as any]: 3 }}>
-      {/* Consanguineita' dalla seconda fonte: compare solo se l'abbiamo */}
-      <InbreedingPanel horseName={horse.name} />
-        </div>
-      </div>
-      </div>
-
-      {/* Link to sire page */}
-      {horse.sire && (
-        <div style={{ marginTop: "16px" }}>
+          {horse.sire && (
+        <div style={{ marginTop: "auto", paddingTop: "16px" }}>
           <Link href={`/stallion/${encodeURIComponent(horse.sire)}`}>
             <a style={{
               display: "inline-flex", alignItems: "center", gap: "8px",
@@ -1160,6 +1200,15 @@ export default function HorsePage() {
           </Link>
         </div>
       )}
+        </div>
+      )}
+                </div>
+        <div className="blocco" style={{ ["--o" as any]: 3 }}>
+      {/* Consanguineita' dalla seconda fonte: compare solo se l'abbiamo */}
+      <InbreedingPanel horseName={horse.name} />
+                </div>
+      </div>
+      </div>
     </div>
   );
 }

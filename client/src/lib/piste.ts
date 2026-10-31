@@ -57,6 +57,8 @@ const SIGLE: Record<string, string> = {
   FE: "FERRARA", FO: "FOLLONICA", CV: "CIVITANOVA", PC: "PONTECAGNANO",
   BA: "BARI", VA: "VARESE", AN: "ANCONA", FR: "FROSINONE", SS: "SAN SEVERO",
   PR: "PRATO", MON: "MONTEGIORGIO",
+  // Nelle prove di qualifica della seconda fonte "ES" indica una prova all'estero.
+  ES: "ESTERO",
 };
 
 /** Da "Napoli — Agnano", "napoli", "NA" a "NAPOLI". */

@@ -1074,6 +1074,16 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .scheda-voto { --pad-pannello: 16px 18px; --spazio-pannello: 16px; }
   .scheda-corpo .fascia-scheda { display: grid; gap: 0 16px; align-items: start; }
   .scheda-corpo .fascia-carriera { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
+  /* Ottobre 2026: fasce di due riquadri uguali, alti uguali. Se uno manca,
+     l'altro prende tutta la larghezza. */
+  .scheda-corpo .fascia-due { grid-template-columns: repeat(auto-fit, minmax(calc(50% - 8px), 1fr)); align-items: stretch; }
+  .scheda-corpo .fascia-due > .blocco { display: flex; flex-direction: column; }
+  .scheda-corpo .fascia-due > .blocco > section { display: flex; flex-direction: column; flex: 1 1 auto; }
+  .scheda-corpo .fascia-due > .blocco > .pannello,
+  .scheda-corpo .fascia-due > .blocco > section > .pannello { flex: 1 1 auto; }
+  .scheda-corpo .fascia-due > .blocco > .pannello + .pannello { flex: 0 0 auto; }
+  /* Le stime: a sinistra le previsioni, a destra le altre stime in colonna. */
+  .scheda-corpo .fascia-soldi { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
   .scheda-corpo .fascia-griglia { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
   /* auto-fit: se un riquadro manca, gli altri si allargano e non resta il buco. */
   .scheda-corpo .fascia-quattro { grid-template-columns: repeat(auto-fit, minmax(calc(50% - 8px), 1fr)); }
@@ -1086,12 +1096,22 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   .scheda-corpo .fascia-griglia > .blocco > section { display: flex; flex-direction: column; }
   .scheda-corpo .fascia-griglia > .blocco > *,
   .scheda-corpo .fascia-griglia > .blocco > section > * { flex: 1 1 auto; }
-  .scheda-corpo .fascia-soldi { align-items: start; }
-  .scheda-corpo .fascia-soldi > .blocco > *, .scheda-corpo .fascia-soldi > .blocco > section > * { flex: 0 0 auto; }
   .scheda-corpo .fascia-griglia table td, .scheda-corpo .fascia-griglia table th { padding-left: 6px !important; padding-right: 6px !important; }
   .scheda-voto .testata-cavallo { margin-bottom: 14px; }
 }
 .scheda-corpo .fascia-scheda > .blocco:empty { display: none !important; }
+/* Un blocco che contiene solo una sezione vuota (il riquadro non ha dati)
+   non deve occupare posto, altrimenti la fascia resta con un buco. */
+.scheda-corpo .blocco:has(> section:empty:only-child) { display: none !important; }
+@media (min-width: 1180px) {
+  /* Le stime: se una delle due colonne e' vuota, l'altra prende tutta la riga. */
+  .scheda-corpo .fascia-soldi:not(:has(> .scheda-col:first-child > .blocco > :not(section:empty))) { grid-template-columns: minmax(0, 1fr); }
+  .scheda-corpo .fascia-soldi:not(:has(> .scheda-col:first-child > .blocco > :not(section:empty))) > .scheda-col:first-child { display: none; }
+  .scheda-corpo .fascia-soldi:not(:has(> .scheda-col:last-child > .blocco > :not(section:empty))) { grid-template-columns: minmax(0, 1fr); }
+  .scheda-corpo .fascia-soldi:not(:has(> .scheda-col:last-child > .blocco > :not(section:empty))) > .scheda-col:last-child { display: none; }
+}
+/* Un riquadro fatto di piu' parti: le parti sono separate da una riga. */
+.pannello-unito .sotto-sezione + .sotto-sezione { margin-top: 18px; padding-top: 16px; border-top: 1px solid hsl(220 10% 16%); }
 @media (min-width: 1180px) {
   .scheda-corpo .fascia-palmares { display: block; }
   .scheda-corpo .fascia-palmares .palmares-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 8px 10px; }
