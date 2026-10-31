@@ -24,8 +24,8 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend");
   if (href === "/pareggio") return percorso.startsWith("/pareggio") || percorso.startsWith("/break-even");
   if (href === "/scuderia") return percorso.startsWith("/scuderia") || percorso.startsWith("/portafoglio");
-  if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere");
-  if (href === "/generazione-m") return percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
+  if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere")
+    || percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
   if (href === "/metodo") return percorso.startsWith("/metodo");
   if (href === "/controllo") return percorso.startsWith("/controllo");
   if (href === "/advisor") return percorso.startsWith("/advisor");

@@ -1,22 +1,22 @@
-import { useEffect, useState } from "react";
-import IntestazionePagina from "../components/IntestazionePagina";
-import { useLocation } from "wouter";
+/**
+ * ALLEVATORI: chi ha materialmente allevato i cavalli.
+ *
+ * Il dato arriva dalla seconda fonte (VendoPuledri), che lo riporta per ogni
+ * soggetto; l'archivio corse non lo contiene. Da non confondere con le
+ * stazioni di monta, dove stanno gli stalloni.
+ *
+ * Impaginato a due colonne (vedi DueColonne): classifica a sinistra, scheda
+ * dell'allevatore a destra. La qualita' si legge sul voto medio dei cavalli
+ * prodotti, tenendo presente che sono valutati solo quelli che hanno corso.
+ */
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
-import { Search, X, Filter, ChevronLeft, ChevronRight, ArrowLeft, MapPin } from "lucide-react";
-
-/**
- * SEZIONE ALLEVATORI.
- *
- * Da non confondere con la sezione Allevamenti, che elenca le stazioni di
- * monta dove stanno gli stalloni. Qui c'e' chi ha materialmente allevato i
- * cavalli: il dato arriva dalla seconda fonte (VendoPuledri), che lo riporta
- * per ogni soggetto, mentre l'archivio corse non lo contiene.
- *
- * La qualita' di un allevatore si legge sul voto medio dei cavalli che ha
- * prodotto, tenendo presente che sono valutati solo quelli che hanno corso.
- */
+import CavalloCaricamento from "../components/CavalloCaricamento";
+import { Search, X, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro, isNum } from "../components/DueColonne";
 
 interface BreederRow {
   breeder_name: string;
@@ -26,285 +26,215 @@ interface BreederRow {
   score_migliore: number | null;
   n_top: number;
 }
-
-interface BreedersResponse {
-  rows: BreederRow[];
-  total: number;
-}
-
 interface BreederDetail {
   name: string;
   n_cavalli: number;
-  contact: {
-    city: string | null;
-    province: string | null;
-    // I recapiti restano nell'archivio: il sito non li mostra.
-  } | null;
+  contact: { city: string | null; province: string | null } | null;
   horses: {
-    horse_name: string;
-    birth_year: number | null;
-    sex: string | null;
-    score: number | null;
-    grade: string | null;
-    career_races: number | null;
-    career_earnings: number | null;
+    horse_name: string; birth_year: number | null; sex: string | null; score: number | null;
+    grade: string | null; career_races: number | null; career_earnings: number | null;
   }[];
 }
 
-const PAGE = 50;
-
-function eur(v: number | null | undefined): string {
-  if (!v) return "—";
-  return "€ " + Math.round(v).toLocaleString("it-IT");
+const PAGE = 40;
+const VOTI = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+const GRADE_COLORS: Record<string, string> = {
+  SSS: "hsl(183 100% 55%)", SS: "hsl(150 80% 50%)", S: "hsl(120 60% 50%)",
+  A: "hsl(60 80% 55%)", B: "hsl(30 80% 58%)", C: "hsl(15 70% 55%)",
+  D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(0 60% 45%)",
+};
+/** Il voto medio usa il colore della pagina: non e' un voto a lettere. */
+function coloreVoto(s: number | null | undefined): string {
+  return isNum(s) ? "var(--ed-acc)" : "hsl(210 8% 45%)";
 }
 
-export default function BreedersPage({ embedded = false }: { embedded?: boolean } = {}) {
-  const [location, navigate] = useLocation();
-  // La ricerca in alto apre un allevatore con /allevatore/NOME.
-  const nomeDaIndirizzo = location.startsWith("/allevatore/")
-    ? decodeURIComponent(location.slice("/allevatore/".length)) : null;
-  const [searchInput, setSearchInput] = useState("");
-  const [q, setQ] = useState("");
-  const [minHorses, setMinHorses] = useState(2);
-  const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<string | null>(nomeDaIndirizzo);
-  useEffect(() => { if (nomeDaIndirizzo) setSelected(nomeDaIndirizzo); }, [nomeDaIndirizzo]);
-
-  const params = new URLSearchParams({
-    limit: String(PAGE),
-    offset: String(page * PAGE),
-    min_horses: String(minHorses),
+function SchedaAllevatore({ nome, onClose }: { nome: string; onClose?: () => void }) {
+  const [, navigate] = useLocation();
+  const [soloValutati, setSoloValutati] = useState(false);
+  const { data: d, isLoading } = useQuery<BreederDetail | null>({
+    queryKey: ["/api/allevatore", nome],
+    queryFn: async () => (await apiRequest("GET", `/api/allevatore/${encodeURIComponent(nome)}`)).json(),
   });
-  if (q) params.set("q", q);
+  const horses = d?.horses ?? [];
+  const valutati = horses.filter(h => isNum(h.score));
+  const medio = valutati.length ? valutati.reduce((a, h) => a + (h.score as number), 0) / valutati.length : null;
+  const guadagni = horses.reduce((a, h) => a + (isNum(h.career_earnings) ? h.career_earnings : 0), 0);
+  const conta: Record<string, number> = {};
+  for (const h of horses) if (h.grade) conta[h.grade] = (conta[h.grade] ?? 0) + 1;
+  const top = (conta.SSS ?? 0) + (conta.SS ?? 0) + (conta.S ?? 0);
+  const mostrati = soloValutati ? valutati : horses;
 
-  const { data, isLoading } = useQuery<BreedersResponse>({
-    queryKey: ["/api/allevatori", params.toString()],
-    queryFn: async () => (await apiRequest("GET", `/api/allevatori?${params.toString()}`)).json(),
-    enabled: !selected,
-  });
-
-  const { data: detail } = useQuery<BreederDetail | null>({
-    queryKey: ["/api/allevatore", selected],
-    queryFn: async () => (await apiRequest("GET", `/api/allevatore/${encodeURIComponent(selected!)}`)).json(),
-    enabled: !!selected,
-  });
-
-  const rows = data?.rows ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE));
-
-  const cell: React.CSSProperties = {
-    padding: "10px 12px",
-    fontSize: "13px",
-    color: "hsl(210 10% 88%)",
-    whiteSpace: "nowrap",
-  };
-  const head: React.CSSProperties = {
-    padding: "10px 12px",
-    fontSize: "11px",
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-    color: "hsl(210 8% 58%)",
-    textAlign: "left",
-    whiteSpace: "nowrap",
-    borderBottom: "1px solid hsl(220 10% 16%)",
-  };
-
-  // ── Scheda del singolo allevatore ──
-  if (selected) {
-    return (
-      <div className="page-shell">
-        <button
-          onClick={() => setSelected(null)}
-          style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "hsl(183 80% 60%)", fontSize: "13px", cursor: "pointer", padding: 0, marginBottom: "14px" }}
-        >
-          <ArrowLeft size={14} /> Tutti gli allevatori
-        </button>
-
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: "0 0 6px" }}>
-          {selected}
-        </h1>
-
-        {detail?.contact && detail.contact.city && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "13px", color: "hsl(210 8% 65%)", marginBottom: "16px" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <MapPin size={13} /> {detail.contact.city}
-              {detail.contact.province ? ` (${detail.contact.province})` : ""}
-            </span>
-          </div>
-        )}
-
-        <p style={{ fontSize: "13px", color: "hsl(210 8% 60%)", margin: "0 0 18px" }}>
-          {detail?.n_cavalli ?? 0} cavalli allevati presenti nei nostri dati.
-        </p>
-
-        {!detail ? (
-          <div style={{ padding: "48px", textAlign: "center", color: "hsl(210 8% 55%)", fontSize: "13px" }}>Caricamento…</div>
-        ) : (
-          <div className="pannello" style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th style={head}>Cavallo</th>
-                  <th style={head}>Nato</th>
-                  <th style={head}>Voto</th>
-                  <th style={{ ...head, textAlign: "right" }}>Punti</th>
-                  <th style={{ ...head, textAlign: "right" }}>Corse</th>
-                  <th style={{ ...head, textAlign: "right" }}>Guadagni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.horses.map((h, i) => (
-                  <tr key={h.horse_name} style={{ borderTop: i === 0 ? "none" : "1px solid hsl(220 10% 14%)" }}>
-                    <td style={cell}>
-                      {h.birth_year ? (
-                        <span
-                          onClick={() => navigate(`/horse/${encodeURIComponent(h.horse_name)}/${h.birth_year}`)}
-                          style={{ color: "hsl(183 80% 60%)", cursor: "pointer", fontWeight: 600 }}
-                        >
-                          {h.horse_name}
-                        </span>
-                      ) : (
-                        <span style={{ fontWeight: 600 }}>{h.horse_name}</span>
-                      )}
-                    </td>
-                    <td style={cell}>{h.birth_year ?? "—"}</td>
-                    <td style={cell}>{h.grade ? <GradeBadge grade={h.grade} /> : "—"}</td>
-                    <td style={{ ...cell, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                      {h.score != null ? h.score.toFixed(1) : "—"}
-                    </td>
-                    <td style={{ ...cell, textAlign: "right" }}>{h.career_races ?? "—"}</td>
-                    <td style={{ ...cell, textAlign: "right" }}>{eur(h.career_earnings)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Elenco ──
   return (
-    <div className={embedded ? "" : "page-shell"}>
-      {!embedded && (
-        <>
-          <IntestazionePagina titolo="Allevatori" colore="hsl(20 70% 58%)" margineSotto={20}
-            sottotitolo="Chi ha allevato i cavalli, con la qualità media dei soggetti prodotti.">
-            Chi ha materialmente allevato i cavalli, con la qualità media dei soggetti prodotti. È cosa
-            diversa dalla sezione Allevamenti, che raccoglie le stazioni dove stanno gli stalloni. Il
-            voto medio considera solo i cavalli che hanno già corso abbastanza da essere valutati.
-          </IntestazionePagina>
-        </>
-      )}
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "18px" }}>
-        <div style={{ position: "relative", flex: "1 1 240px", maxWidth: "340px" }}>
-          <Search size={15} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "hsl(210 8% 50%)" }} />
-          <input
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") { setQ(searchInput.trim()); setPage(0); } }}
-            placeholder="Cerca un allevatore"
-            style={{ width: "100%", padding: "9px 30px 9px 32px", borderRadius: "8px", border: "1px solid hsl(220 10% 18%)", background: "hsl(220 12% 10%)", color: "hsl(210 10% 90%)", fontSize: "13px", outline: "none" }}
-          />
-          {searchInput && (
-            <button
-              onClick={() => { setSearchInput(""); setQ(""); setPage(0); }}
-              style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "hsl(210 8% 50%)", padding: 0, display: "flex" }}
-              aria-label="Cancella ricerca"
-            >
-              <X size={15} />
-            </button>
+    <div className="ed-dettaglio" data-testid="scheda-allevatore">
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="ed-etich">Allevatore</div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: "var(--ed-testo)", overflowWrap: "anywhere", marginTop: 2 }}>{nome}</div>
+          {d?.contact?.city && (
+            <div style={{ fontSize: 12.5, color: "var(--ed-muto)", marginTop: 3, display: "flex", alignItems: "center", gap: 5 }}>
+              <MapPin size={12} /> {d.contact.city}{d.contact.province ? ` (${d.contact.province})` : ""}
+            </div>
           )}
         </div>
-
-        <select
-          value={minHorses}
-          onChange={e => { setMinHorses(parseInt(e.target.value)); setPage(0); }}
-          style={{ padding: "9px 10px", borderRadius: "8px", border: "1px solid hsl(220 10% 18%)", background: "hsl(220 12% 10%)", color: "hsl(210 10% 90%)", fontSize: "13px" }}
-        >
-          <option value={1}>Cavalli allevati: tutti</option>
-          <option value={2}>Almeno 2 cavalli</option>
-          <option value={5}>Almeno 5 cavalli</option>
-          <option value={10}>Almeno 10 cavalli</option>
-        </select>
-
-        <span style={{ fontSize: "12px", color: "hsl(210 8% 55%)", display: "flex", alignItems: "center", gap: "6px" }}>
-          <Filter size={13} />
-          {total.toLocaleString("it-IT")} allevatori
-        </span>
+        {onClose && <button className="ed-chiudi" onClick={onClose} aria-label="Chiudi"><X size={15} /></button>}
       </div>
 
-      {isLoading ? (
-        <div style={{ padding: "48px", textAlign: "center", color: "hsl(210 8% 55%)", fontSize: "13px" }}>Caricamento…</div>
-      ) : rows.length === 0 ? (
-        <div style={{ padding: "48px", textAlign: "center", color: "hsl(210 8% 55%)", fontSize: "13px" }}>
-          Nessun allevatore corrisponde ai filtri scelti.
-        </div>
+      {isLoading ? <CavalloCaricamento label="Carico i cavalli..." /> : !d ? (
+        <div style={{ fontSize: 13, color: "var(--ed-muto)", marginTop: 14 }}>Nessun cavallo trovato per questo allevatore.</div>
       ) : (
-        <div className="pannello" style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={head}>Allevatore</th>
-                <th style={{ ...head, textAlign: "right" }}>Cavalli</th>
-                <th style={{ ...head, textAlign: "right" }}>Valutati</th>
-                <th style={{ ...head, textAlign: "right" }}>Voto medio</th>
-                <th style={{ ...head, textAlign: "right" }}>Miglior voto</th>
-                <th style={{ ...head, textAlign: "right" }}>Di vertice</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr
-                  key={r.breeder_name}
-                  onClick={() => setSelected(r.breeder_name)}
-                  style={{ borderTop: i === 0 ? "none" : "1px solid hsl(220 10% 14%)", cursor: "pointer" }}
-                >
-                  <td style={{ ...cell, whiteSpace: "normal", maxWidth: "380px" }}>
-                    <span style={{ color: "hsl(183 80% 60%)", fontWeight: 600 }}>{r.breeder_name}</span>
-                  </td>
-                  <td style={{ ...cell, textAlign: "right" }}>{r.n_cavalli}</td>
-                  <td style={{ ...cell, textAlign: "right" }}>{r.n_valutati}</td>
-                  <td style={{ ...cell, textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                    {r.score_medio != null ? r.score_medio.toFixed(1) : "—"}
-                  </td>
-                  <td style={{ ...cell, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                    {r.score_migliore != null ? r.score_migliore.toFixed(1) : "—"}
-                  </td>
-                  <td style={{ ...cell, textAlign: "right" }}>{r.n_top || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <>
+          <div className="ed-cifre" style={{ marginTop: 14 }}>
+            <Cifra titolo="Cavalli" valore={num(d.n_cavalli)} sotto={`${num(valutati.length)} valutati`} />
+            <Cifra titolo="Voto medio" valore={num(medio, 1)} colore={coloreVoto(medio)} sotto="dei valutati" />
+            <Cifra titolo="Di vertice" valore={num(top)} colore={GRADE_COLORS.S} sotto="voto S o più" />
+            <Cifra titolo="Premi vinti" valore={euro(guadagni)} colore="hsl(51 75% 58%)" sotto="tutti i suoi cavalli" />
+          </div>
+
+          {valutati.length > 0 && (
+            <>
+              <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Come sono andati i suoi cavalli</div>
+              <div style={{ display: "flex", height: 14, borderRadius: 4, overflow: "hidden", background: "hsl(220 10% 16%)" }}>
+                {VOTI.filter(v => conta[v]).map(v => (
+                  <div key={v} title={`${v}: ${conta[v]}`} style={{ width: `${(conta[v] / valutati.length) * 100}%`, background: GRADE_COLORS[v] }} />
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: "4px 10px", flexWrap: "wrap", marginTop: 6, fontSize: 11, color: "var(--ed-muto)" }}>
+                {VOTI.filter(v => conta[v]).map(v => (
+                  <span key={v}><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: GRADE_COLORS[v], marginRight: 4 }} />{v} {conta[v]}</span>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0 8px", flexWrap: "wrap" }}>
+            <div className="ed-etich" style={{ marginRight: "auto" }}>I cavalli ({num(mostrati.length)})</div>
+            <label style={{ fontSize: 12, color: "var(--ed-muto)", display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={soloValutati} onChange={e => setSoloValutati(e.target.checked)} /> solo valutati
+            </label>
+          </div>
+          <div style={{ maxHeight: 460, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4, paddingRight: 2 }}>
+            {mostrati.map(h => (
+              <div key={h.horse_name + (h.birth_year ?? "")}
+                onClick={() => h.birth_year && navigate(`/horse/${encodeURIComponent(h.horse_name)}/${h.birth_year}`)}
+                style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, alignItems: "center", padding: "8px 10px",
+                  borderRadius: 8, background: "var(--ed-fondo2)", cursor: h.birth_year ? "pointer" : "default" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ed-testo)", overflowWrap: "anywhere" }}>{h.horse_name}</div>
+                  <div style={{ fontSize: 11, color: "var(--ed-muto)" }}>
+                    {h.birth_year ?? "—"}{h.sex ? ` · ${h.sex === "F" ? "femmina" : "maschio"}` : ""} · {num(h.career_races)} corse · {euro(h.career_earnings)}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="tabular" style={{ fontSize: 12.5, fontWeight: 700, color: coloreVoto(h.score) }}>{num(h.score, 1)}</span>
+                  {h.grade ? <GradeBadge grade={h.grade} size="sm" /> : <span style={{ fontSize: 11, color: "var(--ed-fioco)" }}>non valutato</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function BreedersPage(_props: { embedded?: boolean } = {}) {
+  const [location] = useLocation();
+  const nomeDaIndirizzo = location.startsWith("/allevatore/") ? decodeURIComponent(location.slice("/allevatore/".length)) : null;
+  const desktop = useDesktop();
+  const [searchInput, setSearchInput] = useState("");
+  const [q, setQ] = useState("");
+  const [minHorses, setMinHorses] = useState(5);
+  const [page, setPage] = useState(0);
+  const [aperto, setAperto] = useState<string | null>(nomeDaIndirizzo);
+  useEffect(() => { if (nomeDaIndirizzo) setAperto(nomeDaIndirizzo); }, [nomeDaIndirizzo]);
+
+  // La ricerca parte da sola mezzo secondo dopo l'ultima lettera.
+  useEffect(() => {
+    const t = setTimeout(() => { setQ(searchInput.trim()); setPage(0); }, 450);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const params = new URLSearchParams({ limit: String(PAGE), offset: String(page * PAGE), min_horses: String(minHorses) });
+  if (q) params.set("q", q);
+  const { data, isLoading } = useQuery<{ rows: BreederRow[]; total: number }>({
+    queryKey: ["/api/allevatori", params.toString()],
+    queryFn: async () => (await apiRequest("GET", `/api/allevatori?${params.toString()}`)).json(),
+    placeholderData: p => p,
+  });
+  const rows = data?.rows ?? [];
+  const total = data?.total ?? 0;
+  const pagine = Math.max(1, Math.ceil(total / PAGE));
+
+  // Su computer la scheda a destra non resta mai vuota: si apre il primo.
+  const scelto = useMemo(() => aperto ?? (desktop && rows.length ? rows[0].breeder_name : null), [aperto, desktop, rows]);
+
+  return (
+    <div>
+      <div className="ed-barra">
+        <label className="ed-cerca">
+          <Search size={15} style={{ color: "var(--ed-muto)" }} />
+          <input value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Cerca un allevatore" aria-label="Cerca un allevatore" />
+          {searchInput && <button onClick={() => setSearchInput("")} aria-label="Cancella ricerca"
+            style={{ background: "none", border: "none", color: "var(--ed-muto)", cursor: "pointer", display: "flex", padding: 0 }}><X size={14} /></button>}
+        </label>
+        <div className="ed-segm" role="group" aria-label="Quanti cavalli allevati">
+          {[[1, "Tutti"], [2, "2+ cavalli"], [5, "5+"], [10, "10+"], [25, "25+"]].map(([v, t]) => (
+            <button key={v} aria-pressed={minHorses === v} onClick={() => { setMinHorses(v as number); setPage(0); }}>{t}</button>
+          ))}
+        </div>
+        <span style={{ fontSize: 12.5, color: "var(--ed-muto)", marginLeft: "auto" }}>{num(total)} allevatori</span>
+      </div>
+
+      {isLoading && !data ? <CavalloCaricamento label="Carico gli allevatori..." /> : rows.length === 0 ? (
+        <div className="ed-pannello" style={{ color: "var(--ed-muto)", fontSize: 13 }}>Nessun allevatore corrisponde ai filtri scelti.</div>
+      ) : (
+        <div className="ed-griglia">
+          <div>
+            <div className="ed-lista">
+              {rows.map((r, i) => {
+                const pos = page * PAGE + i + 1;
+                const att = scelto === r.breeder_name;
+                return (
+                  <div key={r.breeder_name} style={{ minWidth: 0 }}>
+                    <button className="ed-riga" data-attiva={att} onClick={() => setAperto(att && !desktop ? null : r.breeder_name)} data-testid={`row-allevatore-${i}`}>
+                      <span className="ed-pos" data-podio={pos <= 3}>{pos}</span>
+                      <span style={{ minWidth: 0 }}>
+                        <span className="ed-nome" style={{ display: "block" }}>{r.breeder_name}</span>
+                        <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={r.score_medio} colore={coloreVoto(r.score_medio)} /></span>
+                        <span className="ed-sotto" style={{ display: "block" }}>
+                          {num(r.n_cavalli)} cavalli · {num(r.n_valutati)} valutati{r.n_top ? ` · ${r.n_top} di vertice` : ""}
+                        </span>
+                      </span>
+                      <span style={{ textAlign: "right" }}>
+                        <span className="tabular" style={{ display: "block", fontSize: 19, fontWeight: 800, color: coloreVoto(r.score_medio) }}>{num(r.score_medio, 1)}</span>
+                        <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)" }}>voto medio</span>
+                      </span>
+                    </button>
+                    {!desktop && att && <div style={{ marginTop: 6 }}><SchedaAllevatore nome={r.breeder_name} onClose={() => setAperto(null)} /></div>}
+                  </div>
+                );
+              })}
+            </div>
+            {pagine > 1 && (
+              <div className="ed-pagine">
+                <button disabled={page === 0} onClick={() => { setPage(p => p - 1); setAperto(null); }} aria-label="Pagina precedente"><ChevronLeft size={14} /></button>
+                pagina {page + 1} di {pagine}
+                <button disabled={page >= pagine - 1} onClick={() => { setPage(p => p + 1); setAperto(null); }} aria-label="Pagina successiva"><ChevronRight size={14} /></button>
+              </div>
+            )}
+          </div>
+          {desktop && (scelto ? <SchedaAllevatore key={scelto} nome={scelto} /> : <div className="ed-dettaglio ed-vuoto">Scegli un allevatore dall'elenco.</div>)}
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginTop: "18px" }}>
-          <button
-            onClick={() => setPage(p => Math.max(0, p - 1))}
-            disabled={page === 0}
-            style={{ display: "flex", alignItems: "center", gap: "4px", padding: "8px 12px", borderRadius: "8px", border: "1px solid hsl(220 10% 18%)", background: "hsl(220 12% 10%)", color: page === 0 ? "hsl(210 8% 40%)" : "hsl(210 10% 88%)", fontSize: "13px", cursor: page === 0 ? "default" : "pointer" }}
-          >
-            <ChevronLeft size={14} /> Precedente
-          </button>
-          <span style={{ fontSize: "13px", color: "hsl(210 8% 60%)" }}>Pagina {page + 1} di {totalPages}</span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1}
-            style={{ display: "flex", alignItems: "center", gap: "4px", padding: "8px 12px", borderRadius: "8px", border: "1px solid hsl(220 10% 18%)", background: "hsl(220 12% 10%)", color: page >= totalPages - 1 ? "hsl(210 8% 40%)" : "hsl(210 10% 88%)", fontSize: "13px", cursor: page >= totalPages - 1 ? "default" : "pointer" }}
-          >
-            Successiva <ChevronRight size={14} />
-          </button>
-        </div>
+      {/* Un allevatore aperto dall'indirizzo ma fuori da questa pagina dell'elenco, sul telefono */}
+      {!desktop && aperto && !rows.some(r => r.breeder_name === aperto) && (
+        <div style={{ marginTop: 10 }}><SchedaAllevatore nome={aperto} onClose={() => setAperto(null)} /></div>
       )}
 
-      <p style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "28px", lineHeight: 1.6 }}>
-        Fonte del dato di allevamento: VendoPuledri. Aggiornato ogni notte.
+      <p style={{ fontSize: 11, color: "var(--ed-fioco)", marginTop: 22, lineHeight: 1.6 }}>
+        Fonte del dato di allevamento: VendoPuledri, aggiornato ogni notte. I recapiti non sono mostrati.
+        Vedi anche il <Link href="/stalloni"><a style={{ color: "var(--ed-acc)" }}>catalogo stalloni</a></Link>.
       </p>
     </div>
   );

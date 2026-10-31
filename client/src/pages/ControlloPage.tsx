@@ -291,7 +291,7 @@ export default function ControlloPage() {
       <CollegamentiCorrelati voci={[
         { href: "/tenere", titolo: "Tenere o fermare", descrizione: "La stima di oggi per ogni cavallo in attività" },
         { href: "/scuderia", titolo: "La tua scuderia", descrizione: "Il rischio dei tuoi cavalli messi insieme" },
-        { href: "/puledro", titolo: "Quanto vale un puledro", descrizione: "Prezzo massimo e vendere o far correre" },
+        { href: "/puledro", titolo: "Puledri e aste", descrizione: "Prezzo massimo, vendere o far correre, aste 2026" },
         { href: "/metodo", titolo: "Metodo e dati", descrizione: "Da dove vengono i numeri" },
       ]} />
     </div>

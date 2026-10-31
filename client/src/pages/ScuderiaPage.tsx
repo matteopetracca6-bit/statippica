@@ -173,8 +173,8 @@ export default function ScuderiaPage() {
       {vuota && (
         <div className="pannello" style={{ ...CARD, marginTop: 14, color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.7 }}>
           La scuderia è vuota. Aggiungi un cavallo qui sopra, oppure usa il bottone «Aggiungi alla scuderia» nella scheda di un cavallo,
-          in <Link href="/tenere" style={{ color: ORO }}>Tenere o fermare</Link>, nei lotti di <Link href="/generazione-m" style={{ color: ORO }}>Aste e generazione M</Link> e
-          in <Link href="/puledro" style={{ color: ORO }}>Quanto vale un puledro</Link>.
+          in <Link href="/tenere" style={{ color: ORO }}>Tenere o fermare</Link>, e in <Link href="/puledro" style={{ color: ORO }}>Puledri e aste</Link>
+          (sia nel conto di un puledro sia nei lotti delle aste).
         </div>
       )}
       {!vuota && !d && isFetching && <div style={{ marginTop: 14 }}><Sagoma riquadri={4} grafico={120} /></div>}
@@ -300,7 +300,7 @@ export default function ScuderiaPage() {
       </div>
       <CollegamentiCorrelati voci={[
         { href: "/tenere", titolo: "Tenere o fermare", descrizione: "Tutti i cavalli in attività, con premi attesi e spese" },
-        { href: "/puledro", titolo: "Quanto vale un puledro", descrizione: "Prezzo massimo per comprare, o se conviene vendere" },
+        { href: "/puledro", titolo: "Puledri e aste", descrizione: "Prezzo massimo, vendere o far correre, aste 2026" },
         { href: "/pareggio", titolo: "Punto di pareggio", descrizione: "Quanto costa un cavallo e quali voti si ripagano" },
       ]} />
     </div>

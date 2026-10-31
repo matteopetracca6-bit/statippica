@@ -376,7 +376,7 @@ export default function PareggioPage() {
           </Spiegazione>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <Link href="/puledro" style={{ ...bottone(true), textDecoration: "none" }}>Quanto vale un puledro</Link>
+          <Link href="/puledro" style={{ ...bottone(true), textDecoration: "none" }}>Puledri e aste</Link>
           <Link href="/puledro?modo=vendo" style={{ ...bottone(false), textDecoration: "none" }}>Vendere o far correre</Link>
           <Link href="/scuderia" style={{ ...bottone(false), textDecoration: "none" }}>La tua scuderia</Link>
         </div>
