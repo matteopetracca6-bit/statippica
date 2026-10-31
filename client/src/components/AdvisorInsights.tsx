@@ -46,7 +46,11 @@ export interface InbreedingDetail {
   coefficient_pct: number;
   level: string;
   label?: string;
-  common_ancestors: { name: string; paths_sire: number; paths_dam: number; contribution_pct: number }[];
+  /** Il server manda la generazione in cui l'antenato compare da ogni lato
+   *  (sire_gen, dam_gen) e il contributo gia' in percento (contribution).
+   *  I vecchi nomi restano facoltativi per compatibilita'. */
+  common_ancestors: { name: string; sire_gen?: number; dam_gen?: number; contribution?: number;
+                      paths_sire?: number; paths_dam?: number; contribution_pct?: number }[];
   note: string;
 }
 
@@ -234,7 +238,7 @@ export function InbreedingPanel({ inb }: { inb: InbreedingDetail }) {
       <SectionTitle icon={<AlertCircle size={12} />}>Consanguineita'</SectionTitle>
       <div style={{ background: bg, border: `1px solid ${inb.level === "nessuna" ? "hsl(220 10% 14%)" : color}`, borderRadius: "8px", padding: "12px 14px" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
-          <div style={{ fontSize: "20px", fontWeight: 800, color }}>{inb.coefficient_pct.toFixed(2)}%</div>
+          <div style={{ fontSize: "20px", fontWeight: 800, color }}>{Number(inb.coefficient_pct ?? 0).toFixed(2)}%</div>
           <div style={{ fontSize: "12.5px", color: "hsl(210 8% 62%)" }}>
             {inb.label || `consanguineita' ${inb.level}`}
           </div>
@@ -245,7 +249,9 @@ export function InbreedingPanel({ inb }: { inb: InbreedingDetail }) {
               <div key={a.name} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", gap: "10px" }}>
                 <span style={{ color: "hsl(210 8% 68%)" }}>{a.name}</span>
                 <span className="tabular" style={{ color: MUTED, whiteSpace: "nowrap" }}>
-                  lato padre {a.paths_sire} · lato madre {a.paths_dam} · {a.contribution_pct.toFixed(2)}%
+                  {a.sire_gen != null ? `padre: ${a.sire_gen}ª gen.` : a.paths_sire != null ? `lato padre ${a.paths_sire}` : ""}
+                  {a.dam_gen != null ? ` · madre: ${a.dam_gen}ª gen.` : a.paths_dam != null ? ` · lato madre ${a.paths_dam}` : ""}
+                  {" · "}{Number(a.contribution ?? a.contribution_pct ?? 0).toFixed(2)}%
                 </span>
               </div>
             ))}
