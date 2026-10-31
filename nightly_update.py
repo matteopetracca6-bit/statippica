@@ -183,6 +183,25 @@ SESSION.headers.update({
 # ─────────────────────────────────────────────
 # VOLUME MULTIPLIER — stalloni
 # ─────────────────────────────────────────────
+# Stalloni: quanto conta il numero di figli (ottobre 2026).
+#
+# Prima la media dei voti dei figli veniva solo moltiplicata per 0,85 da 5 a 9
+# figli: RUSSEL NOVEMBER, 7 figli di cui 2 buoni, risultava SSS davanti a
+# VARENNE con 909. Ora il voto ha due parti.
+#  1. La media dei figli, "tirata" verso la media di tutti i figli dell'archivio
+#     tanto piu' quanto meno figli ci sono: peso = n / (n + K_STALLONE_VOTO).
+#     Con 7 figli la media dello stallone conta il 10%, con 60 il 50%, con 200
+#     il 77%. Provato anche 40: RUSSEL NOVEMBER restava S (primo 10%). K e' piu' severo del 12,3 dell'affidabilita' di proposito: qui si
+#     decide una classifica, e un giudizio su pochi figli non deve finire in
+#     cima.
+#  2. Quanti figli di vertice (voto S o piu') ha dato, su scala logaritmica
+#     fino a PESO_FIGLI_VERTICE punti: chi ne ha dati tanti ha dimostrato di
+#     produrre campioni con continuita'. Conta i figli BUONI, non i figli in
+#     generale, cosi' uno stallone con centinaia di figli mediocri non sale.
+K_STALLONE_VOTO = 60
+PESO_FIGLI_VERTICE = 6.0
+
+
 def volume_multiplier(n: int) -> float:
     if n == 1:   return 0.40
     if n == 2:   return 0.55
@@ -3426,6 +3445,8 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
 
     all_final_scores: list[float] = []
     row_buffer: list[tuple] = []
+    somma_pesi_tutti = 0.0
+    n_figli_tutti = 0
 
     for (sire_name,) in stallions:
         children = conn.execute("""
@@ -3443,8 +3464,6 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
         vp_offspring   = vp_data.get(sire_key, {}).get("offspring", 0)
         n_figli_totali = max(vp_offspring, n_db)
 
-        # volume_multiplier sul numero reale di figli (non solo quelli nel DB)
-        vm = volume_multiplier(n_figli_totali)
 
         grade_counts = {g: 0 for g in GRADE_WEIGHTS}
         for (grade,) in children:
@@ -3458,13 +3477,12 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
 
         weighted_sum  = sum(GRADE_WEIGHTS[g] * c for g, c in grade_counts.items())
         base_score    = weighted_sum / n_db if n_db > 0 else 0.0
-        stallion_score = round(base_score * vm, 2)
+        somma_pesi_tutti += weighted_sum
+        n_figli_tutti    += n_db
 
         vp_boost = 0.0
         if sire_key in vp_data and max_vp_earnings > 0:
             vp_boost = round((vp_data[sire_key]["earnings"] / max_vp_earnings) * 5.0, 2)
-
-        final_score = round(min(stallion_score + vp_boost, 100.0), 2)
 
         avg_earnings = conn.execute("""
             SELECT AVG(career_earnings) FROM horse_ratings
@@ -3491,13 +3509,28 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
         aff = affidabilita_giudizio(n_figli_corsi)
         aff_txt = etichetta_affidabilita(aff)
 
-        all_final_scores.append(final_score)
-        row_buffer.append((
-            sire_name, n_figli_totali, n_in_corsa, stallion_score,
+        row_buffer.append([
+            sire_name, n_figli_totali, n_in_corsa, (base_score, n_db, n_SSS + n_SS + n_S),
             n_SSS, n_SS, n_S, pct_top_S, round(avg_earnings, 2),
-            vp_boost, final_score, now_iso,
+            vp_boost, None, now_iso,
             round(aff, 3), aff_txt, n_figli_corsi
-        ))
+        ])
+
+    # Seconda passata: servono la media di tutti i figli e il massimo dei
+    # figli di vertice, che si conoscono solo dopo aver visto tutti gli stalloni.
+    media_tutti = somma_pesi_tutti / n_figli_tutti if n_figli_tutti else 0.0
+    max_vertice = max((r[3][2] for r in row_buffer), default=0)
+    for r in row_buffer:
+        base_score, n_db, n_vertice = r[3]
+        peso = n_db / (n_db + K_STALLONE_VOTO) if n_db else 0.0
+        qualita = peso * base_score + (1 - peso) * media_tutti
+        vertice = (PESO_FIGLI_VERTICE * math.log1p(n_vertice) / math.log1p(max_vertice)
+                   if max_vertice else 0.0)
+        r[3] = round(qualita + vertice, 2)
+        r[10] = round(min(r[3] + r[9], 100.0), 2)
+        all_final_scores.append(r[10])
+    print(f"[RATINGS] Stalloni: media di tutti i figli {media_tutti:.1f}, "
+          f"massimo figli di vertice {max_vertice}", file=sys.stderr)
 
     dyn_thresholds = build_stallion_grade_thresholds(all_final_scores)
     print(f"[RATINGS] Soglie stalloni: {[(round(t,1),g) for t,g in dyn_thresholds]}", file=sys.stderr)

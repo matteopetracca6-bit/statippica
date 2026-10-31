@@ -210,9 +210,12 @@ export default function MetodoPage() {
 
       <Sezione titolo="Stalloni e fattrici: il giudizio sui figli">
         <p>
-          Uno stallone si giudica dalla media dei voti dei figli che hanno corso, con una piccola correzione, al
-          massimo cinque punti, dai guadagni della sua progenie nelle classifiche VendoPuledri. Le fattrici si
-          giudicano allo stesso modo, sui loro figli.
+          Uno stallone si giudica dai voti dei figli che hanno corso, e il numero dei figli pesa molto. La media
+          dei figli conta tanto più quanti più figli ci sono: con 7 figli conta il 10% e il resto è la media di
+          tutti i figli dell'archivio, con 60 figli conta metà, con 200 più di tre quarti. Così uno stallone con pochi
+          figli, anche buoni, non può finire in cima. A questo si aggiungono fino a sei punti per quanti figli di
+          vertice (voto S o più) ha dato, e una piccola correzione, al massimo cinque punti, dai guadagni della sua
+          progenie nelle classifiche VendoPuledri. Le fattrici si giudicano in modo simile, sui loro figli.
         </p>
         <p>
           <strong>L'affidabilita'.</strong> Un giudizio su tre figli e uno su duecento non valgono uguale. Accanto
