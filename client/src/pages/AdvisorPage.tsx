@@ -1,3 +1,4 @@
+import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 /**
  * client/src/pages/AdvisorPage.tsx — StatIppica
  *
@@ -60,11 +61,8 @@ const C = {
   bordo: "hsl(220 10% 16%)",
   viola: "hsl(280 60% 62%)",
 };
-const GRADE_COLORS: Record<string, string> = {
-  SSS: "hsl(183 100% 55%)", SS: "hsl(150 80% 50%)", S: "hsl(120 60% 50%)",
-  A: "hsl(60 80% 55%)", B: "hsl(30 80% 58%)", C: "hsl(15 70% 55%)",
-  D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(0 60% 45%)",
-};
+// Colori ufficiali dei voti (SSS oro, SS argento, S bronzo...), uguali in tutto il sito.
+const GRADE_COLORS: Record<string, string> = COLORE_SCHEDA_VOTO;
 function gradeColor(grade: string, alpha = 1): string {
   const base = GRADE_COLORS[grade] || "hsl(210 8% 45%)";
   return alpha >= 1 ? base : base.replace(/^hsl\((.*)\)$/, `hsl($1 / ${alpha})`);

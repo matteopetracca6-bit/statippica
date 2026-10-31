@@ -1,3 +1,4 @@
+import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 /**
  * STAZIONI DI MONTA: i centri dove stanno gli stalloni, con la qualita'
  * media della loro produzione.
@@ -72,7 +73,7 @@ function SchedaStazione({ f, stalloni, onClose }: { f: Farm; stalloni: Stallone[
           <div key={g} style={{ display: "grid", gridTemplateColumns: "38px minmax(0, 1fr) 46px", gap: 8, alignItems: "center" }}>
             <GradeBadge grade={g} size="sm" />
             <Barretta valore={n} max={Math.max(f.n_SSS || 0, f.n_SS || 0, f.n_S || 0, 1)} alta={10}
-              colore={g === "SSS" ? "hsl(183 100% 55%)" : g === "SS" ? "hsl(150 80% 50%)" : "hsl(120 60% 50%)"} />
+              colore={COLORE_SCHEDA_VOTO[g]} />
             <span className="tabular" style={{ fontSize: 12.5, fontWeight: 700, textAlign: "right", color: "var(--ed-testo)" }}>{num(n)}</span>
           </div>
         ))}

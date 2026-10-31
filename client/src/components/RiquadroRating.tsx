@@ -1,3 +1,4 @@
+import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 /**
  * Riquadro "Rating" della home.
  *
@@ -15,11 +16,8 @@ import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "./GradeBadge";
 import BandieraCavallo from "@/components/BandieraCavallo";
 
-const GRADE_COLORS: Record<string, string> = {
-  SSS: "hsl(51 100% 55%)", SS: "hsl(0 0% 78%)", S: "hsl(30 70% 60%)",
-  A: "hsl(183 60% 55%)", B: "hsl(100 45% 50%)", C: "hsl(25 55% 52%)",
-  D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(40 3% 28%)",
-};
+// Colori ufficiali dei voti (SSS oro, SS argento, S bronzo...), uguali in tutto il sito.
+const GRADE_COLORS: Record<string, string> = COLORE_SCHEDA_VOTO;
 const MUTED = "hsl(210 8% 52%)";
 const PARTI = [
   { nome: "Guadagni", peso: 60, cosa: "quanto ha vinto in carriera, contando anche quanti soldi in più" },

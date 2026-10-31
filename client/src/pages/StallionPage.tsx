@@ -1,3 +1,4 @@
+import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
 import { Spiegazione } from "../components/Spiegazione";
 import { useState } from "react";
@@ -97,11 +98,8 @@ interface StallionStats {
 }
 
 const GRADE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
-const GRADE_COLORS: Record<string, string> = {
-  SSS: "hsl(51 100% 55%)", SS: "hsl(0 0% 78%)", S: "hsl(30 70% 60%)",
-  A: "hsl(183 60% 55%)", B: "hsl(100 45% 50%)", C: "hsl(25 55% 52%)",
-  D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(40 3% 28%)"
-};
+// Colori ufficiali dei voti (SSS oro, SS argento, S bronzo...), uguali in tutto il sito.
+const GRADE_COLORS: Record<string, string> = COLORE_SCHEDA_VOTO;
 
 /**
  * Applica una trasparenza a un colore HSL. La concatenazione di un codice

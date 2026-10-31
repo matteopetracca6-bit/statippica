@@ -1,3 +1,4 @@
+import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 /**
  * ALLEVATORI: chi ha materialmente allevato i cavalli.
  *
@@ -38,11 +39,8 @@ interface BreederDetail {
 
 const PAGE = 40;
 const VOTI = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
-const GRADE_COLORS: Record<string, string> = {
-  SSS: "hsl(183 100% 55%)", SS: "hsl(150 80% 50%)", S: "hsl(120 60% 50%)",
-  A: "hsl(60 80% 55%)", B: "hsl(30 80% 58%)", C: "hsl(15 70% 55%)",
-  D: "hsl(40 5% 48%)", E: "hsl(40 4% 38%)", F: "hsl(0 60% 45%)",
-};
+// Colori ufficiali dei voti (SSS oro, SS argento, S bronzo...), uguali in tutto il sito.
+const GRADE_COLORS: Record<string, string> = COLORE_SCHEDA_VOTO;
 /** Il voto medio usa il colore della pagina: non e' un voto a lettere. */
 function coloreVoto(s: number | null | undefined): string {
   return isNum(s) ? "var(--ed-acc)" : "hsl(210 8% 45%)";
