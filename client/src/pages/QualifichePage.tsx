@@ -215,10 +215,19 @@ function Prove({ stats, vaiPadre }: { stats?: QualStats | null; vaiPadre: (s: st
         </div>
         <div className="ed-segm" role="group" aria-label="Anno">
           <button aria-pressed={year === ""} onClick={() => cambia(() => setYear(""))}>Tutti gli anni</button>
-          {(data?.years ?? []).map(y => <button key={y} aria-pressed={year === y} onClick={() => cambia(() => setYear(y))}>{y}</button>)}
+          {/* Ottobre 2026: con le annate vecchie gli anni sono una ventina.
+              Restano pulsanti gli ultimi cinque, gli altri vanno nel menu qui sotto. */}
+          {(data?.years ?? []).slice(0, 5).map(y => <button key={y} aria-pressed={year === y} onClick={() => cambia(() => setYear(y))}>{y}</button>)}
         </div>
       </div>
       <div className="ed-barra" style={{ marginTop: -4 }}>
+        {(data?.years ?? []).length > 5 && (
+          <select value={(data?.years ?? []).slice(5).includes(year) ? year : ""} onChange={e => cambia(() => setYear(e.target.value))} aria-label="Anni precedenti" data-testid="select-anni-precedenti"
+            style={{ padding: "8px 10px", borderRadius: 9, border: "1px solid var(--ed-bordo)", background: "var(--ed-fondo)", color: "var(--ed-testo)", fontSize: 12.5, fontFamily: "inherit" }}>
+            <option value="">Anni precedenti</option>
+            {(data?.years ?? []).slice(5).map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        )}
         <select value={track} onChange={e => cambia(() => setTrack(e.target.value))} aria-label="Ippodromo"
           style={{ padding: "8px 10px", borderRadius: 9, border: "1px solid var(--ed-bordo)", background: "var(--ed-fondo)", color: "var(--ed-testo)", fontSize: 12.5, fontFamily: "inherit" }}>
           <option value="">Tutti gli ippodromi</option>

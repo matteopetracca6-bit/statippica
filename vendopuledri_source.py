@@ -232,20 +232,54 @@ def parse_time_km(raw: Any) -> Optional[float]:
 
 # ── Qualifiche ──────────────────────────────────────────────────────────────
 
-def fetch_qualifiche() -> list[dict]:
-    data = _get("/api/v1/classifiche/qualifiche")
+def fetch_qualifiche(annata: Optional[int] = None) -> list[dict]:
+    """Le qualifiche di un'annata (anno di nascita), o senza annata l'ultima.
+
+    La fonte ha un elenco per annata, dalla lettera B (nati 2017) in poi nella
+    pagina, e anche piu' indietro chiedendo l'anno: verificato a ottobre 2026,
+    risponde fino ai nati 1995, con poche righe prima del 2010.
+    """
+    path = "/api/v1/classifiche/qualifiche"
+    if annata:
+        path += f"?year={int(annata)}"
+    data = _get(path)
     return data if isinstance(data, list) else []
 
 
-def import_qualifiche(conn: sqlite3.Connection) -> tuple[int, int]:
-    """Scarica tutte le qualifiche e le salva. Ritorna (righe viste, nuove)."""
-    rows = fetch_qualifiche()
+def _assicura_colonna_annata(conn: sqlite3.Connection) -> None:
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(vp_qualifiche)")}
+    if "annata" not in cols:
+        conn.execute("ALTER TABLE vp_qualifiche ADD COLUMN annata INTEGER")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS vp_qualifiche_annate (
+            annata      INTEGER PRIMARY KEY,
+            righe       INTEGER,
+            salvate     INTEGER,
+            scartate    INTEGER,
+            nuove       INTEGER,
+            ultima_volta TEXT
+        )""")
+
+
+def import_qualifiche(conn: sqlite3.Connection, annata: Optional[int] = None) -> tuple[int, int]:
+    """Scarica le qualifiche (di un'annata, o l'ultima) e le salva.
+    Ritorna (righe viste, nuove)."""
+    _assicura_colonna_annata(conn)
+    rows = fetch_qualifiche(annata)
     now = datetime.utcnow().isoformat()
     new = 0
+    salvate = scartate = 0
     for x in rows:
         name = _clean(x.get("NomeCavallo"))
         date = _iso_date(x.get("DataPre"))
         if not name or not date:
+            scartate += 1
+            continue
+        # Nelle annate vecchie la fonte mette date finte (1000-01-01,
+        # 2000-07-14) quando non conosce il giorno: un cavallo non si qualifica
+        # prima di aver compiuto un anno, quindi quelle righe si scartano.
+        if annata and int(date[:4]) <= int(annata):
+            scartate += 1
             continue
         exists = conn.execute(
             "SELECT 1 FROM vp_qualifiche WHERE horse_name=? AND qual_date=?", (name, date)
@@ -265,6 +299,10 @@ def import_qualifiche(conn: sqlite3.Connection) -> tuple[int, int]:
             (x.get("Allevamento") or "").strip() or None,
             now,
         ))
+        if annata:
+            conn.execute("UPDATE vp_qualifiche SET annata=? WHERE horse_name=? AND qual_date=?",
+                         (int(annata), name, date))
+        salvate += 1
         if not exists:
             new += 1
         code = x.get("CodiceCavallo")
@@ -277,8 +315,43 @@ def import_qualifiche(conn: sqlite3.Connection) -> tuple[int, int]:
                 conn.execute(
                     "INSERT OR IGNORE INTO vp_horse_breeder (horse_name, breeder_id, breeder_name) VALUES (?,NULL,?)",
                     (name, br))
+    if annata:
+        conn.execute("""
+            INSERT INTO vp_qualifiche_annate (annata, righe, salvate, scartate, nuove, ultima_volta)
+            VALUES (?,?,?,?,?,?)
+            ON CONFLICT(annata) DO UPDATE SET righe=excluded.righe, salvate=excluded.salvate,
+                scartate=excluded.scartate, nuove=excluded.nuove, ultima_volta=excluded.ultima_volta
+        """, (int(annata), len(rows), salvate, scartate, new, now))
     conn.commit()
     return len(rows), new
+
+
+# Prima annata chiesta alla fonte: prima del 2005 le righe sono poche decine.
+PRIMA_ANNATA_QUALIFICHE = int(os.environ.get("VP_QUAL_PRIMA_ANNATA", "2005"))
+
+
+def import_qualifiche_annate(conn: sqlite3.Connection, per_notte: int = 2) -> list[tuple[int, int, int]]:
+    """Carica le qualifiche annata per annata, un po' ogni notte.
+
+    Ogni notte: le due annate piu' giovani si rileggono sempre (si qualificano
+    adesso), poi `per_notte` annate vecchie: prima quelle mai lette, dalla
+    piu' recente alla piu' vecchia, poi a giro quella letta da piu' tempo, per
+    raccogliere le correzioni della fonte.
+    Ritorna [(annata, righe viste, nuove)].
+    """
+    _assicura_colonna_annata(conn)
+    anno = datetime.utcnow().year
+    giovani = [anno - 2, anno - 3]          # nel 2026: nati 2024 (L) e 2023 (I)
+    vecchie = list(range(anno - 4, PRIMA_ANNATA_QUALIFICHE - 1, -1))
+    lette = {a: t for a, t in conn.execute("SELECT annata, ultima_volta FROM vp_qualifiche_annate")}
+    mai = [a for a in vecchie if a not in lette]
+    a_giro = sorted((a for a in vecchie if a in lette), key=lambda a: lette[a] or "")
+    scelte = giovani + (mai + a_giro)[:max(0, per_notte)]
+    esito = []
+    for a in scelte:
+        viste, nuove = import_qualifiche(conn, a)
+        esito.append((a, viste, nuove))
+    return esito
 
 
 # ── Codici ──────────────────────────────────────────────────────────────────

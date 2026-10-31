@@ -5169,10 +5169,27 @@ def phase_vp_qualifiche(conn: sqlite3.Connection) -> dict:
     import vendopuledri_source as vp
     vp.init_vp_schema(conn)
     seen, new = vp.import_qualifiche(conn)
+    # Ottobre 2026: oltre all'ultima annata, le annate vecchie un po' per notte
+    # (nati dal 2005 in poi), finche' ci sono tutte; poi si rileggono a giro.
+    per_notte = int(os.environ.get("VP_QUAL_ANNATE_PER_NOTTE", "2"))
+    try:
+        annate = vp.import_qualifiche_annate(conn, per_notte)
+    except Exception as e:  # una fonte che non risponde non deve fermare la notte
+        print(f"[VP] Qualifiche per annata: errore {type(e).__name__}: {e}", file=sys.stderr)
+        annate = []
+    for a, v, nu in annate:
+        print(f"[VP] Qualifiche nati {a}: {v} righe viste, {nu} nuove", file=sys.stderr)
+        seen += v
+        new += nu
+    mancano = conn.execute(
+        "SELECT ? - COUNT(*) FROM vp_qualifiche_annate WHERE annata BETWEEN ? AND ?",
+        (datetime.utcnow().year - 2 - vp.PRIMA_ANNATA_QUALIFICHE + 1,
+         vp.PRIMA_ANNATA_QUALIFICHE, datetime.utcnow().year - 2)).fetchone()[0]
     breeders = vp.import_breeders_directory(conn)
-    print(f"[VP] Qualifiche: {seen} righe viste, {new} nuove; allevatori in rubrica: {breeders}",
-          file=sys.stderr)
-    return {"qualifiche_seen": seen, "qualifiche_new": new, "breeders": breeders}
+    print(f"[VP] Qualifiche: {seen} righe viste, {new} nuove; annate ancora da leggere: {mancano}; "
+          f"allevatori in rubrica: {breeders}", file=sys.stderr)
+    return {"qualifiche_seen": seen, "qualifiche_new": new, "breeders": breeders,
+            "qualifiche_annate_mancanti": mancano}
 
 
 def phase_vp_pedigree(conn: sqlite3.Connection,
