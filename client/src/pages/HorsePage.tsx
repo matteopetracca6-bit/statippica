@@ -16,6 +16,8 @@ import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { CoppaGara } from "@/components/CoppaGara";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal, Timer } from "lucide-react";
+import IntestazioneScheda from "../components/IntestazioneScheda";
+import { Cifra } from "../components/DueColonne";
 import { palmares, nomeGara, GARE_GP, type VittoriaGP } from "@/data/granPremi";
 
 // Cavalli con un cuoricino viola accanto al nome. CHICCA ROSS e' stata il
@@ -506,82 +508,74 @@ export default function HorsePage() {
       )}
       </div>
 
-      {/* Intestazione: chi e' e cosa ha fatto, tutto in una fascia */}
-      <div className="testata-cavallo" style={{ ["--colore-voto" as any]: COLORE_VOTO[horse.grade ?? ""] ?? "hsl(220 10% 30%)" }}>
-        <div className="testata-alto">
-          <GradeBadge grade={horse.grade ?? "N/A"} size="lg" />
-          <div style={{ flex: 1, minWidth: "200px" }}>
-            <h1 style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 95%)", letterSpacing: "0.03em", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <BandieraCavallo nome={horse.name} paese={horse.country} />
-              {horse.name}
-              {CUORI[horse.name.toUpperCase()] && (
-                <span title={CUORI[horse.name.toUpperCase()]} aria-label={CUORI[horse.name.toUpperCase()]} role="img"
-                      style={{ display: "inline-flex", flexShrink: 0 }}>
-                  <Heart size={20} fill="hsl(275 75% 62%)" color="hsl(275 75% 62%)" />
-                </span>
-              )}
-            </h1>
-            {(horse as any).stallone_come && (
-              <div style={{ fontSize: "12.5px", marginBottom: "6px" }}>
-                <Link href={`/stallion/${encodeURIComponent((horse as any).stallone_come)}`}>
-                  <a style={{ color: "hsl(183 60% 55%)", textDecoration: "none" }}>
-                    Corre ancora ed è anche stallone da monta: vedi figli e statistiche da stallone →
-                  </a>
-                </Link>
-              </div>
+      {/* Intestazione: la stessa delle altre schede singole (cavallo,
+          stallone, fattrice, guidatore, allenatore, ippodromo), col colore
+          del voto del cavallo. */}
+      <IntestazioneScheda
+        icona={Trophy} colore={COLORE_VOTO[horse.grade ?? ""] ?? "hsl(51 80% 55%)"}
+        tipo={<>Cavallo · {MODE_LABEL}</>}
+        titolo={<span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <BandieraCavallo nome={horse.name} paese={horse.country} />
+          {horse.name}
+          {CUORI[horse.name.toUpperCase()] && (
+            <span title={CUORI[horse.name.toUpperCase()]} aria-label={CUORI[horse.name.toUpperCase()]} role="img"
+                  style={{ display: "inline-flex", flexShrink: 0 }}>
+              <Heart size={20} fill="hsl(275 75% 62%)" color="hsl(275 75% 62%)" />
+            </span>
+          )}
+        </span>}
+        accanto={<GradeBadge grade={horse.grade ?? "N/A"} size="lg" />}
+        sotto={<>
+          <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span>{horse.birth_year}</span>
+            <span>·</span>
+            <span>{SEX_LABEL[horse.sex] ?? horse.sex}</span>
+            {(() => { const pc = paeseCavallo(horse.name, horse.country); return pc ? <><span>·</span><span>{pc.nome}</span></> : null; })()}
+            {horse.score != null && <><span>·</span><span className="tabular">punti {horse.score.toFixed(1).replace(".", ",")}</span></>}
+          </span>
+          {horse.pedigree?.sire && (
+            <span style={{ display: "block", marginTop: 2 }}>
+              {horse.pedigree.sire}{horse.pedigree.dam ? <> × {horse.pedigree.dam}</> : null}
+            </span>
+          )}
+          {(horse as any).stallone_come && (
+            <span style={{ display: "block", marginTop: 4 }}>
+              <Link href={`/stallion/${encodeURIComponent((horse as any).stallone_come)}`}>
+                <a style={{ color: "hsl(183 60% 55%)", textDecoration: "none" }}>
+                  Corre ancora ed è anche stallone da monta: vedi figli e statistiche da stallone →
+                </a>
+              </Link>
+            </span>
+          )}
+          {/* Collegamenti all'economia: la scuderia e, per i giovani, il valore del puledro. */}
+          <span style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
+            <AggiungiScuderia voce={{ tipo: "cavallo", nome: horse.name, anno: horse.birth_year }} />
+            {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 3 && horse.pedigree?.sire && (
+              <Link href={`/puledro?padre=${encodeURIComponent(horse.pedigree.sire)}&madre=${encodeURIComponent(horse.pedigree.dam ?? "")}&nome=${encodeURIComponent(horse.name)}`}
+                    style={{ fontSize: "12.5px", color: "hsl(25 75% 62%)" }}>
+                Quanto vale questo puledro →
+              </Link>
             )}
-            <div style={{ fontSize: "13px", color: "hsl(210 8% 55%)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <span>{horse.birth_year}</span>
-              <span>·</span>
-              <span>{SEX_LABEL[horse.sex] ?? horse.sex}</span>
-              {(() => { const pc = paeseCavallo(horse.name, horse.country); return pc ? <><span>·</span><span>{pc.nome}</span></> : null; })()}
-              <span>·</span>
-              <span>Rating: {MODE_LABEL}</span>
-              {horse.score != null && <><span>·</span><span className="tabular">Score {horse.score.toFixed(1)}</span></>}
-            </div>
-            {horse.pedigree?.sire && (
-              <div style={{ fontSize: "12.5px", color: "hsl(210 8% 50%)", marginTop: "6px" }}>
-                {horse.pedigree.sire}{horse.pedigree.dam ? <> × {horse.pedigree.dam}</> : null}
-              </div>
-            )}
-            {/* Collegamenti all'economia: la scuderia e, per i giovani, il valore del puledro. */}
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", marginTop: "10px" }}>
-              <AggiungiScuderia voce={{ tipo: "cavallo", nome: horse.name, anno: horse.birth_year }} />
-              {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 3 && horse.pedigree?.sire && (
-                <Link href={`/puledro?padre=${encodeURIComponent(horse.pedigree.sire)}&madre=${encodeURIComponent(horse.pedigree.dam ?? "")}&nome=${encodeURIComponent(horse.name)}`}
-                      style={{ fontSize: "12.5px", color: "hsl(25 75% 62%)" }}>
-                  Quanto vale questo puledro →
-                </Link>
-              )}
-            </div>
-          </div>
+          </span>
+        </>}
+        azioni={<>
           {(horse as any).radar && (
             <RadarCavallo punte={(horse as any).radar} colore={COLORE_SCHEDA_VOTO[horse.grade ?? ""] ?? "hsl(183 70% 50%)"} dimensione={235} />
           )}
           <MantoSesso coat={horse.coat_color} sex={horse.sex} />
-        </div>
-        <div className="testata-dati">
-          <div><div className="valore">{horse.career_races ?? "—"}</div><div className="etichetta">Corse</div></div>
-          <div>
-            <div className="valore">{horse.career_wins ?? "—"}</div>
-            {horse.win_rate != null && horse.career_races ? <div className="sotto">{horse.win_rate.toFixed(1)}% vinte</div> : null}
-            <div className="etichetta">Vittorie</div>
-          </div>
-          <div>
-            <div className="valore">{horse.career_top3 ?? "—"}</div>
-            {horse.career_top3 != null && horse.career_races ? <div className="sotto">{(horse.career_top3 / horse.career_races * 100).toFixed(1)}% nei primi 3</div> : null}
-            <div className="etichetta" title="Arrivi nei primi tre, vittorie comprese">Piazzamenti</div>
-          </div>
-          <div>
-            <div className="valore" style={{ color: horse.career_earnings ? "hsl(51 90% 62%)" : undefined }}>
-              {horse.career_earnings != null ? `€${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"}
-            </div>
-            <div className="etichetta">Guadagni</div>
-          </div>
-          <div><div className="valore">{horse.record_career ? formatRecord(horse.record_career) : "—"}</div><div className="etichetta">Record al km</div></div>
-        </div>
-        {eStorico && <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />}
-      </div>
+        </>}
+        cifre={<>
+          <Cifra titolo="Corse" valore={horse.career_races ?? "—"} />
+          <Cifra titolo="Vittorie" valore={horse.career_wins ?? "—"}
+            sotto={horse.win_rate != null && horse.career_races ? `${horse.win_rate.toFixed(1).replace(".", ",")}% vinte` : undefined} />
+          <Cifra titolo="Piazzamenti" valore={horse.career_top3 ?? "—"}
+            sotto={horse.career_top3 != null && horse.career_races ? `${(horse.career_top3 / horse.career_races * 100).toFixed(1).replace(".", ",")}% nei primi 3` : "arrivi nei primi tre"} />
+          <Cifra titolo="Guadagni" colore={horse.career_earnings ? "hsl(51 90% 62%)" : undefined}
+            valore={horse.career_earnings != null ? `€ ${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
+          <Cifra titolo="Record al km" valore={horse.record_career ? formatRecord(horse.record_career) : "—"} colore="hsl(183 70% 60%)" />
+        </>}
+        avviso={eStorico ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} /> : undefined}
+      />
 
       <IndiceSezioni voci={[
         { id: "sez-palmares", testo: "Palmares" },

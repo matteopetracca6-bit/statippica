@@ -7,7 +7,9 @@
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, MapPin, Users, Timer } from "lucide-react";
+import { MapPin, Users, Timer } from "lucide-react";
+import IntestazioneScheda from "../components/IntestazioneScheda";
+import { Cifra } from "../components/DueColonne";
 import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
@@ -83,45 +85,40 @@ export default function AllenatorePage() {
   const giudicabile = d.effetto != null && d.affidabilita >= 0.2;
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "20px 18px 60px" }}>
-      <Link href="/allenatori">
-        <a style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: MUTED, fontSize: "12.5px", textDecoration: "none", marginBottom: "16px" }}>
-          <ArrowLeft size={14} /> Tutti gli allenatori
-        </a>
-      </Link>
-
-      <h1 style={{ fontSize: "26px", fontWeight: 800, color: "hsl(210 10% 91%)", margin: "0 0 4px", display: "flex", alignItems: "center", gap: "10px" }}>
-        <Timer size={24} color={COLORE_ALLENATORI} /> {d.nome}
-      </h1>
-      <div style={{ color: MUTED, fontSize: "12.5px", marginBottom: "18px" }}>
-        {d.n_corse.toLocaleString("it-IT")} corse &middot; {d.n_cavalli.toLocaleString("it-IT")} cavalli diversi
-        {d.prima_corsa && <> &middot; dal {d.prima_corsa.slice(0, 4)}</>}
-        {d.attivo
-          ? <> &middot; <span style={{ color: "hsl(100 55% 55%)" }}>in attività, {d.n_cavalli_recenti} cavalli negli ultimi 18 mesi</span></>
-          : <> &middot; <span style={{ color: DIM }}>ultima corsa {d.ultima_corsa ? data(d.ultima_corsa) : "—"}</span></>}
-      </div>
-
-      <div className="pannello" style={{ ...PANNELLO, marginBottom: "16px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "16px" }}>
-          <Numero etichetta="Vittorie" valore={d.n_vittorie.toLocaleString("it-IT")} colore="hsl(100 55% 60%)"
-            nota={`${d.pct_vittorie.toFixed(1).replace(".", ",")}% delle corse`} />
-          <Numero etichetta="Nei primi tre" valore={`${d.pct_primi_tre.toFixed(1).replace(".", ",")}%`}
-            nota={`${d.n_primi_tre.toLocaleString("it-IT")} volte`} />
-          <Numero etichetta="Premi vinti" valore={euro(d.premi_totali)} colore="hsl(45 85% 62%)"
-            nota={`${euro(d.premi_per_corsa)} a corsa`} />
-          <Numero etichetta="Ultimi 12 mesi" valore={d.premi_12_mesi > 0 ? euro(d.premi_12_mesi) : "—"}
-            nota={`${d.vittorie_12_mesi} vittorie`} />
-          <div>
-            <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>A parità di cavallo</div>
-            <BarraEffetto e={giudicabile ? d.effetto : null} />
-            <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "6px" }}>
+    <div className="page-shell">
+      <IntestazioneScheda
+        indietro={{ href: "/allenatori", testo: "Tutti gli allenatori" }}
+        icona={Timer} colore={COLORE_ALLENATORI} tipo="Allenatore" titolo={d.nome}
+        accanto={d.attivo
+          ? <span style={{ fontSize: 11, fontWeight: 700, color: "hsl(100 55% 55%)", border: "1px solid hsl(100 55% 55% / .45)", borderRadius: 999, padding: "1px 8px" }}>in attività</span>
+          : <span style={{ fontSize: 11, fontWeight: 700, color: DIM, border: `1px solid ${DIM}`, borderRadius: 999, padding: "1px 8px" }}>non recente</span>}
+        sotto={<>
+          {d.n_corse.toLocaleString("it-IT")} corse &middot; {d.n_cavalli.toLocaleString("it-IT")} cavalli diversi
+          {d.prima_corsa && <> &middot; dal {d.prima_corsa.slice(0, 4)}</>}
+          {d.attivo
+            ? <> &middot; {d.n_cavalli_recenti} cavalli negli ultimi 18 mesi</>
+            : <> &middot; ultima corsa {d.ultima_corsa ? data(d.ultima_corsa) : "—"}</>}
+        </>}
+        cifre={<>
+          <Cifra titolo="Vittorie" valore={d.n_vittorie.toLocaleString("it-IT")} colore="hsl(100 55% 60%)"
+            sotto={`${d.pct_vittorie.toFixed(1).replace(".", ",")}% delle corse`} />
+          <Cifra titolo="Nei primi tre" valore={`${d.pct_primi_tre.toFixed(1).replace(".", ",")}%`}
+            sotto={`${d.n_primi_tre.toLocaleString("it-IT")} volte`} />
+          <Cifra titolo="Premi vinti" valore={euro(d.premi_totali)} colore="hsl(45 85% 62%)"
+            sotto={`${euro(d.premi_per_corsa)} a corsa`} />
+          <Cifra titolo="Ultimi 12 mesi" valore={d.premi_12_mesi > 0 ? euro(d.premi_12_mesi) : "—"}
+            sotto={`${d.vittorie_12_mesi} vittorie`} />
+          <div className="ed-cifra">
+            <div className="ed-etich">A parità di cavallo</div>
+            <div style={{ marginTop: 8 }}><BarraEffetto e={giudicabile ? d.effetto : null} /></div>
+            <div className="s" style={{ marginTop: 6 }}>
               {giudicabile
                 ? <>affidabilità {d.affidabilita_txt}, su {d.n_confronti.toLocaleString("it-IT")} corse</>
                 : <>troppi pochi cavalli passati anche da altri allenatori</>}
             </div>
           </div>
-        </div>
-      </div>
+        </>}
+      />
 
       <Spiegazione titolo="Come leggere questi numeri" compatta>
         Vittorie e premi dicono soprattutto quali cavalli ha in scuderia questo allenatore.

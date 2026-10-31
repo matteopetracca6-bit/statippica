@@ -3,8 +3,11 @@ import { formatRecord } from "@/lib/record";
 import { useLocation, useParams, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
-import { ArrowLeft } from "lucide-react";
+import { Heart } from "lucide-react";
+import IntestazioneScheda from "../components/IntestazioneScheda";
+import { Cifra } from "../components/DueColonne";
 import { Spiegazione } from "../components/Spiegazione";
+import { Caricamento } from "../components/Caricamento";
 
 /**
  * Scheda di una FATTRICE: voto sulla progenie + elenco dei figli.
@@ -94,7 +97,7 @@ export default function MarePage() {
   });
 
   if (isLoading) {
-    return <div style={{ padding: "48px", textAlign: "center", color: "hsl(210 8% 55%)", fontSize: "13px" }}>Caricamento…</div>;
+    return <Caricamento testo="Carico la scheda..." />;
   }
   if (isError || !data) {
     return (
@@ -122,36 +125,28 @@ export default function MarePage() {
 
   return (
     <div className="page-shell">
-      <Link href="/fattrici">
-        <a style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "hsl(210 8% 60%)", textDecoration: "none", marginBottom: "14px" }}>
-          <ArrowLeft size={14} /> Fattrici
-        </a>
-      </Link>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "4px" }}>
-        <h1 style={{ fontSize: "27px", fontWeight: 800, color: "hsl(210 10% 94%)", margin: 0 }}>{data.dam}</h1>
-        {s && <GradeBadge grade={s.grade} />}
-      </div>
-      <p style={{ fontSize: "12px", color: "hsl(210 8% 58%)", margin: "0 0 18px" }}>
-        {own?.birth_year ? `Nata nel ${own.birth_year}` : "Anno di nascita non disponibile"}
-        {own?.sire ? ` · padre ${own.sire}` : ""}
-        {own?.dam ? ` · madre ${own.dam}` : ""}
-      </p>
-
-      {s ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "22px" }}>
-          <Stat label="Voto progenie" value={s.final_score.toFixed(1)} hint={`grado ${s.grade}`} />
-          <Stat label="Figli valutati" value={String(s.n_valutati)} hint={`su ${s.n_figli_totali} citati`} />
-          <Stat label="Figli in attività" value={String(s.n_in_corsa || 0)} hint="ultimi 6 mesi" />
-          <Stat label="Figli di vertice" value={`${s.n_SSS + s.n_SS + s.n_S}`} hint={`${s.pct_top_S?.toFixed(0)}% della progenie`} />
-          <Stat label="Guadagno medio figli" value={eur(s.avg_earnings)} />
-        </div>
-      ) : (
-        <div className="pannello" style={{ padding: "14px", marginBottom: "22px",
-          fontSize: "13px", color: "hsl(210 8% 65%)" }}>
-          Nessun figlio ha ancora un voto, quindi non è possibile calcolare il voto della progenie.
-        </div>
-      )}
+      <IntestazioneScheda
+        indietro={{ href: "/fattrici", testo: "Tutte le fattrici" }}
+        icona={Heart} colore="hsl(330 70% 58%)" tipo="Fattrice" titolo={data.dam}
+        accanto={s ? <GradeBadge grade={s.grade} /> : undefined}
+        sotto={<>
+          {own?.birth_year ? `Nata nel ${own.birth_year}` : "Anno di nascita non disponibile"}
+          {own?.sire ? <> · figlia di <Link href={`/stallion/${encodeURIComponent(own.sire)}`} className="collegamento-scheda">{own.sire}</Link></> : ""}
+          {own?.dam ? ` e di ${own.dam}` : ""}
+        </>}
+        cifre={s ? <>
+          <Cifra titolo="Voto progenie" valore={s.final_score.toFixed(1).replace(".", ",")} colore="hsl(330 70% 58%)" sotto={`grado ${s.grade}`} />
+          <Cifra titolo="Figli valutati" valore={String(s.n_valutati)} sotto={`su ${s.n_figli_totali} citati`} />
+          <Cifra titolo="Figli in attività" valore={String(s.n_in_corsa || 0)} sotto="ultimi 6 mesi" />
+          <Cifra titolo="Figli di vertice" valore={`${s.n_SSS + s.n_SS + s.n_S}`} colore="hsl(183 80% 55%)" sotto={`${s.pct_top_S?.toFixed(0)}% della progenie`} />
+          <Cifra titolo="Guadagno medio figli" valore={eur(s.avg_earnings)} colore="hsl(45 80% 62%)" />
+        </> : undefined}
+        avviso={!s ? (
+          <div style={{ fontSize: 13, color: "hsl(210 8% 65%)" }}>
+            Nessun figlio ha ancora un voto, quindi non è possibile calcolare il voto della progenie.
+          </div>
+        ) : undefined}
+      />
 
       {/* Carriera propria */}
       <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>

@@ -8,7 +8,9 @@ import { tempoKm } from "@/lib/record";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft } from "lucide-react";
+import { MapPin } from "lucide-react";
+import IntestazioneScheda from "../components/IntestazioneScheda";
+import { Cifra } from "../components/DueColonne";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
 import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
@@ -45,43 +47,24 @@ export default function TrackPage() {
   const maxPrimi = Math.max(...(t.partenze ?? []).map((p: any) => p.pct_primi_tre), 1);
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "20px 18px 60px" }}>
-      <Link href="/ippodromi">
-        <a style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: MUTED, fontSize: "12.5px", textDecoration: "none", marginBottom: "16px" }}>
-          <ArrowLeft size={14} /> Tutti gli ippodromi
-        </a>
-      </Link>
-
-      <h1 style={{ fontSize: "26px", fontWeight: 800, color: colorePista(t.nome), margin: "0 0 4px", letterSpacing: "0.02em" }}>
-        {t.nome}
-      </h1>
-      <div style={{ color: MUTED, fontSize: "12.5px", marginBottom: "18px" }}>
-        {t.n_gare.toLocaleString("it-IT")} gare &middot; {t.n_giornate.toLocaleString("it-IT")} giornate
-        &middot; {t.n_cavalli.toLocaleString("it-IT")} cavalli
-        {t.prima_gara && <> &middot; dal {t.prima_gara.slice(0, 4)}</>}
-      </div>
-
-      <div className="pannello" style={{ ...CARD, marginBottom: "16px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "16px" }}>
-          {[
-            { l: "Distanza tipica", v: t.distanza_tipica ? `${t.distanza_tipica} m` : "\u2014", c: "hsl(210 10% 85%)" },
-            { l: "Tempo al km medio", v: t.tempo_km_mediano ? tempoKm(t.tempo_km_mediano) : "\u2014", c: "hsl(210 10% 85%)" },
-            { l: "Premio medio", v: t.premio_medio ? euro(t.premio_medio) : "\u2014", c: "hsl(51 70% 60%)" },
-            { l: "Premio piu' alto", v: t.premio_massimo ? euro(t.premio_massimo) : "\u2014", c: "hsl(51 70% 60%)" },
-            { l: "Partenti medi", v: t.partenti_medi ? t.partenti_medi.toFixed(1) : "\u2014", c: "hsl(210 10% 85%)" },
-            { l: "Guidatori diversi", v: t.n_guidatori?.toLocaleString("it-IT") ?? "\u2014", c: "hsl(210 10% 85%)" },
-          ].map(x => (
-            <div key={x.l}>
-              <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
-                {x.l}
-              </div>
-              <div className="tabular" style={{ fontSize: "19px", fontWeight: 800, color: x.c, lineHeight: 1.15 }}>
-                {x.v}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="page-shell">
+      <IntestazioneScheda
+        indietro={{ href: "/ippodromi", testo: "Tutti gli ippodromi" }}
+        icona={MapPin} colore={colorePista(t.nome)} tipo="Ippodromo" titolo={t.nome}
+        sotto={<>
+          {t.n_gare.toLocaleString("it-IT")} gare &middot; {t.n_giornate.toLocaleString("it-IT")} giornate
+          &middot; {t.n_cavalli.toLocaleString("it-IT")} cavalli
+          {t.prima_gara && <> &middot; dal {t.prima_gara.slice(0, 4)}</>}
+        </>}
+        cifre={<>
+          <Cifra titolo="Distanza tipica" valore={t.distanza_tipica ? `${t.distanza_tipica.toLocaleString("it-IT")} m` : "\u2014"} />
+          <Cifra titolo="Tempo al km medio" valore={t.tempo_km_mediano ? tempoKm(t.tempo_km_mediano) : "\u2014"} colore="hsl(183 70% 60%)" />
+          <Cifra titolo="Premio medio" valore={t.premio_medio ? euro(t.premio_medio) : "\u2014"} colore="hsl(51 70% 60%)" />
+          <Cifra titolo="Premio più alto" valore={t.premio_massimo ? euro(t.premio_massimo) : "\u2014"} colore="hsl(51 70% 60%)" />
+          <Cifra titolo="Partenti medi" valore={t.partenti_medi ? t.partenti_medi.toFixed(1).replace(".", ",") : "\u2014"} />
+          <Cifra titolo="Guidatori diversi" valore={t.n_guidatori?.toLocaleString("it-IT") ?? "\u2014"} />
+        </>}
+      />
 
       {/* Numero di partenza su questa pista */}
       {t.partenze?.length > 2 && (

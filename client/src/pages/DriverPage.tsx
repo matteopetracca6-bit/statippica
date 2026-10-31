@@ -9,7 +9,9 @@ import NomePista from "@/components/NomePista";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { MapPin, Users } from "lucide-react";
+import IntestazioneScheda from "../components/IntestazioneScheda";
+import { Cifra } from "../components/DueColonne";
 import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
@@ -58,67 +60,26 @@ export default function DriverPage() {
   const affidabile = d.affidabilita >= 0.5;
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "20px 18px 60px" }}>
-      <Link href="/guidatori">
-        <a style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: MUTED, fontSize: "12.5px", textDecoration: "none", marginBottom: "16px" }}>
-          <ArrowLeft size={14} /> Tutti i guidatori
-        </a>
-      </Link>
-
-      <h1 style={{ fontSize: "26px", fontWeight: 800, color: "hsl(210 10% 91%)", margin: "0 0 4px", letterSpacing: "0.02em" }}>
-        {d.driver}
-      </h1>
-      <div style={{ color: MUTED, fontSize: "12.5px", marginBottom: "18px" }}>
-        {d.n_gare.toLocaleString("it-IT")} gare &middot; {d.n_cavalli.toLocaleString("it-IT")} cavalli diversi
-        {d.prima_gara && <> &middot; dal {d.prima_gara.slice(0, 4)}</>}
-        {d.attivo ? <> &middot; <span style={{ color: "hsl(100 55% 55%)" }}>in attivita'</span></> : <> &middot; <span style={{ color: DIM }}>non recente</span></>}
-      </div>
-
-      {/* I numeri principali */}
-      <div className="pannello" style={{ ...CARD, marginBottom: "16px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "16px" }}>
-          <div>
-            <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
-              Rende
-            </div>
-            <div style={{ fontSize: "24px", fontWeight: 800, color: coloreEffetto(d.effetto_corretto), lineHeight: 1.1 }}>
-              {d.effetto_corretto <= -0.02 ? "meglio" : d.effetto_corretto >= 0.02 ? "peggio" : "nella media"}
-            </div>
-            <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "4px" }}>
-              {Math.abs(d.effetto_corretto * 10).toFixed(1)} posizioni su dieci partenti
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
-              Affidabilita' del giudizio
-            </div>
-            <div style={{ fontSize: "24px", fontWeight: 800, color: affidabile ? "hsl(100 60% 52%)" : "hsl(0 62% 58%)", lineHeight: 1.1 }}>
-              {(d.affidabilita * 100).toFixed(0)}%
-            </div>
-            <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "4px" }}>{d.affidabilita_txt}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
-              Vittorie
-            </div>
-            <div className="tabular" style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 85%)", lineHeight: 1.1 }}>
-              {d.pct_vittorie.toFixed(1)}%
-            </div>
-            <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "4px" }}>
-              {d.n_vittorie.toLocaleString("it-IT")} su {d.n_gare.toLocaleString("it-IT")}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
-              Partenza media
-            </div>
-            <div className="tabular" style={{ fontSize: "24px", fontWeight: 800, color: "hsl(210 10% 85%)", lineHeight: 1.1 }}>
-              {d.partenza_media != null ? d.partenza_media.toFixed(1) : "\u2014"}
-            </div>
-            <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "4px" }}>gia' scontata dal rendimento</div>
-          </div>
-        </div>
-      </div>
+    <div className="page-shell">
+      <IntestazioneScheda
+        indietro={{ href: "/guidatori", testo: "Tutti i guidatori" }}
+        icona={Users} colore="hsl(200 70% 58%)" tipo="Guidatore" titolo={d.driver}
+        accanto={d.attivo
+          ? <span style={{ fontSize: 11, fontWeight: 700, color: "hsl(100 55% 55%)", border: "1px solid hsl(100 55% 55% / .45)", borderRadius: 999, padding: "1px 8px" }}>in attività</span>
+          : <span style={{ fontSize: 11, fontWeight: 700, color: DIM, border: `1px solid ${DIM}`, borderRadius: 999, padding: "1px 8px" }}>non recente</span>}
+        sotto={<>{d.n_gare.toLocaleString("it-IT")} gare &middot; {d.n_cavalli.toLocaleString("it-IT")} cavalli diversi{d.prima_gara && <> &middot; dal {d.prima_gara.slice(0, 4)}</>}</>}
+        cifre={<>
+          <Cifra titolo="Rende" colore={coloreEffetto(d.effetto_corretto)}
+            valore={d.effetto_corretto <= -0.02 ? "meglio" : d.effetto_corretto >= 0.02 ? "peggio" : "nella media"}
+            sotto={`${Math.abs(d.effetto_corretto * 10).toFixed(1).replace(".", ",")} posizioni su dieci partenti`} />
+          <Cifra titolo="Affidabilità del giudizio" colore={affidabile ? "hsl(100 60% 52%)" : "hsl(0 62% 58%)"}
+            valore={`${(d.affidabilita * 100).toFixed(0)}%`} sotto={d.affidabilita_txt} />
+          <Cifra titolo="Vittorie" valore={`${d.pct_vittorie.toFixed(1).replace(".", ",")}%`}
+            sotto={`${d.n_vittorie.toLocaleString("it-IT")} su ${d.n_gare.toLocaleString("it-IT")}`} />
+          <Cifra titolo="Partenza media" valore={d.partenza_media != null ? d.partenza_media.toFixed(1).replace(".", ",") : "\u2014"}
+            sotto="già scontata dal rendimento" />
+        </>}
+      />
 
       {!affidabile && (
         <div style={{
