@@ -40,7 +40,6 @@ const MarePage = lazy(() => import("./pages/MarePage"));
 const QualifichePage = lazy(() => import("./pages/QualifichePage"));
 const BreedersPage = lazy(() => import("./pages/BreedersPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
-const GranPremiPage = lazy(() => import("./pages/GranPremiPage"));
 const DriversPage = lazy(() => import("./pages/DriversPage"));
 const DriverPage = lazy(() => import("./pages/DriverPage"));
 const AllenatoriPage = lazy(() => import("./pages/AllenatoriPage"));
@@ -88,9 +87,9 @@ export default function App() {
               <Route path="/fattrici" component={MaresPage} />
               <Route path="/fattrice/:name" component={MarePage} />
               <Route path="/calendario" component={CalendarPage} />
-              <Route path="/gran-premi" component={GranPremiPage} />
-              <Route path="/albo-doro" component={GranPremiPage} />
-              <Route path="/palmares" component={GranPremiPage} />
+              <Route path="/gran-premi" component={IppodromiTrendPage} />
+              <Route path="/albo-doro" component={IppodromiTrendPage} />
+              <Route path="/palmares" component={IppodromiTrendPage} />
               {/* Guidatori e ippodromi: due indirizzi ciascuno, singolare e
                   plurale, perche' e' l'errore di battitura piu' probabile. */}
               <Route path="/guidatori" component={DriversPage} />

@@ -39,7 +39,7 @@ interface TrendsData {
 
 type View = "grades" | "earnings" | "races" | "tracks";
 
-export default function TrendsPage() {
+export default function TrendsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<View>("grades");
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
   const [hoveredTrack, setHoveredTrack] = useState<number | null>(null);
@@ -86,28 +86,14 @@ export default function TrendsPage() {
   ];
 
   return (
-    <div className="page-shell">
-      <IntestazionePagina icona={LineChart} colore="hsl(45 85% 58%)" titolo="Trend temporali" margineSotto={20}
-        sottotitolo="Come cambiano voti, guadagni e gare nel tempo." />
+    <div className={embedded ? "" : "page-shell"}>
+      {!embedded && <IntestazionePagina icona={LineChart} colore="hsl(45 85% 58%)" titolo="Trend temporali" margineSotto={20}
+        sottotitolo="Come cambiano voti, guadagni e gare nel tempo." />}
 
       {/* View tabs */}
-      <div style={{ display: "flex", gap: "4px", marginBottom: "20px" }}>
+      <div className="ed-segm" role="group" aria-label="Cosa mostrare" style={{ marginBottom: "16px", flexWrap: "wrap" }}>
         {views.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setView(key)}
-            style={{
-              padding: "7px 14px", borderRadius: "8px", cursor: "pointer",
-              background: view === key ? "hsl(183 100% 38%)" : "hsl(220 10% 14%)",
-              color: view === key ? "hsl(220 13% 7%)" : "hsl(210 8% 55%)",
-              border: "none", fontSize: "12px", fontWeight: 700,
-              transition: "all 0.2s ease",
-              transform: view === key ? "scale(1.05)" : "scale(1)",
-              boxShadow: view === key ? "0 2px 8px hsl(183 100% 38% / 0.3)" : "none",
-            }}
-          >
-            {label}
-          </button>
+          <button key={key} aria-pressed={view === key} onClick={() => setView(key)} data-testid={`trend-${key}`}>{label}</button>
         ))}
       </div>
 
@@ -350,11 +336,11 @@ export default function TrendsPage() {
           )}
         </>
       )}
-      <CollegamentiCorrelati voci={[
+      {!embedded && <CollegamentiCorrelati voci={[
         { href: "/leaderboard", titolo: "Leaderboard", descrizione: "I singoli cavalli dietro questi andamenti." },
         { href: "/qualifiche", titolo: "Qualifiche", descrizione: "I cavalli giovani non ancora in classifica, appena qualificati." },
         { href: "/advisor", titolo: "Advisor", descrizione: "Usa questi andamenti per scegliere un accoppiamento." },
-      ]} />
+      ]} />}
     </div>
   );
 }

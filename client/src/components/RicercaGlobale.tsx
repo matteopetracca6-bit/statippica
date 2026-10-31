@@ -44,7 +44,7 @@ const PAGINE: { titolo: string; href: string; sotto: string; parole: string }[] 
   { titolo: "Allevamento", href: "/allevamento", sotto: "allevatori e stazioni di monta", parole: "allevamento allevatori stazioni" },
   { titolo: "Guidatori", href: "/guidatori", sotto: "chi fa rendere di piu' i cavalli", parole: "guidatori driver" },
   { titolo: "Allenatori", href: "/allenatori", sotto: "corse, vittorie e premi dal 2016", parole: "allenatori allenatore trainer scuderia" },
-  { titolo: "Ippodromi e trend", href: "/ippodromi", sotto: "piste e andamenti negli anni", parole: "ippodromi piste trend andamenti numero partenza" },
+  { titolo: "Ippodromi e Gran Premi", href: "/ippodromi", sotto: "piste, albo d'oro e andamenti negli anni", parole: "ippodromi piste trend andamenti numero partenza gran premi albo d oro vincitori derby lotteria nazioni" },
   { titolo: "Punto di pareggio", href: "/pareggio", sotto: "perdita, pareggio o profitto", parole: "pareggio break even costi utile profitto perdita soldi economia" },
   { titolo: "Metodo e dati", href: "/metodo", sotto: "come si calcolano i voti", parole: "metodo dati fonti come funziona voto" },
 ];

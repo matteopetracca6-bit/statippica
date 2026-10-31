@@ -63,10 +63,8 @@ export const GRUPPI: Gruppo[] = [
     schede: [
     { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)",
       descrizione: "Prossime gare con iscritti, voti e probabilità di arrivare nei primi tre" },
-    { href: "/gran-premi", label: "Gran Premi", nota: "I vincitori delle grandi corse dal 2014", icon: Medal, colore: "hsl(45 90% 58%)",
-      descrizione: "Derby, Lotteria, Nazioni e le altre grandi corse: tutti i vincitori dal 2014 a oggi" },
-    { href: "/ippodromi", label: "Ippodromi e trend", nota: "Le piste italiane e i numeri negli anni", icon: MapPin, colore: "hsl(95 55% 52%)",
-      descrizione: "Le piste italiane, quanto pesa il numero di partenza e come cambiano i numeri negli anni" },
+    { href: "/ippodromi", label: "Ippodromi e Gran Premi", nota: "Piste, albo d'oro delle grandi corse e trend", icon: MapPin, colore: "hsl(95 55% 52%)",
+      descrizione: "Le piste italiane, quanto pesa il numero di partenza, i vincitori dei Gran Premi dal 2014 e come cambiano i numeri negli anni" },
     { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(200 70% 58%)",
       descrizione: "Chi porta i cavalli a rendere più del loro solito, a parità di cavallo e di partenza" },
     { href: "/allenatori", label: "Allenatori", nota: "Corse, vittorie, premi e cavalli dal 2016", icon: Timer, colore: "hsl(28 85% 60%)",
@@ -106,7 +104,7 @@ const ALIAS: Record<string, string> = {
   "/break-even": "/pareggio",
   "/aste": "/puledro", "/generazione-m": "/puledro",
   "/metodo-e-dati": "/metodo",
-  "/albo-doro": "/gran-premi", "/palmares": "/gran-premi",
+  "/gran-premi": "/ippodromi", "/albo-doro": "/ippodromi", "/palmares": "/ippodromi",
 };
 export function coloreDiPagina(percorso: string): string | null {
   const pezzi = percorso.split("?")[0].split("/");

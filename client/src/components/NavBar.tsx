@@ -21,7 +21,8 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/allevamento") return percorso.startsWith("/allevam") || percorso.startsWith("/allevator");
   if (href === "/validazione") return percorso.startsWith("/validazione");
   if (href === "/guidatori") return percorso.startsWith("/guidator");
-  if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend");
+  if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend")
+    || percorso.startsWith("/gran-premi") || percorso.startsWith("/albo-doro") || percorso.startsWith("/palmares");
   if (href === "/pareggio") return percorso.startsWith("/pareggio") || percorso.startsWith("/break-even");
   if (href === "/scuderia") return percorso.startsWith("/scuderia") || percorso.startsWith("/portafoglio");
   if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere")
