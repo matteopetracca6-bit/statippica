@@ -110,3 +110,32 @@ export function Barretta({ valore, max = 100, colore, alta = 6 }: { valore: numb
     </div>
   );
 }
+
+/** Colore del rendimento "a parita' di cavallo": verde se rende meglio del solito, rosso se peggio. */
+export function coloreEffetto(e: number): string {
+  if (e <= -0.05) return "hsl(100 60% 55%)";
+  if (e <= -0.02) return "hsl(80 55% 55%)";
+  if (e < 0.02) return "hsl(210 8% 65%)";
+  if (e < 0.05) return "hsl(35 75% 58%)";
+  return "hsl(0 62% 60%)";
+}
+
+/**
+ * Barra che parte dal centro: verso sinistra rende meglio del solito del
+ * cavallo, verso destra peggio. La scala satura a 0,12 (il migliore reale
+ * sta intorno a -0,09, il peggiore a +0,13).
+ */
+export function BarraCentro({ e, alta = 8 }: { e: number | null | undefined; alta?: number }) {
+  if (!isNum(e)) return <div style={{ height: alta, borderRadius: alta / 2, background: "hsl(220 10% 14%)" }} />;
+  const w = Math.min(50, (Math.abs(e) / 0.12) * 50);
+  return (
+    <div style={{ position: "relative", height: alta, borderRadius: alta / 2, background: "hsl(220 10% 14%)" }}>
+      <div style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "hsl(220 10% 32%)" }} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: alta / 2, background: coloreEffetto(e),
+        ...(e < 0 ? { right: "50%", width: `${w}%` } : { left: "50%", width: `${w}%` }) }} />
+    </div>
+  );
+}
+
+/** "−0,8 pos." / "+0,3 pos.": l'effetto tradotto in posizioni su una corsa da dieci. */
+export const posizioni = (e: number) => `${e < 0 ? "−" : "+"}${Math.abs(e * 10).toFixed(1).replace(".", ",")} pos.`;

@@ -10,19 +10,27 @@
  * cavalli passati per piu' allenatori: e' l'unico posto dove il confronto
  * esiste davvero. Chi ha avuto sempre gli stessi cavalli resta "non
  * giudicabile" invece di uscire nella media per finta.
+ *
+ * Layout a due colonne come Guidatori: elenco a sinistra, scheda a destra.
  */
-
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Search, X, Timer } from "lucide-react";
+import { Search, X, Timer, ArrowRight } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
+import GradeBadge from "../components/GradeBadge";
+import { colorePista, nomePista as sigla } from "@/lib/piste";
+import { CSS_DUE_COLONNE, Cifra, Barretta, BarraCentro, coloreEffetto as coloreEff, posizioni, useDesktop, num, nomeBello } from "../components/DueColonne";
 
 export const COLORE_ALLENATORI = "hsl(28 85% 60%)";
+const COLORE = COLORE_ALLENATORI;
+const DIM = "hsl(210 8% 40%)";
+const PASSO = 50;
+const nomePista = (t: string) => nomeBello(sigla(t));
 
 export interface Allenatore {
   allenatore: string; nome: string;
@@ -33,57 +41,160 @@ export interface Allenatore {
   attivo: number; effetto: number | null; n_confronti: number;
   affidabilita: number; affidabilita_txt: string;
 }
-
-const MUTED = "hsl(210 8% 55%)";
-const DIM = "hsl(210 8% 40%)";
-const BORDER = "1px solid hsl(220 10% 18%)";
-const RIGA = "1px solid hsl(220 10% 13%)";
+interface DettaglioAllenatore extends Allenatore {
+  guidatore_top: string | null;
+  piste: { track: string; n_corse: number; vittorie: number; pct_vittorie: number }[];
+  cavalli: { nome: string; anno: number; n_corse: number; vittorie: number; premi: number; grade: string | null }[];
+  guidatori: { driver: string; n_corse: number; vittorie: number; pct_vittorie: number }[];
+}
 
 export function euro(n: number) {
   return "\u20ac" + Math.round(n).toLocaleString("it-IT");
 }
+export const coloreEffetto = coloreEff;
 
-export function coloreEffetto(e: number): string {
-  if (e <= -0.05) return "hsl(100 60% 55%)";
-  if (e <= -0.02) return "hsl(80 55% 55%)";
-  if (e < 0.02) return "hsl(210 8% 65%)";
-  if (e < 0.05) return "hsl(35 75% 58%)";
-  return "hsl(0 62% 60%)";
+/** Barra che parte dal centro: a sinistra rende meglio del solito, a destra peggio. Usata anche dalla scheda allenatore. */
+export function BarraEffetto({ e }: { e: number | null }) {
+  if (e == null) return <span style={{ fontSize: "11px", color: DIM }}>non giudicabile</span>;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ flex: 1, minWidth: "70px" }}><BarraCentro e={e} alta={9} /></div>
+      <span className="tabular" style={{ fontSize: "11.5px", color: coloreEff(e), fontWeight: 700, whiteSpace: "nowrap", width: "62px", textAlign: "right" }}>
+        {posizioni(e)}
+      </span>
+    </div>
+  );
 }
 
 type Ordine = "vittorie" | "premi" | "anno" | "percentuale" | "parita";
 const ORDINI: { id: Ordine; testo: string }[] = [
   { id: "vittorie", testo: "Vittorie" },
   { id: "premi", testo: "Premi" },
-  { id: "anno", testo: "Premi ultimi 12 mesi" },
+  { id: "anno", testo: "Ultimi 12 mesi" },
   { id: "percentuale", testo: "% vittorie" },
   { id: "parita", testo: "A parità di cavallo" },
 ];
+const pct = (v: number) => `${v.toFixed(1).replace(".", ",")}%`;
+const giudicabile = (a: Allenatore) => (a.affidabilita >= 0.2 ? a.effetto : null);
 
-/** Barra che parte dal centro: a sinistra rende meglio del solito, a destra peggio. */
-export function BarraEffetto({ e }: { e: number | null }) {
-  if (e == null) return <span style={{ fontSize: "11px", color: DIM }}>non giudicabile</span>;
+function SchedaAllenatore({ a, onClose }: { a: Allenatore; onClose?: () => void }) {
+  const { data } = useQuery<DettaglioAllenatore>({
+    queryKey: ["/api/allenatore", a.allenatore],
+    queryFn: () => apiRequest("GET", `/api/allenatore/${encodeURIComponent(a.allenatore)}`).then(r => r.json()),
+  });
+  const e = giudicabile(a);
+  const cavalli = (data?.cavalli ?? []).slice(0, 5);
+  const guidatori = (data?.guidatori ?? []).slice(0, 3);
+  const piste = (data?.piste ?? []).filter(p => p.track !== "ESTERO").slice(0, 4);
+  const maxP = Math.max(1, ...piste.map(p => p.n_corse));
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-      <div style={{ position: "relative", flex: 1, height: "13px", minWidth: "70px" }}>
-        <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", background: "hsl(220 10% 26%)" }} />
-        <div style={{
-          position: "absolute", top: "2px", height: "9px", borderRadius: "2px", background: coloreEffetto(e),
-          ...(e < 0 ? { right: "50%", width: `${Math.min(50, (Math.abs(e) / 0.12) * 50)}%` }
-                    : { left: "50%", width: `${Math.min(50, (e / 0.12) * 50)}%` }),
-        }} />
+    <div className="ed-dettaglio" data-testid="scheda-allenatore">
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="ed-etich">Allenatore{a.attivo ? " · in attività" : " · non più in attività"}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: COLORE, marginTop: 2, overflowWrap: "anywhere" }}>{a.nome}</div>
+          <div style={{ fontSize: 12.5, color: "var(--ed-muto)", marginTop: 3 }}>
+            corse dal {a.prima_corsa?.slice(0, 4) ?? "—"} al {a.ultima_corsa?.slice(0, 4) ?? "—"}
+            {a.ippodromo_top && a.ippodromo_top !== "ESTERO" ? ` · soprattutto a ${nomePista(a.ippodromo_top)}` : ""}
+          </div>
+        </div>
+        {onClose && <button className="ed-chiudi" onClick={onClose} aria-label="Chiudi"><X size={15} /></button>}
       </div>
-      <span className="tabular" style={{ fontSize: "11.5px", color: coloreEffetto(e), fontWeight: 700, whiteSpace: "nowrap", width: "62px", textAlign: "right" }}>
-        {e < 0 ? "\u2212" : "+"}{Math.abs(e * 10).toFixed(1)} pos.
-      </span>
+
+      <div className="ed-cifre" style={{ marginTop: 14, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+        <Cifra titolo="Vittorie" valore={num(a.n_vittorie)} colore="hsl(100 50% 60%)" sotto={`il ${pct(a.pct_vittorie)} delle corse · primi tre ${pct(a.pct_primi_tre)}`} />
+        <Cifra titolo="Premi dal 2016" valore={euro(a.premi_totali)} colore="hsl(45 80% 62%)" sotto={`${euro(a.premi_per_corsa)} a corsa`} />
+        <Cifra titolo="Ultimi 12 mesi" valore={a.premi_12_mesi > 0 ? euro(a.premi_12_mesi) : "—"} sotto={`${num(a.vittorie_12_mesi)} vittorie`} />
+        <Cifra titolo="Corse" valore={num(a.n_corse)} sotto={`${num(a.n_cavalli)} cavalli · ${num(a.n_cavalli_recenti)} recenti`} />
+      </div>
+
+      <div className="ed-pannello" style={{ marginTop: 10, padding: 14 }}>
+        <div className="ed-etich">A parità di cavallo</div>
+        {e == null ? (
+          <div style={{ fontSize: 12.5, color: "var(--ed-muto)", marginTop: 6, lineHeight: 1.6 }}>
+            Non giudicabile: troppo pochi cavalli passati anche da altri allenatori per fare il confronto.
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "4px 0 8px" }}>
+              <span className="tabular" style={{ fontSize: 24, fontWeight: 800, color: coloreEff(e) }}>{posizioni(e)}</span>
+              <span style={{ fontSize: 12.5, color: "var(--ed-muto)" }}>
+                {e < -0.02 ? "con lui i cavalli arrivano più avanti del loro solito" : e > 0.02 ? "con lui i cavalli arrivano più indietro del loro solito" : "i cavalli arrivano come al solito"}
+              </span>
+            </div>
+            <BarraCentro e={e} alta={10} />
+            <div style={{ fontSize: 12, color: "var(--ed-muto)", marginTop: 8 }}>
+              Quanto regge: <b style={{ color: "var(--ed-testo)" }}>{Math.round(a.affidabilita * 100)}% · {a.affidabilita_txt}</b> · {num(a.n_confronti)} confronti
+            </div>
+          </>
+        )}
+      </div>
+
+      {cavalli.length > 0 && (
+        <>
+          <div className="ed-etich" style={{ margin: "16px 0 6px" }}>I cavalli che hanno vinto di più</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {cavalli.map(c => (
+              <Link key={`${c.nome}-${c.anno}`} href={`/horse/${encodeURIComponent(c.nome)}/${c.anno}`}>
+                <a style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 8,
+                  background: "var(--ed-fondo2)", textDecoration: "none", fontSize: 12.5 }}>
+                  <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ fontWeight: 700, color: "var(--ed-testo)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nome}</span>
+                    {c.grade && <GradeBadge grade={c.grade} />}
+                  </span>
+                  <span className="tabular" style={{ color: "var(--ed-muto)", whiteSpace: "nowrap" }}>{c.vittorie} vinte · {euro(c.premi)}</span>
+                </a>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+      {guidatori.length > 0 && (
+        <>
+          <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Chi guida i suoi cavalli</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {guidatori.map(g => (
+              <Link key={g.driver} href={`/guidatore/${encodeURIComponent(g.driver)}`}>
+                <a className="chip-filtro" style={{ textDecoration: "none" }}>{g.driver} · {num(g.n_corse)} corse</a>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+      {piste.length > 0 && (
+        <>
+          <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Dove corre di più</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {piste.map(p => (
+              <div key={p.track} style={{ fontSize: 12.5 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
+                  <span style={{ color: colorePista(p.track), fontWeight: 700 }}>{nomePista(p.track)}</span>
+                  <span className="tabular" style={{ color: "var(--ed-muto)" }}>{num(p.n_corse)} corse · vince il {pct(p.pct_vittorie)}</span>
+                </div>
+                <Barretta valore={p.n_corse} max={maxP} colore={colorePista(p.track)} alta={5} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <Link href={`/allenatore/${encodeURIComponent(a.allenatore)}`}>
+        <a data-testid="link-scheda-allenatore" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, background: COLORE, color: "hsl(220 13% 7%)",
+          borderRadius: 9, padding: "9px 14px", fontWeight: 800, fontSize: 13, textDecoration: "none" }}>
+          Scheda completa <ArrowRight size={14} />
+        </a>
+      </Link>
     </div>
   );
 }
 
 export default function AllenatoriPage() {
+  const desktop = useDesktop();
   const [cerca, setCerca] = useState("");
   const [soloAttivi, setSoloAttivi] = useState(true);
   const [ordine, setOrdine] = useState<Ordine>("vittorie");
+  const [quanti, setQuanti] = useState(PASSO);
+  const [aperto, setAperto] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<{
     disponibile: boolean; n: number; allenatori: Allenatore[]; copertura: number; aggiornato_al: string | null;
@@ -111,149 +222,127 @@ export default function AllenatoriPage() {
 
   if (isLoading) return <Caricamento testo="Carico gli allenatori..." />;
   if (error) return <ErroreCaricamento titolo="Allenatori" cosa="i dati sugli allenatori" />;
-  if (!data?.disponibile) {
-    return (
-      <div style={{ maxWidth: "700px", margin: "40px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: "22px", color: "hsl(210 10% 88%)" }}>Allenatori</h1>
-        <p style={{ color: MUTED, fontSize: "13px", lineHeight: 1.7 }}>
-          Gli allenatori non sono ancora stati raccolti su questo archivio. Li raccoglie
-          il lavoro notturno dai risultati ufficiali: saranno disponibili dal prossimo
-          aggiornamento.
-        </p>
-      </div>
-    );
-  }
 
-  const th = (i: number): React.CSSProperties => ({
-    padding: "10px 12px", textAlign: i === 0 ? "left" : "right", color: DIM, fontSize: "10.5px",
-    textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, borderBottom: BORDER, whiteSpace: "nowrap",
-  });
-  const td = (extra: React.CSSProperties = {}): React.CSSProperties => ({
-    padding: "9px 12px", textAlign: "right", borderBottom: RIGA, color: MUTED, ...extra,
-  });
+  const filtra = (f: () => void) => { f(); setQuanti(PASSO); setAperto(null); };
+  const visibili = righe.slice(0, quanti);
+  const scelto = aperto ?? (desktop && visibili.length ? visibili[0].allenatore : null);
+  const sceltoA = righe.find(a => a.allenatore === scelto) ?? null;
+  const attivi = (data?.allenatori ?? []).filter(a => a.attivo === 1);
+  const primo12 = [...attivi].sort((a, b) => b.premi_12_mesi - a.premi_12_mesi)[0];
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "22px 18px 60px" }}>
-      <IntestazionePagina icona={Timer} colore={COLORE_ALLENATORI} titolo="Allenatori"
-        sottotitolo={`Chi allena i cavalli del trotto italiano: corse, vittorie e premi dal 2016${data.aggiornato_al ? `, aggiornati al ${new Date(data.aggiornato_al).toLocaleDateString("it-IT")}` : ""}.`}>
-        Vittorie e premi dicono soprattutto quali cavalli ha un allenatore. Per confrontare
-        quanto li fa rendere c'è la colonna «a parità di cavallo».
+    <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
+      <style>{CSS_DUE_COLONNE}</style>
+      <IntestazionePagina icona={Timer} colore={COLORE} titolo="Allenatori" margineSotto={16}
+        sottotitolo={`Chi allena i cavalli del trotto italiano: corse, vittorie e premi dal 2016${data?.aggiornato_al ? `, aggiornati al ${new Date(data.aggiornato_al).toLocaleDateString("it-IT")}` : ""}.`}>
+        Vittorie e premi dicono soprattutto quali cavalli ha un allenatore. Per confrontare quanto li fa rendere c'è il conto
+        «a parità di cavallo». Tocca una riga per aprire la scheda.
       </IntestazionePagina>
 
-      <Spiegazione titolo="Da dove vengono questi numeri">
-        <p>
-          L'allenatore di ogni cavallo in ogni corsa viene dai risultati ufficiali MASAF,
-          che lo riportano dal 2016. Le corse dal 2013 al 2015 restano quindi senza
-          allenatore. Oggi lo ha il {data.copertura.toLocaleString("it-IT")}% delle corse
-          italiane dal 2016; il resto sono cavalli scritti in modo diverso nelle due fonti.
-        </p>
-        <p>
-          <strong>A parità di cavallo.</strong> Per ogni corsa si guarda dove il cavallo è
-          arrivato rispetto a dove arriva di solito. Se con un allenatore arriva più avanti
-          del suo abituale, quell'allenatore ha aggiunto qualcosa. Il confronto esiste
-          solo per i cavalli passati per almeno due allenatori: chi ha avuto sempre gli
-          stessi cavalli resta «non giudicabile». Resta una misura del rendimento
-          osservato: un cavallo cambia scuderia anche perché cresce, migliora o si
-          rompe, e questo conto non lo separa del tutto.
-        </p>
-      </Spiegazione>
+      {!data?.disponibile ? (
+        <div className="ed-pannello" style={{ color: "var(--ed-muto)", fontSize: 13, lineHeight: 1.7 }}>
+          Gli allenatori non sono ancora stati raccolti su questo archivio. Li raccoglie il lavoro notturno dai risultati ufficiali: saranno disponibili dal prossimo aggiornamento.
+        </div>
+      ) : (
+        <>
+          <div className="ed-cifre" style={{ marginBottom: 16 }}>
+            <Cifra titolo="Allenatori" valore={num(data.n)} sotto="dal 2016 a oggi" />
+            <Cifra titolo="In attività" valore={num(attivi.length)} sotto="dieci corse negli ultimi 18 mesi" />
+            <Cifra titolo="Corse con l'allenatore" valore={`${num(data.copertura, 1)}%`} sotto="delle corse italiane dal 2016" />
+            <Cifra titolo="Più premi in 12 mesi" valore={primo12 ? euro(primo12.premi_12_mesi) : "—"} colore="hsl(45 80% 62%)" sotto={primo12?.nome} />
+          </div>
 
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", margin: "18px 0 10px" }}>
-        <div style={{ position: "relative", flex: "1 1 240px", maxWidth: "340px" }}>
-          <Search size={14} style={{ position: "absolute", left: "11px", top: "50%", transform: "translateY(-50%)", color: DIM }} />
-          <input value={cerca} onChange={e => setCerca(e.target.value)} placeholder="Cerca allenatore..."
-            style={{ width: "100%", padding: "9px 30px 9px 32px", background: "hsl(220 12% 10%)", border: BORDER,
-                     borderRadius: "8px", color: "hsl(210 10% 85%)", fontSize: "13px" }} />
-          {cerca && (
-            <button onClick={() => setCerca("")} aria-label="Cancella la ricerca"
-              style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: DIM, cursor: "pointer" }}>
-              <X size={13} />
-            </button>
+          <Spiegazione titolo="Da dove vengono questi numeri" compatta>
+            <p>
+              L'allenatore di ogni cavallo in ogni corsa viene dai risultati ufficiali MASAF, che lo riportano dal 2016. Le corse dal 2013 al 2015
+              restano quindi senza allenatore. Oggi lo ha il {data.copertura.toLocaleString("it-IT")}% delle corse italiane dal 2016; il resto sono
+              cavalli scritti in modo diverso nelle due fonti.
+            </p>
+            <p>
+              <strong>A parità di cavallo.</strong> Per ogni corsa si guarda dove il cavallo è arrivato rispetto a dove arriva di solito. Se con un
+              allenatore arriva più avanti del suo abituale, quell'allenatore ha aggiunto qualcosa. Il confronto esiste solo per i cavalli passati per
+              almeno due allenatori: chi ha avuto sempre gli stessi cavalli resta «non giudicabile». Resta una misura del rendimento osservato: un
+              cavallo cambia scuderia anche perché cresce, migliora o si rompe, e questo conto non lo separa del tutto.
+            </p>
+          </Spiegazione>
+
+          <div className="ed-barra" style={{ marginTop: 16 }}>
+            <label className="ed-cerca">
+              <Search size={15} style={{ color: "var(--ed-muto)" }} />
+              <input value={cerca} onChange={e => filtra(() => setCerca(e.target.value))} placeholder="Cerca un allenatore" aria-label="Cerca un allenatore" data-testid="input-cerca-allenatore" />
+              {cerca && <button onClick={() => filtra(() => setCerca(""))} aria-label="Cancella ricerca" style={{ background: "none", border: "none", color: "var(--ed-muto)", cursor: "pointer", display: "flex", padding: 0 }}><X size={14} /></button>}
+            </label>
+            <div className="ed-segm" role="group" aria-label="Ordina per">
+              {ORDINI.map(o => <button key={o.id} aria-pressed={ordine === o.id} onClick={() => filtra(() => setOrdine(o.id))}>{o.testo}</button>)}
+            </div>
+          </div>
+          <div className="ed-barra" style={{ marginTop: -4 }}>
+            <button className="chip-filtro" onClick={() => filtra(() => setSoloAttivi(v => !v))}
+              style={{ borderColor: soloAttivi ? COLORE : undefined, color: soloAttivi ? COLORE : undefined }}>Solo in attività</button>
+            <span style={{ fontSize: 12.5, color: "var(--ed-muto)", marginLeft: "auto" }}>{righe.length} su {data.n}</span>
+          </div>
+          {(ordine === "percentuale" || ordine === "parita") && (
+            <div style={{ fontSize: 11.5, color: "var(--ed-fioco)", margin: "-4px 0 12px", lineHeight: 1.6 }}>
+              {ordine === "percentuale"
+                ? "In fondo chi ha meno di cento corse: su numeri piccoli la percentuale dipende dal caso."
+                : "In fondo chi non ha abbastanza confronti a parità di cavallo perché il giudizio regga."}
+            </div>
           )}
-        </div>
-        <button onClick={() => setSoloAttivi(!soloAttivi)}
-          style={{
-            padding: "8px 13px", fontSize: "12px", borderRadius: "8px", cursor: "pointer",
-            background: soloAttivi ? "hsl(28 85% 55% / 0.14)" : "hsl(220 12% 10%)",
-            border: soloAttivi ? "1px solid hsl(28 85% 55% / 0.45)" : BORDER,
-            color: soloAttivi ? "hsl(28 90% 68%)" : MUTED, fontWeight: soloAttivi ? 700 : 400,
-          }}>
-          Solo in attività
-        </button>
-        <span style={{ fontSize: "12px", color: DIM, marginLeft: "auto" }}>{righe.length} su {data.n}</span>
-      </div>
 
-      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center", marginBottom: "14px" }}>
-        <span style={{ fontSize: "11.5px", color: DIM, marginRight: "4px" }}>Ordina per</span>
-        {ORDINI.map(o => (
-          <button key={o.id} onClick={() => setOrdine(o.id)}
-            style={{
-              padding: "5px 11px", fontSize: "11.5px", borderRadius: "999px", cursor: "pointer",
-              background: ordine === o.id ? "hsl(28 85% 55% / 0.16)" : "transparent",
-              border: ordine === o.id ? "1px solid hsl(28 85% 55% / 0.5)" : BORDER,
-              color: ordine === o.id ? "hsl(28 90% 70%)" : MUTED, fontWeight: ordine === o.id ? 700 : 400,
-            }}>{o.testo}</button>
-        ))}
-      </div>
-      {(ordine === "percentuale" || ordine === "parita") && (
-        <div style={{ fontSize: "11.5px", color: DIM, marginBottom: "12px", lineHeight: 1.6 }}>
-          {ordine === "percentuale"
-            ? "In fondo chi ha meno di cento corse: su numeri piccoli la percentuale dipende dal caso."
-            : "In fondo chi non ha abbastanza confronti a parità di cavallo perché il giudizio regga."}
-        </div>
-      )}
+          {righe.length === 0 ? <div className="ed-pannello" style={{ color: "var(--ed-muto)", fontSize: 13 }}>Nessun allenatore con questi filtri.</div> : (
+            <div className="ed-griglia">
+              <div>
+                <div className="ed-lista">
+                  {visibili.map((a, i) => {
+                    const att = scelto === a.allenatore;
+                    const e = giudicabile(a);
+                    const [v, et, col] = ordine === "premi" ? [euro(a.premi_totali), "premi", "hsl(45 80% 62%)"]
+                      : ordine === "anno" ? [a.premi_12_mesi > 0 ? euro(a.premi_12_mesi) : "—", "ultimi 12 mesi", "hsl(45 80% 62%)"]
+                      : ordine === "percentuale" ? [pct(a.pct_vittorie), "vittorie", "hsl(100 50% 60%)"]
+                      : ordine === "parita" ? [e == null ? "—" : posizioni(e), "a parità di cavallo", e == null ? "var(--ed-fioco)" : coloreEff(e)]
+                      : [num(a.n_vittorie), "vittorie", "hsl(100 50% 60%)"];
+                    return (
+                      <div key={a.allenatore} style={{ minWidth: 0 }}>
+                        <button className="ed-riga" data-attiva={att} onClick={() => setAperto(att && !desktop ? "" : a.allenatore)} data-testid={`row-allenatore-${i}`}>
+                          <span className="ed-pos" data-podio={i < 3}>{i + 1}</span>
+                          <span style={{ minWidth: 0 }}>
+                            <span className="ed-nome" style={{ display: "block" }}>{a.nome}</span>
+                            <span style={{ display: "block", margin: "6px 0 4px" }}><BarraCentro e={e} /></span>
+                            <span className="ed-sotto" style={{ display: "block" }}>
+                              {num(a.n_corse)} corse · {num(a.n_cavalli)} cavalli · vince il {pct(a.pct_vittorie)}
+                              {e == null ? " · non giudicabile" : ""}
+                            </span>
+                          </span>
+                          <span style={{ textAlign: "right" }}>
+                            <span className="tabular" style={{ display: "block", fontSize: 16, fontWeight: 800, color: col, whiteSpace: "nowrap" }}>{v}</span>
+                            <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)" }}>{et}</span>
+                          </span>
+                        </button>
+                        {!desktop && att && <div style={{ marginTop: 6 }}><SchedaAllenatore a={a} onClose={() => setAperto("")} /></div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                {righe.length > quanti && (
+                  <div className="ed-pagine">
+                    <button onClick={() => setQuanti(q => q + PASSO)} style={{ padding: "8px 14px", fontSize: 12.5, fontFamily: "inherit" }} data-testid="btn-altri">
+                      Mostra altri {Math.min(PASSO, righe.length - quanti)}
+                    </button>
+                    <span>{quanti} di {righe.length}</span>
+                  </div>
+                )}
+              </div>
+              {desktop && (sceltoA ? <SchedaAllenatore key={sceltoA.allenatore} a={sceltoA} /> : <div className="ed-dettaglio ed-vuoto">Scegli un allenatore dall'elenco.</div>)}
+            </div>
+          )}
 
-      <div className="pannello" style={{ overflowX: "auto", ["--colore-pannello" as any]: COLORE_ALLENATORI }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", minWidth: "860px" }}>
-          <thead>
-            <tr style={{ background: "hsl(220 12% 9%)" }}>
-              {["Allenatore", "Corse", "Cavalli", "Vittorie", "Primi tre", "Premi", "Ultimi 12 mesi", "A parità di cavallo"].map((h, i) => (
-                <th key={h} style={th(i)}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {righe.slice(0, 400).map((a, i) => (
-              <tr key={a.allenatore} style={{ background: i % 2 ? "hsl(220 12% 8%)" : "transparent" }}>
-                <td style={{ padding: "9px 12px", borderBottom: RIGA }}>
-                  <Link href={`/allenatore/${encodeURIComponent(a.allenatore)}`}>
-                    <a className="collegamento-scheda" style={{ color: "hsl(210 10% 88%)", fontWeight: 700 }}>{a.nome}</a>
-                  </Link>
-                  {a.ippodromo_top && a.ippodromo_top !== "ESTERO" && (
-                    <div style={{ fontSize: "10.5px", color: "hsl(210 8% 40%)" }}>soprattutto a {a.ippodromo_top.toLowerCase()}</div>
-                  )}
-                </td>
-                <td className="tabular" style={td({ color: "hsl(210 8% 72%)" })}>{a.n_corse.toLocaleString("it-IT")}</td>
-                <td className="tabular" style={td()}>{a.n_cavalli.toLocaleString("it-IT")}</td>
-                <td className="tabular" style={td({ color: "hsl(100 50% 60%)", fontWeight: 700 })}>
-                  {a.n_vittorie.toLocaleString("it-IT")}
-                  <span style={{ color: DIM, fontWeight: 400, fontSize: "11px" }}> · {a.pct_vittorie.toFixed(1).replace(".", ",")}%</span>
-                </td>
-                <td className="tabular" style={td()}>{a.pct_primi_tre.toFixed(1).replace(".", ",")}%</td>
-                <td className="tabular" style={td({ color: "hsl(45 80% 62%)" })}>{euro(a.premi_totali)}</td>
-                <td className="tabular" style={td()}>{a.premi_12_mesi > 0 ? euro(a.premi_12_mesi) : "\u2014"}</td>
-                <td style={{ ...td(), minWidth: "170px" }}><BarraEffetto e={a.affidabilita >= 0.2 ? a.effetto : null} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {righe.length > 400 && (
-        <div style={{ fontSize: "11.5px", color: DIM, marginTop: "8px" }}>
-          Mostrati i primi 400: usa la ricerca per trovare gli altri.
-        </div>
+          <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", marginTop: 18, lineHeight: 1.6 }}>
+            La barra «a parità di cavallo» parte dal centro: verso sinistra i cavalli rendono meglio del loro solito con questo allenatore, verso
+            destra peggio; grigia vuol dire non giudicabile. Il numero è quanto vale in posizioni, su una corsa da dieci partenti. «In attività» vuol
+            dire almeno dieci corse negli ultimi diciotto mesi. Hanno una scheda gli allenatori con almeno venti corse dal 2016.
+          </p>
+        </>
       )}
-      {righe.length === 0 && (
-        <div style={{ padding: "30px", textAlign: "center", color: MUTED, fontSize: "13px" }}>Nessun allenatore con questi filtri.</div>
-      )}
-
-      <Spiegazione>
-        La barra «a parità di cavallo» parte dal centro: verso sinistra i cavalli rendono
-        meglio del loro solito con questo allenatore, verso destra peggio. Il numero è
-        quanto vale in posizioni, su una corsa da dieci partenti. «In attività» vuol dire
-        almeno dieci corse negli ultimi diciotto mesi. Hanno una scheda gli allenatori con
-        almeno venti corse dal 2016.
-      </Spiegazione>
 
       <CollegamentiCorrelati voci={[
         { href: "/guidatori", titolo: "Guidatori", descrizione: "Chi porta i cavalli a rendere più del loro solito." },
