@@ -45,13 +45,27 @@ export const COUNTRY_FLAG: Record<string, string> = {
 };
 
 export const COUNTRY_NAME: Record<string, string> = {
-  ITA: "Italia", FRA: "Francia", USA: "USA", SWE: "Svezia",
+  ITA: "Italia", FRA: "Francia", USA: "Stati Uniti", SWE: "Svezia",
   NOR: "Norvegia", DEN: "Danimarca", FIN: "Finlandia", GER: "Germania",
   AUS: "Australia", NZL: "Nuova Zelanda", CAN: "Canada",
   NED: "Paesi Bassi", BEL: "Belgio", GBR: "Gran Bretagna", IRE: "Irlanda",
-  I: "Italia", F: "Francia", A: "USA", S: "Svezia", N: "Norvegia",
+  SUI: "Svizzera", AUT: "Austria", RUS: "Russia", UKR: "Ucraina",
+  HUN: "Ungheria", POL: "Polonia", CZE: "Repubblica Ceca", SLO: "Slovenia",
+  CRO: "Croazia", SER: "Serbia", ROM: "Romania", ESP: "Spagna", POR: "Portogallo",
+  I: "Italia", F: "Francia", A: "Stati Uniti", S: "Svezia", N: "Norvegia",
   D: "Germania", DK: "Danimarca", SF: "Finlandia", G: "Germania",
 };
+
+/** Il nome intero del paese; la sigla resta solo se il paese non e' in elenco. */
+export function nomePaese(codice: string | null | undefined): string {
+  if (!codice) return "";
+  return COUNTRY_NAME[codice.toUpperCase()] ?? codice;
+}
+
+/** Ordina le sigle per nome del paese, come le legge chi usa il menu. */
+export function ordinaPaesi(codici: string[]): string[] {
+  return [...codici].sort((x, y) => nomePaese(x).localeCompare(nomePaese(y), "it"));
+}
 
 /**
  * Stalloni internazionali noti con la loro nazionalità.

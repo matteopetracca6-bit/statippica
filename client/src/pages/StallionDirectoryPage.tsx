@@ -1,3 +1,4 @@
+import { nomePaese, ordinaPaesi } from "@/lib/flags";
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -32,22 +33,6 @@ interface StallionEntry {
 
 type SortKey = "fee_desc" | "fee_asc" | "name_asc" | "score_desc" | "figli_desc";
 
-const COUNTRY_LABELS: Record<string, string> = {
-  USA: "Stati Uniti",
-  ITA: "Italia",
-  FRA: "Francia",
-  SWE: "Svezia",
-  NOR: "Norvegia",
-  GER: "Germania",
-  DEN: "Danimarca",
-  FIN: "Finlandia",
-  NED: "Olanda",
-  ESP: "Spagna",
-  GBR: "Regno Unito",
-  CAN: "Canada",
-  AUT: "Austria",
-  BEL: "Belgio",
-};
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Disponibile",
@@ -93,7 +78,7 @@ function SchedaStallone({ s, onClose }: { s: StallionEntry; onClose?: () => void
     <div className="ed-dettaglio" data-testid="scheda-catalogo-stallone">
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="ed-etich">Stallone{country ? ` · ${COUNTRY_LABELS[country] || country}` : ""}</div>
+          <div className="ed-etich">Stallone{country ? ` · ${nomePaese(country)}` : ""}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>
             {country && <BandieraCavallo paese={country} ignoto_se_vuoto />}
             <span style={{ fontSize: 20, fontWeight: 800, color: COLORE, overflowWrap: "anywhere" }}>{s.name}</span>
@@ -219,7 +204,7 @@ export default function StallionDirectoryPage() {
         </label>
         <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} style={stileSelect} aria-label="Paese">
           <option value="all">Tutti i paesi</option>
-          {countries.map(c => <option key={c} value={c}>{COUNTRY_LABELS[c] || c}</option>)}
+          {ordinaPaesi(countries).map(c => <option key={c} value={c}>{nomePaese(c)}</option>)}
         </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={stileSelect} aria-label="Stato">
           <option value="all">Tutti gli stati</option>

@@ -1,3 +1,4 @@
+import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 /**
  * SEZIONE FATTRICI.
  *
@@ -27,10 +28,8 @@ const PAGE = 30;
 // Su telefono i gruppi di bottoni lunghi scorrono di lato invece di andare a capo.
 const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWidth: "100%", whiteSpace: "nowrap" as const };
 const GRADES = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
-const COLORI_VOTO: Record<string, string> = {
-  SSS: "hsl(183 80% 55%)", SS: "hsl(160 65% 50%)", S: "hsl(130 55% 50%)", A: "hsl(60 70% 52%)",
-  B: "hsl(35 80% 55%)", C: "hsl(20 70% 52%)", D: "hsl(210 8% 50%)", E: "hsl(210 8% 40%)", F: "hsl(0 60% 50%)",
-};
+// Gli stessi colori ufficiali dei distintivi: SSS oro, SS argento, S bronzo...
+const COLORI_VOTO = COLORE_SCHEDA_VOTO;
 
 interface MareRow {
   dam: string; n_figli_totali: number; n_valutati: number; n_in_corsa: number; final_score: number; grade: string;
@@ -85,7 +84,7 @@ function SchedaFattrice({ m, onClose }: { m: MareRow; onClose?: () => void }) {
       <div className="ed-cifre" style={{ marginTop: 14, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
         <Cifra titolo="Punti" valore={num(m.final_score, 1)} colore={COLORE} sotto="dai figli, non dalla sua carriera" />
         <Cifra titolo="Figli valutati" valore={`${m.n_valutati}${m.n_figli_totali > m.n_valutati ? ` su ${m.n_figli_totali}` : ""}`} sotto={m.n_in_corsa ? `${m.n_in_corsa} ancora in attività` : "nessuno in attività"} />
-        <Cifra titolo="Figli di vertice" valore={vertice ? `${vertice}` : "—"} colore={vertice ? "hsl(183 80% 55%)" : undefined} sotto={vertice ? `voto S o più · ${num(m.pct_top_S)}% dei valutati` : "nessun figlio con voto S o più"} />
+        <Cifra titolo="Figli di vertice" valore={vertice ? `${vertice}` : "—"} colore={vertice ? COLORE_SCHEDA_VOTO.SSS : undefined} sotto={vertice ? `voto S o più · ${num(m.pct_top_S)}% dei valutati` : "nessun figlio con voto S o più"} />
         <Cifra titolo="Guadagno medio figli" valore={euro(m.avg_earnings)} colore="hsl(45 80% 62%)" />
       </div>
 
@@ -194,7 +193,7 @@ export default function MaresPage() {
 
       <div className="ed-cifre" style={{ marginBottom: 16 }}>
         <Cifra titolo="Fattrici valutate" valore={num(nTot)} sotto="con almeno un figlio valutato" />
-        <Cifra titolo="Con voto S o più" valore={num(vertice)} colore="hsl(183 80% 55%)" sotto={nTot ? `${num((vertice / nTot) * 100, 1)}% del totale` : undefined} />
+        <Cifra titolo="Con voto S o più" valore={num(vertice)} colore={COLORE_SCHEDA_VOTO.SSS} sotto={nTot ? `${num((vertice / nTot) * 100, 1)}% del totale` : undefined} />
         <Cifra titolo="In questo elenco" valore={num(total)} sotto={minKids > 0 ? `con almeno ${minKids} figli valutati` : "tutte"} />
       </div>
 

@@ -1,3 +1,4 @@
+import { nomePaese, ordinaPaesi } from "@/lib/flags";
 /**
  * CAVALLI E CLASSIFICA.
  *
@@ -58,14 +59,6 @@ const COLORE = "hsl(51 80% 55%)";
 const GRADES = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWidth: "100%", whiteSpace: "nowrap" as const };
 
-// Nel filtro le sigle secche dicono poco a chi non le conosce. EST resta la
-// sigla: nell'archivio non e' chiaro se indichi l'Estonia o una generica
-// provenienza estera, e inventare un nome preciso su un dato ambiguo
-// darebbe una certezza che non c'e'.
-const NOMI_PAESE: Record<string, string> = {
-  ITA: "Italia", FRA: "Francia", SWE: "Svezia", NOR: "Norvegia",
-  GER: "Germania", CAN: "Canada", USA: "Stati Uniti",
-};
 
 const MODI: { v: string; l: string; sotto: string }[] = [
   { v: "performance", l: "In gara", sotto: "voto dalle corse" },
@@ -102,7 +95,7 @@ function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: st
     <div className="ed-dettaglio" data-testid="scheda-cavallo">
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="ed-etich">{r.sex === "F" ? "Femmina" : r.sex === "M" ? "Maschio" : "Cavallo"} · nato nel {r.birth_year}{r.country ? ` · ${NOMI_PAESE[r.country] ?? r.country}` : ""}</div>
+          <div className="ed-etich">{r.sex === "F" ? "Femmina" : r.sex === "M" ? "Maschio" : "Cavallo"} · nato nel {r.birth_year}{r.country ? ` · ${nomePaese(r.country)}` : ""}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>
             <BandieraCavallo nome={r.name} paese={r.country} />
             <span style={{ fontSize: 20, fontWeight: 800, color: COLORE, overflowWrap: "anywhere" }}>{r.name}</span>
@@ -358,7 +351,7 @@ export default function LeaderboardPage() {
             <span className="ed-etich">Paese</span>
             <select value={paese} onChange={e => setPaese(e.target.value)} style={stileSelect} data-testid="select-paese">
               <option value="">Tutti i paesi</option>
-              {(data?.countries ?? []).map(c => <option key={c} value={c}>{NOMI_PAESE[c] ?? c}</option>)}
+              {ordinaPaesi(data?.countries ?? []).map(c => <option key={c} value={c}>{nomePaese(c)}</option>)}
             </select>
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
