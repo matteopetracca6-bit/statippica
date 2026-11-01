@@ -5208,6 +5208,17 @@ def phase_vp_pedigree(conn: sqlite3.Connection,
 
     harvested = vp.harvest_codes_from_stallions(conn, limit=VP_SIRES_PER_NIGHT)
 
+    # Novembre 2026: ricerca per nome dei cavalli che hanno corso dal 2016 e di
+    # cui manca l'allevamento (serve alla classifica degli allevatori). Pochi
+    # per notte, per cortesia verso la fonte.
+    try:
+        cercati, trovati, con_all = vp.harvest_by_name(
+            conn, limit=int(os.environ.get("VP_NAME_LOOKUPS_PER_NIGHT", "800")))
+        print(f"[VP] Ricerca per nome: {cercati} cercati, {trovati} trovati, "
+              f"{con_all} con allevamento", file=sys.stderr)
+    except Exception as e:  # una fonte che non risponde non deve fermare la notte
+        print(f"[VP] Ricerca per nome: errore {type(e).__name__}: {e}", file=sys.stderr)
+
     pending = conn.execute("""
         SELECT c.horse_name, c.vp_code
         FROM vp_horse_codes c

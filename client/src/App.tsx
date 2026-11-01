@@ -40,6 +40,7 @@ const MarePage = lazy(() => import("./pages/MarePage"));
 const QualifichePage = lazy(() => import("./pages/QualifichePage"));
 const AlberoStalloniPage = lazy(() => import("./pages/AlberoStalloniPage"));
 const ClassificheStalloniPage = lazy(() => import("./pages/ClassificheStalloniPage"));
+const ClassificheAllevatoriPage = lazy(() => import("./pages/ClassificheAllevatoriPage"));
 const ClassificheEtaPage = lazy(() => import("./pages/ClassificheEtaPage"));
 const BreedersPage = lazy(() => import("./pages/BreedersPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
@@ -121,6 +122,8 @@ export default function App() {
               <Route path="/metodo" component={MetodoPage} />
               <Route path="/metodo-e-dati" component={MetodoPage} />
               <Route path="/qualifiche" component={QualifichePage} />
+              <Route path="/allevatori/classifiche" component={ClassificheAllevatoriPage} />
+              <Route path="/allevatori/classifica" component={ClassificheAllevatoriPage} />
               <Route path="/allevatori" component={AllevamentoHubPage} />
               <Route path="/allevatore/:name" component={AllevamentoHubPage} />
               <Route component={NotFound} />

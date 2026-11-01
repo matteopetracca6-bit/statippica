@@ -44,6 +44,8 @@ const PAGINE: { titolo: string; href: string; sotto: string; parole: string }[] 
   { titolo: "Pedigree", href: "/pedigree", sotto: "albero a 5 generazioni", parole: "pedigree genealogia albero consanguineita inbreeding" },
   { titolo: "Calendario", href: "/calendario", sotto: "le prossime corse", parole: "calendario corse programma prossime" },
   { titolo: "Qualifiche", href: "/qualifiche", sotto: "i giovani prima del debutto", parole: "qualifiche qualificati giovani debutto" },
+  { titolo: "Classifica allevatori", href: "/allevatori/classifiche", sotto: "allevamenti per stagione", parole: "classifica allevatori allevamenti stagione vincite vittorie" },
+  { titolo: "Linea materna", href: "/fattrici", sotto: "nella scheda di cavalli e fattrici", parole: "linea materna famiglia madre nonna bisnonna fattrice" },
   { titolo: "Allevamento", href: "/allevamento", sotto: "allevatori e stazioni di monta", parole: "allevamento allevatori stazioni" },
   { titolo: "Guidatori", href: "/guidatori", sotto: "chi fa rendere di piu' i cavalli", parole: "guidatori driver" },
   { titolo: "Allenatori", href: "/allenatori", sotto: "corse, vittorie e premi dal 2016", parole: "allenatori allenatore trainer scuderia" },

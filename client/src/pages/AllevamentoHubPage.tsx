@@ -60,6 +60,7 @@ export default function AllevamentoHubPage() {
       {tab === "allevatori" ? <BreedersPage embedded /> : <StudFarmsPage embedded />}
 
       <CollegamentiCorrelati voci={[
+        { href: "/allevatori/classifiche", titolo: "Classifica allevatori", descrizione: "Gli allevamenti stagione per stagione, per età." },
         { href: "/stalloni", titolo: "Catalogo stalloni", descrizione: "Tutti gli stalloni valutati, con tasse di monta e provenienza." },
         { href: "/fattrici", titolo: "Fattrici", descrizione: "Le fattrici valutate sui loro figli." },
         { href: "/advisor", titolo: "Advisor", descrizione: "Gli stalloni più adatti a una fattrice, con costi e consanguineità." },

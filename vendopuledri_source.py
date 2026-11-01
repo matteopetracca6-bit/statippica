@@ -28,9 +28,10 @@ Indirizzi usati (verificati il 19/09/2026):
   GET /api/v2/cavalli/<codice>                anagrafica + allevatori
   GET /api/v2/cavalli/miglioriFigli/<codice>  figli di uno stallone, con codice
   GET /api/v2/allevatori                      allevatori partner del sito
+  GET /api/v2/cavalli?s=<nome>                ricerca per nome: codice + allevatori
 
-La ricerca per nome (/api/v1/cavalli/cerca) risponde errore 500: il codice di
-un cavallo va quindi ricavato dagli elenchi qui sopra, non cercato.
+La vecchia ricerca per nome (/api/v1/cavalli/cerca) risponde errore 500; quella
+nuova (/api/v2/cavalli?s=) funziona ed e' usata da harvest_by_name (nov. 2026).
 """
 
 from __future__ import annotations
@@ -397,6 +398,71 @@ def harvest_codes_from_stallions(conn: sqlite3.Connection, limit: int = 40) -> i
         (",".join(sorted(x for x in already if x)),))
     conn.commit()
     return found
+
+
+def harvest_by_name(conn: sqlite3.Connection, limit: int = 800, da_anno: int = 2016) -> tuple[int, int, int]:
+    """Cerca per nome i cavalli che hanno corso e di cui non sappiamo codice o allevamento.
+
+    Novembre 2026: la ricerca /api/v2/cavalli?s=<nome> funziona (quella vecchia,
+    /api/v1/cavalli/cerca, risponde ancora errore) e in una sola risposta da'
+    codice e allevamento. Serve alla classifica degli allevatori, che senza
+    allevamento non puo' contare un cavallo, e allarga la rubrica dei codici
+    per le genealogie. Ogni cavallo si cerca al massimo una volta ogni 60
+    giorni; si tiene solo il risultato con lo STESSO nome e, se ce n'e' piu'
+    d'uno, quello con lo stesso padre.
+
+    Ritorna (cercati, trovati, con allevamento).
+    """
+    conn.execute("""CREATE TABLE IF NOT EXISTS vp_name_lookup (
+        horse_name TEXT PRIMARY KEY, day TEXT, found INTEGER)""")
+    oggi = datetime.utcnow().strftime("%Y-%m-%d")
+    daf = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='vp_horse_breeder'").fetchone()
+    if not daf:
+        return (0, 0, 0)
+    pending = conn.execute(f"""
+        SELECT h.name, h.sire FROM horses h
+        JOIN (SELECT horse_name, MAX(race_date) ultima, SUM(prize_net) premi FROM races
+              WHERE race_date >= ? GROUP BY horse_name) r ON r.horse_name = h.name
+        LEFT JOIN vp_horse_breeder b ON b.horse_name = h.name
+        LEFT JOIN vp_name_lookup l ON l.horse_name = h.name
+        WHERE b.horse_name IS NULL
+          AND (l.horse_name IS NULL OR l.day < date('now', '-60 day'))
+        ORDER BY r.ultima DESC, r.premi DESC
+        LIMIT ?
+    """, (f"{da_anno}-01-01", limit)).fetchall()
+
+    cercati = trovati = con_all = 0
+    for name, sire in pending:
+        cercati += 1
+        data = _get("/api/v2/cavalli?" + requests.compat.urlencode({"s": name}), retries=2)
+        res = [x for x in (data or {}).get("results", []) or [] if _clean(x.get("NomeCavallo")) == name] \
+            if isinstance(data, dict) else []
+        if len(res) > 1 and sire:
+            stesso = [x for x in res if _clean(x.get("NomePadre")) == _clean(sire)]
+            res = stesso or []
+        ok = len(res) == 1
+        if ok:
+            x = res[0]
+            trovati += 1
+            if x.get("CodiceCavallo"):
+                remember_code(conn, name, x["CodiceCavallo"], "ricerca")
+            brs = [br for br in (x.get("breeders") or []) if (br.get("Nome") or "").strip()]
+            for br in brs:
+                _save_breeder(conn, br)
+                conn.execute("""
+                    INSERT OR IGNORE INTO vp_horse_breeder (horse_name, breeder_id, breeder_name)
+                    VALUES (?,?,?)
+                """, (name, br.get("id"), br["Nome"].strip()))
+            if brs:
+                con_all += 1
+        conn.execute("INSERT OR REPLACE INTO vp_name_lookup (horse_name, day, found) VALUES (?,?,?)",
+                     (name, oggi, 1 if ok else 0))
+        if cercati % 50 == 0:
+            conn.commit()
+        time.sleep(VP_DELAY)
+    conn.commit()
+    return (cercati, trovati, con_all)
 
 
 # ── Genealogia, incroci, anagrafica, allevatori ─────────────────────────────

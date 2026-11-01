@@ -49,6 +49,8 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Fattrici valutate sui figli: figli di vertice, guadagni medi e carriera della madre" },
     { href: "/allevamento", label: "Allevatori e stazioni di monta", nota: "Chi alleva e dove stanno gli stalloni", icon: Building2, colore: "hsl(20 70% 58%)",
       descrizione: "Allevatori e stazioni di monta in un'unica scheda, con la qualità media della produzione" },
+    { href: "/allevatori/classifiche", label: "Classifica allevatori", nota: "Gli allevamenti stagione per stagione", icon: Medal, colore: "hsl(20 75% 60%)",
+      descrizione: "Gli allevamenti stagione per stagione: cavalli in corsa, vittorie, vincite e media a cavallo, per età" },
     { href: "/advisor", label: "Advisor", nota: "Scegli l'accoppiamento per una fattrice", icon: Sparkles, colore: "hsl(280 60% 60%)",
       descrizione: "Simula accoppiamenti, costi e ritorni, e controlla la consanguineità" },
   ] },

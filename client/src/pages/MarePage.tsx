@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatRecord } from "@/lib/record";
 import { useLocation, useParams, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import LineaMaterna from "../components/LineaMaterna";
 import GradeBadge from "../components/GradeBadge";
 import { Heart } from "lucide-react";
 import IntestazioneScheda from "../components/IntestazioneScheda";
@@ -217,6 +218,11 @@ export default function MarePage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Novembre 2026: madre, nonna e bisnonna della fattrice con i loro figli */}
+      <div style={{ marginTop: 24 }}>
+        <LineaMaterna nome={data.dam} titolo={`La famiglia di ${data.dam}`} />
       </div>
     </div>
   );

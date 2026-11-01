@@ -20,7 +20,8 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/stalloni/classifiche") return percorso.startsWith("/stalloni/classifiche");
   if (href === "/stalloni") return (percorso.startsWith("/stalloni") && !percorso.startsWith("/stalloni/albero") && !percorso.startsWith("/stalloni/classifiche")) || percorso.startsWith("/stallion");
   if (href === "/fattrici") return percorso.startsWith("/fattric");
-  if (href === "/allevamento") return percorso.startsWith("/allevam") || percorso.startsWith("/allevator");
+  if (href === "/allevatori/classifiche") return percorso.startsWith("/allevatori/classific");
+  if (href === "/allevamento") return percorso.startsWith("/allevam") || (percorso.startsWith("/allevator") && !percorso.startsWith("/allevatori/classific"));
   if (href === "/validazione") return percorso.startsWith("/validazione");
   if (href === "/guidatori") return percorso.startsWith("/guidator");
   if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend")

@@ -27,7 +27,8 @@ import { stimaValoreResiduo, stimaDaGradini, type RigaValoreResiduo } from "./ca
 import { valutaScuderia, scuderiaEsempio } from "./scuderia";
 import { affidabilitaVoto } from "./gradeStability";
 import { alberoStalloni, attivitaStallone, NOMI_GENERAZIONE, MIN_FIGLI_ALBERO, ANNO_INIZIO_VOTO } from "./alberoStalloni";
-import { leadersEta, stalloniStagione, figliStalloneStagione, nipotiStalloni, nonnoStallone } from "./classifiche";
+import { leadersEta, stalloniStagione, figliStalloneStagione, nipotiStalloni, nonnoStallone, allevatoriStagione, cavalliAllevatoreStagione } from "./classifiche";
+import { lineaMaterna } from "./lineaMaterna";
 const cacheNonni: { chiave: string; dati: ReturnType<typeof nipotiStalloni> | null } = { chiave: "", dati: null };
 import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
 import { valutaPuledro, mensileDiPareggio, FATTORE_ASTA, tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
@@ -1669,6 +1670,18 @@ export function registerRoutes(httpServer: Server, app: Express) {
   app.get("/api/classifiche/eta", pronta(), classifica(leadersEta, "classifiche-eta"));
   app.get("/api/classifiche/stalloni/figli", pronta(), classifica(figliStalloneStagione, "classifiche-stalloni-figli"));
   app.get("/api/classifiche/stalloni", pronta(), classifica(stalloniStagione, "classifiche-stalloni"));
+  app.get("/api/classifiche/allevatori/cavalli", pronta(), classifica(cavalliAllevatoreStagione, "classifiche-allevatori-cavalli"));
+  app.get("/api/classifiche/allevatori", pronta(), classifica((db, q) => {
+    if (!vpTableExists(db, "vp_horse_breeder")) return { righe: [], anni: [], allevatori: 0, totale_vincite: 0, copertura: { cavalli: 0, cavalli_noti: 0, pct_premi: 0 } };
+    return allevatoriStagione(db, q);
+  }, "classifiche-allevatori"));
+  // Linea materna di un cavallo: madre, nonna e bisnonna con i loro figli.
+  app.get("/api/linea-materna/:name", pronta(), (req, res) => {
+    const db = getDb();
+    try { res.json(lineaMaterna(db, decodeURIComponent(req.params.name))); }
+    catch (e: any) { console.error("[linea-materna]", e); res.status(500).json({ error: "Linea materna non disponibile" }); }
+    finally { db.close(); }
+  });
   app.get("/api/classifiche/nipoti", pronta(), classifica((db, q) => {
     const d = nipotiStalloni(db, q);
     return { ...d, righe: d.righe.slice(0, 150) };

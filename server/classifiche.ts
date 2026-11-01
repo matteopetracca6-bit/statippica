@@ -285,3 +285,108 @@ export function nonnoStallone(db: Database.Database, nome: string, cache: { chia
   if (i < 0) return null;
   return { ...cache.dati.righe[i], posto: i + 1, su: cache.dati.stalloni };
 }
+
+// ── 4. Classifica degli allevatori nella stagione ──────────────────────────
+// Idea vista su VendoPuledri, conti nostri: si prendono i cavalli che hanno
+// corso nella stagione, si sommano corse, vittorie e vincite per allevamento.
+// L'allevamento di un cavallo viene dalla rubrica raccolta da VendoPuledri e
+// non lo conosciamo per tutti: la risposta dice quanta parte dei premi della
+// stagione e' coperta, cosi' la pagina lo puo' scrivere.
+const FASCE_ALLEVATORI: Record<FasciaEta, [number, number]> = {
+  "2": [2, 2], "3": [3, 3], "4": [4, 4], anziani: [5, 14], tutte: [2, 14],
+};
+export const PRIMO_ANNO_ALLEVATORI = 2016;
+
+interface CavalloAllevatore {
+  nome: string; nato: number; sesso: string | null; padre: string | null; madre: string | null;
+  corse: number; vittorie: number; piazzati: number; vincite: number; voto: string | null; allevatore: string | null;
+}
+
+function cavalliStagioneConAllevatore(db: Database.Database, anno: number, eta: FasciaEta, allevatore?: string): CavalloAllevatore[] {
+  const [amin, amax] = FASCE_ALLEVATORI[eta];
+  const soloUno = allevatore ? "AND b.breeder_name = @allevatore" : "";
+  const join = allevatore ? "JOIN" : "LEFT JOIN";
+  return db.prepare(`
+    WITH agg AS (
+      SELECT r.horse_name n, COUNT(*) corse, SUM(r.placement = 1) vitt,
+             SUM(r.placement BETWEEN 2 AND 3) piazz, COALESCE(SUM(r.prize_net), 0) vinc
+      FROM races r WHERE r.race_date BETWEEN @da AND @a GROUP BY r.horse_name)
+    SELECT h.name nome, h.birth_year nato, NULLIF(h.sex, '') sesso, h.sire padre, h.dam madre,
+           a.corse, a.vitt vittorie, a.piazz piazzati, a.vinc vincite, hr.grade voto, b.breeder_name allevatore
+    FROM agg a JOIN horses h ON h.name = a.n
+    ${join} vp_horse_breeder b ON b.horse_name = h.name AND b.breeder_name <> '' ${soloUno}
+    LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year AND hr.rating_mode = 'performance'
+    WHERE h.birth_year BETWEEN @natiDa AND @natiA`)
+    .all({ da: `${anno}-01-01`, a: `${anno}-12-31`, natiDa: anno - amax, natiA: anno - amin, allevatore: allevatore ?? null }) as CavalloAllevatore[];
+}
+
+const annoAllevatori = (db: Database.Database, v: unknown) => {
+  const rif = annoRiferimento(db);
+  return { rif, anno: /^\d{4}$/.test(String(v)) ? Math.min(rif, Math.max(PRIMO_ANNO_ALLEVATORI, Number(v))) : rif };
+};
+
+export function allevatoriStagione(db: Database.Database, q: { anno?: unknown; eta?: unknown; ordine?: unknown }) {
+  const { rif, anno } = annoAllevatori(db, q.anno);
+  const eta = q.eta == null ? "tutte" : fascia(q.eta);
+  const ordine = ["vincite", "vittorie", "media"].includes(String(q.ordine)) ? String(q.ordine) : "vincite";
+  const righe = cavalliStagioneConAllevatore(db, anno, eta);
+
+  // Copertura: quanti cavalli (e quanti premi) hanno un allevamento noto.
+  const visti = new Map<string, { vinc: number; noto: boolean }>();
+  for (const r of righe) {
+    const v = visti.get(r.nome) ?? { vinc: r.vincite || 0, noto: false };
+    if (r.allevatore) v.noto = true;
+    visti.set(r.nome, v);
+  }
+  const tutti = Array.from(visti.values());
+  const premiTot = tutti.reduce((s, v) => s + v.vinc, 0);
+  const premiNoti = tutti.filter(v => v.noto).reduce((s, v) => s + v.vinc, 0);
+
+  const per = new Map<string, CavalloAllevatore[]>();
+  for (const r of righe) {
+    if (!r.allevatore) continue;
+    if (!per.has(r.allevatore)) per.set(r.allevatore, []);
+    per.get(r.allevatore)!.push(r);
+  }
+  const lista = Array.from(per.entries()).map(([nome, cs]) => {
+    const vincite = cs.reduce((s, c) => s + (c.vincite || 0), 0);
+    const corse = cs.reduce((s, c) => s + c.corse, 0);
+    const vittorie = cs.reduce((s, c) => s + c.vittorie, 0);
+    const best = cs.reduce((b, c) => (c.vincite > b.vincite ? c : b), cs[0]);
+    return {
+      nome, cavalli: cs.length, corse, vittorie, piazzati: cs.reduce((s, c) => s + c.piazzati, 0),
+      vincite: Math.round(vincite), media_cavallo: Math.round(vincite / cs.length),
+      pct_vittorie: corse ? Math.round((vittorie / corse) * 1000) / 10 : 0,
+      di_vertice: cs.filter(c => c.voto && VERTICE.has(c.voto)).length,
+      migliore: best.vincite > 0 ? { nome: best.nome, nato: best.nato, vincite: Math.round(best.vincite) } : null,
+    };
+  });
+  // Per la media servono almeno 3 cavalli: con uno solo basta un buon cavallo.
+  const filtrata = ordine === "media" ? lista.filter(r => r.cavalli >= 3) : lista;
+  filtrata.sort(ordine === "vittorie" ? (a, b) => b.vittorie - a.vittorie || b.vincite - a.vincite
+    : ordine === "media" ? (a, b) => b.media_cavallo - a.media_cavallo || b.vincite - a.vincite
+    : (a, b) => b.vincite - a.vincite || b.vittorie - a.vittorie);
+  const anni: number[] = [];
+  for (let y = rif; y >= PRIMO_ANNO_ALLEVATORI; y--) anni.push(y);
+  return {
+    anno, anno_riferimento: rif, eta, ordine, nati: [anno - FASCE_ALLEVATORI[eta][1], anno - FASCE_ALLEVATORI[eta][0]],
+    anni, allevatori: filtrata.length, totale_vincite: filtrata.reduce((s, r) => s + r.vincite, 0),
+    copertura: {
+      cavalli: tutti.length, cavalli_noti: tutti.filter(v => v.noto).length,
+      pct_premi: premiTot ? Math.round((premiNoti / premiTot) * 1000) / 10 : 0,
+    },
+    righe: filtrata.slice(0, 200),
+  };
+}
+
+export function cavalliAllevatoreStagione(db: Database.Database, q: { nome?: unknown; anno?: unknown; eta?: unknown }) {
+  const { anno } = annoAllevatori(db, q.anno);
+  const eta = q.eta == null ? "tutte" : fascia(q.eta);
+  const nome = String(q.nome ?? "").trim();
+  if (!nome) return { anno, cavalli: [] };
+  const cavalli = cavalliStagioneConAllevatore(db, anno, eta, nome)
+    .sort((a, b) => b.vincite - a.vincite || b.vittorie - a.vittorie)
+    .slice(0, 80)
+    .map(({ allevatore: _a, ...c }) => ({ ...c, vincite: Math.round(c.vincite || 0) }));
+  return { anno, cavalli };
+}

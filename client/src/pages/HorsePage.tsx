@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { COLORE_VOTO, COLORE_SCHEDA_VOTO, classeVoto } from "@/lib/coloreVoto";
 import RadarCavallo from "@/components/RadarCavallo";
+import LineaMaterna from "../components/LineaMaterna";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { CoppaGara } from "@/components/CoppaGara";
@@ -1207,6 +1208,12 @@ export default function HorsePage() {
       {/* Consanguineita' dalla seconda fonte: compare solo se l'abbiamo */}
       <InbreedingPanel horseName={horse.name} />
                 </div>
+      </div>
+      {/* Novembre 2026: la famiglia dal lato della madre, a tutta larghezza */}
+      <div className="fascia-scheda">
+        <div className="blocco" style={{ ["--o" as any]: 4 }}>
+          <LineaMaterna nome={horse.name} />
+        </div>
       </div>
       </div>
     </div>
