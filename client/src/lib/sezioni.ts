@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -27,6 +27,8 @@ export const GRUPPI: Gruppo[] = [
     schede: [
     { href: "/leaderboard", label: "Cavalli e classifica", nota: "Tutti i cavalli valutati, con voti e filtri", icon: Trophy, colore: "hsl(51 80% 55%)",
       descrizione: "Tutti i cavalli valutati: cerca per nome o ordina per voto, guadagni e vittorie" },
+    { href: "/classifiche-eta", label: "Classifiche per età", nota: "I migliori 2, 3, 4 anni e anziani", icon: Medal, colore: "hsl(45 85% 58%)",
+      descrizione: "I migliori 2 anni, 3 anni, 4 anni e anziani per vincite, in carriera o in una sola stagione" },
     { href: "/qualifiche", label: "Qualifiche", nota: "Il primo tempo ufficiale dei giovani", icon: Award, colore: "hsl(280 60% 62%)",
       descrizione: "Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" },
     { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(215 80% 62%)",
@@ -41,6 +43,8 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Tutti gli stalloni valutati, con prezzi di monta, allevamenti e provenienza" },
     { href: "/stalloni/albero", label: "Albero degli stalloni", nota: "Papà, nonni, bisnonni: le generazioni", icon: GitBranch, colore: "hsl(120 55% 52%)",
       descrizione: "Gli stalloni divisi per generazione, con anno di nascita, anni in monta e linea paterna" },
+    { href: "/stalloni/classifiche", label: "Classifiche stalloni", nota: "La stagione dei figli e i nipoti", icon: Crown, colore: "hsl(140 50% 50%)",
+      descrizione: "Gli stalloni stagione per stagione: figli in corsa, vincite, tempi, e quanto vincono i nipoti" },
     { href: "/fattrici", label: "Fattrici", nota: "Fattrici valutate sui figli", icon: Heart, colore: "hsl(330 70% 58%)",
       descrizione: "Fattrici valutate sui figli: figli di vertice, guadagni medi e carriera della madre" },
     { href: "/allevamento", label: "Allevatori e stazioni di monta", nota: "Chi alleva e dove stanno gli stalloni", icon: Building2, colore: "hsl(20 70% 58%)",

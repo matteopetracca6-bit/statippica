@@ -73,6 +73,12 @@ interface StallionData {
     generazione: number; nome_generazione: string | null; nell_albero: boolean; voto_confrontabile: boolean;
     posto_generazione: number | null; su_generazione: number | null; per_anno: { anno: number; n: number }[];
   } | null;
+  // Come nonno paterno: i figli dei suoi figli stalloni (server/classifiche.ts).
+  nonno?: {
+    figli_stalloni: number; nipoti: number; nipoti_corsi: number; vincite: number; media_nipote: number; vittorie: number;
+    di_vertice: number; posto: number; su: number;
+    figli: { nome: string; nipoti: number; nipoti_corsi: number; vincite: number }[];
+  } | null;
 }
 
 interface Child {
@@ -314,6 +320,40 @@ function AnniInMonta({ a, nome }: { a: NonNullable<StallionData["attivita"]>; no
   );
 }
 
+/* Come nonno paterno: quanto vincono i figli dei suoi figli stalloni. */
+function ComeNonno({ n, nome }: { n: NonNullable<StallionData["nonno"]>; nome: string }) {
+  const max = Math.max(1, ...n.figli.map(f => f.vincite));
+  const euro = (v: number) => `€ ${Math.round(v).toLocaleString("it-IT")}`;
+  return (
+    <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }} data-testid="come-nonno">
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Come nonno</span>
+        <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
+          {n.posto}° su {n.su} per vincite dei nipoti ·{" "}
+          <Link href={`/stalloni/classifiche?tab=nonni&s=${encodeURIComponent(nome)}`}><a style={{ color: "hsl(120 55% 58%)" }}>classifica completa</a></Link>
+        </span>
+      </div>
+      <div style={{ fontSize: 13, color: "var(--fg, hsl(210 10% 88%))", lineHeight: 1.55, marginBottom: 10 }}>
+        Attraverso {n.figli_stalloni} {n.figli_stalloni === 1 ? "figlio stallone" : "figli stalloni"} ha {n.nipoti_corsi.toLocaleString("it-IT")} nipoti
+        che hanno corso, con {euro(n.vincite)} vinti ({euro(n.media_nipote)} a nipote){n.di_vertice ? ` e ${n.di_vertice} di vertice` : ""}.
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "6px 16px" }}>
+        {n.figli.slice(0, 6).map(f => (
+          <div key={f.nome} style={{ fontSize: 12.5, minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <Link href={`/stallion/${encodeURIComponent(f.nome)}`}><a style={{ color: "hsl(51 80% 62%)", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nome}</a></Link>
+              <span className="tabular" style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>{euro(f.vincite)}</span>
+            </div>
+            <div style={{ height: 4, borderRadius: 2, background: "hsl(220 10% 16%)", marginTop: 4, overflow: "hidden" }}>
+              <div style={{ width: `${(f.vincite / max) * 100}%`, height: "100%", background: "hsl(120 45% 45%)" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Fact({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
     <div style={{ minWidth: wide ? "260px" : "120px", flex: wide ? "1 1 320px" : "0 0 auto" }}>
@@ -512,6 +552,7 @@ export default function StallionPage() {
           )}
 
           {stallion.attivita && stallion.attivita.per_anno.length > 0 && <AnniInMonta a={stallion.attivita} nome={stallion.sire} />}
+          {stallion.nonno && stallion.nonno.nipoti_corsi > 0 && <ComeNonno n={stallion.nonno} nome={stallion.sire} />}
 
           {/* Punto di pareggio della monta */}
           {!stallion.no_offspring_data && <PareggioStallone nome={stallionName.toUpperCase()} />}

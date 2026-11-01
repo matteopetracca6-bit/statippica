@@ -17,7 +17,8 @@ import { GRUPPI, type Scheda } from "@/lib/sezioni";
 function isAttiva(percorso: string, href: string): boolean {
   if (href === "/leaderboard") return percorso.startsWith("/leaderboard") || percorso.startsWith("/cavalli") || percorso.startsWith("/horse");
   if (href === "/stalloni/albero") return percorso.startsWith("/stalloni/albero") || percorso.startsWith("/albero-stalloni");
-  if (href === "/stalloni") return (percorso.startsWith("/stalloni") && !percorso.startsWith("/stalloni/albero")) || percorso.startsWith("/stallion");
+  if (href === "/stalloni/classifiche") return percorso.startsWith("/stalloni/classifiche");
+  if (href === "/stalloni") return (percorso.startsWith("/stalloni") && !percorso.startsWith("/stalloni/albero") && !percorso.startsWith("/stalloni/classifiche")) || percorso.startsWith("/stallion");
   if (href === "/fattrici") return percorso.startsWith("/fattric");
   if (href === "/allevamento") return percorso.startsWith("/allevam") || percorso.startsWith("/allevator");
   if (href === "/validazione") return percorso.startsWith("/validazione");

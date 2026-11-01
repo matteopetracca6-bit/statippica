@@ -27,6 +27,8 @@ import { stimaValoreResiduo, stimaDaGradini, type RigaValoreResiduo } from "./ca
 import { valutaScuderia, scuderiaEsempio } from "./scuderia";
 import { affidabilitaVoto } from "./gradeStability";
 import { alberoStalloni, attivitaStallone, NOMI_GENERAZIONE, MIN_FIGLI_ALBERO, ANNO_INIZIO_VOTO } from "./alberoStalloni";
+import { leadersEta, stalloniStagione, figliStalloneStagione, nipotiStalloni, nonnoStallone } from "./classifiche";
+const cacheNonni: { chiave: string; dati: ReturnType<typeof nipotiStalloni> | null } = { chiave: "", dati: null };
 import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
 import { valutaPuledro, mensileDiPareggio, FATTORE_ASTA, tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
 
@@ -1299,6 +1301,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         } : null,
         // Anno di nascita, periodo in monta e generazione (server/alberoStalloni.ts).
         attivita: (() => { try { return attivitaStallone(db, String(mtimeDb()), name); } catch { return null; } })(),
+        nonno: (() => { try { return nonnoStallone(db, name, cacheNonni, String(mtimeDb())); } catch { return null; } })(),
         // Children, distribution, pedigree
         children,
         gradeDist,
@@ -1656,6 +1659,21 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
   // ── Lista stalloni per dropdown ──────────────────────────────────────────
   // L'albero degli stalloni per generazione (server/alberoStalloni.ts).
+  // Classifiche per eta' e degli stalloni (server/classifiche.ts).
+  const classifica = (fn: (db: any, q: any) => unknown, nome: string) => (req: any, res: any) => {
+    const db = getDb();
+    try { res.json(fn(db, req.query)); }
+    catch (e: any) { console.error(`[${nome}]`, e); res.status(500).json({ error: "Classifica non disponibile" }); }
+    finally { db.close(); }
+  };
+  app.get("/api/classifiche/eta", pronta(), classifica(leadersEta, "classifiche-eta"));
+  app.get("/api/classifiche/stalloni/figli", pronta(), classifica(figliStalloneStagione, "classifiche-stalloni-figli"));
+  app.get("/api/classifiche/stalloni", pronta(), classifica(stalloniStagione, "classifiche-stalloni"));
+  app.get("/api/classifiche/nipoti", pronta(), classifica((db, q) => {
+    const d = nipotiStalloni(db, q);
+    return { ...d, righe: d.righe.slice(0, 150) };
+  }, "classifiche-nipoti"));
+
   app.get("/api/stalloni/albero", pronta(), (_req, res) => {
     const db = getDb();
     try {
