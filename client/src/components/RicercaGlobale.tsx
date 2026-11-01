@@ -34,6 +34,7 @@ const NOMI_GRUPPO = { cavallo: "Cavalli", stallone: "Stalloni", fattrice: "Fattr
 const PAGINE: { titolo: string; href: string; sotto: string; parole: string }[] = [
   { titolo: "Cavalli e classifica", href: "/leaderboard", sotto: "tutti i cavalli valutati", parole: "classifica cavalli voti rating leaderboard" },
   { titolo: "Catalogo stalloni", href: "/stalloni", sotto: "prezzi di monta e confronto", parole: "stalloni catalogo monta prezzo confronto" },
+  { titolo: "Albero degli stalloni", href: "/stalloni/albero", sotto: "papà, nonni, bisnonni", parole: "albero stalloni generazioni papa nonni bisnonni linea paterna" },
   { titolo: "Fattrici", href: "/fattrici", sotto: "valutate sui figli", parole: "fattrici madri" },
   { titolo: "Advisor", href: "/advisor", sotto: "simula un accoppiamento", parole: "advisor accoppiamento incrocio monta simula" },
   { titolo: "Verifica Advisor", href: "/validazione", sotto: "il consiglio di accoppiamento messo alla prova", parole: "verifica validazione prova" },

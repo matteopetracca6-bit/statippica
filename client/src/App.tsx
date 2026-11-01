@@ -38,6 +38,7 @@ const PedigreePage = lazy(() => import("./pages/PedigreePage"));
 const MaresPage = lazy(() => import("./pages/MaresPage"));
 const MarePage = lazy(() => import("./pages/MarePage"));
 const QualifichePage = lazy(() => import("./pages/QualifichePage"));
+const AlberoStalloniPage = lazy(() => import("./pages/AlberoStalloniPage"));
 const BreedersPage = lazy(() => import("./pages/BreedersPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const DriversPage = lazy(() => import("./pages/DriversPage"));
@@ -78,6 +79,8 @@ export default function App() {
               <Route path="/stallioni" component={StallionDirectoryPage} />
               {/* "stalloni" e' la parola giusta: l'indirizzo con la doppia i
                   resta valido per non rompere i link gia' salvati. */}
+              <Route path="/stalloni/albero" component={AlberoStalloniPage} />
+              <Route path="/albero-stalloni" component={AlberoStalloniPage} />
               <Route path="/stalloni" component={StallionDirectoryPage} />
               <Route path="/allevamento" component={AllevamentoHubPage} />
               <Route path="/allevamenti" component={AllevamentoHubPage} />

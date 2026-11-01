@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -39,6 +39,8 @@ export const GRUPPI: Gruppo[] = [
     schede: [
     { href: "/stalloni", label: "Stalloni", nota: "Catalogo, prezzi di monta e confronto", icon: BookOpen, colore: "hsl(120 60% 50%)",
       descrizione: "Tutti gli stalloni valutati, con prezzi di monta, allevamenti e provenienza" },
+    { href: "/stalloni/albero", label: "Albero degli stalloni", nota: "Papà, nonni, bisnonni: le generazioni", icon: GitBranch, colore: "hsl(120 55% 52%)",
+      descrizione: "Gli stalloni divisi per generazione, con anno di nascita, anni in monta e linea paterna" },
     { href: "/fattrici", label: "Fattrici", nota: "Fattrici valutate sui figli", icon: Heart, colore: "hsl(330 70% 58%)",
       descrizione: "Fattrici valutate sui figli: figli di vertice, guadagni medi e carriera della madre" },
     { href: "/allevamento", label: "Allevatori e stazioni di monta", nota: "Chi alleva e dove stanno gli stalloni", icon: Building2, colore: "hsl(20 70% 58%)",

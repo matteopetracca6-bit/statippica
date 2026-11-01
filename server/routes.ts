@@ -26,6 +26,7 @@ import { stimaRivendita } from "./resaleValue";
 import { stimaValoreResiduo, stimaDaGradini, type RigaValoreResiduo } from "./careerValue";
 import { valutaScuderia, scuderiaEsempio } from "./scuderia";
 import { affidabilitaVoto } from "./gradeStability";
+import { alberoStalloni, attivitaStallone, NOMI_GENERAZIONE, MIN_FIGLI_ALBERO, ANNO_INIZIO_VOTO } from "./alberoStalloni";
 import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
 import { valutaPuledro, mensileDiPareggio, FATTORE_ASTA, tabellaVoti, soglie, valutaCavallo, valutaIncrocio, ipotesiCorrenti, valutaVendita, mercatoStalloni, sensibilita } from "./pareggio";
 
@@ -1296,6 +1297,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
           catalog_url:           stud.catalog_url,
           catalog_synced_at:     stud.catalog_synced_at,
         } : null,
+        // Anno di nascita, periodo in monta e generazione (server/alberoStalloni.ts).
+        attivita: (() => { try { return attivitaStallone(db, String(mtimeDb()), name); } catch { return null; } })(),
         // Children, distribution, pedigree
         children,
         gradeDist,
@@ -1652,6 +1655,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // ── Lista stalloni per dropdown ──────────────────────────────────────────
+  // L'albero degli stalloni per generazione (server/alberoStalloni.ts).
+  app.get("/api/stalloni/albero", pronta(), (_req, res) => {
+    const db = getDb();
+    try {
+      const a = alberoStalloni(db, String(mtimeDb()));
+      res.json({
+        ...a, nomi: NOMI_GENERAZIONE, min_figli: MIN_FIGLI_ALBERO, anno_inizio_voto: ANNO_INIZIO_VOTO,
+        stalloni: a.stalloni.filter(s => s.nell_albero),
+      });
+    } catch (e: any) { console.error("[albero]", e); res.status(500).json({ error: "Albero non disponibile" }); }
+    finally { db.close(); }
+  });
+
   app.get("/api/stallions", pronta(), (_req, res) => {
     const db = getDb();
     try {

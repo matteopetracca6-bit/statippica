@@ -1,3 +1,4 @@
+import { periodoMonta } from "@/lib/periodoMonta";
 import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
 import { Spiegazione } from "../components/Spiegazione";
@@ -64,6 +65,14 @@ interface StallionData {
   gradeDist: { grade: string; cnt: number }[];
   pedigree: Pedigree | null;
   nationality?: string | null;
+  // Nascita, anni in monta e generazione (server/alberoStalloni.ts).
+  attivita?: {
+    nato: number | null; figli: number; primo_figlio: number | null; ultimo_figlio: number | null; anno_punta: number | null;
+    monta_dal: number | null; monta_al: number | null; in_monta: boolean; fuori_catalogo_recente: boolean;
+    morto: { data: string | null; fonte: string | null; url: string | null } | null; seme_congelato: boolean;
+    generazione: number; nome_generazione: string | null; nell_albero: boolean; voto_confrontabile: boolean;
+    posto_generazione: number | null; su_generazione: number | null; per_anno: { anno: number; n: number }[];
+  } | null;
 }
 
 interface Child {
@@ -269,6 +278,42 @@ function StallionNavArrow({ direction, neighbor, onClick }: {
   );
 }
 
+/* Gli anni in monta: i figli in archivio nati anno per anno. Dice quando lo
+   stallone e' stato piu' in attivita' e perche' il voto di uno stallone
+   vecchio e' basso (i suoi figli hanno corso prima dell'archivio). */
+function AnniInMonta({ a, nome }: { a: NonNullable<StallionData["attivita"]>; nome: string }) {
+  const da = a.per_anno[0].anno, al = Math.max(a.per_anno[a.per_anno.length - 1].anno, da);
+  const max = Math.max(1, ...a.per_anno.map(p => p.n));
+  const anni = Array.from({ length: al - da + 1 }, (_, i) => da + i);
+  const n = new Map(a.per_anno.map(p => [p.anno, p.n]));
+  const passo = anni.length > 24 ? 5 : anni.length > 12 ? 2 : 1;
+  return (
+    <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }} data-testid="anni-in-monta">
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Anni in monta</span>
+        <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
+          {a.monta_dal != null ? <>in monta {periodoMonta(a)}</> : null}
+          {a.anno_punta ? <> · più figli nati nel {a.anno_punta}</> : null}
+          {a.nome_generazione && a.nell_albero ? <> · <Link href={`/stalloni/albero?s=${encodeURIComponent(nome)}`}><a style={{ color: "hsl(120 55% 58%)" }}>{a.nome_generazione} nell'albero degli stalloni</a></Link></> : null}
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 70 }} aria-label="Figli nati per anno">
+        {anni.map(y => (
+          <div key={y} title={`${y}: ${n.get(y) ?? 0} figli`} style={{ flex: 1, minWidth: 2, height: `${Math.max(n.get(y) ? 4 : 0, ((n.get(y) ?? 0) / max) * 100)}%`, background: y === a.anno_punta ? "hsl(51 90% 62%)" : "hsl(120 45% 45%)", borderRadius: "2px 2px 0 0" }} />
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 2, marginTop: 4 }}>
+        {anni.map(y => <div key={y} className="tabular" style={{ flex: 1, minWidth: 2, fontSize: 10, color: "var(--muted)", textAlign: "center", overflow: "visible", whiteSpace: "nowrap" }}>{(y - da) % passo === 0 ? y : ""}</div>)}
+      </div>
+      <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
+        Figli in archivio nati anno per anno ({a.figli.toLocaleString("it-IT")} in tutto). La monta è l'anno prima della nascita.
+        {!a.voto_confrontabile ? " Il voto conta solo i figli che hanno corso negli anni dell'archivio: per questo stallone sono pochi, quindi il voto dice poco su quanto valeva." : ""}
+        {a.posto_generazione ? ` Nella sua generazione è ${a.posto_generazione}° su ${a.su_generazione} per punteggio.` : ""}
+      </div>
+    </div>
+  );
+}
+
 function Fact({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
     <div style={{ minWidth: wide ? "260px" : "120px", flex: wide ? "1 1 320px" : "0 0 auto" }}>
@@ -381,6 +426,27 @@ export default function StallionPage() {
                     {stallion.final_score != null && <>{st?.stud_farm && <span>·</span>}<span className="tabular">punti {stallion.final_score.toFixed(1).replace(".", ",")}</span></>}
                     {stallion.affidabilita_txt && <><span>·</span><span>affidabilità {stallion.affidabilita_txt}</span></>}
                   </span>
+                  {(() => {
+                    // Anno di nascita e periodo in monta, sempre in vista.
+                    const at = stallion.attivita;
+                    const nato = at?.nato ?? st?.catalog_birth_year ?? null;
+                    if (!nato && !at?.monta_dal) return null;
+                    return (
+                      <span style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2 }} data-testid="stallone-attivita">
+                        {nato ? <span>nato nel {nato}</span> : null}
+                        {at?.monta_dal != null && <>{nato ? <span>·</span> : null}<span>in monta {periodoMonta(at)}</span></>}
+                        {at?.nome_generazione && at.nell_albero && <><span>·</span>
+                          <Link href={`/stalloni/albero?s=${encodeURIComponent(stallion.sire)}`}><a style={{ color: "hsl(120 55% 58%)", textDecoration: "none" }}>generazione: {at.nome_generazione.toLowerCase()}</a></Link></>}
+                      </span>
+                    );
+                  })()}
+                  {stallion.attivita?.morto && (
+                    <span style={{ display: "block", marginTop: 2, color: stallion.attivita.seme_congelato ? "hsl(195 80% 70%)" : undefined }}>
+                      {stallion.attivita.morto.data ? `Morto il ${stallion.attivita.morto.data.slice(8, 10)}/${stallion.attivita.morto.data.slice(5, 7)}/${stallion.attivita.morto.data.slice(0, 4)}` : "Morto"}
+                      {stallion.attivita.seme_congelato ? ": la monta continua con il seme congelato" : ""}
+                      {stallion.attivita.morto.url ? <> (<a href={stallion.attivita.morto.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{stallion.attivita.morto.fonte}</a>)</> : null}
+                    </span>
+                  )}
                   {stallion.pedigree?.sire && (
                     <span style={{ display: "block", marginTop: 2 }}>
                       {stallion.pedigree.sire}{stallion.pedigree.dam ? <> × {stallion.pedigree.dam}</> : null}
@@ -444,6 +510,8 @@ export default function StallionPage() {
               </div>
             </div>
           )}
+
+          {stallion.attivita && stallion.attivita.per_anno.length > 0 && <AnniInMonta a={stallion.attivita} nome={stallion.sire} />}
 
           {/* Punto di pareggio della monta */}
           {!stallion.no_offspring_data && <PareggioStallone nome={stallionName.toUpperCase()} />}
