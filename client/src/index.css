@@ -357,6 +357,7 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
   /* Qualche pixel in piu' di altezza: i riquadri erano un po' schiacciati. */
   border-radius: 14px; padding: 23px 20px;
   text-decoration: none; cursor: pointer;
+  position: relative; overflow: hidden; isolation: isolate;
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
 }
 .riquadro-home-icona {
@@ -367,8 +368,7 @@ isce - la posizione la dice gia' - e la barra passa a riga propria,
 }
 .riquadro-home:hover, .riquadro-home:focus-visible {
   background: hsl(220 12% 12%);
-  border-color: var(--colore-riquadro);
-  box-shadow: 0 0 0 1px var(--colore-riquadro), 0 10px 28px -8px var(--colore-riquadro-alone);
+  box-shadow: 0 10px 28px -8px var(--colore-riquadro-alone);
   transform: translateY(-3px);
   outline: none;
 }
@@ -802,9 +802,9 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
   width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
 }
 .categoria-grande-freccia { transition: transform .2s ease; color: var(--colore-riquadro); }
+.categoria-grande { isolation: isolate; }
 .categoria-grande:hover, .categoria-grande:focus-visible {
-  border-color: var(--colore-riquadro);
-  box-shadow: 0 0 0 1px var(--colore-riquadro), 0 12px 30px -10px var(--colore-riquadro-alone);
+  box-shadow: 0 12px 30px -10px var(--colore-riquadro-alone);
   transform: translateY(-3px); outline: none;
 }
 .categoria-grande.scelta {
@@ -833,6 +833,47 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 @media (prefers-reduced-motion: reduce) {
   .categoria-grande, .categoria-grande:hover { transition: none; transform: none; }
   .categoria-pagine { animation: none; }
+}
+
+/* ── Animazioni delle schede della home (novembre 2026) ─────────────────────
+   Due effetti insieme, sempre nel colore della scheda:
+   1) una luce morbida che segue il cursore dentro la scheda, con il bordo
+      piu' acceso dal lato del cursore (la posizione arriva come --mx/--my);
+   2) al passaggio una linea disegna tutto il contorno in mezzo secondo e la
+      barretta colorata di sinistra si allarga e vela lo sfondo.
+   Gli elementi degli effetti stanno sotto il contenuto e non prendono i clic. */
+.effetti-scheda { position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit; }
+.effetti-scheda ~ * { position: relative; z-index: 1; }
+.effetto-riempimento {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  background: linear-gradient(90deg, var(--colore-riquadro-icona), transparent);
+  transition: width .45s cubic-bezier(.2,.7,.2,1);
+}
+.effetto-luce {
+  position: absolute; inset: 0; opacity: 0; transition: opacity .3s ease;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), var(--colore-riquadro-alone), transparent 65%);
+}
+.effetto-luce-bordo {
+  position: absolute; inset: 0; border-radius: inherit; padding: 1px; opacity: 0; transition: opacity .3s ease;
+  background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), var(--colore-riquadro), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.effetto-contorno { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.effetto-contorno rect {
+  fill: none; stroke: var(--colore-riquadro); stroke-width: 2.5;
+  stroke-dasharray: 100; stroke-dashoffset: 100; opacity: 0;
+  transition: stroke-dashoffset .55s cubic-bezier(.4,0,.2,1), opacity .2s ease;
+}
+:is(.categoria-grande, .riquadro-home):is(:hover, :focus-visible) .effetto-luce,
+:is(.categoria-grande, .riquadro-home):is(:hover, :focus-visible) .effetto-luce-bordo { opacity: 1; }
+:is(.categoria-grande, .riquadro-home):is(:hover, :focus-visible) .effetto-riempimento { width: 100%; }
+:is(.categoria-grande, .riquadro-home):is(:hover, :focus-visible) .effetto-contorno rect,
+.categoria-grande.scelta .effetto-contorno rect { stroke-dashoffset: 0; opacity: 1; }
+/* La barretta di sinistra resta sopra la velatura. */
+.categoria-grande::before { z-index: 2; }
+@media (prefers-reduced-motion: reduce) {
+  .effetto-riempimento, .effetto-luce, .effetto-luce-bordo, .effetto-contorno rect { transition: none; }
 }
 
 /* Dettaglio del pronostico di una corsa: i numeri dietro le percentuali. */

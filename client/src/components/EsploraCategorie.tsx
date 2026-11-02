@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { ChevronDown } from "lucide-react";
 import { GRUPPI, type Gruppo, type Scheda } from "@/lib/sezioni";
+import EffettiScheda, { muoviLuce } from "./EffettiScheda";
 
 const CHIAVE = "statippica.home.categoria";
 
@@ -32,7 +33,8 @@ function RiquadroPagina({ sc }: { sc: Scheda }) {
   const Icon = sc.icon;
   return (
     <Link href={sc.href}>
-      <a className="riquadro-home" style={varsColore(sc.colore)}>
+      <a className="riquadro-home" style={varsColore(sc.colore)} onPointerMove={muoviLuce}>
+        <EffettiScheda raggio={13} />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div className="riquadro-home-icona"><Icon size={18} style={{ color: sc.colore }} /></div>
           <span style={{ fontSize: 14, fontWeight: 700, color: "hsl(210 10% 90%)", letterSpacing: "0.02em" }}>{sc.label}</span>
@@ -48,7 +50,8 @@ function Categoria({ g, scelta, onScegli }: { g: Gruppo; scelta: boolean; onSceg
   return (
     <button type="button" className={`categoria-grande${scelta ? " scelta" : ""}`} style={varsColore(g.colore)}
             role="tab" aria-selected={scelta} aria-controls="pagine-categoria" onClick={onScegli}
-            data-testid={`categoria-${g.nome.toLowerCase()}`}>
+            data-testid={`categoria-${g.nome.toLowerCase()}`} onPointerMove={muoviLuce}>
+      <EffettiScheda raggio={15} />
       <span className="categoria-grande-icona"><Icon size={26} style={{ color: g.colore }} /></span>
       <span className="categoria-grande-nome">{g.nome}</span>
       <span className="categoria-grande-desc">{g.descrizione}</span>
