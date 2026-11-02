@@ -5,6 +5,7 @@
  */
 
 import { useRoute, Link } from "wouter";
+import RottureGaloppo from "@/components/RottureGaloppo";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { MapPin, Users, Timer } from "lucide-react";
@@ -119,6 +120,8 @@ export default function AllenatorePage() {
           </div>
         </>}
       />
+
+      <RottureGaloppo tipo="allenatore" nome={chiave.toUpperCase()} />
 
       <Spiegazione titolo="Come leggere questi numeri" compatta>
         Vittorie e premi dicono soprattutto quali cavalli ha in scuderia questo allenatore.

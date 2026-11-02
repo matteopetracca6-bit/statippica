@@ -31,6 +31,8 @@ interface CalendarEntry {
   win_estimate: number;
   /** Probabilita' di arrivare nei primi tre (modello XGBoost). */
   top3?: { prob: number; affidabile: boolean; n_corse: number; motivi: { testo: string; pro: boolean }[] };
+  /** Rischio di squalifica per galoppo (modello provato sulle corse 2025–2026). */
+  galoppo?: { prob: number; fascia: "basso" | "medio" | "alto"; n_corse: number; rotture: number };
 }
 
 interface RaceEvent {
@@ -46,6 +48,7 @@ interface CalendarResponse {
   total: number;
   note?: string;
   pronostico?: { verificato: boolean; nome: string } | null;
+  galoppo?: { supera: boolean; partenze: number; quota: number; fasce: Record<string, { quota_partenze: number; prevista: number; vera: number }> } | null;
 }
 
 /** Il numero da mostrare: la probabilita' dei primi tre se c'e', altrimenti la stima vecchia. */
@@ -244,6 +247,14 @@ export default function CalendarPage() {
                       )}
                     </div>
 
+                    {data.galoppo?.supera && (
+                      <div className="nota-galoppo">
+                        <span className="chip-galoppo medio" aria-hidden>galoppo</span>
+                        Sotto ogni cavallo, la probabilità che venga squalificato per galoppo. Provata su {data.galoppo.partenze.toLocaleString("it-IT")} partenze
+                        del 2025 e del 2026: dove diceva «alto» ha rotto {conArticolo(Math.round((data.galoppo.fasce.alto?.vera ?? 0) * 100))} dei cavalli,
+                        dove diceva «basso» {conArticolo(Math.round((data.galoppo.fasce.basso?.vera ?? 0) * 100))}. È un rischio, non una certezza: anche fra i cavalli a rischio alto quasi due su tre finiscono la corsa senza squalifica.
+                      </div>
+                    )}
                     {data.pronostico && race.n_runners <= 3 && (
                       <div style={{ padding: "0 20px 8px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>
                         Con {race.n_runners} partenti arrivano tutti nei primi tre, se finiscono la corsa: qui la stima non serve.
@@ -300,6 +311,7 @@ export default function CalendarPage() {
                                 {entry.win_rate != null && entry.win_rate > 0 && <span> · {entry.win_rate.toFixed(0)}% vinte</span>}
                                 {entry.start_pos != null && <span> · numero {entry.start_pos}</span>}
                               </div>
+                              {entry.galoppo && <ChipGaloppo g={entry.galoppo} />}
                               {entry.top3 && entry.top3.motivi.length > 0 && (
                                 <div className="motivi-pronostico">
                                   {entry.top3.motivi.map((m, k) => (
@@ -371,4 +383,24 @@ export default function CalendarPage() {
       )}
     </div>
   );
+}
+
+/** Rischio di galoppo: piccola etichetta colorata sotto il nome del cavallo. */
+function ChipGaloppo({ g }: { g: NonNullable<CalendarEntry["galoppo"]> }) {
+  const titolo = g.n_corse
+    ? `Ha rotto ${g.rotture} volte su ${g.n_corse} corse in archivio`
+    : "Debutto: nessuna corsa in archivio, la stima è più incerta";
+  return (
+    <div style={{ marginTop: 4 }}>
+      <span className={`chip-galoppo ${g.fascia}`} title={titolo}>
+        galoppo {g.prob.toFixed(0)}% · {g.fascia}
+      </span>
+    </div>
+  );
+}
+
+/** "il 37%", "l'8%", "l'11%": l'articolo giusto davanti a una percentuale. */
+function conArticolo(n: number) {
+  const elide = n === 8 || n === 11 || (n >= 80 && n < 90) || n === 1;
+  return `${elide ? "l'" : "il "}${n}%`;
 }

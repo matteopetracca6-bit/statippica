@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import RottureGaloppo from "@/components/RottureGaloppo";
 import BandieraCavallo, { paeseCavallo } from "../components/BandieraCavallo";
 import { PareggioCavallo } from "../components/PareggioScheda";
 import PrevisioniCavallo from "../components/PrevisioniCavallo";
@@ -906,6 +907,7 @@ export default function HorsePage() {
       {(horse.qualifica || (stats?.yearlyStats?.length ?? 0) > 0 || (horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0) && (
           <div className="pannello pannello-unito" style={panelStyle}>
             <QualificaCavallo q={horse.qualifica} />
+            <RottureGaloppo tipo="cavallo" nome={horse.name} />
       {/* Year-by-year breakdown */}
       {stats?.yearlyStats && stats.yearlyStats.length > 0 && (
           <div id="sez-anni" className="sotto-sezione">

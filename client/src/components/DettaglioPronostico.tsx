@@ -34,6 +34,7 @@ type Cavallo = {
   guidatore: string | null; guidatore_corse: number | null; guidatore_top3: number | null;
   distanza?: number | null; metri_in_piu?: number | null; distanza_corse?: number | null; distanza_top3?: number;
   posti?: Record<string, Posto>;
+  galoppo?: { prob: number; fascia: string } | null; rotture?: number; rotture_ult5?: number;
 };
 
 /** "1° su 9", colorato: verde nel primo terzo, rosso nell'ultimo. */
@@ -68,7 +69,7 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
               <table className="tabella-dettaglio">
                 <thead>
                   <tr>
-                    <th>Cavallo</th><th className="num">Stima</th><th>Ultime 5 corse</th><th className="num">Premi ultimo anno</th>
+                    <th>Cavallo</th><th className="num">Stima</th>{d.galoppo_verifica?.supera && <th className="num">Rischio galoppo</th>}<th>Ultime 5 corse</th><th className="num">Premi ultimo anno</th>
                     <th className="num">Miglior tempo</th><th className="num">Primi tre in carriera</th><th>Guidatore di oggi</th>
                     <th className="num">Distanza</th><th className="num">Su questa pista</th><th className="num">Ferma da</th>
                   </tr>
@@ -83,6 +84,12 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
                         </small>
                       </td>
                       <td className="num tabular" style={{ fontWeight: 700, color: "hsl(183 60% 58%)" }}>{c.prob != null ? pct(c.prob) : "—"}</td>
+                      {d.galoppo_verifica?.supera && (
+                        <td className="num tabular">
+                          {c.galoppo ? <span className={`chip-galoppo ${c.galoppo.fascia}`}>{pct(c.galoppo.prob)}</span> : "—"}
+                          {c.corse > 0 && <small style={{ display: "block", color: MUTED, fontSize: 10.5 }}>rotto {c.rotture ?? 0} su {c.corse}{c.ultime.length ? `, ${c.rotture_ult5 ?? 0} nelle ultime ${Math.min(5, c.ultime.length)}` : ""}</small>}
+                        </td>
+                      )}
                       <td>
                         {c.ultime.length ? (
                           <span className="arrivi">
@@ -126,6 +133,9 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
               quanti sono i partenti. «Distanza» è quella del cavallo: nelle corse a handicap chi ha vinto di più parte dietro, con metri in più da fare;
               sotto, i suoi piazzamenti su distanze simili (miglio fino a 1.799 m, media fino a 2.199 m, lunga oltre). La ferratura non entra: la fonte la
               dichiara solo il giorno della corsa, dopo che il pronostico è fatto. Un arrivo in verde è un piazzamento nei primi tre; passa sopra un arrivo per vedere data e pista.
+              «Rischio galoppo» è la probabilità di essere squalificato per galoppo (rottura prolungata o galoppo in arrivo). Viene da un modello a parte:
+              guarda soprattutto quante volte il cavallo ha rotto in carriera e di recente, e un poco numero di partenza, età, distanza, guidatore e allenatore.
+              È stato provato sulle corse del 2025 e del 2026, mai viste, e lo batte la sola storia del cavallo di poco ma con sicurezza. Serve a leggere la corsa, non a scommettere.
             </Spiegazione>
           </div>
         )

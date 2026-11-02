@@ -5385,6 +5385,13 @@ def main():
         phase_driver_stats(conn)        # FASE 3e: rendimento guidatori
         phase_track_stats(conn)         # FASE 3f: schede ippodromi e numeri di partenza
         phase_pronostico_top3(conn)     # FASE 3g: probabilita' dei primi tre per le gare in calendario
+        try:
+            import pronostico_top3 as _pt
+            from rischio_galoppo import phase_rischio_galoppo
+            phase_rischio_galoppo(conn, _pt.ULTIME_VARIABILI)  # FASE 3g-bis: rischio di squalifica per galoppo
+            _pt.ULTIME_VARIABILI = None
+        except Exception as e:
+            print(f"[GALOPPO] errore: {e}", file=sys.stderr)
         phase_stima_premi(conn)  # FASE 3h: premi attesi nei prossimi 12 mesi
         try:
             phase_valore_residuo(conn)  # FASE 3h-bis: quanto puo' ancora guadagnare (dopo la 3h)

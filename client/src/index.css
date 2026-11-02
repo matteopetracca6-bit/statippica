@@ -1325,3 +1325,20 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 }
 @media (min-width: 1180px) { .voto-dettaglio { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 0 28px; }
   .voto-dettaglio .sotto-sezione + .sotto-sezione { margin-top: 0 !important; padding-top: 0 !important; border-top: none !important; padding-left: 24px; border-left: 1px solid hsl(220 10% 16%); } }
+
+/* Rischio di squalifica per galoppo (calendario e dettaglio della corsa) */
+.chip-galoppo { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 5px; padding: 1px 6px; white-space: nowrap; border: 1px solid; }
+.chip-galoppo.basso { color: hsl(150 50% 58%); border-color: hsl(150 40% 32%); background: hsl(150 40% 30% / 0.12); }
+.chip-galoppo.medio { color: hsl(40 70% 62%); border-color: hsl(40 50% 36%); background: hsl(40 50% 30% / 0.12); }
+.chip-galoppo.alto { color: hsl(8 70% 66%); border-color: hsl(8 50% 40%); background: hsl(8 50% 35% / 0.14); }
+.nota-galoppo { padding: 0 20px 10px; font-size: 12px; line-height: 1.55; color: hsl(210 8% 58%); }
+.nota-galoppo .chip-galoppo { margin-right: 6px; }
+.box-rotture { border: 1px solid hsl(220 10% 18%); border-radius: 10px; padding: 12px 14px; margin: 12px 0; background: hsl(220 12% 10%); }
+.box-rotture .titolo { font-size: 12px; font-weight: 600; color: hsl(210 8% 60%); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.box-rotture .cifre { display: flex; flex-wrap: wrap; gap: 18px; }
+.box-rotture .cifra b { display: block; font-size: 20px; font-weight: 700; color: hsl(210 10% 88%); }
+.box-rotture .cifra small { font-size: 11px; color: hsl(210 8% 52%); }
+.box-rotture .esiti { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.box-rotture .esiti span { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; background: hsl(220 10% 15%); color: hsl(210 8% 60%); }
+.box-rotture .esiti span.gal { background: hsl(8 50% 35% / 0.25); color: hsl(8 70% 70%); }
+.box-rotture .nota { font-size: 11.5px; color: hsl(210 8% 52%); margin-top: 8px; line-height: 1.5; }

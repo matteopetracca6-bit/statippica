@@ -40,6 +40,7 @@ CARTELLA = Path(__file__).resolve().parent / "modelli"
 FILE_MODELLO = CARTELLA / "top3_xgb.json"
 FILE_VERIFICA = CARTELLA / "top3_verifica.json"
 NOME_MODELLO = "top3-xgb-v4"
+ULTIME_VARIABILI = None  # righe dell'ultima notte, riusate dal rischio di galoppo
 
 # Ordine fisso delle variabili: il modello le legge per posizione.
 VARIABILI = [
@@ -935,6 +936,10 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
     try:
         verifica = json.loads(FILE_VERIFICA.read_text()) if FILE_VERIFICA.exists() else {}
         df = costruisci_variabili(conn, con_calendario=True)
+        # Le stesse righe servono al rischio di galoppo (rischio_galoppo.py),
+        # che parte subito dopo: cosi' non si ricalcolano.
+        global ULTIME_VARIABILI
+        ULTIME_VARIABILI = df
         fut = df[df["futura"].astype(bool)].copy()
         # Quanti partenti della corsa hanno gia' corse in archivio: serve a
         # non dire "tra i migliori" quando il confronto e' con uno o due.

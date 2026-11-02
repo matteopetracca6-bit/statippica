@@ -3344,6 +3344,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const haP = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pronostico_top3'").get();
       const stime = new Map<string, any>(haP ? (db.prepare(`SELECT horse_name, prob, prob_grezza, n_corse FROM pronostico_top3
                                     WHERE track = ? AND race_date = ? AND race_time = ?`).all(track, data, ora) as any[]).map(r => [r.horse_name, r]) : []);
+      const haG = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rischio_galoppo'").get();
+      const galoppi = new Map<string, any>(haG ? (db.prepare(`SELECT horse_name, prob, fascia FROM rischio_galoppo
+                                    WHERE track = ? AND race_date = ? AND race_time = ?`).all(track, data, ora) as any[]).map(r => [r.horse_name, r]) : []);
       const np = "COALESCE(LOWER(placement_raw), '') NOT IN ('nr', 'n.p.', 'np')";
       const qStoria = db.prepare(`SELECT race_date, track, placement, placement_raw, time_km, prize_net, driver, total_starters, distance
                                     FROM races WHERE horse_name = ? AND race_date < ? AND ${np}
@@ -3367,8 +3370,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
         const guidatore = p.driver ?? null;
         const g = guidatore ? (qGuid.get(guidatore, data) as any) : null;
         const s = stime.get(p.horse_name);
+        const gr = galoppi.get(p.horse_name);
+        const rotte = st.filter(r => ["r.p.", "r.a."].includes(String(r.placement_raw || "").toLowerCase()));
         return {
           nome: p.horse_name, anno: p.birth_year ?? null, partenza: p.start_pos,
+          galoppo: gr ? { prob: Math.round(gr.prob * 1000) / 10, fascia: gr.fascia } : null,
+          rotture: rotte.length, rotture_ult5: ult5.filter(r => ["r.p.", "r.a."].includes(String(r.placement_raw || "").toLowerCase())).length,
           prob: s ? Math.round(s.prob * 1000) / 10 : null,
           prob_grezza: s?.prob_grezza != null ? Math.round(s.prob_grezza * 1000) / 10 : null,
           corse: st.length,
@@ -3402,7 +3409,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       posto("forma", true); posto("premi_anno", true); posto("record", false); posto("carriera_top3", true); posto("guidatore_top3", true);
       cavalli.sort((a: any, b: any) => (b.prob ?? -1) - (a.prob ?? -1));
       const sommaGrezza = cavalli.reduce((a: number, c: any) => a + (c.prob_grezza ?? 0), 0);
-      res.json({ pista, data, ora, partenti: cavalli.length, a_caso: Math.round(Math.min(3, cavalli.length) / cavalli.length * 1000) / 10,
+      res.json({ pista, data, ora, partenti: cavalli.length, galoppo_verifica: haG ? leggiVerificaGaloppo() : null, a_caso: Math.round(Math.min(3, cavalli.length) / cavalli.length * 1000) / 10,
                  somma_grezza: Math.round(sommaGrezza) , cavalli });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
@@ -3426,6 +3433,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       }
 
       const haPronostico = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pronostico_top3'").get();
+      const haGaloppo = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rischio_galoppo'").get();
       const verifica = leggiVerificaTop3();
 
       // Fetch upcoming race events (grouped by track + date)
@@ -3478,6 +3486,18 @@ export function registerRoutes(httpServer: Server, app: Express) {
           });
         }
 
+        // Rischio di squalifica per galoppo (rischio_galoppo.py, ogni notte):
+        // c'e' solo se il modello ha superato la prova.
+        if (haGaloppo) {
+          const rg = db.prepare(`SELECT horse_name, prob, fascia, n_corse, rotture FROM rischio_galoppo
+                                  WHERE track = ? AND race_date = ? AND race_time = ?`).all(ev.track, ev.race_date, ev.race_time) as any[];
+          const perNomeG = new Map(rg.map(r => [r.horse_name, r]));
+          entries.forEach(e => {
+            const r = perNomeG.get(e.horse_name);
+            if (r) e.galoppo = { prob: Math.round(r.prob * 1000) / 10, fascia: r.fascia, n_corse: r.n_corse, rotture: r.rotture };
+          });
+        }
+
         // In cima chi ha piu' probabilita' di arrivare nei primi tre; senza
         // pronostico, l'ordine della stima vecchia.
         entries.sort((a, b) => (b.top3?.prob ?? -1) - (a.top3?.prob ?? -1) || (b.win_estimate || 0) - (a.win_estimate || 0));
@@ -3497,6 +3517,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
           verificato: !!verifica.supera_i_metodi_semplici,
           nome: verifica.nome,
         } : null,
+        galoppo: haGaloppo ? leggiVerificaGaloppo() : null,
       });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
@@ -3794,6 +3815,68 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // LORO media quando li guida lui, corretto per il numero di partenza. Piu'
   // e' negativo, meglio e': il cavallo arriva davanti rispetto al suo solito.
   // ══════════════════════════════════════════════════════════════
+
+  // ──────────────────────────────────────────────
+  // ROTTURE AL GALOPPO (novembre 2026) — solo dati, nessuna previsione.
+  // Quante corse di un cavallo, di un guidatore o di un allenatore sono
+  // finite con una squalifica per galoppo: "r.p." (rottura prolungata) o
+  // "r.a." (galoppo in arrivo). Non partiti esclusi. Il confronto e' con la
+  // media dell'archivio nello stesso periodo.
+  // ──────────────────────────────────────────────
+  const GAL = "LOWER(placement_raw) IN ('r.p.', 'r.a.')";
+  const PARTITO = "COALESCE(LOWER(placement_raw), '') NOT IN ('nr', 'n.p.', 'np')";
+  let mediaGalCache: { mt: number; tutto: number; anno: number } | null = null;
+  app.get("/api/rotture", (req, res) => {
+    assicuraIndici();
+    const db = getDb();
+    try {
+      const tipo = String(req.query.tipo ?? "");
+      let nome = String(req.query.nome ?? "").trim();
+      const col = tipo === "cavallo" ? "horse_name" : tipo === "guidatore" ? "driver" : tipo === "allenatore" ? "trainer" : null;
+      if (!col || !nome) return res.status(400).json({ message: "servono tipo (cavallo, guidatore, allenatore) e nome" });
+      if (tipo !== "guidatore") nome = nome.toUpperCase();
+      const unAnno = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+      const mt = mtimeDb();
+      if (!mediaGalCache || mediaGalCache.mt !== mt) {
+        const t = db.prepare(`SELECT AVG(CASE WHEN ${GAL} THEN 1.0 ELSE 0 END) AS q FROM races WHERE ${PARTITO}`).get() as any;
+        const a = db.prepare(`SELECT AVG(CASE WHEN ${GAL} THEN 1.0 ELSE 0 END) AS q FROM races WHERE ${PARTITO} AND race_date >= ?`).get(unAnno) as any;
+        mediaGalCache = { mt, tutto: t?.q ?? 0, anno: a?.q ?? 0 };
+      }
+      const tot = db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN ${GAL} THEN 1 ELSE 0 END) AS g,
+                                     SUM(CASE WHEN LOWER(placement_raw) = 'r.a.' THEN 1 ELSE 0 END) AS ga
+                                FROM races WHERE ${col} = ? AND ${PARTITO}`).get(nome) as any;
+      const anno = db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN ${GAL} THEN 1 ELSE 0 END) AS g
+                                 FROM races WHERE ${col} = ? AND ${PARTITO} AND race_date >= ?`).get(nome, unAnno) as any;
+      const pct = (g: number, n: number) => n ? Math.round(g / n * 1000) / 10 : null;
+      const out: any = {
+        tipo, nome,
+        corse: tot?.n ?? 0, rotture: tot?.g ?? 0, in_arrivo: tot?.ga ?? 0, quota: pct(tot?.g ?? 0, tot?.n ?? 0),
+        anno_corse: anno?.n ?? 0, anno_rotture: anno?.g ?? 0, anno_quota: pct(anno?.g ?? 0, anno?.n ?? 0),
+        media_archivio: Math.round(mediaGalCache.tutto * 1000) / 10,
+        media_anno: Math.round(mediaGalCache.anno * 1000) / 10,
+      };
+      if (tipo === "cavallo") {
+        const ult = db.prepare(`SELECT race_date, track, placement, placement_raw, driver, shoes FROM races
+                                 WHERE horse_name = ? AND ${PARTITO} ORDER BY race_date DESC LIMIT 10`).all(nome) as any[];
+        out.ultime = ult.map(r => ({ data: r.race_date, pista: r.track, galoppo: ["r.p.", "r.a."].includes(String(r.placement_raw || "").toLowerCase()),
+                                     esito: r.placement != null ? `${r.placement}°` : (esitoInParole(r.placement_raw) ?? r.placement_raw ?? "—") }));
+        // Ferrato o scalzo: quanto rompe in un modo e nell'altro (solo dove la fonte lo dice).
+        const f = db.prepare(`SELECT CASE WHEN UPPER(shoes) IN ('A','AP') THEN 'scalzo davanti' WHEN UPPER(shoes) IN ('F','P') THEN 'ferrato davanti' END AS k,
+                                     COUNT(*) AS n, SUM(CASE WHEN ${GAL} THEN 1 ELSE 0 END) AS g
+                                FROM races WHERE horse_name = ? AND ${PARTITO} AND UPPER(COALESCE(shoes,'')) IN ('A','AP','F','P') GROUP BY k`).all(nome) as any[];
+        out.ferri = f.map(r => ({ come: r.k, corse: r.n, rotture: r.g, quota: pct(r.g, r.n) }));
+      } else {
+        const anni = db.prepare(`SELECT substr(race_date,1,4) AS anno, COUNT(*) AS n, SUM(CASE WHEN ${GAL} THEN 1 ELSE 0 END) AS g
+                                   FROM races WHERE ${col} = ? AND ${PARTITO} GROUP BY anno ORDER BY anno DESC LIMIT 6`).all(nome) as any[];
+        out.per_anno = anni.map(r => ({ anno: r.anno, corse: r.n, rotture: r.g, quota: pct(r.g, r.n) }));
+      }
+      res.json(out);
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally {
+      db.close();
+    }
+  });
 
   app.get("/api/drivers", pronta(), (req, res) => {
     const db = getDb();
@@ -4143,4 +4226,24 @@ function leggiVerificaTop3(): any | null {
     try { _verificaTop3 = JSON.parse(fs.readFileSync(p, "utf-8")); break; } catch { /* prossimo */ }
   }
   return _verificaTop3;
+}
+
+// Prova del rischio di galoppo (modelli/galoppo_verifica.json): solo i numeri
+// che servono al sito per dire come e' stata fatta e com'e' andata.
+let _verificaGaloppo: any | null | undefined;
+function leggiVerificaGaloppo(): any | null {
+  if (_verificaGaloppo !== undefined) return _verificaGaloppo;
+  _verificaGaloppo = null;
+  for (const p of [path.resolve(process.cwd(), "modelli", "galoppo_verifica.json"), path.resolve(process.cwd(), "..", "modelli", "galoppo_verifica.json")]) {
+    try {
+      const v = JSON.parse(fs.readFileSync(p, "utf-8"));
+      _verificaGaloppo = {
+        supera: !!v.supera, partenze: v.partenze_prova, quota: v.quota_galoppo_prova,
+        auc: v.auc_modello, auc_cavallo: v.auc_storia_cavallo, fasce: v.fasce_sito, soglie: v.soglie_fasce,
+        decimi: v.decimi, periodi: v.periodi,
+      };
+      break;
+    } catch { /* prossimo */ }
+  }
+  return _verificaGaloppo;
 }
