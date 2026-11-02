@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { coloreScheda } from "@/lib/sezioni";
 import { formatRecord } from "@/lib/record";
 import { useLocation, useParams, Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -128,7 +129,7 @@ export default function MarePage() {
     <div className="page-shell">
       <IntestazioneScheda
         indietro={{ href: "/fattrici", testo: "Tutte le fattrici" }}
-        icona={Heart} colore="hsl(330 70% 58%)" tipo="Fattrice" titolo={data.dam}
+        icona={Heart} colore={coloreScheda("/fattrici")} tipo="Fattrice" titolo={data.dam}
         accanto={s ? <GradeBadge grade={s.grade} /> : undefined}
         sotto={<>
           {own?.birth_year ? `Nata nel ${own.birth_year}` : "Anno di nascita non disponibile"}
@@ -136,7 +137,7 @@ export default function MarePage() {
           {own?.dam ? ` e di ${own.dam}` : ""}
         </>}
         cifre={s ? <>
-          <Cifra titolo="Voto progenie" valore={s.final_score.toFixed(1).replace(".", ",")} colore="hsl(330 70% 58%)" sotto={`grado ${s.grade}`} />
+          <Cifra titolo="Voto progenie" valore={s.final_score.toFixed(1).replace(".", ",")} colore={coloreScheda("/fattrici")} sotto={`grado ${s.grade}`} />
           <Cifra titolo="Figli valutati" valore={String(s.n_valutati)} sotto={`su ${s.n_figli_totali} citati`} />
           <Cifra titolo="Figli in attività" valore={String(s.n_in_corsa || 0)} sotto="ultimi 6 mesi" />
           <Cifra titolo="Figli di vertice" valore={`${s.n_SSS + s.n_SS + s.n_S}`} colore="hsl(183 80% 55%)" sotto={`${s.pct_top_S?.toFixed(0)}% della progenie`} />

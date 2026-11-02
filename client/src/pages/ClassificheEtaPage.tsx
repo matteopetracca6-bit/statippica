@@ -6,6 +6,7 @@
  * materno e miglior tempo su distanza breve e lunga. Il calcolo e' in
  * server/classifiche.ts e usa solo l'archivio corse di StatIppica.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +20,7 @@ import GradeBadge from "../components/GradeBadge";
 import { tempoKm } from "@/lib/record";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro, nomeBello } from "../components/DueColonne";
 
-const COLORE = "hsl(45 85% 58%)";
+const COLORE = coloreScheda("/classifiche-eta");
 const ORO = "hsl(51 80% 62%)";
 const PAGE = 30;
 

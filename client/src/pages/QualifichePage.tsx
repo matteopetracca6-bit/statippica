@@ -16,6 +16,7 @@
  * I dati arrivano dalla seconda fonte (VendoPuledri) e vengono aggiornati
  * dalla fase 2f della pipeline notturna.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -30,7 +31,7 @@ import NomePista from "@/components/NomePista";
 import { tempoKm, formatRecord } from "@/lib/record";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
 
-const COLORE = "hsl(280 60% 62%)";
+const COLORE = coloreScheda("/qualifiche");
 const VERDE = "hsl(150 60% 52%)";
 const PAGE = 30;
 
@@ -158,7 +159,7 @@ function SchedaProva({ r, stats, onClose, vaiPadre }: { r: QualRow; stats?: Qual
             </a>
           </Link>
         ) : (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "hsl(280 60% 75%)" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: COLORE }}>
             <Sparkles size={13} /> Non ha ancora corso: non c'è ancora una scheda nell'archivio corse.
           </span>
         )}
@@ -258,7 +259,7 @@ function Prove({ stats, vaiPadre }: { stats?: QualStats | null; vaiPadre: (s: st
                         <span className="ed-nome" style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{r.horse_name}</span>
                           {r.grade && <GradeBadge grade={r.grade} />}
-                          {!r.known_name && <span title="Non ha ancora corso" style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "hsl(280 60% 75%)", flexShrink: 0 }}><Sparkles size={10} />NUOVO</span>}
+                          {!r.known_name && <span title="Non ha ancora corso" style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: COLORE, flexShrink: 0 }}><Sparkles size={10} />NUOVO</span>}
                         </span>
                         <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={forza(r.time_km)} max={1} colore={COLORE} /></span>
                         <span className="ed-sotto" style={{ display: "block" }}>
@@ -404,7 +405,7 @@ export default function QualifichePage() {
       {stats && (
         <div className="ed-cifre" style={{ marginBottom: 16 }}>
           <Cifra titolo="Prove" valore={num(stats.n_prove)} sotto={`dal ${itDate(stats.dal)} al ${itDate(stats.al)}`} />
-          <Cifra titolo="Non hanno ancora corso" valore={num(stats.n_nuovi)} colore="hsl(280 60% 75%)" sotto={`su ${num(stats.n_cavalli)} cavalli`} />
+          <Cifra titolo="Non hanno ancora corso" valore={num(stats.n_nuovi)} colore={COLORE} sotto={`su ${num(stats.n_cavalli)} cavalli`} />
           <Cifra titolo="Tempo medio" valore={stats.tempo_medio != null ? tempoKm(stats.tempo_medio) : "—"} sotto="al km" />
           <Cifra titolo="Miglior tempo" valore={stats.tempo_migliore != null ? tempoKm(stats.tempo_migliore) : "—"} colore={COLORE} sotto={`${num(stats.n_stalloni)} stalloni padri`} />
         </div>

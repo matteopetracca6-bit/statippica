@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { coloreScheda } from "@/lib/sezioni";
 import { useRoute } from "wouter";
 import BreedersPage from "./BreedersPage";
 import StudFarmsPage from "./StudFarmsPage";
@@ -21,7 +22,7 @@ import { CSS_DUE_COLONNE } from "../components/DueColonne";
  */
 
 type Tab = "allevatori" | "stazioni";
-const COLORE = "hsl(20 70% 58%)";
+const COLORE = coloreScheda("/allevamento");
 
 export default function AllevamentoHubPage() {
   const [isFarms] = useRoute("/allevamenti");

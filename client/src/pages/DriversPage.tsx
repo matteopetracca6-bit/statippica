@@ -15,6 +15,7 @@
  * Layout a due colonne come le altre pagine rifatte: elenco a sinistra, scheda
  * del guidatore scelto a destra (sul telefono sotto la riga).
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -30,7 +31,7 @@ import { CSS_DUE_COLONNE, Cifra, Barretta, BarraCentro, coloreEffetto, posizioni
 
 const nomePista = (t: string) => nomeBello(sigla(t));
 
-const COLORE = "hsl(200 70% 58%)";
+const COLORE = coloreScheda("/guidatori");
 const PASSO = 50;
 
 interface Driver {

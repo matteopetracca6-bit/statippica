@@ -11,6 +11,7 @@
  * Gli indirizzi vecchi aprono la linguetta giusta: /ippodromi e /piste le
  * piste, /trend i trend, /gran-premi /albo-doro /palmares i Gran Premi.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -28,7 +29,7 @@ import { tempoKm } from "@/lib/record";
 import TrendsPage from "./TrendsPage";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro } from "../components/DueColonne";
 
-const COLORE = "hsl(95 55% 52%)";
+const COLORE = coloreScheda("/ippodromi");
 const ORO = "hsl(45 90% 58%)";
 
 type Tab = "piste" | "granpremi" | "trend";

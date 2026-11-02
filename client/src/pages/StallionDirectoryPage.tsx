@@ -1,4 +1,5 @@
 import { nomePaese, ordinaPaesi } from "@/lib/flags";
+import { coloreScheda } from "@/lib/sezioni";
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -52,7 +53,7 @@ const STATUS_COLORS: Record<string, string> = {
   non_in_catalogo: "hsl(210 8% 45%)",
 };
 
-const COLORE = "hsl(120 60% 50%)";
+const COLORE = coloreScheda("/stalloni");
 const PASSO = 50;
 const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWidth: "100%", whiteSpace: "nowrap" as const };
 const stileSelect: React.CSSProperties = {

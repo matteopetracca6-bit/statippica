@@ -11,6 +11,7 @@
  * Layout a due colonne come le altre pagine rifatte: elenco a sinistra,
  * scheda a destra (sotto la riga su telefono).
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +28,7 @@ import { testoProb } from "@/lib/probCopre";
 import BandieraCavallo from "@/components/BandieraCavallo";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
 
-const COLORE = "hsl(145 55% 52%)";
+const COLORE = coloreScheda("/tenere");
 const euro = (n: number | null | undefined) => n == null ? "—" : (n < 0 ? "−" : "") + "€ " + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const titolo = (s: string) => s.split(" ").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
 const ETICHETTA: Record<string, string> = { profitto: "In utile", pareggio: "In pari", perdita: "In perdita" };

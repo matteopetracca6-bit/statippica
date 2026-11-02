@@ -11,6 +11,7 @@
  * di addestramento: nessun valore e' scritto a mano in questa pagina.
  */
 
+import { coloreScheda } from "@/lib/sezioni";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import CavalloCaricamento from "../components/CavalloCaricamento";
@@ -25,7 +26,7 @@ const DIM = "hsl(210 8% 35%)";
 const TEXT = "hsl(210 10% 78%)";
 const BORDER = "1px solid hsl(220 10% 14%)";
 const PANEL = "hsl(220 12% 8%)";
-const CYAN = "hsl(183 80% 55%)";
+const CYAN = coloreScheda("/validazione");
 
 interface ModelRow {
   label: string; spearman: number; pearson: number;

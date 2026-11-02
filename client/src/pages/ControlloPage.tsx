@@ -8,6 +8,7 @@
  * puledri dell'asta 2024, e si guarda il risultato vero. I numeri vengono da
  * uno script che si rilancia a mano: non è un conto notturno.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import React from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +22,7 @@ import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { ESITO_COLORE } from "@/lib/esiti";
 import BandieraCavallo from "@/components/BandieraCavallo";
 
-const COLORE = "hsl(265 45% 68%)";
+const COLORE = coloreScheda("/controllo");
 const MUTED = "hsl(210 8% 55%)";
 const TESTO = "hsl(210 10% 90%)";
 const ORO = "hsl(45 85% 58%)";
@@ -110,7 +111,7 @@ export default function ControlloPage() {
     <div className="page-shell" style={{ maxWidth: 1240 }}>
       {intestazione}
 
-      <div className="pannello" style={{ ...CARD, borderColor: "hsl(265 45% 68% / 0.45)", fontSize: 13.5, lineHeight: 1.65, color: "hsl(210 10% 86%)" }}>
+      <div className="pannello" style={{ ...CARD, borderColor: COLORE.replace(")", " / 0.45)"), fontSize: 13.5, lineHeight: 1.65, color: "hsl(210 10% 86%)" }}>
         <b style={{ color: COLORE }}>In breve.</b> Sui cavalli già in corsa le stime reggono: dei cavalli dati «in perdita» solo {pct(perdita.hanno_coperto)} ha poi coperto
         la spesa, e il totale dei premi stimati ({milioni(t.premi_totali_stimati)}) è vicino a quello vero ({milioni(t.premi_totali_veri)}).
         Anche il rischio della scuderia è misurato bene. Sui puledri dell'asta invece la stima azzecca il totale ma non sa dire quali andranno meglio:

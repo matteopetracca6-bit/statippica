@@ -10,6 +10,7 @@ import { colorePista } from "@/lib/piste";
  * questo va prima di tutto il resto.
  */
 
+import { coloreScheda } from "@/lib/sezioni";
 import { useState, useMemo } from "react";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { Link } from "wouter";
@@ -97,7 +98,7 @@ export default function TracksPage() {
 
   return (
     <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "22px 18px 60px" }}>
-      <IntestazionePagina icona={MapPin} colore="hsl(183 75% 55%)" titolo="Ippodromi" margineSotto={22}
+      <IntestazionePagina icona={MapPin} colore={coloreScheda("/ippodromi")} titolo="Ippodromi" margineSotto={22}
         sottotitolo={<>Le {data.n} piste italiane presenti nell'archivio, e quanto pesa il numero di partenza su ciascuna.</>} />
 
       {/* IL NUMERO DI PARTENZA: prima di tutto, perche' e' il dato piu' netto. */}

@@ -9,6 +9,7 @@ import { nomePaese, ordinaPaesi } from "@/lib/flags";
  * I filtri meno usati stanno in un pannello che si apre, per non coprire la
  * classifica con dieci menu a tendina.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -55,7 +56,7 @@ interface LeaderboardData {
   countries?: string[];
 }
 
-const COLORE = "hsl(51 80% 55%)";
+const COLORE = coloreScheda("/leaderboard");
 const GRADES = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
 const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWidth: "100%", whiteSpace: "nowrap" as const };
 

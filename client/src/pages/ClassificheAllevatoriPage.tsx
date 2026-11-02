@@ -8,6 +8,7 @@
  * StatIppica (server/classifiche.ts). L'allevamento non e' noto per tutti i
  * cavalli: la pagina scrive quanta parte dei premi della stagione e' coperta.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +21,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import GradeBadge from "../components/GradeBadge";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro } from "../components/DueColonne";
 
-const COLORE = "hsl(20 75% 60%)";
+const COLORE = coloreScheda("/allevatori/classifiche");
 const VERDE = "hsl(120 55% 52%)";
 const PAGE = 30;
 const sel: React.CSSProperties = { padding: "8px 10px", borderRadius: 9, border: "1px solid var(--ed-bordo)", background: "var(--ed-fondo)", color: "var(--ed-testo)", fontSize: 12.5, fontFamily: "inherit" };

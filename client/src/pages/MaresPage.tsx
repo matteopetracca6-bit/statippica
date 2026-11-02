@@ -10,6 +10,7 @@ import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
  * Layout a due colonne come le altre pagine rifatte: elenco a sinistra,
  * scheda della fattrice a destra con i figli uno per uno.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -23,7 +24,7 @@ import GradeBadge from "../components/GradeBadge";
 import { formatRecord } from "@/lib/record";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro } from "../components/DueColonne";
 
-const COLORE = "hsl(330 70% 58%)";
+const COLORE = coloreScheda("/fattrici");
 const PAGE = 30;
 // Su telefono i gruppi di bottoni lunghi scorrono di lato invece di andare a capo.
 const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWidth: "100%", whiteSpace: "nowrap" as const };

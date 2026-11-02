@@ -13,6 +13,7 @@
  * Gli indirizzi vecchi (/generazione-m, /aste, /prezzo-massimo, /vendere)
  * aprono la linguetta giusta.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -28,7 +29,7 @@ import AggiungiScuderia from "../components/AggiungiScuderia";
 import { useScuderia } from "@/lib/scuderia";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, nomeBello as titolo } from "../components/DueColonne";
 
-const COLORE = "hsl(25 75% 58%)";
+const COLORE = coloreScheda("/puledro");
 const VERDE = "hsl(145 55% 52%)";
 const ROSSO = "hsl(0 60% 62%)";
 const ORO = "hsl(45 85% 60%)";

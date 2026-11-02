@@ -8,6 +8,7 @@
  *
  * Indirizzo con i cavalli gia' scelti: #/compare?a=NOME__ANNO&b=NOME__ANNO
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,7 +20,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { formatRecord } from "@/lib/record";
 
-const BLU = "hsl(215 80% 62%)";
+const BLU = coloreScheda("/compare");
 const A = "hsl(222 85% 60%)";
 const B = "hsl(195 90% 62%)";
 const TESTO = "hsl(210 10% 90%)";

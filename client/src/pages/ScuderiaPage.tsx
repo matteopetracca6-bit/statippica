@@ -3,6 +3,7 @@
  * prossimi 12 mesi simulata, il rischio della scuderia intera e il valore
  * di carriera. I conti sono in server/scuderia.ts; l'elenco sta nel browser.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +23,7 @@ const TESTO = "hsl(210 10% 90%)";
 const VERDE = "hsl(145 55% 52%)";
 const ROSSO = "hsl(0 60% 62%)";
 const ORO = "hsl(38 80% 58%)";
-const ACCENTO = "hsl(190 65% 52%)";
+const ACCENTO = coloreScheda("/scuderia");
 const CARD: React.CSSProperties = { padding: "16px 18px" };
 const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−€" : "€") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
 const pc = (p: number | null | undefined) => (p == null ? "—" : p > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`);

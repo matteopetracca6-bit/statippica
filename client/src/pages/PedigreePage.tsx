@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { coloreScheda } from "@/lib/sezioni";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
@@ -8,7 +9,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import { Dna, Network } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
 
-const COLORE_PED = "hsl(220 60% 60%)";
+const COLORE_PED = coloreScheda("/pedigree");
 import NameSelect from "../components/NameSelect";
 import InbreedingPanel from "../components/InbreedingPanel";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";

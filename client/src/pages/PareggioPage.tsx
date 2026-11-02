@@ -15,6 +15,7 @@
  * Tutti i conti stanno sul server (server/pareggio.ts): qui si scelgono le
  * ipotesi e si leggono i risultati.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import Sagoma from "../components/Sagoma";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -136,7 +137,7 @@ export default function PareggioPage() {
 
   return (
     <div className="page-shell">
-      <IntestazionePagina icona={Scale} colore="hsl(160 60% 50%)" titolo="Punto di pareggio" margineSotto={20}
+      <IntestazionePagina icona={Scale} colore={coloreScheda("/pareggio")} titolo="Punto di pareggio" margineSotto={20}
         sottotitolo="Quanto deve vincere un cavallo per ripagare quello che costa, e quali voti ci arrivano davvero.">
         I conti usano la carriera reale di {ip.cavalli_osservati.toLocaleString("it-IT")} cavalli nati
         fra il {ip.annate[0]} e il {ip.annate[1]}, che hanno corso almeno una volta e hanno ormai una

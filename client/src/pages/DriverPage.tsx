@@ -6,6 +6,7 @@ import NomePista from "@/components/NomePista";
  * anni, le piste su cui gira e i cavalli che guida piu' spesso.
  */
 
+import { coloreScheda } from "@/lib/sezioni";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -63,7 +64,7 @@ export default function DriverPage() {
     <div className="page-shell">
       <IntestazioneScheda
         indietro={{ href: "/guidatori", testo: "Tutti i guidatori" }}
-        icona={Users} colore="hsl(200 70% 58%)" tipo="Guidatore" titolo={d.driver}
+        icona={Users} colore={coloreScheda("/guidatori")} tipo="Guidatore" titolo={d.driver}
         accanto={d.attivo
           ? <span style={{ fontSize: 11, fontWeight: 700, color: "hsl(100 55% 55%)", border: "1px solid hsl(100 55% 55% / .45)", borderRadius: 999, padding: "1px 8px" }}>in attività</span>
           : <span style={{ fontSize: 11, fontWeight: 700, color: DIM, border: `1px solid ${DIM}`, borderRadius: 999, padding: "1px 8px" }}>non recente</span>}

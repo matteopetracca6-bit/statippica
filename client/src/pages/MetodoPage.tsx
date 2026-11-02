@@ -11,6 +11,7 @@
  * codice che calcola i voti: se cambia uno, va cambiato anche qui.
  */
 
+import { coloreScheda } from "@/lib/sezioni";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -97,7 +98,7 @@ export default function MetodoPage() {
         .testo-metodo th { color: hsl(210 8% 45%); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
       `}</style>
 
-      <IntestazionePagina icona={BookMarked} colore="hsl(40 40% 72%)" titolo="Metodo e dati" margineSotto={20}
+      <IntestazionePagina icona={BookMarked} colore={coloreScheda("/metodo")} titolo="Metodo e dati" margineSotto={20}
         sottotitolo="Da dove vengono i numeri del sito, come si calcola ogni voto e cosa non se ne può concludere. Apri la sezione che ti serve." />
 
       {/* STATO DAL VIVO */}

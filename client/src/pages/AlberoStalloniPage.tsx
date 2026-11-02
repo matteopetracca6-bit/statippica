@@ -14,6 +14,7 @@
  * Toccando uno stallone si vede la sua linea paterna: il padre, il nonno e
  * cosi' via verso l'alto, e i figli stalloni verso il basso.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +26,7 @@ import GradeBadge from "../components/GradeBadge";
 import { CSS_DUE_COLONNE, Cifra, num } from "../components/DueColonne";
 import { periodoMonta } from "@/lib/periodoMonta";
 
-const COLORE = "hsl(120 55% 52%)";
+const COLORE = coloreScheda("/stalloni/albero");
 const COLORI_GEN = ["hsl(120 55% 52%)", "hsl(183 65% 55%)", "hsl(210 70% 65%)", "hsl(265 55% 68%)", "hsl(35 70% 60%)"];
 const DESCRIZIONE_GEN = [
   "In monta nella stagione di adesso, anche chi è morto ma ha ancora il seme congelato.",

@@ -13,6 +13,7 @@
  *
  * Layout a due colonne come Guidatori: elenco a sinistra, scheda a destra.
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +27,7 @@ import GradeBadge from "../components/GradeBadge";
 import { colorePista, nomePista as sigla } from "@/lib/piste";
 import { CSS_DUE_COLONNE, Cifra, Barretta, BarraCentro, coloreEffetto as coloreEff, posizioni, useDesktop, num, nomeBello } from "../components/DueColonne";
 
-export const COLORE_ALLENATORI = "hsl(28 85% 60%)";
+export const COLORE_ALLENATORI = coloreScheda("/allenatori");
 const COLORE = COLORE_ALLENATORI;
 const DIM = "hsl(210 8% 40%)";
 const PASSO = 50;

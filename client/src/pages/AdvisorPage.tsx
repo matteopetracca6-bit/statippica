@@ -18,6 +18,7 @@ import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
  * campo arrivava con un nome diverso da quello atteso, perche' chiamava
  * `.toFixed` su un valore che non c'era. Qui un dato mancante diventa "—".
  */
+import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -59,7 +60,7 @@ const C = {
   muto: "hsl(210 8% 52%)",
   fioco: "hsl(210 8% 38%)",
   bordo: "hsl(220 10% 16%)",
-  viola: "hsl(280 60% 62%)",
+  viola: coloreScheda("/advisor"),
 };
 // Colori ufficiali dei voti (SSS oro, SS argento, S bronzo...), uguali in tutto il sito.
 const GRADE_COLORS: Record<string, string> = COLORE_SCHEDA_VOTO;

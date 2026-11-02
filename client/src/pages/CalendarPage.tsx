@@ -1,4 +1,5 @@
 import { colorePista, colorePistaTenue } from "@/lib/piste";
+import { coloreScheda } from "@/lib/sezioni";
 import { useState, useEffect } from "react";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
@@ -100,14 +101,14 @@ export default function CalendarPage() {
   const raceKey = (r: RaceEvent) => `${r.track}-${r.race_date}-${r.race_time}`;
 
   return (
-    <div className="page-shell ed" style={{ ["--ed-acc" as any]: "hsl(0 60% 58%)" }}>
+    <div className="page-shell ed" style={{ ["--ed-acc" as any]: coloreScheda("/calendario") }}>
       <style>{CSS_DUE_COLONNE}</style>
-      <IntestazionePagina icona={Calendar} colore="hsl(0 60% 58%)" titolo="Calendario gare" margineSotto={16}
+      <IntestazionePagina icona={Calendar} colore={coloreScheda("/calendario")} titolo="Calendario gare" margineSotto={16}
         sottotitolo="Le prossime corse con gli iscritti e il loro voto, e come è andato il pronostico delle gare già corse." />
 
       {data && data.total > 0 && scheda === "prossime" && (
         <div className="ed-cifre" style={{ marginBottom: 16 }}>
-          <Cifra titolo="Corse in programma" valore={data.total.toLocaleString("it-IT")} colore="hsl(0 60% 62%)" />
+          <Cifra titolo="Corse in programma" valore={data.total.toLocaleString("it-IT")} colore={coloreScheda("/calendario")} />
           <Cifra titolo="Partenti" valore={data.races.reduce((t, r) => t + r.n_runners, 0).toLocaleString("it-IT")} />
           <Cifra titolo="Ippodromi" valore={new Set(data.races.map(r => r.track)).size} />
         </div>
