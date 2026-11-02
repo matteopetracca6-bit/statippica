@@ -771,7 +771,7 @@ export default function HorsePage() {
             </div>
           )}
           <div className="in-breve-parte">
-            <div className="in-breve-titolo">I soldi</div>
+            <div className="in-breve-titolo">Guadagni</div>
             <RigaSoldi horse={horse} />
           </div>
         </div>
