@@ -2,7 +2,7 @@
  * La pagina iniziale per categorie.
  *
  * Prima c'erano sedici riquadri tutti uguali in fila: per trovare "quanto vale
- * un puledro" bisognava leggerli tutti. Ora ci sono le cinque categorie del
+ * un puledro" bisognava leggerli tutti. Ora ci sono le sei categorie del
  * menu, grandi e colorate; se ne sceglie una e sotto compaiono le sue pagine,
  * ognuna col suo colore di sempre. La scelta resta finche' la scheda del
  * browser e' aperta, cosi' tornando indietro si ritrova la categoria aperta.
@@ -72,7 +72,7 @@ export default function EsploraCategorie() {
 
   useEffect(() => {
     try { scelta ? sessionStorage.setItem(CHIAVE, scelta) : sessionStorage.removeItem(CHIAVE); } catch { /* niente */ }
-    // Sul telefono le pagine compaiono sotto le cinque categorie, fuori
+    // Sul telefono le pagine compaiono sotto le sei categorie, fuori
     // dallo schermo: ci si porta li', ma solo dopo un tocco.
     if (scelta && appenaScelta.current && pannello.current) {
       const r = pannello.current.getBoundingClientRect();

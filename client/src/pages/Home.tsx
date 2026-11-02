@@ -138,7 +138,7 @@ export default function Home() {
       </div>
 
       {/* ─── NUMERI DELL'ARCHIVIO ───
-          Stesso aspetto delle cinque categorie qui sopra: riga di colore a
+          Stesso aspetto delle sei categorie qui sopra: riga di colore a
           sinistra, velatura nell'angolo, e al passaggio si sollevano. Ognuno
           apre la pagina dove quei numeri si vedono per esteso. */}
       <div className="page-shell">

@@ -21,9 +21,13 @@ export type Scheda = {
 };
 export type Gruppo = { nome: string; descrizione: string; icon: typeof Trophy; colore: string; schede: Scheda[] };
 
+// Novembre 2026: da cinque a sei gruppi. Gli stalloni, che avevano ormai
+// quattro pagine, hanno un gruppo loro; Allevamento tiene fattrici,
+// allevatori e la scelta dell'accoppiamento. L'ordine e' quello d'uso:
+// prima cavalli e corse, poi l'allevamento, poi i conti e infine il metodo.
 export const GRUPPI: Gruppo[] = [
   { nome: "Cavalli", icon: Trophy, colore: "hsl(51 80% 55%)",
-    descrizione: "Voti, classifiche, primi tempi dei giovani, confronti e genealogia",
+    descrizione: "Voti, classifiche per età, primi tempi dei giovani e confronti",
     schede: [
     { href: "/leaderboard", label: "Cavalli e classifica", nota: "Tutti i cavalli valutati, con voti e filtri", icon: Trophy, colore: "hsl(51 80% 55%)",
       descrizione: "Tutti i cavalli valutati: cerca per nome o ordina per voto, guadagni e vittorie" },
@@ -33,18 +37,34 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" },
     { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(215 80% 62%)",
       descrizione: "Confronta due cavalli su statistiche, carriera e genealogia" },
-    { href: "/pedigree", label: "Pedigree", nota: "Albero genealogico fino a 5 generazioni", icon: Network, colore: "hsl(220 60% 60%)",
-      descrizione: "Albero genealogico fino a 5 generazioni, con consanguineità e incroci ripetuti" },
   ] },
-  { nome: "Allevamento", icon: Building2, colore: "hsl(120 60% 50%)",
-    descrizione: "Stalloni, fattrici, allevatori e la scelta dell'accoppiamento",
+  { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)",
+    descrizione: "Calendario con i pronostici, piste italiane, guidatori e allenatori",
     schede: [
-    { href: "/stalloni", label: "Stalloni", nota: "Catalogo, prezzi di monta e confronto", icon: BookOpen, colore: "hsl(120 60% 50%)",
+    { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)",
+      descrizione: "Prossime gare con iscritti, voti e probabilità di arrivare nei primi tre" },
+    { href: "/ippodromi", label: "Ippodromi e Gran Premi", nota: "Piste, albo d'oro delle grandi corse e trend", icon: MapPin, colore: "hsl(95 55% 52%)",
+      descrizione: "Le piste italiane, quanto pesa il numero di partenza, i vincitori dei Gran Premi dal 2014 e come cambiano i numeri negli anni" },
+    { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(200 70% 58%)",
+      descrizione: "Chi porta i cavalli a rendere più del loro solito, a parità di cavallo e di partenza" },
+    { href: "/allenatori", label: "Allenatori", nota: "Corse, vittorie, premi e cavalli dal 2016", icon: Timer, colore: "hsl(28 85% 60%)",
+      descrizione: "Chi allena i cavalli: corse, vittorie, premi, scuderia e Gran Premi vinti dal 2016" },
+  ] },
+  { nome: "Stalloni", icon: Crown, colore: "hsl(120 60% 50%)",
+    descrizione: "Catalogo, generazioni, classifiche dei figli e genealogia",
+    schede: [
+    { href: "/stalloni", label: "Catalogo stalloni", nota: "Catalogo, prezzi di monta e confronto", icon: BookOpen, colore: "hsl(120 60% 50%)",
       descrizione: "Tutti gli stalloni valutati, con prezzi di monta, allevamenti e provenienza" },
     { href: "/stalloni/albero", label: "Albero degli stalloni", nota: "Papà, nonni, bisnonni: le generazioni", icon: GitBranch, colore: "hsl(120 55% 52%)",
       descrizione: "Gli stalloni divisi per generazione, con anno di nascita, anni in monta e linea paterna" },
     { href: "/stalloni/classifiche", label: "Classifiche stalloni", nota: "La stagione dei figli e i nipoti", icon: Crown, colore: "hsl(140 50% 50%)",
       descrizione: "Gli stalloni stagione per stagione: figli in corsa, vincite, tempi, e quanto vincono i nipoti" },
+    { href: "/pedigree", label: "Pedigree", nota: "Albero genealogico fino a 5 generazioni", icon: Network, colore: "hsl(220 60% 60%)",
+      descrizione: "Albero genealogico fino a 5 generazioni, con consanguineità e incroci ripetuti" },
+  ] },
+  { nome: "Allevamento", icon: Building2, colore: "hsl(330 65% 62%)",
+    descrizione: "Fattrici, allevatori e la scelta dell'accoppiamento",
+    schede: [
     { href: "/fattrici", label: "Fattrici", nota: "Fattrici valutate sui figli", icon: Heart, colore: "hsl(330 70% 58%)",
       descrizione: "Fattrici valutate sui figli: figli di vertice, guadagni medi e carriera della madre" },
     { href: "/allevamento", label: "Allevatori e stazioni di monta", nota: "Chi alleva e dove stanno gli stalloni", icon: Building2, colore: "hsl(20 70% 58%)",
@@ -65,18 +85,6 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Per ogni cavallo in attività: premi attesi nei prossimi 12 mesi contro le spese" },
     { href: "/pareggio", label: "Punto di pareggio", nota: "Quanto costa un cavallo, voti e incroci", icon: Scale, colore: "hsl(160 60% 50%)",
       descrizione: "Quanto deve vincere un cavallo per ripagarsi: per voto, per cavallo e per incrocio" },
-  ] },
-  { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)",
-    descrizione: "Calendario con i pronostici, piste italiane, guidatori e allenatori",
-    schede: [
-    { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 60% 55%)",
-      descrizione: "Prossime gare con iscritti, voti e probabilità di arrivare nei primi tre" },
-    { href: "/ippodromi", label: "Ippodromi e Gran Premi", nota: "Piste, albo d'oro delle grandi corse e trend", icon: MapPin, colore: "hsl(95 55% 52%)",
-      descrizione: "Le piste italiane, quanto pesa il numero di partenza, i vincitori dei Gran Premi dal 2014 e come cambiano i numeri negli anni" },
-    { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(200 70% 58%)",
-      descrizione: "Chi porta i cavalli a rendere più del loro solito, a parità di cavallo e di partenza" },
-    { href: "/allenatori", label: "Allenatori", nota: "Corse, vittorie, premi e cavalli dal 2016", icon: Timer, colore: "hsl(28 85% 60%)",
-      descrizione: "Chi allena i cavalli: corse, vittorie, premi, scuderia e Gran Premi vinti dal 2016" },
   ] },
   { nome: "Metodo", icon: BookMarked, colore: "hsl(40 40% 72%)",
     descrizione: "Da dove vengono i numeri e le prove che le stime funzionano",

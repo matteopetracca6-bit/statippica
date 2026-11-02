@@ -762,9 +762,9 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 /* ── Pagina iniziale: le cinque categorie, grandi e selezionabili ───────── */
 .categorie-grandi {
   display: grid; gap: 14px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
-@media (max-width: 1100px) { .categorie-grandi { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1300px) { .categorie-grandi { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
   .categorie-grandi { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .categorie-grandi > :last-child:nth-child(odd) { grid-column: 1 / -1; }
@@ -795,7 +795,7 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .categoria-grande-piede {
   margin-top: auto; padding-top: 6px; width: 100%;
   display: flex; align-items: center; gap: 8px;
-  font-size: 11.5px; color: hsl(210 8% 52%);
+  font-size: 11.5px; color: hsl(210 8% 52%); white-space: nowrap;
 }
 .categoria-grande-pallini { display: flex; gap: 4px; margin-right: auto; flex-wrap: wrap; }
 .categoria-grande-pallini > span {
