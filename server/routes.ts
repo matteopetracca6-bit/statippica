@@ -1085,18 +1085,25 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // GET /api/search/stallion?q=NAME
   // ──────────────────────────────────────────────
   app.get("/api/search/stallion", (req, res) => {
+    // Novembre 2026: la tendina (NameSelect) legge name, grade e birth_year e
+    // si aspetta un elenco anche a ricerca vuota. Prima la rotta non dava il
+    // voto e a tendina aperta restituiva un elenco vuoto ("Nessun cavallo
+    // trovato"). Ordine per voto finale, non per media grezza dei figli, che
+    // metteva in cima stalloni con due o tre figli.
     const q = (req.query.q as string || "").trim().toUpperCase();
-    if (q.length < 2) return res.json([]);
     const db = getDb();
     try {
       const rows = db.prepare(`
-        SELECT DISTINCT sire as name,
-               n_figli_totali, n_in_corsa, avg_score, n_SSS, n_SS, n_S, pct_top_S
-        FROM stallion_rating_stats
-        WHERE sire LIKE ?
-        ORDER BY avg_score DESC
-        LIMIT 20
-      `).all(`%${q}%`);
+        SELECT s.sire AS name, s.grade, s.final_score AS score,
+               (SELECT MIN(h.birth_year) FROM horses h WHERE h.name = s.sire) AS birth_year,
+               (SELECT h.sire FROM horses h WHERE h.name = s.sire LIMIT 1) AS sire,
+               s.n_figli_totali, s.n_in_corsa, s.avg_score, s.n_SSS, s.n_SS, s.n_S, s.pct_top_S
+        FROM stallion_rating_stats s
+        WHERE (? = '' OR UPPER(s.sire) LIKE ?)
+        GROUP BY s.sire
+        ORDER BY (UPPER(s.sire) LIKE ?) DESC, COALESCE(s.final_score, -1) DESC
+        LIMIT 25
+      `).all(q, `%${q}%`, `${q}%`);
       res.json(rows);
     } finally {
       db.close();
@@ -1616,15 +1623,21 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   app.get("/api/search/mare", (req, res) => {
+    // Novembre 2026: la tendina legge "name", mentre qui usciva "dam", quindi
+    // le righe comparivano senza nome e la scelta non passava nessuna
+    // fattrice alla pagina. Si tiene anche "dam" per chi lo usava.
     const q = (req.query.q as string || "").trim().toUpperCase();
-    if (q.length < 2) return res.json([]);
     const db = getDb();
     try {
       const rows = db.prepare(`
-        SELECT dam, grade, final_score, n_valutati
-        FROM dam_rating_stats WHERE UPPER(dam) LIKE ?
-        ORDER BY final_score DESC LIMIT 20
-      `).all(`%${q}%`);
+        SELECT d.dam AS name, d.dam, d.grade, d.final_score AS score, d.final_score, d.n_valutati,
+               (SELECT MIN(h.birth_year) FROM horses h WHERE h.name = d.dam) AS birth_year,
+               (SELECT h.sire FROM horses h WHERE h.name = d.dam LIMIT 1) AS sire
+        FROM dam_rating_stats d
+        WHERE (? = '' OR UPPER(d.dam) LIKE ?)
+        ORDER BY (UPPER(d.dam) LIKE ?) DESC, COALESCE(d.final_score, -1) DESC
+        LIMIT 25
+      `).all(q, `%${q}%`, `${q}%`);
       res.json(rows);
     } finally {
       db.close();
