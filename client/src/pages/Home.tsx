@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import HorseSearchBar from "../components/HorseSearchBar";
-import Wordmark from "../components/Wordmark";
+import HeroMarchio from "../components/HeroMarchio";
 import GradeBadge from "../components/GradeBadge";
 import CavalliDelMomento from "../components/CavalliDelMomento";
 import RiquadroRating from "../components/RiquadroRating";
@@ -98,7 +97,7 @@ export default function Home() {
     <div style={{ minHeight: "100%", paddingBottom: "40px" }}>
 
       {/* ─── HERO SECTION ─── */}
-      <div style={{
+      <div className="hero-home" style={{
         position: "relative", overflow: "hidden",
         background: "linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(210 30% 12%) 50%, hsl(200 40% 8%) 100%)",
         borderBottom: "1px solid hsl(220 20% 16%)",
@@ -119,19 +118,10 @@ export default function Home() {
         }} />
 
         <div style={{ position: "relative", maxWidth: "1680px", margin: "0 auto" }}>
-          {/* Title */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginBottom: "4px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "18px", maxWidth: "100%" }}>
-              <h1 style={{ margin: 0, lineHeight: 1, maxWidth: "100%", minWidth: 0 }}>
-                <Wordmark size={54} withLogo logoSize={96} grande />
-              </h1>
-            </div>
-          </div>
-
-          {/* Search bar */}
-          <div style={{ marginTop: "24px", maxWidth: "560px" }}>
-            <HorseSearchBar placeholder="Cerca un cavallo per nome..." />
-          </div>
+          {/* Marchio grande animato (entrata, respiro, profondita', pista di luce) */}
+          <h1 style={{ margin: "0 0 8px", lineHeight: 1, display: "flex", justifyContent: "center", maxWidth: "100%", minWidth: 0 }}>
+            <HeroMarchio altezza={84} altezzaCavallo={150} />
+          </h1>
 
           <EsploraCategorie />
         </div>
