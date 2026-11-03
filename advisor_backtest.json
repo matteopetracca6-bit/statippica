@@ -1,7 +1,7 @@
 {
  "cutoff_year": 2019,
  "n_train": 10219,
- "n_test": 6555,
+ "n_test": 6563,
  "train_years": [
   2012,
   2019
@@ -13,9 +13,9 @@
  "population_mean": 50.87,
  "test_mean": 44.91,
  "coefficients": {
-  "intercept": -8.8787,
+  "intercept": -8.8792,
   "sire": 0.8571,
-  "dam": 0.3064
+  "dam": 0.3065
  },
  "models": [
   {
@@ -26,10 +26,10 @@
    "pearson": 0.165,
    "spearman": 0.159,
    "top_decile": {
-    "top_mean": 51.19,
+    "top_mean": 51.17,
     "population_mean": 44.91,
-    "lift": 6.28,
-    "n_top": 655
+    "lift": 6.26,
+    "n_top": 656
    }
   },
   {
@@ -40,10 +40,10 @@
    "pearson": 0.14,
    "spearman": 0.141,
    "top_decile": {
-    "top_mean": 50.18,
+    "top_mean": 50.22,
     "population_mean": 44.91,
-    "lift": 5.27,
-    "n_top": 655
+    "lift": 5.31,
+    "n_top": 656
    }
   },
   {
@@ -52,12 +52,12 @@
    "leaky": false,
    "mae": 36.69,
    "pearson": 0.139,
-   "spearman": 0.139,
+   "spearman": 0.14,
    "top_decile": {
-    "top_mean": 49.69,
+    "top_mean": 49.71,
     "population_mean": 44.91,
-    "lift": 4.78,
-    "n_top": 655
+    "lift": 4.8,
+    "n_top": 656
    }
   },
   {
@@ -68,24 +68,24 @@
    "pearson": -0.0,
    "spearman": 0.0,
    "top_decile": {
-    "top_mean": 42.39,
+    "top_mean": 42.37,
     "population_mean": 44.91,
-    "lift": -2.52,
-    "n_top": 655
+    "lift": -2.54,
+    "n_top": 656
    }
   },
   {
    "label": "Costo della monta (oggi)",
    "note": "Ordinare per prezzo. Attenzione: il prezzo di oggi e' stato fissato DOPO aver visto come sono andati questi figli, quindi e' un confronto falsato a suo favore.",
    "leaky": true,
-   "mae": 3098.14,
+   "mae": 3098.5,
    "pearson": 0.129,
    "spearman": 0.083,
    "top_decile": {
-    "top_mean": 53.29,
+    "top_mean": 53.32,
     "population_mean": 44.91,
-    "lift": 8.38,
-    "n_top": 655
+    "lift": 8.4,
+    "n_top": 656
    }
   }
  ],
@@ -116,24 +116,24 @@
    {
     "contro": "Solo il padre",
     "domanda": "La linea materna aggiunge davvero qualcosa?",
-    "vantaggio": 0.0183,
+    "vantaggio": 0.0181,
     "intervallo95": [
-     0.0067,
-     0.0293
+     0.0069,
+     0.0302
     ],
-    "quota_ricampionamenti_sfavorevoli": 0.001,
+    "quota_ricampionamenti_sfavorevoli": 0.0005,
     "significativo": true,
     "n_giri": 2000
    },
    {
     "contro": "Fama del padre",
     "domanda": "L'Advisor batte chi sceglie guardando il nome del padre?",
-    "vantaggio": 0.0196,
+    "vantaggio": 0.0193,
     "intervallo95": [
-     0.0069,
-     0.0323
+     0.0058,
+     0.0328
     ],
-    "quota_ricampionamenti_sfavorevoli": 0.001,
+    "quota_ricampionamenti_sfavorevoli": 0.003,
     "significativo": true,
     "n_giri": 2000
    },
@@ -141,10 +141,10 @@
     "contro": "Costo della monta (oggi)",
     "domanda": "L'Advisor batte chi sceglie guardando il prezzo?",
     "avvertenza": "Il prezzo di oggi e' stato fissato dopo aver visto questi risultati, quindi gioca in casa. Se l'Advisor lo batte comunque, il confronto e' conservativo.",
-    "vantaggio": 0.0758,
+    "vantaggio": 0.0754,
     "intervallo95": [
-     0.0431,
-     0.1074
+     0.0439,
+     0.1096
     ],
     "quota_ricampionamenti_sfavorevoli": 0.0,
     "significativo": true,
@@ -152,7 +152,7 @@
    }
   ],
   "contro_il_caso": {
-   "spearman_osservato": 0.159,
+   "spearman_osservato": 0.1589,
    "valore_p": 0.0005,
    "n_giri": 2000
   }
@@ -161,18 +161,18 @@
   {
    "label": "Fattrici con figli gia' valutati",
    "note": "Caso favorevole: l'indizio materno e' misurato direttamente.",
-   "n": 3730,
-   "spearman_advisor": 0.179,
+   "n": 3734,
+   "spearman_advisor": 0.178,
    "spearman_solo_padre": 0.153
   },
   {
    "label": "Fattrici senza figli valutati",
    "note": "Caso difficile e piu' frequente nella pratica: della fattrice non si sa nulla di diretto.",
-   "n": 2825,
+   "n": 2829,
    "spearman_advisor": 0.122,
    "spearman_solo_padre": 0.122,
-   "spearman_con_nonna_materna": 0.13,
-   "n_con_nonna_informativa": 2191,
+   "spearman_con_nonna_materna": 0.131,
+   "n_con_nonna_informativa": 2192,
    "nota_nonna": "Quando la fattrice non ha figli valutati, l'Advisor guarda la produzione della nonna materna. Questa riga misura se serve."
   }
  ],
@@ -243,7 +243,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 41.9
+   "actual": 42.0
   },
   {
    "pred": 50.3,
@@ -266,7 +266,7 @@
    "actual": 39.7
   },
   {
-   "pred": 49.7,
+   "pred": 49.6,
    "actual": 44.4
   },
   {
@@ -275,11 +275,11 @@
   },
   {
    "pred": 50.3,
-   "actual": 38.4
+   "actual": 38.5
   },
   {
    "pred": 50.3,
-   "actual": 36.0
+   "actual": 36.1
   },
   {
    "pred": 55.1,
@@ -370,6 +370,10 @@
    "actual": 44.0
   },
   {
+   "pred": 52.7,
+   "actual": 14.0
+  },
+  {
    "pred": 55.4,
    "actual": 48.7
   },
@@ -438,7 +442,7 @@
    "actual": 48.2
   },
   {
-   "pred": 49.7,
+   "pred": 49.6,
    "actual": 36.2
   },
   {
@@ -627,7 +631,7 @@
   },
   {
    "pred": 52.4,
-   "actual": 36.7
+   "actual": 36.8
   },
   {
    "pred": 58.4,
@@ -739,7 +743,7 @@
   },
   {
    "pred": 56.8,
-   "actual": 78.8
+   "actual": 79.2
   },
   {
    "pred": 50.3,
@@ -847,7 +851,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 72.3
+   "actual": 72.2
   },
   {
    "pred": 49.9,
@@ -871,7 +875,7 @@
   },
   {
    "pred": 61.3,
-   "actual": 66.8
+   "actual": 67.2
   },
   {
    "pred": 50.3,
@@ -927,7 +931,7 @@
   },
   {
    "pred": 55.5,
-   "actual": 48.0
+   "actual": 47.9
   },
   {
    "pred": 48.1,
@@ -975,7 +979,7 @@
   },
   {
    "pred": 52.0,
-   "actual": 53.8
+   "actual": 57.0
   },
   {
    "pred": 59.0,
@@ -983,7 +987,7 @@
   },
   {
    "pred": 46.8,
-   "actual": 34.3
+   "actual": 34.4
   },
   {
    "pred": 57.8,
@@ -1027,14 +1031,14 @@
   },
   {
    "pred": 51.3,
-   "actual": 71.4
+   "actual": 72.1
   },
   {
    "pred": 50.3,
    "actual": 61.2
   },
   {
-   "pred": 50.6,
+   "pred": 50.5,
    "actual": 8.6
   },
   {
@@ -1098,7 +1102,7 @@
    "actual": 55.2
   },
   {
-   "pred": 56.4,
+   "pred": 56.3,
    "actual": 55.6
   },
   {
@@ -1195,7 +1199,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 79.9
+   "actual": 80.6
   },
   {
    "pred": 52.5,
@@ -1231,7 +1235,7 @@
   },
   {
    "pred": 44.6,
-   "actual": 48.3
+   "actual": 48.5
   },
   {
    "pred": 53.8,
@@ -1275,7 +1279,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 74.7
+   "actual": 75.2
   },
   {
    "pred": 52.6,
@@ -1335,11 +1339,11 @@
   },
   {
    "pred": 46.1,
-   "actual": 57.5
+   "actual": 59.3
   },
   {
    "pred": 50.3,
-   "actual": 51.0
+   "actual": 52.1
   },
   {
    "pred": 50.3,
@@ -1451,11 +1455,11 @@
   },
   {
    "pred": 50.3,
-   "actual": 60.1
+   "actual": 60.2
   },
   {
    "pred": 57.2,
-   "actual": 82.3
+   "actual": 82.7
   },
   {
    "pred": 50.3,
@@ -1479,7 +1483,7 @@
   },
   {
    "pred": 52.2,
-   "actual": 29.4
+   "actual": 29.5
   },
   {
    "pred": 55.5,
@@ -1495,11 +1499,11 @@
   },
   {
    "pred": 60.1,
-   "actual": 43.9
+   "actual": 44.0
   },
   {
    "pred": 50.3,
-   "actual": 42.1
+   "actual": 42.2
   },
   {
    "pred": 53.7,
@@ -1507,7 +1511,7 @@
   },
   {
    "pred": 52.9,
-   "actual": 51.5
+   "actual": 52.6
   },
   {
    "pred": 46.2,
@@ -1579,7 +1583,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 45.0
+   "actual": 44.9
   },
   {
    "pred": 50.3,
@@ -1587,7 +1591,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 54.8
+   "actual": 55.9
   },
   {
    "pred": 57.1,
@@ -1731,7 +1735,7 @@
   },
   {
    "pred": 55.5,
-   "actual": 42.0
+   "actual": 42.1
   },
   {
    "pred": 50.3,
@@ -1739,7 +1743,7 @@
   },
   {
    "pred": 50.7,
-   "actual": 46.4
+   "actual": 46.5
   },
   {
    "pred": 47.1,
@@ -1755,7 +1759,7 @@
   },
   {
    "pred": 57.8,
-   "actual": 49.2
+   "actual": 50.0
   },
   {
    "pred": 52.0,
@@ -1767,7 +1771,7 @@
   },
   {
    "pred": 50.9,
-   "actual": 43.8
+   "actual": 43.9
   },
   {
    "pred": 58.1,
@@ -1795,7 +1799,7 @@
   },
   {
    "pred": 55.8,
-   "actual": 35.9
+   "actual": 36.0
   },
   {
    "pred": 53.0,
@@ -1839,7 +1843,7 @@
   },
   {
    "pred": 55.4,
-   "actual": 48.6
+   "actual": 48.7
   },
   {
    "pred": 50.3,
@@ -1887,7 +1891,7 @@
   },
   {
    "pred": 54.2,
-   "actual": 72.6
+   "actual": 73.9
   },
   {
    "pred": 50.3,
@@ -2019,7 +2023,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 43.3
+   "actual": 43.2
   },
   {
    "pred": 60.1,
@@ -2031,7 +2035,7 @@
   },
   {
    "pred": 61.9,
-   "actual": 74.2
+   "actual": 74.3
   },
   {
    "pred": 50.3,
@@ -2091,7 +2095,7 @@
   },
   {
    "pred": 60.3,
-   "actual": 53.4
+   "actual": 53.7
   },
   {
    "pred": 57.0,
@@ -2211,7 +2215,7 @@
   },
   {
    "pred": 52.0,
-   "actual": 24.5
+   "actual": 24.6
   },
   {
    "pred": 52.4,
@@ -2295,7 +2299,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 80.2
+   "actual": 81.0
   },
   {
    "pred": 58.0,
@@ -2327,7 +2331,7 @@
   },
   {
    "pred": 54.8,
-   "actual": 58.8
+   "actual": 58.7
   },
   {
    "pred": 50.3,
@@ -2362,7 +2366,7 @@
    "actual": 43.6
   },
   {
-   "pred": 44.2,
+   "pred": 44.1,
    "actual": 51.2
   },
   {
@@ -2379,7 +2383,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 23.9
+   "actual": 23.8
   },
   {
    "pred": 57.1,
@@ -2446,7 +2450,7 @@
    "actual": 59.8
   },
   {
-   "pred": 51.8,
+   "pred": 51.7,
    "actual": 33.4
   },
   {
@@ -2475,7 +2479,7 @@
   },
   {
    "pred": 52.2,
-   "actual": 56.2
+   "actual": 56.1
   },
   {
    "pred": 57.7,
@@ -2515,7 +2519,7 @@
   },
   {
    "pred": 52.8,
-   "actual": 66.3
+   "actual": 67.0
   },
   {
    "pred": 51.1,
@@ -2599,7 +2603,7 @@
   },
   {
    "pred": 54.8,
-   "actual": 55.9
+   "actual": 55.8
   },
   {
    "pred": 55.9,
@@ -2719,7 +2723,7 @@
   },
   {
    "pred": 52.6,
-   "actual": 76.8
+   "actual": 77.5
   },
   {
    "pred": 44.6,
@@ -2851,7 +2855,7 @@
   },
   {
    "pred": 52.6,
-   "actual": 47.9
+   "actual": 48.2
   },
   {
    "pred": 50.2,
@@ -2902,12 +2906,12 @@
    "actual": 7.3
   },
   {
-   "pred": 58.7,
+   "pred": 58.6,
    "actual": 35.7
   },
   {
    "pred": 51.1,
-   "actual": 46.5
+   "actual": 46.9
   },
   {
    "pred": 50.3,
@@ -2919,7 +2923,7 @@
   },
   {
    "pred": 52.0,
-   "actual": 80.8
+   "actual": 80.7
   },
   {
    "pred": 57.9,
@@ -2951,7 +2955,7 @@
   },
   {
    "pred": 52.6,
-   "actual": 52.9
+   "actual": 53.5
   },
   {
    "pred": 50.3,
@@ -3030,7 +3034,7 @@
    "actual": 7.3
   },
   {
-   "pred": 51.2,
+   "pred": 51.1,
    "actual": 25.9
   },
   {
@@ -3067,14 +3071,14 @@
   },
   {
    "pred": 51.7,
-   "actual": 68.4
+   "actual": 68.8
   },
   {
    "pred": 60.1,
    "actual": 36.9
   },
   {
-   "pred": 60.5,
+   "pred": 60.4,
    "actual": 52.8
   },
   {
@@ -3190,7 +3194,7 @@
    "actual": 62.8
   },
   {
-   "pred": 48.5,
+   "pred": 48.4,
    "actual": 7.4
   },
   {
@@ -3231,7 +3235,7 @@
   },
   {
    "pred": 62.0,
-   "actual": 42.4
+   "actual": 42.5
   },
   {
    "pred": 55.4,
@@ -3267,7 +3271,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 46.6
+   "actual": 46.5
   },
   {
    "pred": 51.1,
@@ -3311,7 +3315,7 @@
   },
   {
    "pred": 57.7,
-   "actual": 55.7
+   "actual": 55.6
   },
   {
    "pred": 59.8,
@@ -3451,7 +3455,7 @@
   },
   {
    "pred": 48.1,
-   "actual": 49.3
+   "actual": 49.4
   },
   {
    "pred": 52.7,
@@ -3491,7 +3495,7 @@
   },
   {
    "pred": 52.0,
-   "actual": 17.0
+   "actual": 17.1
   },
   {
    "pred": 50.3,
@@ -3499,7 +3503,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 67.9
+   "actual": 67.8
   },
   {
    "pred": 50.3,
@@ -3507,7 +3511,7 @@
   },
   {
    "pred": 61.5,
-   "actual": 65.6
+   "actual": 65.5
   },
   {
    "pred": 50.3,
@@ -3551,15 +3555,15 @@
   },
   {
    "pred": 55.0,
-   "actual": 33.8
+   "actual": 33.7
   },
   {
-   "pred": 46.6,
+   "pred": 46.5,
    "actual": 33.5
   },
   {
    "pred": 52.0,
-   "actual": 77.6
+   "actual": 77.7
   },
   {
    "pred": 48.8,
@@ -3578,8 +3582,8 @@
    "actual": 42.4
   },
   {
-   "pred": 60.8,
-   "actual": 41.6
+   "pred": 60.7,
+   "actual": 41.7
   },
   {
    "pred": 50.3,
@@ -3699,7 +3703,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 56.0
+   "actual": 55.9
   },
   {
    "pred": 60.2,
@@ -3759,7 +3763,7 @@
   },
   {
    "pred": 38.4,
-   "actual": 52.5
+   "actual": 52.4
   },
   {
    "pred": 50.3,
@@ -3779,7 +3783,7 @@
   },
   {
    "pred": 50.1,
-   "actual": 55.6
+   "actual": 56.9
   },
   {
    "pred": 50.3,
@@ -3795,7 +3799,7 @@
   },
   {
    "pred": 52.2,
-   "actual": 53.7
+   "actual": 53.6
   },
   {
    "pred": 55.5,
@@ -3807,7 +3811,7 @@
   },
   {
    "pred": 62.3,
-   "actual": 78.7
+   "actual": 78.6
   },
   {
    "pred": 50.3,
@@ -3863,7 +3867,7 @@
   },
   {
    "pred": 63.2,
-   "actual": 50.6
+   "actual": 50.5
   },
   {
    "pred": 54.5,
@@ -3899,7 +3903,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 68.8
+   "actual": 68.7
   },
   {
    "pred": 50.8,
@@ -3907,7 +3911,7 @@
   },
   {
    "pred": 48.6,
-   "actual": 53.3
+   "actual": 53.8
   },
   {
    "pred": 50.8,
@@ -3987,7 +3991,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 55.1
+   "actual": 56.0
   },
   {
    "pred": 57.1,
@@ -4047,7 +4051,7 @@
   },
   {
    "pred": 62.3,
-   "actual": 47.5
+   "actual": 47.4
   },
   {
    "pred": 60.0,
@@ -4147,7 +4151,7 @@
   },
   {
    "pred": 50.7,
-   "actual": 45.9
+   "actual": 45.8
   },
   {
    "pred": 43.2,
@@ -4155,15 +4159,15 @@
   },
   {
    "pred": 52.6,
-   "actual": 47.2
+   "actual": 47.6
   },
   {
    "pred": 57.3,
-   "actual": 61.1
+   "actual": 61.2
   },
   {
    "pred": 54.1,
-   "actual": 71.8
+   "actual": 72.0
   },
   {
    "pred": 59.7,
@@ -4179,7 +4183,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 51.2
+   "actual": 51.1
   },
   {
    "pred": 52.4,
@@ -4243,7 +4247,7 @@
   },
   {
    "pred": 60.0,
-   "actual": 49.7
+   "actual": 53.9
   },
   {
    "pred": 60.0,
@@ -4263,7 +4267,7 @@
   },
   {
    "pred": 57.0,
-   "actual": 52.0
+   "actual": 51.9
   },
   {
    "pred": 58.9,
@@ -4286,7 +4290,7 @@
    "actual": 22.7
   },
   {
-   "pred": 58.9,
+   "pred": 58.8,
    "actual": 71.8
   },
   {
@@ -4318,7 +4322,7 @@
    "actual": 54.1
   },
   {
-   "pred": 55.4,
+   "pred": 55.3,
    "actual": 48.2
   },
   {
@@ -4327,7 +4331,7 @@
   },
   {
    "pred": 52.4,
-   "actual": 56.1
+   "actual": 56.0
   },
   {
    "pred": 50.3,
@@ -4567,7 +4571,7 @@
   },
   {
    "pred": 59.1,
-   "actual": 46.4
+   "actual": 46.3
   },
   {
    "pred": 42.0,
@@ -4635,7 +4639,7 @@
   },
   {
    "pred": 47.6,
-   "actual": 61.0
+   "actual": 61.1
   },
   {
    "pred": 50.4,
@@ -4831,7 +4835,7 @@
   },
   {
    "pred": 52.4,
-   "actual": 68.0
+   "actual": 68.1
   },
   {
    "pred": 56.4,
@@ -4891,7 +4895,7 @@
   },
   {
    "pred": 57.1,
-   "actual": 42.4
+   "actual": 42.3
   },
   {
    "pred": 44.0,
@@ -4923,7 +4927,7 @@
   },
   {
    "pred": 57.1,
-   "actual": 60.0
+   "actual": 59.9
   },
   {
    "pred": 52.0,
@@ -5015,7 +5019,7 @@
   },
   {
    "pred": 51.9,
-   "actual": 66.3
+   "actual": 66.2
   },
   {
    "pred": 51.7,
@@ -5031,7 +5035,7 @@
   },
   {
    "pred": 51.8,
-   "actual": 47.8
+   "actual": 48.4
   },
   {
    "pred": 50.3,
@@ -5179,7 +5183,7 @@
   },
   {
    "pred": 57.1,
-   "actual": 68.9
+   "actual": 69.2
   },
   {
    "pred": 50.3,
@@ -5243,7 +5247,7 @@
   },
   {
    "pred": 55.1,
-   "actual": 66.6
+   "actual": 66.8
   },
   {
    "pred": 55.0,
@@ -5318,7 +5322,7 @@
    "actual": 61.3
   },
   {
-   "pred": 50.7,
+   "pred": 50.6,
    "actual": 31.8
   },
   {
@@ -5379,7 +5383,7 @@
   },
   {
    "pred": 56.1,
-   "actual": 56.9
+   "actual": 57.1
   },
   {
    "pred": 57.7,
@@ -5415,7 +5419,7 @@
   },
   {
    "pred": 52.3,
-   "actual": 67.8
+   "actual": 68.5
   },
   {
    "pred": 53.8,
@@ -5451,7 +5455,7 @@
   },
   {
    "pred": 39.6,
-   "actual": 46.8
+   "actual": 46.7
   },
   {
    "pred": 54.1,
@@ -5463,11 +5467,11 @@
   },
   {
    "pred": 59.9,
-   "actual": 70.4
+   "actual": 70.3
   },
   {
    "pred": 57.1,
-   "actual": 54.7
+   "actual": 54.6
   },
   {
    "pred": 51.7,
@@ -5511,7 +5515,7 @@
   },
   {
    "pred": 55.0,
-   "actual": 44.0
+   "actual": 43.9
   },
   {
    "pred": 53.0,
@@ -5562,7 +5566,7 @@
    "actual": 5.8
   },
   {
-   "pred": 50.6,
+   "pred": 50.5,
    "actual": 12.5
   },
   {
@@ -5647,7 +5651,7 @@
   },
   {
    "pred": 55.6,
-   "actual": 51.5
+   "actual": 52.5
   },
   {
    "pred": 58.2,
@@ -5735,7 +5739,7 @@
   },
   {
    "pred": 51.5,
-   "actual": 26.8
+   "actual": 26.7
   },
   {
    "pred": 63.7,
@@ -5771,7 +5775,7 @@
   },
   {
    "pred": 55.6,
-   "actual": 44.7
+   "actual": 44.6
   },
   {
    "pred": 58.8,
@@ -5883,7 +5887,7 @@
   },
   {
    "pred": 48.8,
-   "actual": 48.0
+   "actual": 50.8
   },
   {
    "pred": 61.0,
@@ -6071,7 +6075,7 @@
   },
   {
    "pred": 53.8,
-   "actual": 60.6
+   "actual": 60.5
   },
   {
    "pred": 55.7,
@@ -6091,7 +6095,7 @@
   },
   {
    "pred": 50.3,
-   "actual": 58.5
+   "actual": 58.4
   },
   {
    "pred": 48.1,
@@ -6159,7 +6163,7 @@
   },
   {
    "pred": 53.6,
-   "actual": 51.0
+   "actual": 50.9
   },
   {
    "pred": 57.5,
@@ -6172,10 +6176,6 @@
   {
    "pred": 45.9,
    "actual": 59.4
-  },
-  {
-   "pred": 51.0,
-   "actual": 24.6
   }
  ]
 }
