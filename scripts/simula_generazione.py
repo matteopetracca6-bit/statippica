@@ -56,7 +56,9 @@ USCITA = RADICE / "generazione_m.json"
 
 # Nati ufficiali (Grande Ippica Italiana / MASAF, settembre 2026; 2019 da ANACT).
 NATI_UFFICIALI = {2019: 2004, 2021: 2192, 2022: 2368, 2023: 2235, 2024: 2178, 2025: 1861}
-LETTERE = {2021: "G", 2022: "H", 2023: "I", 2024: "L", 2025: "M"}
+# Lettera del nome per anno di nascita, come nell'archivio (2021 F, 2022 G,
+# 2023 I): nel trotto la H si salta, dopo la G viene la I.
+LETTERE = {2021: "F", 2022: "G", 2023: "I", 2024: "L", 2025: "M"}
 
 # Costi per il conto "ripaga o no", gli stessi della pagina Pareggio:
 # allenamento e mantenimento circa 1.200 euro al mese. I premi "netti"

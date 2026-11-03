@@ -79,7 +79,9 @@ ASTE_GAET = [
 ]
 
 # Ogni anno di nascita ha la sua lettera: chi nasce nel 2025 si chiama con la M.
-LETTERE = {2021: "G", 2022: "H", 2023: "I", 2024: "L", 2025: "M", 2026: "N"}
+# Lettera del nome per anno di nascita, come nell'archivio (2021 F, 2022 G,
+# 2023 I): nel trotto la H si salta, dopo la G viene la I.
+LETTERE = {2021: "F", 2022: "G", 2023: "I", 2024: "L", 2025: "M", 2026: "N"}
 
 COLONNE = ["asta", "lotto", "puledro", "padre", "prezzo_eur", "venduto",
            "motivo_non_venduto", "fonte",
