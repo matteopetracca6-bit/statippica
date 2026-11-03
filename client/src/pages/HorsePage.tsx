@@ -79,7 +79,7 @@ interface HorseData {
     eta_usata?: number;
   } | null;
   qualifica?: {
-    data: string; pista: string | null; tempo: string | null; allenatore: string | null;
+    data: string; pista: string | null; tempo: string | null; tempo_scartato?: string | null; allenatore: string | null;
     eta: number; prove: number; posizione_annata: number | null; cavalli_annata: number | null;
   } | null;
   voto_previsto?: {
@@ -175,13 +175,14 @@ function QualificaCavallo({ q }: { q: HorseData["qualifica"] }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 14 }}>
         {cella("Data", data)}
         {cella("A che età", `${q.eta} ${q.eta === 1 ? "anno" : "anni"}`, q.eta <= 2 ? "hsl(150 60% 55%)" : undefined)}
-        {cella("Tempo al km", q.tempo ?? "—", "hsl(183 70% 60%)")}
+        {cella("Tempo al km", q.tempo ? formatRecord(q.tempo) : "—", "hsl(183 70% 60%)")}
         {cella("Ippodromo", q.pista ? <NomePista pista={q.pista} colorato testo={nomePista(q.pista).charAt(0) + nomePista(q.pista).slice(1).toLowerCase()} /> : "—")}
       </div>
       <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
         {q.posizione_annata && q.cavalli_annata
           ? <>Tempo {q.posizione_annata.toLocaleString("it-IT")}° su {q.cavalli_annata.toLocaleString("it-IT")} della sua annata.</>
           : null}
+        {q.tempo_scartato ? <> La fonte scrive «{q.tempo_scartato}»: per una qualifica non è un tempo credibile (quasi tutte stanno fra 1.14 e 1.24 al km), quindi non lo usiamo.</> : null}
         {q.allenatore ? <> Allenatore alla prova: {q.allenatore}.</> : null}
         {q.prove > 1 ? <> Prove di qualifica: {q.prove}, qui la prima.</> : null}
       </div>

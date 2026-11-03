@@ -5169,6 +5169,9 @@ def phase_vp_qualifiche(conn: sqlite3.Connection) -> dict:
     import vendopuledri_source as vp
     vp.init_vp_schema(conn)
     seen, new = vp.import_qualifiche(conn)
+    corretti = vp.ripulisci_tempi_qualifiche(conn)
+    if corretti:
+        print(f"[VP] Qualifiche: {corretti} tempi non credibili tolti (es. 1.8.3)", file=sys.stderr)
     # Ottobre 2026: oltre all'ultima annata, le annate vecchie un po' per notte
     # (nati dal 2005 in poi), finche' ci sono tutte; poi si rileggono a giro.
     per_notte = int(os.environ.get("VP_QUAL_ANNATE_PER_NOTTE", "2"))

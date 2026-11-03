@@ -214,21 +214,46 @@ def name_id(conn: sqlite3.Connection, name: str) -> Optional[int]:
 
 # ── Tempo ───────────────────────────────────────────────────────────────────
 
+# Tempi di qualifica credibili, al km: fra 1.10.0 e 1.35.0. Su 13.537 prove
+# in archivio (novembre 2026) quasi tutte stanno fra 1.14 e 1.24; fuori da
+# questa forchetta ci sono solo errori di battitura della fonte, come
+# "1.8.3" (BARBARAGAL, Follonica 2020: con ogni probabilita' 1.18.3) o
+# "1.77.7" (i secondi non arrivano a 77). Quei tempi non si usano: la prova
+# resta, il tempo no.
+TEMPO_QUALIFICA_MIN = 10.0
+TEMPO_QUALIFICA_MAX = 35.0
+
+
 def parse_time_km(raw: Any) -> Optional[float]:
     """"1.17.9" -> 17.9 secondi (il minuto e' sottinteso), come nel resto del DB.
-    Regge anche 1"17"9 e 2.05.0 (oltre il minuto)."""
+    Regge anche 1"17"9 e 2.05.0 (oltre il minuto). Un tempo non credibile per
+    una qualifica (vedi sopra) da' None."""
     s = str(raw or "").strip().replace('"', ".").replace("'", ".")
     parts = [p for p in s.split(".") if p != ""]
     try:
         if len(parts) == 3:
             minutes, seconds, tenths = int(parts[0]), int(parts[1]), int(parts[2])
+            if seconds >= 60 or tenths > 9:
+                return None
             total = minutes * 60 + seconds + tenths / 10.0
-            return round(total - 60.0, 1) if minutes >= 1 else round(total, 1)
-        if len(parts) == 2:
-            return round(int(parts[0]) + int(parts[1]) / 10.0, 1)
+            t = round(total - 60.0, 1) if minutes >= 1 else round(total, 1)
+        elif len(parts) == 2:
+            t = round(int(parts[0]) + int(parts[1]) / 10.0, 1)
+        else:
+            return None
     except ValueError:
         return None
-    return None
+    return t if TEMPO_QUALIFICA_MIN <= t <= TEMPO_QUALIFICA_MAX else None
+
+
+def ripulisci_tempi_qualifiche(conn: sqlite3.Connection) -> int:
+    """Toglie il tempo alle prove gia' salvate con un tempo non credibile
+    (salvate prima della regola). Il tempo scritto dalla fonte resta in
+    time_raw. Ritorna quante prove ha corretto."""
+    cur = conn.execute(
+        "UPDATE vp_qualifiche SET time_km = NULL WHERE time_km IS NOT NULL "
+        "AND (time_km < ? OR time_km > ?)", (TEMPO_QUALIFICA_MIN, TEMPO_QUALIFICA_MAX))
+    return cur.rowcount or 0
 
 
 # ── Qualifiche ──────────────────────────────────────────────────────────────

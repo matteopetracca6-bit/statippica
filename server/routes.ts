@@ -1055,7 +1055,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
               if (r?.n >= 50) { posizione = r.pos; suTotale = r.n; }
             }
             qualifica = {
-              data: q.qual_date, pista: q.track || null, tempo: q.time_raw || null,
+              // Un tempo non credibile (es. "1.8.3") ha time_km vuoto: non si
+              // mostra come tempo, ma si dice cosa scrive la fonte.
+              data: q.qual_date, pista: q.track || null,
+              tempo: q.time_km != null ? q.time_raw || null : null,
+              tempo_scartato: q.time_km == null && q.time_raw ? q.time_raw : null,
               allenatore: q.trainer || null,
               eta: Number(String(q.qual_date).slice(0, 4)) - horse.birth_year,
               prove: prove.length,

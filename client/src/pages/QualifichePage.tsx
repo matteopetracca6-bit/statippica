@@ -50,7 +50,9 @@ interface QualStats {
 
 const itDate = (d: string) => (!d || d.length !== 10 ? d || "—" : `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`);
 const tempo = (r: { time_raw: string | null; time_km: number | null }) =>
-  r.time_km != null ? tempoKm(r.time_km) : r.time_raw ? formatRecord(r.time_raw) : "—";
+  // Senza time_km il tempo della fonte non e' credibile (es. "1.8.3"): non si
+  // mostra come se fosse buono.
+  r.time_km != null ? tempoKm(r.time_km) : r.time_raw ? "n.d." : "—";
 const chiave = (r: QualRow) => `${r.horse_name}|${r.qual_date}`;
 const secondi = (x: number) => x.toFixed(1).replace(".", ",");
 
