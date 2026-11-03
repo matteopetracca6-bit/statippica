@@ -54,6 +54,11 @@ jobs:
           # ~5.600 cavalli arretrati, smaltiti in meno di una settimana.
           VP_PEDIGREE_BATCH_SIZE: "1200"
           VP_SIRES_PER_NIGHT: "10"
+          # Cavalli che TrottoWeb conosce e l'archivio no (mai corsi): una
+          # pagina per stallone e annata, ~1 s l'una. 900 pagine ~ 15-20 min;
+          # il primo giro completo (~5.400 pagine) richiede circa sei notti.
+          CAVALLI_MANCANTI_RICHIESTE: "900"
+          CAVALLI_MANCANTI_MINUTI: "30"
         run: python nightly_update.py
 
       # Controlla che ogni dato mostrato dal sito abbia un lavoro automatico che

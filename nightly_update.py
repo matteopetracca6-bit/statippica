@@ -5366,6 +5366,14 @@ def main():
             phase_ripara_premi(conn)                        # FASE 2b-bis: premi da mille euro in su letti come zero
             h_horses, h_races  = phase_historical_backfill(conn)  # FASE 2b2: recupera gare pre-2019
             p_parents, p_races = phase_parents_coverage(conn)  # FASE 2c: fattrici/stalloni mancanti
+            try:
+                # FASE 2c-bis: cavalli mai corsi (es. LAGINNI) dalla produzione
+                # degli stalloni su TrottoWeb; chi ha corso viene completato
+                # dalla FASE 2b nelle notti successive.
+                from cavalli_mancanti import phase_cavalli_mancanti
+                new_horses += phase_cavalli_mancanti(conn)
+            except Exception as e:
+                print(f"[MANCANTI] errore: {e}", file=sys.stderr)
             new_races          += u_races + b_races + h_races + p_races
             new_horses         += p_parents
             horses_updated      = u_updated
