@@ -4143,6 +4143,140 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   // ══════════════════════════════════════════════════════════════
+  // PROPRIETARI (novembre 2026)
+  // Dai risultati ufficiali MASAF, come gli allenatori, dal 2016: li
+  // raccoglie scripts/allenatori.py e li conta scripts/proprietari.py.
+  // ══════════════════════════════════════════════════════════════
+
+  function haProprietari(db: any): boolean {
+    if (!vpTableExists(db, "owner_stats")) return false;
+    const col = db.prepare("PRAGMA table_info(races)").all() as any[];
+    if (!col.some((c: any) => c.name === "owner")) return false;
+    return ((db.prepare("SELECT COUNT(*) AS n FROM owner_stats").get() as any)?.n ?? 0) > 0;
+  }
+
+  app.get("/api/proprietari", pronta(), (_req, res) => {
+    const db = getDb();
+    try {
+      if (!haProprietari(db)) return res.json({ disponibile: false, proprietari: [] });
+      const proprietari = db.prepare(`
+        SELECT proprietario, nome, n_corse, n_corse_recenti, n_cavalli, n_cavalli_recenti,
+               n_vittorie, n_primi_tre, pct_vittorie, pct_primi_tre, premi_totali,
+               premi_per_corsa, premi_12_mesi, vittorie_12_mesi, prima_corsa, ultima_corsa,
+               ippodromo_top, allenatore_top, guidatore_top, attivo, premi_cavallo_anno, n_allenatori
+        FROM owner_stats ORDER BY n_vittorie DESC`).all();
+      const cop = db.prepare(`SELECT COUNT(*) AS n, COUNT(owner) AS con,
+                                     MAX(CASE WHEN owner IS NOT NULL THEN race_date END) AS ultima,
+                                     MIN(CASE WHEN owner IS NOT NULL THEN race_date END) AS prima
+                              FROM races WHERE race_date >= '2016-01-01' AND track != 'ESTERO'`).get() as any;
+      res.json({ disponibile: true, n: proprietari.length, proprietari,
+                 copertura: cop.n ? Math.round(1000 * cop.con / cop.n) / 10 : 0,
+                 aggiornato_al: cop.ultima, dal: cop.prima });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  app.get("/api/proprietario/:name", (req, res) => {
+    const db = getDb();
+    try {
+      const nome = decodeURIComponent(req.params.name).toUpperCase();
+      if (!haProprietari(db)) return res.status(503).json({ error: "dati proprietari non ancora raccolti" });
+      const o = db.prepare("SELECT * FROM owner_stats WHERE proprietario = ?").get(nome) as any;
+      if (!o) return res.status(404).json({ error: "proprietario non trovato" });
+
+      const anni = db.prepare(`
+        SELECT substr(race_date, 1, 4) AS anno, COUNT(*) AS n_corse,
+               COUNT(DISTINCT horse_name) AS n_cavalli,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(AVG(CASE WHEN placement <= 3 THEN 100.0 ELSE 0 END), 1) AS pct_primi_tre,
+               ROUND(SUM(COALESCE(prize_net, 0))) AS premi
+        FROM races WHERE owner = ? GROUP BY anno ORDER BY anno`).all(nome);
+
+      const piste = db.prepare(`
+        SELECT track, COUNT(*) AS n_corse,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(AVG(CASE WHEN placement = 1 THEN 100.0 ELSE 0 END), 1) AS pct_vittorie
+        FROM races WHERE owner = ? GROUP BY track HAVING COUNT(*) >= 5
+        ORDER BY n_corse DESC LIMIT 12`).all(nome);
+
+      // I cavalli: prima quelli degli ultimi 18 mesi, poi gli altri.
+      const cavalli = db.prepare(`
+        SELECT r.horse_name AS nome,
+               (SELECT h.birth_year FROM horses h WHERE h.name = r.horse_name LIMIT 1) AS anno,
+               COUNT(*) AS n_corse,
+               SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) AS vittorie,
+               ROUND(SUM(COALESCE(r.prize_net, 0))) AS premi,
+               MIN(r.race_date) AS dal, MAX(r.race_date) AS al,
+               (SELECT grade FROM horse_ratings hr WHERE hr.name = r.horse_name
+                  AND hr.rating_mode = 'performance' LIMIT 1) AS grade
+        FROM races r WHERE r.owner = ?
+        GROUP BY r.horse_name
+        ORDER BY (MAX(r.race_date) >= date('now', '-18 months')) DESC, premi DESC
+        LIMIT 60`).all(nome);
+
+      // Allenatori a cui affida i cavalli, con il nome della scheda se c'e'.
+      const allenatori = db.prepare(`
+        SELECT r.trainer AS allenatore, ts.nome AS nome, COUNT(*) AS n_corse,
+               COUNT(DISTINCT r.horse_name) AS n_cavalli,
+               SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END) AS vittorie
+        FROM races r LEFT JOIN trainer_stats ts ON ts.allenatore = r.trainer
+        WHERE r.owner = ? AND r.trainer IS NOT NULL
+        GROUP BY r.trainer HAVING COUNT(*) >= 3 ORDER BY n_corse DESC LIMIT 10`).all(nome);
+
+      const guidatori = db.prepare(`
+        SELECT driver, COUNT(*) AS n_corse,
+               SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS vittorie
+        FROM races WHERE owner = ? AND driver IS NOT NULL AND TRIM(driver) != ''
+        GROUP BY driver HAVING COUNT(*) >= 3 ORDER BY n_corse DESC LIMIT 10`).all(nome);
+
+      const ultime = db.prepare(`
+        SELECT r.race_date, r.track, r.horse_name, r.placement, r.driver, r.trainer, r.time_km,
+               r.prize_net, (SELECT h.birth_year FROM horses h WHERE h.name = r.horse_name LIMIT 1) AS anno
+        FROM races r WHERE r.owner = ? ORDER BY r.race_date DESC, r.race_number DESC LIMIT 20`).all(nome);
+
+      const vittorie = db.prepare(`
+        SELECT race_date AS data, horse_name AS cavallo FROM races
+        WHERE owner = ? AND placement = 1 AND COALESCE(prize_gross, prize_net, 0) >= 10000`).all(nome);
+
+      res.json({ ...o, anni, piste, cavalli, allenatori, guidatori, ultime, vittorie });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // I proprietari di un cavallo nel tempo, con il rendimento con ciascuno.
+  app.get("/api/horse-owners/:name", (req, res) => {
+    const db = getDb();
+    try {
+      const nome = decodeURIComponent(req.params.name);
+      if (!haProprietari(db)) return res.json({ disponibile: false, periodi: [] });
+      const righe = db.prepare(`
+        SELECT race_date, owner, placement, COALESCE(prize_net, 0) AS premio
+        FROM races WHERE horse_name = ? AND owner IS NOT NULL ORDER BY race_date`).all(nome) as any[];
+      const periodi: any[] = [];
+      for (const r of righe) {
+        const ult = periodi[periodi.length - 1];
+        if (ult && ult.proprietario === r.owner) {
+          ult.al = r.race_date; ult.n_corse++; ult.premi += r.premio;
+          if (r.placement === 1) ult.vittorie++;
+        } else {
+          periodi.push({ proprietario: r.owner, dal: r.race_date, al: r.race_date, n_corse: 1,
+                         vittorie: r.placement === 1 ? 1 : 0, premi: r.premio });
+        }
+      }
+      const st = db.prepare("SELECT nome FROM owner_stats WHERE proprietario = ?");
+      for (const p of periodi) {
+        p.nome = (st.get(p.proprietario) as any)?.nome ?? null;   // null: niente scheda
+        p.premi = Math.round(p.premi);
+      }
+      res.json({ disponibile: true, periodi });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally { db.close(); }
+  });
+
+  // ══════════════════════════════════════════════════════════════
   // IPPODROMI
   // ══════════════════════════════════════════════════════════════
 

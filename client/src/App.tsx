@@ -48,6 +48,8 @@ const DriversPage = lazy(() => import("./pages/DriversPage"));
 const DriverPage = lazy(() => import("./pages/DriverPage"));
 const AllenatoriPage = lazy(() => import("./pages/AllenatoriPage"));
 const AllenatorePage = lazy(() => import("./pages/AllenatorePage"));
+const ProprietariPage = lazy(() => import("./pages/ProprietariPage"));
+const ProprietarioPage = lazy(() => import("./pages/ProprietarioPage"));
 const TracksPage = lazy(() => import("./pages/TracksPage"));
 const MetodoPage = lazy(() => import("./pages/MetodoPage"));
 const TrackPage = lazy(() => import("./pages/TrackPage"));
@@ -104,6 +106,8 @@ export default function App() {
               <Route path="/guidatore/:name" component={DriverPage} />
               <Route path="/allenatori" component={AllenatoriPage} />
               <Route path="/allenatore/:name" component={AllenatorePage} />
+              <Route path="/proprietari" component={ProprietariPage} />
+              <Route path="/proprietario/:name" component={ProprietarioPage} />
               <Route path="/ippodromi" component={IppodromiTrendPage} />
               <Route path="/pareggio" component={PareggioPage} />
               <Route path="/tenere" component={TenerePage} />

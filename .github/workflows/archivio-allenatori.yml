@@ -3,6 +3,9 @@ name: StatIppica — Allenatori (ogni notte)
 # Raccoglie l'allenatore di ogni cavallo in ogni corsa dai risultati ufficiali
 # MASAF / Grande Ippica Italiana (dal 2016), lo scrive sulle corse
 # dell'archivio, calcola le schede degli allenatori e ripubblica l'archivio.
+# Dalla stessa pagina prende anche il proprietario di ogni cavallo e calcola
+# le schede dei proprietari (scripts/proprietari.py, chiamato alla fine).
+# La prima notte dopo questa aggiunta rilegge tutte le giornate una volta.
 #
 # La prima volta legge tutte le giornate dal 2016 (circa mezz'ora, dieci
 # pagine alla volta). Dalle notti dopo legge solo le giornate nuove e quelle
@@ -73,6 +76,13 @@ jobs:
           schede, = c.execute("SELECT COUNT(*) FROM trainer_stats").fetchone()
           print(f"corse dal 2016: {tot}, con allenatore: {con} ({100*con/max(tot,1):.1f}%)")
           print(f"date lette: {lette}, schede allenatori: {schede}")
+          try:
+              conp, = c.execute("""SELECT COUNT(owner) FROM races
+                                    WHERE race_date >= '2016-01-01' AND track != 'ESTERO'""").fetchone()
+              sp, = c.execute("SELECT COUNT(*) FROM owner_stats").fetchone()
+              print(f"con proprietario: {conp} ({100*conp/max(tot,1):.1f}%), schede proprietari: {sp}")
+          except sqlite3.Error as e:
+              print(f"proprietari non ancora pronti: {e}")
           if schede < 50 or con == 0:
               print("::error::troppo pochi allenatori: la raccolta non e' andata a buon fine.")
               sys.exit(1)

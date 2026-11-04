@@ -8,7 +8,7 @@ import AggiungiScuderia from "../components/AggiungiScuderia";
 import SezioneScheda, { ListaCorta } from "../components/SezioneScheda";
 import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
-import { LinkPista, LinkGuidatore, LinkAllenatore } from "../components/Collegamenti";
+import { LinkPista, LinkGuidatore, LinkAllenatore, LinkProprietario } from "../components/Collegamenti";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { COLORE_VOTO, COLORE_SCHEDA_VOTO, classeVoto } from "@/lib/coloreVoto";
@@ -17,7 +17,7 @@ import LineaMaterna from "../components/LineaMaterna";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { CoppaGara } from "@/components/CoppaGara";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal, Timer } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal, Timer, KeyRound } from "lucide-react";
 import IntestazioneScheda from "../components/IntestazioneScheda";
 import { Cifra } from "../components/DueColonne";
 import { palmares, nomeGara, GARE_GP, type VittoriaGP } from "@/data/granPremi";
@@ -232,6 +232,52 @@ function AllenatoriCavallo({ nome }: { nome: string }) {
       </div>
       <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "8px" }}>
         Dai risultati ufficiali, che riportano l'allenatore dal 2016.
+      </div>
+    </div>
+  );
+}
+
+/** I proprietari del cavallo nel tempo, come gli allenatori qui sopra. */
+function ProprietariCavallo({ nome }: { nome: string }) {
+  const { data } = useQuery<{ disponibile: boolean; periodi: any[] }>({
+    queryKey: ["/api/horse-owners", nome],
+    queryFn: () => apiRequest("GET", `/api/horse-owners/${encodeURIComponent(nome)}`).then(r => r.json()),
+    staleTime: 10 * 60_000,
+  });
+  const periodi = data?.periodi ?? [];
+  if (!periodi.length) return null;
+  const anno = (d: string) => d.slice(0, 4);
+  const mese = (d: string) => new Date(d).toLocaleDateString("it-IT", { month: "short", year: "numeric" });
+  const attuale = periodi[periodi.length - 1];
+  const bello = (t: string) => t.toLowerCase().replace(/(^|[\s'-])\S/g, (c: string) => c.toUpperCase());
+  return (
+    <div className="pannello" style={{ ...panelStyle, marginTop: "16px" }} data-testid="proprietari-cavallo">
+      <div style={{ ...panelTitle, display: "flex", alignItems: "center", gap: "8px" }}>
+        <KeyRound size={15} className="icona-voto" />
+        {periodi.length === 1 ? "Proprietario" : `Proprietari · ${new Set(periodi.map(p => p.proprietario)).size} dal ${anno(periodi[0].dal)}`}
+      </div>
+      <div className="allenatori-cavallo">
+        {[...periodi].reverse().map((p, i) => (
+          <div key={i} className={"periodo" + (p === attuale ? " attuale" : "")}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, color: "hsl(210 10% 90%)" }}>
+                {p.nome ? <LinkProprietario chiave={p.proprietario} nome={p.nome} /> : bello(p.proprietario)}
+                {p === attuale && <span className="etichetta-attuale">ultimo</span>}
+              </div>
+              <div style={{ fontSize: "11.5px", color: "hsl(210 8% 52%)" }}>
+                {p.dal === p.al ? mese(p.dal) : `${mese(p.dal)} – ${mese(p.al)}`}
+              </div>
+            </div>
+            <div className="tabular numeri">
+              <span>{p.n_corse} {p.n_corse === 1 ? "corsa" : "corse"}</span>
+              <span style={{ color: "hsl(100 50% 60%)" }}>{p.vittorie} v.</span>
+              <span style={{ color: "hsl(45 80% 62%)" }}>€{p.premi.toLocaleString("it-IT")}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "8px" }}>
+        Dai risultati ufficiali, che riportano il proprietario dal 2016.
       </div>
     </div>
   );
@@ -916,7 +962,7 @@ export default function HorsePage() {
 
       {(horse.qualifica || (horse.races?.length ?? 0) > 0 || (stats?.yearlyStats?.length ?? 0) > 0 || (stats?.bestRaces?.length ?? 0) > 0) && (
       <SezioneScheda id="gare" titolo="Carriera e gare" apertaDaComputer
-        riassunto={horse.career_races ? `${horse.career_races} corse · anno per anno, ultime gare, piste e allenatori` : "Qualifica, gare e allenatori"}>
+        riassunto={horse.career_races ? `${horse.career_races} corse · anno per anno, ultime gare, piste, allenatori e proprietari` : "Qualifica, gare, allenatori e proprietari"}>
         <div className="sez-colonne">
           <div className="sez-col">
       {(horse.qualifica || (stats?.yearlyStats?.length ?? 0) > 0 || (horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0) && (
@@ -1126,7 +1172,7 @@ export default function HorsePage() {
           )}
                   </div>
       )}
-            <section id="sez-allenatori"><AllenatoriCavallo nome={horse.name} /></section>
+            <section id="sez-allenatori"><AllenatoriCavallo nome={horse.name} /><ProprietariCavallo nome={horse.name} /></section>
           </div>
         </div>
       </SezioneScheda>

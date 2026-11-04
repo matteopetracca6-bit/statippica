@@ -28,6 +28,12 @@ persona. Si usano solo i cavalli passati per almeno due allenatori, perche'
 solo li' il confronto esiste; per chi ha avuto sempre gli stessi cavalli il
 giudizio resta "non giudicabile" invece di uscire nella media per finta.
 
+PROPRIETARI (novembre 2026). La stessa pagina riporta, subito dopo
+l'allenatore, il proprietario: si legge nello stesso passaggio e si salva in
+allenatori_corse.proprietario. Le giornate lette prima, senza proprietario, si
+rileggono una volta (circa mezz'ora la prima notte). Abbinamento e schede dei
+proprietari sono in scripts/proprietari.py, chiamato alla fine di questo.
+
 Uso:
   python3 scripts/allenatori.py                 # raccoglie e calcola
   python3 scripts/allenatori.py --minuti 60     # si ferma entro un'ora
@@ -84,6 +90,7 @@ RE_PEZZI = re.compile(
     r'Corsa\s+(\d+)\s+delle'                                   # inizio corsa
     r'|title="Prestazioni del cavallo ([^"]+)"'                # cavallo
     r'|title="Statistiche dell(?:&#039;|\')allenatore ([^"]+)"'  # allenatore
+    r'|title="Statistiche del proprietario ([^"]+)"'           # proprietario
 )
 
 
@@ -94,19 +101,32 @@ def chiave_nome(nome: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", n)
 
 
-def leggi_giornata(testo: str) -> list[tuple[int, str, str]]:
-    """(numero corsa, cavallo, allenatore) per ogni cavallo della pagina."""
+def _pulito(t: str) -> str:
+    return re.sub(r"\s+", " ", html.unescape(t)).strip().upper()
+
+
+def leggi_giornata(testo: str) -> list[tuple[int, str, str, str | None]]:
+    """(numero corsa, cavallo, allenatore, proprietario) per ogni cavallo.
+    Il proprietario viene subito dopo l'allenatore; se manca resta None."""
     out, corsa, cavallo = [], 0, None
+    ultimo = None          # indice in out dell'ultimo cavallo con allenatore
     for m in RE_PEZZI.finditer(testo):
         if m.group(1):
-            corsa, cavallo = int(m.group(1)), None
+            corsa, cavallo, ultimo = int(m.group(1)), None, None
         elif m.group(2):
-            cavallo = html.unescape(m.group(2)).strip()
+            cavallo, ultimo = html.unescape(m.group(2)).strip(), None
         elif m.group(3) and cavallo:
-            allenatore = re.sub(r"\s+", " ", html.unescape(m.group(3))).strip().upper()
+            allenatore = _pulito(m.group(3))
             if allenatore:
-                out.append((corsa, cavallo, allenatore))
+                out.append((corsa, cavallo, allenatore, None))
+                ultimo = len(out) - 1
             cavallo = None
+        elif m.group(4) and ultimo is not None:
+            proprietario = _pulito(m.group(4))
+            if proprietario:
+                c, cav, al, _ = out[ultimo]
+                out[ultimo] = (c, cav, al, proprietario)
+            ultimo = None
     return out
 
 
@@ -200,6 +220,16 @@ def crea_tabelle(conn: sqlite3.Connection) -> None:
             guidatore_top TEXT, attivo INTEGER,
             effetto REAL, n_confronti INTEGER, affidabilita REAL, affidabilita_txt TEXT);
     """)
+    # Proprietario (novembre 2026): le giornate lette prima non lo hanno, e
+    # vanno rilette una volta. Si segnano con con_proprietario = 0 e si
+    # dimenticano le date lette, cosi' la raccolta le ripassa.
+    col_ac = {r[1] for r in conn.execute("PRAGMA table_info(allenatori_corse)")}
+    if "proprietario" not in col_ac:
+        conn.execute("ALTER TABLE allenatori_corse ADD COLUMN proprietario TEXT")
+    col_gl = {r[1] for r in conn.execute("PRAGMA table_info(allenatori_giornate_lette)")}
+    if "con_proprietario" not in col_gl:
+        conn.execute("ALTER TABLE allenatori_giornate_lette ADD COLUMN con_proprietario INTEGER DEFAULT 0")
+        conn.execute("DELETE FROM allenatori_date_lette")
     colonne = {r[1] for r in conn.execute("PRAGMA table_info(races)")}
     if "trainer" not in colonne:
         conn.execute("ALTER TABLE races ADD COLUMN trainer TEXT")
@@ -224,7 +254,8 @@ def raccogli(conn: sqlite3.Connection, minuti: float) -> dict:
         "SELECT data FROM allenatori_date_lette WHERE data < ?", (soglia_recente,))}
     da_leggere = [d for d in date_archivio if d not in gia_lette]
     giornate_lette = {(d, c) for d, c in conn.execute(
-        "SELECT data, codice FROM allenatori_giornate_lette WHERE data < ?", (soglia_recente,))}
+        "SELECT data, codice FROM allenatori_giornate_lette WHERE data < ? AND con_proprietario = 1",
+        (soglia_recente,))}
     log(f"[ALLENATORI] date in archivio dal 2016: {len(date_archivio)}, da leggere: {len(da_leggere)}")
 
     stat = {"date": 0, "giornate": 0, "righe": 0, "errori": 0, "interrotto": False}
@@ -257,9 +288,10 @@ def raccogli(conn: sqlite3.Connection, minuti: float) -> dict:
                 righe = leggi_giornata(s)
                 conn.execute("DELETE FROM allenatori_corse WHERE data = ? AND codice = ?", (d, c))
                 conn.executemany("""INSERT OR REPLACE INTO allenatori_corse
-                    (data, codice, corsa, cavallo, chiave, allenatore) VALUES (?,?,?,?,?,?)""",
-                    [(d, c, n, cav, chiave_nome(cav), al) for n, cav, al in righe])
-                conn.execute("INSERT OR REPLACE INTO allenatori_giornate_lette VALUES (?,?,?,?)",
+                    (data, codice, corsa, cavallo, chiave, allenatore, proprietario) VALUES (?,?,?,?,?,?,?)""",
+                    [(d, c, n, cav, chiave_nome(cav), al, pr) for n, cav, al, pr in righe])
+                conn.execute("""INSERT OR REPLACE INTO allenatori_giornate_lette
+                    (data, codice, n_righe, letta_il, con_proprietario) VALUES (?,?,?,?,1)""",
                              (d, c, len(righe), adesso))
                 stat["giornate"] += 1
                 stat["righe"] += len(righe)
@@ -398,6 +430,12 @@ def main() -> int:
         log("[ALLENATORI] raccolta:", raccogli(conn, args.minuti))
     log("[ALLENATORI] abbinamento:", abbina(conn))
     calcola(conn)
+    # Proprietari: stessi dati, abbinamento e schede a parte.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import proprietari
+    proprietari.crea_tabelle(conn)
+    log("[PROPRIETARI] abbinamento:", proprietari.abbina(conn))
+    proprietari.calcola(conn)
     conn.close()
     return 0
 

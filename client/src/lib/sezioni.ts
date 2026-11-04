@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -43,7 +43,7 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Confronta due cavalli su statistiche, carriera e genealogia" },
   ] },
   { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)",
-    descrizione: "Calendario con i pronostici, piste italiane, guidatori e allenatori",
+    descrizione: "Calendario con i pronostici, piste italiane, guidatori, allenatori e proprietari",
     schede: [
     { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 62% 56%)",
       descrizione: "Prossime gare con iscritti, voti e probabilità di arrivare nei primi tre" },
@@ -53,6 +53,8 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Chi porta i cavalli a rendere più del loro solito, a parità di cavallo e di partenza" },
     { href: "/allenatori", label: "Allenatori", nota: "Corse, vittorie, premi e cavalli dal 2016", icon: Timer, colore: "hsl(2 48% 70%)",
       descrizione: "Chi allena i cavalli: corse, vittorie, premi, scuderia e Gran Premi vinti dal 2016" },
+    { href: "/proprietari", label: "Proprietari", nota: "Scuderie: cavalli, vittorie e premi dal 2016", icon: KeyRound, colore: "hsl(18 62% 66%)",
+      descrizione: "Chi possiede i cavalli: corse, vittorie, premi, premi a cavallo all'anno, allenatori e Gran Premi dal 2016" },
   ] },
   { nome: "Stalloni", icon: Crown, colore: "hsl(120 60% 50%)",
     descrizione: "Catalogo, generazioni, classifiche dei figli e genealogia",
@@ -118,6 +120,7 @@ const ALIAS: Record<string, string> = {
   "/trend": "/ippodromi", "/piste": "/ippodromi", "/ippodromo": "/ippodromi",
   "/guidatore": "/guidatori",
   "/allenatore": "/allenatori",
+  "/proprietario": "/proprietari",
   "/controllo-a-posteriori": "/controllo",
   "/portafoglio": "/scuderia",
   "/prezzo-massimo": "/puledro", "/vendere": "/puledro",

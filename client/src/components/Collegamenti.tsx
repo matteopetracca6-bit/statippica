@@ -34,6 +34,14 @@ export function LinkGuidatore({ nome }: { nome?: string | null }) {
 }
 
 /** Nome dell'allenatore che apre la sua scheda. `chiave` e' il nome ufficiale in maiuscolo. */
+export function LinkProprietario({ chiave, nome }: { chiave?: string | null; nome?: string | null }) {
+  if (!chiave) return null;
+  return (
+    <Link href={`/proprietario/${encodeURIComponent(chiave)}`} className="collegamento-scheda"
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}>{nome || chiave}</Link>
+  );
+}
+
 export function LinkAllenatore({ chiave, nome }: { chiave?: string | null; nome?: string | null }) {
   if (!chiave) return null;
   return (

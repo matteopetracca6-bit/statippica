@@ -186,7 +186,7 @@ export default function ControlloPage() {
         <p>Si formano scuderie di {d.cavalli_per_scuderia} cavalli in attività al {data(p.data)}: in un caso pescati a caso, nell'altro guidati di solito dallo stesso guidatore.
         Il secondo gruppo serve a vedere se cavalli «della stessa scuderia» vanno bene o male tutti insieme, cosa che il sito non mette nel conto.
         Se fosse così, i risultati veri uscirebbero dalla forchetta più spesso dell'atteso; non succede.</p>
-        <p>L'archivio non conosce allenatori e proprietari: il guidatore è l'approssimazione migliore disponibile. Una scuderia vera, con lo stesso allenatore,
+        <p>Quando è stato fatto questo conto l'archivio non conosceva ancora allenatori e proprietari: il guidatore era l'approssimazione migliore disponibile. Una scuderia vera, con lo stesso allenatore,
         potrebbe essere un po' più legata di così.</p>
       </Spiegazione>
 

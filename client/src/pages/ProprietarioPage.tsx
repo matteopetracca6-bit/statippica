@@ -1,0 +1,270 @@
+/**
+ * Scheda di un proprietario: numeri principali, Gran Premi vinti, andamento
+ * negli anni, cavalli, allenatori a cui li affida, guidatori, piste e ultime
+ * corse. Tutto dal 2016, da quando la fonte ufficiale riporta il proprietario.
+ * Stessa struttura della scheda allenatore (AllenatorePage.tsx).
+ */
+
+import { useRoute, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { MapPin, Users, Timer, KeyRound } from "lucide-react";
+import IntestazioneScheda from "../components/IntestazioneScheda";
+import { Cifra } from "../components/DueColonne";
+import GradeBadge from "../components/GradeBadge";
+import { Spiegazione } from "../components/Spiegazione";
+import { Caricamento } from "../components/Caricamento";
+import GraficoColonne from "../components/GraficoColonne";
+import BandieraCavallo from "@/components/BandieraCavallo";
+import { LinkPista, LinkGuidatore, LinkAllenatore } from "@/components/Collegamenti";
+import { CoppaGara } from "@/components/CoppaGara";
+import { VITTORIE_GP, nomeGara } from "@/data/granPremi";
+import { COLORE_PROPRIETARI, euro } from "./ProprietariPage";
+
+const MUTED = "hsl(210 8% 55%)";
+const DIM = "hsl(210 8% 40%)";
+const CARD = { padding: "16px 20px" };
+const TITOLO: React.CSSProperties = {
+  fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em",
+  marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px",
+};
+const PANNELLO = { ...CARD, ["--colore-pannello" as any]: COLORE_PROPRIETARI };
+
+function data(d: string) {
+  return new Date(d).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function Cavallo({ nome, anno }: { nome: string; anno: number | null }) {
+  return anno ? (
+    <Link href={`/horse/${encodeURIComponent(nome)}/${anno}`} className="collegamento-scheda">
+      <BandieraCavallo nome={nome} /> {nome}
+    </Link>
+  ) : <>{nome}</>;
+}
+
+function Numero({ etichetta, valore, nota, colore = "hsl(210 10% 88%)" }: {
+  etichetta: string; valore: React.ReactNode; nota?: React.ReactNode; colore?: string;
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: "10px", color: DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>{etichetta}</div>
+      <div className="tabular" style={{ fontSize: "23px", fontWeight: 800, color: colore, lineHeight: 1.1 }}>{valore}</div>
+      {nota && <div style={{ fontSize: "11.5px", color: MUTED, marginTop: "4px" }}>{nota}</div>}
+    </div>
+  );
+}
+
+export default function ProprietarioPage() {
+  const [, params] = useRoute("/proprietario/:name");
+  const chiave = params?.name ? decodeURIComponent(params.name) : "";
+
+  const { data: d, isLoading, error } = useQuery<any>({
+    queryKey: ["/api/proprietario", chiave],
+    queryFn: () => apiRequest("GET", `/api/proprietario/${encodeURIComponent(chiave)}`).then(r => r.json()),
+    enabled: !!chiave,
+  });
+
+  if (isLoading) return <Caricamento testo="Carico la scheda..." />;
+  if (error || !d || d.error) {
+    return (
+      <div style={{ maxWidth: "700px", margin: "40px auto", padding: "0 20px", color: MUTED }}>
+        <Link href="/proprietari"><a style={{ color: COLORE_PROPRIETARI, fontSize: "13px" }}>&larr; Tutti i proprietari</a></Link>
+        <p style={{ marginTop: "14px", lineHeight: 1.7 }}>
+          {chiave ? <><strong>{chiave}</strong> non ha una scheda: ha meno di venti corse dal 2016 nell'archivio.</> : "Proprietario non trovato."}
+        </p>
+      </div>
+    );
+  }
+
+  // Gran Premi vinti: le vittorie del proprietario confrontate con l'albo d'oro.
+  const vinte = new Set((d.vittorie ?? []).map((v: any) => `${v.data}|${v.cavallo}`));
+  const granPremi = VITTORIE_GP
+    .filter(v => v.data && vinte.has(`${v.data}|${v.vincitore}`))
+    .sort((a, b) => b.anno - a.anno);
+
+  return (
+    <div className="page-shell">
+      <IntestazioneScheda
+        indietro={{ href: "/proprietari", testo: "Tutti i proprietari" }}
+        icona={KeyRound} colore={COLORE_PROPRIETARI} tipo="Proprietario" titolo={d.nome}
+        accanto={d.attivo
+          ? <span style={{ fontSize: 11, fontWeight: 700, color: "hsl(100 55% 55%)", border: "1px solid hsl(100 55% 55% / .45)", borderRadius: 999, padding: "1px 8px" }}>in attività</span>
+          : <span style={{ fontSize: 11, fontWeight: 700, color: DIM, border: `1px solid ${DIM}`, borderRadius: 999, padding: "1px 8px" }}>non recente</span>}
+        sotto={<>
+          {d.n_corse.toLocaleString("it-IT")} corse &middot; {d.n_cavalli.toLocaleString("it-IT")} cavalli diversi
+          {d.prima_corsa && <> &middot; dal {d.prima_corsa.slice(0, 4)}</>}
+          {d.attivo
+            ? <> &middot; {d.n_cavalli_recenti} cavalli negli ultimi 18 mesi</>
+            : <> &middot; ultima corsa {d.ultima_corsa ? data(d.ultima_corsa) : "—"}</>}
+        </>}
+        cifre={<>
+          <Cifra titolo="Vittorie" valore={d.n_vittorie.toLocaleString("it-IT")} colore="hsl(100 55% 60%)"
+            sotto={`${d.pct_vittorie.toFixed(1).replace(".", ",")}% delle corse`} />
+          <Cifra titolo="Nei primi tre" valore={`${d.pct_primi_tre.toFixed(1).replace(".", ",")}%`}
+            sotto={`${d.n_primi_tre.toLocaleString("it-IT")} volte`} />
+          <Cifra titolo="Premi vinti" valore={euro(d.premi_totali)} colore="hsl(45 85% 62%)"
+            sotto={`${euro(d.premi_per_corsa)} a corsa`} />
+          <Cifra titolo="Ultimi 12 mesi" valore={d.premi_12_mesi > 0 ? euro(d.premi_12_mesi) : "—"}
+            sotto={`${d.vittorie_12_mesi} vittorie`} />
+          <Cifra titolo="A cavallo all'anno" valore={euro(d.premi_cavallo_anno)} colore="hsl(45 85% 62%)"
+            sotto={d.n_cavalli >= 3 ? `premi medi di un suo cavallo in una stagione` : `meno di tre cavalli: dipende da uno solo`} />
+        </>}
+      />
+
+      <Spiegazione titolo="Come leggere questi numeri" compatta>
+        Vittorie e premi dicono quanti e quali cavalli ha questa scuderia. «A cavallo
+        all'anno» divide i premi per le stagioni corse dai suoi cavalli, per confrontarla
+        con scuderie più grandi o più piccole. Non è il guadagno del proprietario: mancano
+        spese e compravendite. Tutti i numeri partono dal 2016, da quando la fonte ufficiale
+        riporta il proprietario.
+      </Spiegazione>
+
+      {granPremi.length > 0 && (
+        <div className="pannello" style={{ ...CARD, marginTop: "16px", ["--colore-pannello" as any]: "hsl(45 90% 58%)" }}>
+          <div style={TITOLO}>Gran Premi vinti · {granPremi.length}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "8px" }}>
+            {granPremi.map(v => (
+              <a key={`${v.gara}-${v.anno}-${v.divisione ?? ""}`} href={`#/gran-premi?gara=${v.gara}`}
+                 className="palmares-voce" style={{ textDecoration: "none" }}>
+                <span className="coppa-gp piccola"><CoppaGara gara={v.gara} size={24} /></span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 700, color: "hsl(210 10% 92%)", fontSize: "12.5px" }}>
+                    {nomeGara(v.gara)} {v.anno}{v.divisione ? ` · ${v.divisione}` : ""}
+                  </span>
+                  <span style={{ display: "block", fontSize: "11.5px", color: MUTED }}>{v.vincitore}{v.driver ? ` · ${v.driver}` : ""}</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {d.anni?.length > 1 && (
+        <div className="pannello" style={{ ...PANNELLO, marginTop: "16px" }}>
+          <div style={TITOLO}>Vittorie anno per anno</div>
+          <GraficoColonne
+            altezza={130}
+            formatoGuida={v => `${v.toFixed(0)}`}
+            dati={d.anni.map((a: any) => ({
+              chiave: a.anno, etichetta: `'${String(a.anno).slice(2)}`, valore: a.vittorie || 0,
+              testo: String(a.vittorie ?? 0),
+              scheda: [{ testo: String(a.anno) }, { testo: `${a.vittorie} vittorie su ${a.n_corse} corse` },
+                { testo: `${(a.pct_primi_tre ?? 0).toFixed(1).replace(".", ",")}% nei primi tre` },
+                { testo: `${a.n_cavalli} cavalli, ${euro(a.premi || 0)} di premi` }],
+            }))}
+          />
+        </div>
+      )}
+
+      {d.cavalli?.length > 0 && (
+        <div className="pannello" style={{ ...PANNELLO, marginTop: "16px", overflowX: "auto" }}>
+          <div style={TITOLO}>I suoi cavalli · prima quelli degli ultimi 18 mesi</div>
+          <table className="tabella-allenatore" style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+            <thead>
+              <tr>{["Cavallo", "Periodo", "Corse", "Vittorie", "Premi"].map((h, i) => (
+                <th key={h} className={i === 1 ? "solo-largo" : ""} style={{ textAlign: i === 0 ? "left" : "right", padding: "6px 8px", color: DIM, fontSize: "10.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</th>
+              ))}</tr>
+            </thead>
+            <tbody>
+              {d.cavalli.slice(0, 30).map((c: any) => (
+                <tr key={c.nome} style={{ borderTop: "1px solid hsl(220 10% 14%)" }}>
+                  <td style={{ padding: "6px 8px", color: "hsl(210 10% 85%)" }}>
+                    <Cavallo nome={c.nome} anno={c.anno} />
+                    {c.grade && <span style={{ marginLeft: "6px" }}><GradeBadge grade={c.grade} size="sm" /></span>}
+                  </td>
+                  <td className="tabular solo-largo" style={{ padding: "6px 8px", textAlign: "right", color: DIM, whiteSpace: "nowrap" }}>
+                    {c.dal.slice(0, 4) === c.al.slice(0, 4) ? c.dal.slice(0, 4) : `${c.dal.slice(0, 4)}–${c.al.slice(0, 4)}`}
+                  </td>
+                  <td className="tabular" style={{ padding: "6px 8px", textAlign: "right", color: MUTED }}>{c.n_corse}</td>
+                  <td className="tabular" style={{ padding: "6px 8px", textAlign: "right", color: "hsl(100 50% 60%)" }}>{c.vittorie}</td>
+                  <td className="tabular" style={{ padding: "6px 8px", textAlign: "right", color: "hsl(45 80% 62%)", whiteSpace: "nowrap" }}>{euro(c.premi)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginTop: "16px" }}>
+        {d.allenatori?.length > 0 && (
+          <div className="pannello" style={PANNELLO}>
+            <div style={TITOLO}><Timer size={12} /> A chi affida i cavalli</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <tbody>
+                {d.allenatori.map((a: any) => (
+                  <tr key={a.allenatore}>
+                    <td style={{ padding: "5px 0", color: "hsl(210 10% 82%)" }}>
+                      {a.nome ? <LinkAllenatore chiave={a.allenatore} nome={a.nome} /> : a.allenatore}
+                    </td>
+                    <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: MUTED }}>{a.n_cavalli} {a.n_cavalli === 1 ? "cavallo" : "cavalli"}</td>
+                    <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: MUTED, width: "80px" }}>{a.n_corse} corse</td>
+                    <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: "hsl(100 50% 60%)", width: "60px" }}>{a.vittorie} v.</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {d.guidatori?.length > 0 && (
+          <div className="pannello" style={PANNELLO}>
+            <div style={TITOLO}><Users size={12} /> Chi guida i suoi cavalli</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <tbody>
+                {d.guidatori.map((g: any) => (
+                  <tr key={g.driver}>
+                    <td style={{ padding: "5px 0", color: "hsl(210 10% 82%)" }}><LinkGuidatore nome={g.driver} /></td>
+                    <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: MUTED }}>{g.n_corse} corse</td>
+                    <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: "hsl(100 50% 60%)", width: "70px" }}>{g.vittorie} v.</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {d.piste?.length > 0 && (
+          <div className="pannello" style={PANNELLO}>
+            <div style={TITOLO}><MapPin size={12} /> Dove corrono i suoi cavalli</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <tbody>
+                {d.piste.map((p: any) => (
+                  <tr key={p.track}>
+                    <td style={{ padding: "5px 0" }}><LinkPista codice={p.track} /></td>
+                    <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: MUTED }}>{p.n_corse} corse</td>
+                    <td className="tabular" style={{ padding: "5px 0", textAlign: "right", color: "hsl(100 50% 60%)", width: "70px" }}>{p.pct_vittorie.toFixed(1).replace(".", ",")}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {d.ultime?.length > 0 && (
+        <div className="pannello" style={{ ...PANNELLO, marginTop: "16px", overflowX: "auto" }}>
+          <div style={TITOLO}>Ultime corse</div>
+          <table className="tabella-allenatore" style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+            <thead>
+              <tr>{["Data", "Cavallo", "Arrivo", "Guidatore", "Allenatore", "Pista"].map((h, i) => (
+                <th key={h} className={i === 3 || i === 4 ? "solo-largo" : ""} style={{ textAlign: i === 2 ? "right" : "left", padding: "6px 8px", color: DIM, fontSize: "10.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</th>
+              ))}</tr>
+            </thead>
+            <tbody>
+              {d.ultime.map((r: any, i: number) => (
+                <tr key={i} style={{ borderTop: "1px solid hsl(220 10% 14%)" }}>
+                  <td className="tabular" style={{ padding: "6px 8px", color: MUTED, whiteSpace: "nowrap" }}>{data(r.race_date)}</td>
+                  <td style={{ padding: "6px 8px", color: "hsl(210 10% 85%)" }}><Cavallo nome={r.horse_name} anno={r.anno} /></td>
+                  <td className="tabular" style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: r.placement === 1 ? "hsl(100 55% 60%)" : r.placement && r.placement <= 3 ? "hsl(45 80% 62%)" : MUTED }}>
+                    {r.placement ? `${r.placement}°` : "—"}
+                  </td>
+                  <td className="solo-largo" style={{ padding: "6px 8px", color: MUTED }}><LinkGuidatore nome={r.driver} /></td>
+                  <td className="solo-largo" style={{ padding: "6px 8px", color: MUTED }}>{r.trainer ? <LinkAllenatore chiave={r.trainer} nome={r.trainer.toLowerCase().replace(/(^|[\s'-])\S/g, (c: string) => c.toUpperCase())} /> : "—"}</td>
+                  <td style={{ padding: "6px 8px" }}><LinkPista codice={r.track} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

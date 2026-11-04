@@ -292,7 +292,7 @@ export default function ScuderiaPage() {
           solo la parte di stagione che cade nei prossimi 12 mesi. Per un nato dell'anno scorso è l'inizio della stagione dei 2 anni. «Comprato all'asta» moltiplica i premi per {d?.ipotesi?.fattore_asta?.toLocaleString("it-IT") ?? "1,4"},
           come è successo ai puledri delle aste 2024 e 2025.</p>
           <p>I cavalli sono trattati come indipendenti fra loro. Si poteva temere che chi ha lo stesso allenatore vada bene o male «tutto insieme»; rifatta sul passato
-          con scuderie di cavalli guidati dallo stesso guidatore (l'archivio non conosce allenatori e proprietari), la forchetta fra l'anno brutto e l'anno buono
+          con scuderie di cavalli guidati dallo stesso guidatore (quando è stata fatta la prova l'archivio non conosceva ancora allenatori e proprietari), la forchetta fra l'anno brutto e l'anno buono
           ha contenuto il risultato vero 84 volte su 100, quanto le scuderie a caso: per ora non si vede un rischio nascosto. I dettagli sono
           in <Link href="/controllo" style={{ color: ACCENTO }}>Controllo a posteriori</Link>.</p>
           <p>Valore di carriera: per i cavalli in attività i premi che possono ancora vincere, meno l'allenamento degli anni in cui resteranno in attività. Non contano rivendita,
