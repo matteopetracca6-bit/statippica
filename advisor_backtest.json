@@ -26,7 +26,7 @@
    "pearson": 0.165,
    "spearman": 0.159,
    "top_decile": {
-    "top_mean": 51.17,
+    "top_mean": 51.18,
     "population_mean": 44.91,
     "lift": 6.26,
     "n_top": 656
@@ -65,7 +65,7 @@
    "note": "Dare a tutti lo stesso voto medio: il minimo sindacale, serve come pavimento.",
    "leaky": false,
    "mae": 17.48,
-   "pearson": -0.0,
+   "pearson": 0.0,
    "spearman": 0.0,
    "top_decile": {
     "top_mean": 42.37,
@@ -84,7 +84,7 @@
    "top_decile": {
     "top_mean": 53.32,
     "population_mean": 44.91,
-    "lift": 8.4,
+    "lift": 8.41,
     "n_top": 656
    }
   }
@@ -4231,7 +4231,7 @@
   },
   {
    "pred": 61.7,
-   "actual": 76.7
+   "actual": 76.8
   },
   {
    "pred": 51.0,
@@ -5059,7 +5059,7 @@
   },
   {
    "pred": 50.7,
-   "actual": 63.9
+   "actual": 64.0
   },
   {
    "pred": 48.6,
