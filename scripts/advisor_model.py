@@ -8,7 +8,16 @@ Come funziona, in breve
 Per ogni figlio gia' valutato si calcolano due indizi:
 
   * indizio del padre  = voto medio degli ALTRI figli di quel padre
-  * indizio della madre = voto medio degli ALTRI figli di quella madre
+  * indizio della madre = PUNTI DELLA PAGINA FATTRICI calcolati sugli ALTRI
+                          figli (stessa formula di nightly_update.py: media dei
+                          gradi dei figli, pesati come GRADE_WEIGHTS, per il
+                          moltiplicatore di volume delle fattrici). Cosi'
+                          l'Advisor e la pagina Fattrici danno lo stesso voto
+                          alla stessa fattrice (novembre 2026, versione 3).
+                          Se la fattrice non ha figli valutati si usa la
+                          produzione della nonna materna (voto medio dei suoi
+                          figli, attenuato), che sul passato funziona meglio
+                          dei punti della nonna.
 
 Gli "altri" servono a non barare: il figlio che stiamo stimando non entra
 mai nel proprio indizio (leave-one-out). Entrambi gli indizi vengono
@@ -65,6 +74,59 @@ HERITABILITY_REF = {
     "tempo_basso": 0.28,
     "tempo_alto": 0.36,
 }
+
+
+# Uguali a nightly_update.py (pagina Fattrici): se cambiano li', vanno
+# cambiati anche qui, altrimenti Advisor e pagina tornano a dire due cose.
+GRADE_WEIGHTS = {"SSS": 100, "SS": 85, "S": 70, "A": 55, "B": 40,
+                 "C": 25, "D": 15, "E": 8, "F": 2}
+
+
+def dam_volume_multiplier(n):
+    if n == 1: return 0.70
+    if n == 2: return 0.78
+    if n == 3: return 0.84
+    if n == 4: return 0.88
+    if n <= 6: return 0.92
+    if n <= 9: return 0.96
+    return 1.00
+
+
+def punti_stats(rows):
+    """Somma dei pesi di grado e numero di figli per madre."""
+    tot = defaultdict(float)
+    cnt = defaultdict(int)
+    for r in rows:
+        g = GRADE_WEIGHTS.get(r["grade"])
+        if g is None:
+            continue
+        tot[r["dam"]] += g
+        cnt[r["dam"]] += 1
+    return tot, cnt
+
+
+def punti_fattrice(tot, cnt, dam, own_grade=None):
+    """Punti della pagina Fattrici; con own_grade si toglie il figlio stesso
+    (leave-one-out). None se non restano figli valutati."""
+    t, n = tot.get(dam, 0.0), cnt.get(dam, 0)
+    if own_grade in GRADE_WEIGHTS:
+        t -= GRADE_WEIGHTS[own_grade]
+        n -= 1
+    if n <= 0:
+        return None
+    return min(t / n * dam_volume_multiplier(n), 100.0)
+
+
+def riga_madre(pt, pc, dm_tot, dm_cnt, gran, dam, mean, own=None):
+    """Le tre colonne della madre: [punti, ha_punti, nonna]. Con own=(voto,
+    grado) del figlio stesso, lo si esclude (leave-one-out)."""
+    p = punti_fattrice(pt, pc, dam, own[1] if own else None)
+    if p is not None:
+        return [p, 1.0, 0.0]
+    g = gran.get(dam)
+    if g and dm_cnt.get(g, 0) > 0:
+        return [0.0, 0.0, loo_effect(dm_tot, dm_cnt, g, 0.0, mean, K_DAM * 2, False)[0]]
+    return [0.0, 0.0, mean]
 
 
 def load_rows(conn):
@@ -266,11 +328,15 @@ def main():
     dm_tot, dm_cnt = group_stats(train, "dam")
     mean_train = sum(r["score"] for r in train) / len(train)
 
+    pt_tot, pt_cnt = punti_stats(train)
+    gran = {r[0]: r[1] for r in conn.execute(
+        "SELECT UPPER(TRIM(name)), UPPER(TRIM(dam)) FROM horses WHERE dam IS NOT NULL")}
+
     X, y = [], []
     for r in train:
         se, _ = loo_effect(st_tot, st_cnt, r["sire"], r["score"], mean_train, K_SIRE)
-        de, _ = loo_effect(dm_tot, dm_cnt, r["dam"], r["score"], mean_train, K_DAM)
-        X.append([1.0, se, de])
+        X.append([1.0, se] + riga_madre(pt_tot, pt_cnt, dm_tot, dm_cnt, gran, r["dam"],
+                                        mean_train, (r["score"], r["grade"])))
         y.append(r["score"])
     coef_bt = fit_ols(X, y)
     # versione senza la madre: serve a dimostrare quanto aggiunge la madre
@@ -280,8 +346,8 @@ def main():
     pred, pred_sire_only, act, pred_fee, pred_fame = [], [], [], [], []
     for r in test:
         se, _ = loo_effect(st_tot, st_cnt, r["sire"], 0.0, mean_train, K_SIRE, exclude_self=False)
-        de, _ = loo_effect(dm_tot, dm_cnt, r["dam"], 0.0, mean_train, K_DAM, exclude_self=False)
-        pred.append(coef_bt[0] + coef_bt[1] * se + coef_bt[2] * de)
+        xm = riga_madre(pt_tot, pt_cnt, dm_tot, dm_cnt, gran, r["dam"], mean_train)
+        pred.append(sum(c * x for c, x in zip(coef_bt, [1.0, se] + xm)))
         pred_sire_only.append(coef_sire_only[0] + coef_sire_only[1] * se)
         act.append(r["score"])
         # La tassa di monta e' quella di OGGI: e' gia' influenzata dai
@@ -297,9 +363,6 @@ def main():
     # Il caso difficile e' la fattrice senza figli valutati: e' la maggioranza
     # delle richieste reali. Qui si misura quanto serve il ripiego sulla
     # nonna materna, invece di arrendersi alla media.
-    gran = {r[0]: r[1] for r in conn.execute(
-        "SELECT UPPER(TRIM(name)), UPPER(TRIM(dam)) FROM horses WHERE dam IS NOT NULL")}
-
     def sire_eff(r):
         return loo_effect(st_tot, st_cnt, r["sire"], 0.0, mean_train, K_SIRE, False)[0]
 
@@ -323,9 +386,10 @@ def main():
         if len(grp) < 30:
             continue
         a = [r["score"] for r in grp]
-        p_full = [coef_bt[0] + coef_bt[1] * sire_eff(r)
-                  + coef_bt[2] * loo_effect(dm_tot, dm_cnt, r["dam"], 0.0,
-                                            mean_train, K_DAM, False)[0] for r in grp]
+        p_full = [sum(c * x for c, x in zip(
+                      coef_bt, [1.0, sire_eff(r)] + riga_madre(pt_tot, pt_cnt, dm_tot, dm_cnt,
+                                                            gran, r["dam"], mean_train)))
+                  for r in grp]
         p_sire = [coef_sire_only[0] + coef_sire_only[1] * sire_eff(r) for r in grp]
         seg = {
             "label": label, "note": note, "n": len(grp),
@@ -370,11 +434,14 @@ def main():
         "test_mean": round(sum(act) / len(act), 2),
         "coefficients": {"intercept": round(coef_bt[0], 4),
                          "sire": round(coef_bt[1], 4),
-                         "dam": round(coef_bt[2], 4)},
+                         "dam": round(coef_bt[2], 4),
+                         "dam_con_figli": round(coef_bt[3], 4),
+                         "nonna": round(coef_bt[4], 4)},
         "models": [
             metrics(pred, "Advisor (padre + madre)",
-                    "Il modello del sito: indizio del padre e indizio della madre, "
-                    "calcolati solo sui cavalli nati prima del taglio."),
+                    "Il modello del sito: indizio del padre e punti della pagina "
+                    "Fattrici per la madre (o la nonna materna se la madre non ha "
+                    "figli valutati), calcolati solo sui cavalli nati prima del taglio."),
             metrics(pred_sire_only, "Solo il padre",
                     "Stesso modello ma senza la linea materna: serve a misurare "
                     "quanto aggiunge davvero la madre."),
@@ -455,19 +522,23 @@ def main():
     # --- modello finale: riaddestrato su TUTTI i dati ----------------
     st_tot, st_cnt = group_stats(rows, "sire")
     dm_tot, dm_cnt = group_stats(rows, "dam")
+    pt_tot, pt_cnt = punti_stats(rows)
     mean_all = sum(r["score"] for r in rows) / len(rows)
     X, y = [], []
     for r in rows:
         se, _ = loo_effect(st_tot, st_cnt, r["sire"], r["score"], mean_all, K_SIRE)
-        de, _ = loo_effect(dm_tot, dm_cnt, r["dam"], r["score"], mean_all, K_DAM)
-        X.append([1.0, se, de])
+        X.append([1.0, se] + riga_madre(pt_tot, pt_cnt, dm_tot, dm_cnt, gran, r["dam"],
+                                        mean_all, (r["score"], r["grade"])))
         y.append(r["score"])
     coef = fit_ols(X, y)
-    resid = [yy - (coef[0] + coef[1] * xx[1] + coef[2] * xx[2]) for xx, yy in zip(X, y)]
-    sd = math.sqrt(sum(e * e for e in resid) / max(1, len(resid) - 3))
+    resid = [yy - sum(c * x for c, x in zip(coef, xx)) for xx, yy in zip(X, y)]
+    sd = math.sqrt(sum(e * e for e in resid) / max(1, len(resid) - len(coef)))
 
     model = {
-        "version": 2,
+        # Versione 3: la madre entra con i punti della pagina Fattrici
+        # (w_dam sui punti + w_dam_con_figli se li ha), altrimenti con la
+        # nonna materna (w_nonna sul voto medio attenuato dei figli della nonna).
+        "version": 3,
         "trained_on": len(rows),
         "population_mean": round(mean_all, 4),
         "k_sire": K_SIRE,
@@ -475,6 +546,8 @@ def main():
         "intercept": round(coef[0], 6),
         "w_sire": round(coef[1], 6),
         "w_dam": round(coef[2], 6),
+        "w_dam_con_figli": round(coef[3], 6),
+        "w_nonna": round(coef[4], 6),
         "residual_sd": round(sd, 4),
         "backtest_summary": {
             "spearman": backtest["models"][0]["spearman"],

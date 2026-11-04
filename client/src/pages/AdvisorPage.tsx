@@ -83,7 +83,8 @@ const BASE_BUONI = 25;
 interface AdvisorResult {
   found: boolean;
   suggestions?: { name: string; birth_year: number; sire: string; dam: string }[];
-  fattrice?: { name: string; birth_year: number; sire: string; dam: string };
+  fattrice?: { name: string; birth_year: number; sire: string; dam: string;
+    come_fattrice?: { punti: number; grado: string | null; n: number } | null };
   ancestors?: string[];
   budget_max?: number;
   candidates?: Candidate[];
@@ -738,6 +739,17 @@ export default function AdvisorPage() {
               <div style={{ fontSize: 20, fontWeight: 800, color: C.testo, letterSpacing: "0.04em" }}>{data.fattrice.name}</div>
               <div style={{ fontSize: 12, color: C.muto, marginTop: 2 }}>
                 nata nel {data.fattrice.birth_year ?? "—"} · da {data.fattrice.sire || "—"} e {data.fattrice.dam || "—"}
+              </div>
+              {/* Stessi punti e stesso grado della pagina Fattrici */}
+              <div style={{ fontSize: 12, color: C.muto, marginTop: 6 }} data-testid="advisor-fattrice-punti">
+                {data.fattrice.come_fattrice ? (
+                  <>Voto da fattrice <strong style={{ color: C.testo }}>{num(data.fattrice.come_fattrice.punti, 1)}</strong>
+                    {data.fattrice.come_fattrice.grado ? <> (grado <strong style={{ color: gradeColor(data.fattrice.come_fattrice.grado) }}>{data.fattrice.come_fattrice.grado}</strong>)</> : null}
+                    {" "}su {data.fattrice.come_fattrice.n === 1 ? "un solo figlio valutato" : `${data.fattrice.come_fattrice.n} figli valutati`}, come nella{" "}</>
+                ) : <>Nessun figlio ancora valutato: niente voto da fattrice. Vedi la{" "}</>}
+                <Link href={`/fattrice/${encodeURIComponent(data.fattrice.name)}`}>
+                  <a style={{ color: C.viola, fontWeight: 600 }}>pagina Fattrici</a>
+                </Link>.
               </div>
             </div>
             {(data.ancestors?.length ?? 0) > 0 && (

@@ -13,8 +13,11 @@
  * Prima l'Advisor guardava solo il padre, quindi dava la stessa risposta con
  * qualsiasi fattrice. Ora combina:
  *   indizio del padre  = voto medio dei suoi figli, attenuato se sono pochi
- *   indizio della madre = voto medio dei figli della fattrice (o della sua
- *                         linea materna), attenuato allo stesso modo
+ *   indizio della madre = dalla versione 3, i PUNTI DELLA PAGINA FATTRICI
+ *                         (tabella dam_rating_stats): cosi' Advisor e pagina
+ *                         Fattrici danno lo stesso voto alla stessa fattrice.
+ *                         Se la fattrice non ha figli valutati, la produzione
+ *                         della nonna materna, attenuata.
  * L'attenuazione (shrinkage) evita che una madre con un solo figlio fortunato
  * valga come una con venti figli.
  */
@@ -32,6 +35,8 @@ export interface AdvisorModel {
   intercept: number;
   w_sire: number;
   w_dam: number;
+  w_dam_con_figli?: number;   // versione 3
+  w_nonna?: number;           // versione 3
   residual_sd: number;
   backtest_summary?: Record<string, number>;
 }
@@ -76,6 +81,23 @@ export interface ParentSignal {
   effect: number;
   confidence: number;      // 0..1: quanto ci si puo' fidare del campione
   source: string;          // da dove arriva l'indizio
+  punti?: number | null;   // solo madre: punti della pagina Fattrici
+  grado?: string | null;   // solo madre: grado della pagina Fattrici
+}
+
+/** Punti e grado della pagina Fattrici (stessa tabella, stessi numeri). */
+export function puntiFattrice(db: DB, mare: string):
+    { punti: number; grado: string | null; n: number } | null {
+  try {
+    const r = db.prepare(`
+      SELECT final_score, grade, n_valutati FROM dam_rating_stats
+      WHERE UPPER(TRIM(dam)) = UPPER(TRIM(?)) AND final_score IS NOT NULL
+        AND COALESCE(n_valutati, 0) > 0
+      LIMIT 1
+    `).get(mare) as any;
+    if (!r) return null;
+    return { punti: Math.round(r.final_score * 10) / 10, grado: r.grade ?? null, n: r.n_valutati };
+  } catch { return null; }
 }
 
 /** Indizio del padre: voto medio dei figli valutati. */
@@ -115,6 +137,22 @@ export function damSignal(db: DB, mare: string): ParentSignal {
       AND UPPER(TRIM(h.dam)) = UPPER(TRIM(?))
   `).get(mare) as any;
 
+  const pf = puntiFattrice(db, mare);
+  if (m.version >= 3 && pf) {
+    // Stessi punti della pagina Fattrici. L'effetto vero lo calcola
+    // predictPair con i pesi della versione 3.
+    const s = shrink(own?.avg_score ?? null, own?.n ?? 0, m.population_mean, m.k_dam);
+    return {
+      name: mare,
+      avg_score: own?.n ? Math.round(own.avg_score * 10) / 10 : null,
+      n_offspring: pf.n,
+      effect: pf.punti,
+      confidence: Math.round(Math.max(s.weight, pf.n / (pf.n + m.k_dam)) * 100) / 100,
+      source: "punti pagina Fattrici",
+      punti: pf.punti, grado: pf.grado,
+    };
+  }
+
   if ((own?.n ?? 0) > 0) {
     const s = shrink(own.avg_score, own.n, m.population_mean, m.k_dam);
     return {
@@ -124,6 +162,7 @@ export function damSignal(db: DB, mare: string): ParentSignal {
       effect: s.value,
       confidence: Math.round(s.weight * 100) / 100,
       source: `${own.n} figli valutati della fattrice`,
+      punti: pf?.punti ?? null, grado: pf?.grado ?? null,
     };
   }
 
@@ -207,7 +246,15 @@ export function predictPair(db: DB, stallion: string, mare: string): Prediction 
   const m = model();
   const sire = sireSignal(db, stallion);
   const dam = damSignal(db, mare);
-  const raw = m.intercept + m.w_sire * sire.effect + m.w_dam * dam.effect;
+  // Versione 3: madre con i punti della pagina Fattrici (piu' un gradino
+  // fisso perche' ha figli valutati); senza punti, la nonna materna.
+  // Versione 2 e precedenti: voto medio dei figli della madre, attenuato.
+  const raw = m.version >= 3
+    ? m.intercept + m.w_sire * sire.effect
+      + (dam.source === "punti pagina Fattrici"
+        ? m.w_dam * dam.effect + (m.w_dam_con_figli ?? 0)
+        : (m.w_nonna ?? 0) * dam.effect)
+    : m.intercept + m.w_sire * sire.effect + m.w_dam * dam.effect;
   const expected = Math.max(0, Math.min(100, raw));
 
   // Fiducia complessiva: media dei due campioni, con piu' peso al padre.
@@ -334,6 +381,13 @@ export function explain(p: Prediction, inb: InbreedingResult, fee: number | null
   }
   if (p.dam.n_offspring > 0 && p.dam.source.startsWith("nessun figlio")) {
     out.push(`La fattrice non ha figli valutati, quindi si guarda la sua linea materna (${p.dam.source.replace(/^.*\(/, "").replace(/\)$/, "")}).`);
+  } else if (p.dam.source === "punti pagina Fattrici") {
+    out.push(
+      `La fattrice ha ${p.dam.punti?.toFixed(1)} punti`
+      + (p.dam.grado ? ` (grado ${p.dam.grado})` : "")
+      + `, gli stessi della pagina Fattrici, calcolati su `
+      + (p.dam.n_offspring === 1 ? "un solo figlio valutato." : `${p.dam.n_offspring} figli valutati.`)
+    );
   } else if (p.dam.n_offspring > 0) {
     out.push(
       `La fattrice ha ${p.dam.n_offspring} figli valutati, con voto medio `

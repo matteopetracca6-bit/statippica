@@ -5374,6 +5374,13 @@ def main():
                 new_horses += phase_cavalli_mancanti(conn)
             except Exception as e:
                 print(f"[MANCANTI] errore: {e}", file=sys.stderr)
+            try:
+                # FASE 2c-ter: carriera gara per gara delle fattrici che hanno
+                # corso (nate dal 2011, quelle che TrottoWeb ha ancora).
+                from carriere_fattrici import phase_carriere_fattrici
+                new_races += phase_carriere_fattrici(conn)
+            except Exception as e:
+                print(f"[FATTRICI-CARRIERA] errore: {e}", file=sys.stderr)
             new_races          += u_races + b_races + h_races + p_races
             new_horses         += p_parents
             horses_updated      = u_updated

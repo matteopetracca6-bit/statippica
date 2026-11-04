@@ -59,6 +59,7 @@ interface MareDetail {
     career_wins: number | null;
     career_earnings: number | null;
     record_career: string | null;
+    n_gare?: number;   // gare nell'archivio: se > 0 c'e' la scheda da atleta
   } | null;
   offspring: Offspring[];
 }
@@ -135,6 +136,8 @@ export default function MarePage() {
           {own?.birth_year ? `Nata nel ${own.birth_year}` : "Anno di nascita non disponibile"}
           {own?.sire ? <> · figlia di <Link href={`/stallion/${encodeURIComponent(own.sire)}`} className="collegamento-scheda">{own.sire}</Link></> : ""}
           {own?.dam ? ` e di ${own.dam}` : ""}
+          {own?.birth_year && (own.n_gare ?? 0) > 0 ? <> · <Link href={`/horse/${encodeURIComponent(own.name)}/${own.birth_year}`}
+            className="collegamento-scheda" data-testid="link-scheda-atleta">vedi la sua scheda da atleta ({own.n_gare} gare) →</Link></> : null}
         </>}
         cifre={s ? <>
           <Cifra titolo="Voto progenie" valore={s.final_score.toFixed(1).replace(".", ",")} colore={coloreScheda("/fattrici")} sotto={`grado ${s.grade}`} />
@@ -154,9 +157,11 @@ export default function MarePage() {
       <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>
         La sua carriera
       </h2>
-      <Spiegazione titolo="Perché qui non c'è l'elenco delle gare" compatta>
-        Sono i totali di carriera, non l'elenco delle singole corse: per i riproduttori la fonte
-        fornisce solo i dati aggregati. Non incidono sul voto della progenie, servono a leggerlo.
+      <Spiegazione titolo="Dove trovo le sue gare" compatta>
+        Qui ci sono i totali di carriera. Quando le sue corse sono nell'archivio, l'elenco gara per
+        gara è nella sua scheda da atleta (il collegamento è sotto il nome). Ogni notte il sito
+        recupera la carriera di altre fattrici che hanno corso, se la fonte la rende disponibile.
+        I totali non incidono sul voto della progenie, servono a leggerlo.
       </Spiegazione>
       {ownRaces > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "24px" }}>

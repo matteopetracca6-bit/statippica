@@ -612,6 +612,20 @@ export default function HorsePage() {
               </Link>
             </span>
           )}
+          {(horse as any).come_fattrice && (() => {
+            const cf = (horse as any).come_fattrice as { nome: string; n_figli: number; punti: number | null; grado: string | null };
+            return (
+              <span style={{ display: "block", marginTop: 4 }}>
+                <Link href={`/fattrice/${encodeURIComponent(cf.nome)}`}>
+                  <a style={{ color: "hsl(320 60% 68%)", textDecoration: "none" }} data-testid="link-pagina-fattrice">
+                    È anche fattrice: ha avuto {cf.n_figli} {cf.n_figli === 1 ? "figlio" : "figli"}
+                    {cf.punti != null ? <> · voto da fattrice {cf.punti.toFixed(1).replace(".", ",")}{cf.grado ? ` (grado ${cf.grado})` : ""}</> : null}
+                    {" "}· vedi la pagina da fattrice →
+                  </a>
+                </Link>
+              </span>
+            );
+          })()}
           {/* Collegamenti all'economia: la scuderia e, per i giovani, il valore del puledro. */}
           <span style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
             <AggiungiScuderia voce={{ tipo: "cavallo", nome: horse.name, anno: horse.birth_year }} />

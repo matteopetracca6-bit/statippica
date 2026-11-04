@@ -18,7 +18,7 @@ import { ensureGenealogy } from "./vpFetch";
 import {
   loadAdvisorModel, getAdvisorModel, getAdvisorBacktest,
   loadPuledriModel, getPuledriVerifica, predictPuledro,
-  predictPair, inbreeding, explain,
+  predictPair, inbreeding, explain, puntiFattrice,
 } from "./advisorEngine";
 import { checkEligibility, BASI_SCIENTIFICHE, FONTE_NORMATIVA, SOGLIE } from "./breedingRules";
 import { simulateRoi, earningsByGrade, annoMaturita } from "./roiRange";
@@ -870,6 +870,21 @@ export function registerRoutes(httpServer: Server, app: Express) {
       horse.stallone_come = vpTableExists(db, "cavalli_alias")
         ? ((db.prepare(`SELECT alias FROM cavalli_alias WHERE nome = ?`).get(name) as any)?.alias ?? null)
         : null;
+      // E' anche fattrice? Allora la scheda porta alla pagina fattrice, con i
+      // figli e gli stessi punti della pagina Fattrici. I figli possono citare
+      // la madre senza la sigla del paese (SIMPLY ROD invece di SIMPLY ROD (F)).
+      horse.come_fattrice = null;
+      if (horse.sex === "F") {
+        const nomi = Array.from(new Set([name, name.replace(/\s*\([A-Z]{1,3}\)$/, "").trim()]));
+        for (const n of nomi) {
+          const k = (db.prepare(`SELECT COUNT(*) AS n FROM horses WHERE UPPER(TRIM(dam)) = ?`).get(n) as any)?.n ?? 0;
+          if (k > 0) {
+            const pf = puntiFattrice(db, n);
+            horse.come_fattrice = { nome: n, n_figli: k, punti: pf?.punti ?? null, grado: pf?.grado ?? null };
+            break;
+          }
+        }
+      }
 
       // Last 20 races
       const races = db.prepare(`
@@ -1619,6 +1634,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
                COALESCE(horse_class, 'athlete') AS horse_class
         FROM horses WHERE UPPER(TRIM(name)) = ? LIMIT 1
       `).get(name) as any;
+      // Gare della fattrice presenti nell'archivio, per il collegamento alla
+      // sua scheda da atleta (la carriera la recupera il lavoro notturno).
+      if (own) {
+        own.n_gare = (db.prepare("SELECT COUNT(*) AS n FROM races WHERE horse_name = ?")
+          .get(own.name) as any)?.n ?? 0;
+      }
 
       res.json({ dam: stats?.dam || name, stats: stats || null, own: own || null, offspring });
     } finally {
@@ -1663,12 +1684,15 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const like = `%${q}%`;
       const rows = db.prepare(`
         SELECT h.name, h.birth_year, h.sire, h.dam,
-               hr.grade, hr.score
+               -- Voto e grado DA FATTRICE (progenie), gli stessi della pagina
+               -- Fattrici: prima qui c'era il voto da atleta, e la stessa
+               -- cavalla aveva due voti diversi fra Advisor e pagina Fattrici.
+               ds.grade AS grade, ds.final_score AS score
         FROM horses h
-        LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
-                                  AND hr.rating_mode = 'performance'
+        LEFT JOIN dam_rating_stats ds ON ds.dam = UPPER(TRIM(h.name))
+                                     AND COALESCE(ds.n_valutati, 0) > 0
         WHERE h.sex = 'F' AND (? = '' OR h.name LIKE ?)
-        ORDER BY (h.dam IS NULL), COALESCE(hr.score, -1) DESC, h.birth_year DESC
+        ORDER BY (h.dam IS NULL), COALESCE(ds.final_score, -1) DESC, h.birth_year DESC
         LIMIT 25
       `).all(q, like);
       res.json(rows);
@@ -2930,7 +2954,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
       res.json({
         found: true,
-        fattrice: horse,
+        // punti e grado della pagina Fattrici, per mostrarli uguali qui
+        fattrice: { ...horse, come_fattrice: puntiFattrice(db, horse.name) },
         ancestors: Array.from(ancestorNames),
         budget_max: budget_max || null,
         candidates,

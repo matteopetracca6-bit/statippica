@@ -59,6 +59,11 @@ jobs:
           # il primo giro completo (~5.400 pagine) richiede circa sei notti.
           CAVALLI_MANCANTI_RICHIESTE: "900"
           CAVALLI_MANCANTI_MINUTI: "30"
+          # Carriera delle fattrici che hanno corso (carriere_fattrici.py):
+          # una scheda per fattrice, ~1,2 s l'una. Le nate dal 2011 da
+          # recuperare sono poche centinaia: bastano una o due notti.
+          CARRIERE_FATTRICI_NUMERO: "300"
+          CARRIERE_FATTRICI_MINUTI: "20"
         run: python nightly_update.py
 
       # Controlla che ogni dato mostrato dal sito abbia un lavoro automatico che
