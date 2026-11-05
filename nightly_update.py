@@ -3093,6 +3093,35 @@ def phase_historic_ratings(conn: sqlite3.Connection):
 
 
 # ─────────────────────────────────────────────
+# FASE 3a-ter — VOTO DA PEDIGREE SOLO A CHI NON HA CORSO
+#
+# Il voto da pedigree (dal padre e dalla madre) serve per i cavalli senza
+# carriera. Quando un cavallo comincia a correre riceve il voto dalle corse,
+# ma la vecchia riga da pedigree restava: il cavallo compariva in tutte e due
+# le classifiche, a volte primo fra i "senza carriera" (es. LATIN LOVER GIO,
+# S dal pedigree, D dopo due corse). Qui si toglie il voto da pedigree a chi
+# ha corso o ha gia' un voto dalle corse o fra gli storici.
+# ─────────────────────────────────────────────
+def phase_pulisci_voti_pedigree(conn: sqlite3.Connection):
+    tolti = conn.execute("""
+        DELETE FROM horse_ratings
+         WHERE rating_mode = 'pedigree'
+           AND (
+             EXISTS (SELECT 1 FROM horses h
+                      WHERE h.name = horse_ratings.name
+                        AND h.birth_year = horse_ratings.birth_year
+                        AND COALESCE(h.career_races, 0) > 0)
+             OR EXISTS (SELECT 1 FROM horse_ratings a
+                         WHERE a.name = horse_ratings.name
+                           AND a.birth_year = horse_ratings.birth_year
+                           AND a.rating_mode IN ('performance', 'storico'))
+           )
+    """).rowcount
+    conn.commit()
+    print(f"[RATINGS] Voti da pedigree tolti a chi ha gia' corso: {tolti}", file=sys.stderr)
+
+
+# ─────────────────────────────────────────────
 # FASE 3b — RATINGS STALLONI
 # Formula: base_score = (SSS×100+SS×85+...+F×2) / n_figli_totali
 #          stallion_score = base_score × volume_multiplier
@@ -5397,6 +5426,7 @@ def main():
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
+        phase_pulisci_voti_pedigree(conn)  # FASE 3a-ter: via dal pedigree chi ha corso
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
         phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
         phase_grade_stability(conn)     # FASE 3d: affidabilita' del voto per eta'

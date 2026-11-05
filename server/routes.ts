@@ -1404,6 +1404,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
       ? ["hr.rating_mode = ?"]
       : ["hr.rating_mode = ?", ONLY_ATHLETES];
     const params: any[] = [mode];
+    // Il voto da pedigree vale solo per chi non ha mai corso: chi ha gia' un
+    // voto dalle corse (o fra gli storici) non entra in questa classifica.
+    // La fase notturna toglie queste righe; il filtro copre l'attesa.
+    if (mode === "pedigree") {
+      conditions.push("COALESCE(h.career_races, 0) = 0");
+      conditions.push("NOT EXISTS (SELECT 1 FROM horse_ratings a WHERE a.name = hr.name AND a.birth_year = hr.birth_year AND a.rating_mode IN ('performance','storico'))");
+    }
 
     if (year) { conditions.push("hr.birth_year = ?"); params.push(year); }
     // Il filtro sul voto puo' agire sulla lettera globale o su quella
@@ -1545,8 +1552,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
     try {
       const getHorse = (name: string, year?: string) => {
         const row = year
-          ? (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year WHERE hr.name = ? AND hr.birth_year = ? LIMIT 1`).get(name, parseInt(year)) as any)
-          : (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year WHERE hr.name = ? ORDER BY hr.birth_year DESC LIMIT 1`).get(name) as any);
+          ? (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year WHERE hr.name = ? AND hr.birth_year = ? ORDER BY CASE hr.rating_mode WHEN 'performance' THEN 0 WHEN 'storico' THEN 1 ELSE 2 END LIMIT 1`).get(name, parseInt(year)) as any)
+          : (db.prepare(`SELECT hr.*, h.country FROM horse_ratings hr LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year WHERE hr.name = ? ORDER BY hr.birth_year DESC, CASE hr.rating_mode WHEN 'performance' THEN 0 WHEN 'storico' THEN 1 ELSE 2 END LIMIT 1`).get(name) as any);
         if (!row) return null;
         const ped = db.prepare(`
           SELECT h.sire, h.dam,

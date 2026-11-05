@@ -127,6 +127,7 @@ export function datiBase(db: Database.Database) {
     SELECT COUNT(*) n FROM horse_ratings
      WHERE birth_year BETWEEN ? AND ? AND rating_mode = 'pedigree'
        AND COALESCE(horse_class, 'athlete') = 'athlete'
+       AND NOT EXISTS (SELECT 1 FROM horse_ratings a WHERE a.name = horse_ratings.name AND a.birth_year = horse_ratings.birth_year AND a.rating_mode IN ('performance','storico'))
   `).get(da, a) as any).n as number;
   const monte = (db.prepare(`SELECT stud_fee_eur f FROM stallions WHERE stud_fee_eur > 0`).all() as any[]).map(r => r.f);
   const aste = leggiAste();
