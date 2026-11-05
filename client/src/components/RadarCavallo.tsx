@@ -14,7 +14,7 @@ export interface PuntaRadar {
   nota?: string;
 }
 
-const SPIEGAZIONI: Record<string, string> = {
+export const SPIEGAZIONI: Record<string, string> = {
   velocita: "Miglior tempo al km, contro i nati nello stesso anno",
   rendimento: "Premio medio vinto per ogni corsa, contro i nati nello stesso anno (almeno 5 corse)",
   costanza: "Quante volte arriva nei primi tre, contro i nati nello stesso anno (almeno 5 corse)",

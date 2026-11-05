@@ -1,10 +1,17 @@
 /**
  * COMPARAZIONE: due cavalli uno contro l'altro.
  *
- * Tutto in due toni di blu: il cavallo A blu scuro, il cavallo B azzurro.
- * In alto le due schede con voto e lettera, poi il conto di chi vince piu'
- * voci, poi le barre a specchio (A verso sinistra, B verso destra) per ogni
- * numero della carriera, poi anno per anno, pedigree e ippodromi.
+ * Tutto in toni di giallo: il cavallo A giallo oro, il cavallo B arancio.
+ * In alto le due schede con voto e lettera e il conto di chi e' davanti,
+ * poi il grafico a ragno con i due profili sovrapposti (le sei punte della
+ * scheda cavallo), poi le barre a specchio per i numeri della carriera,
+ * poi anno per anno, pedigree e ippodromi.
+ *
+ * Il conto «meglio in» usa solo quattro voci che non si ripetono:
+ * % vittorie, % nei primi 3, euro a corsa e record. Corse e guadagni totali
+ * si vedono ma non contano, perche' dicono soprattutto quanto ha corso
+ * (e sarebbero contati due volte insieme alle percentuali). Il voto e' gia'
+ * un riassunto di tutto e sta nelle schede in alto.
  *
  * Indirizzo con i cavalli gia' scelti: #/compare?a=NOME__ANNO&b=NOME__ANNO
  */
@@ -19,10 +26,11 @@ import GradeBadge from "../components/GradeBadge";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { formatRecord } from "@/lib/record";
+import { SPIEGAZIONI, type PuntaRadar } from "../components/RadarCavallo";
 
-const BLU = coloreScheda("/compare");
-const A = "hsl(222 85% 60%)";
-const B = "hsl(195 90% 62%)";
+const GIALLO = coloreScheda("/compare");
+const A = "hsl(48 96% 56%)";
+const B = "hsl(24 92% 60%)";
 const TESTO = "hsl(210 10% 90%)";
 const MUTO = "hsl(210 8% 52%)";
 const FIOCO = "hsl(210 8% 38%)";
@@ -135,14 +143,15 @@ function HorseSearch({ value, onChange, indice }: { value: string; onChange: (v:
   );
 }
 
-interface Voce { lab: string; v: [number | null, number | null]; meglio: "alto" | "basso"; f: (v: number) => string; mostra?: [string, string] }
+interface Voce { lab: string; v: [number | null, number | null]; meglio: "alto" | "basso"; f: (v: number) => string;
+  mostra?: [string, string]; dettaglio?: [string | null, string | null]; conta: boolean }
 
 /** Una riga a specchio: la barra di A cresce verso sinistra, quella di B verso destra. */
 function RigaSpecchio({ voce }: { voce: Voce }) {
   const [a, b] = voce.v;
   const entrambi = isNum(a) && isNum(b);
   let vince = -1;
-  if (entrambi && a !== b) vince = voce.meglio === "alto" ? (a! > b! ? 0 : 1) : (a! < b! ? 0 : 1);
+  if (voce.conta && entrambi && a !== b) vince = voce.meglio === "alto" ? (a! > b! ? 0 : 1) : (a! < b! ? 0 : 1);
   // per il record (piu' basso e' meglio) la barra piu' lunga va al piu' veloce
   const forza = (x: number | null) => {
     if (!isNum(x)) return 0;
@@ -155,23 +164,75 @@ function RigaSpecchio({ voce }: { voce: Voce }) {
   const max = Math.max(fa, fb, 1e-9);
   const barra = (i: number, f: number) => (
     <div style={{ height: 12, borderRadius: 6, background: "hsl(220 10% 14%)", overflow: "hidden", display: "flex", justifyContent: i === 0 ? "flex-end" : "flex-start" }}>
-      <div style={{ width: `${(f / max) * 100}%`, minWidth: f > 0 ? 3 : 0, height: "100%", borderRadius: 6, background: COL[i], opacity: vince === -1 || vince === i ? 1 : 0.4, transition: "width .4s ease" }} />
+      <div style={{ width: `${(f / max) * 100}%`, minWidth: f > 0 ? 3 : 0, height: "100%", borderRadius: 6, background: voce.conta ? COL[i] : "hsl(220 8% 34%)", opacity: vince === -1 || vince === i ? 1 : 0.4, transition: "width .4s ease" }} />
     </div>
   );
   const valore = (i: number, x: number | null) => (
     <span className="tabular" style={{ textAlign: i === 0 ? "right" : "left", fontSize: 13.5, fontWeight: vince === i ? 800 : 500,
       color: vince === i ? COL[i] : isNum(x) ? "hsl(210 10% 75%)" : FIOCO, whiteSpace: "nowrap" }}>
       {voce.mostra ? voce.mostra[i] : isNum(x) ? voce.f(x) : "—"}
+      {voce.dettaglio?.[i] && <span style={{ display: "block", fontSize: 10.5, fontWeight: 500, color: FIOCO }}>{voce.dettaglio[i]}</span>}
     </span>
   );
   return (
     <div className="cf-riga" data-testid={`riga-${voce.lab}`}>
       {valore(0, a)}
       {barra(0, fa)}
-      <span className="cf-lab" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: MUTO, textTransform: "uppercase", letterSpacing: ".05em" }}>{voce.lab}</span>
+      <span className="cf-lab" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: MUTO, textTransform: "uppercase", letterSpacing: ".05em" }}>
+        {voce.lab}
+        {!voce.conta && <span style={{ display: "block", fontSize: 9.5, fontWeight: 600, color: FIOCO, textTransform: "none", letterSpacing: 0 }}>non conta nel punteggio</span>}
+      </span>
       {barra(1, fb)}
       {valore(1, b)}
     </div>
+  );
+}
+
+/**
+ * Grafico a ragno con i due profili sovrapposti: A pieno giallo, B arancio
+ * tratteggiato. Ogni punta va da 0 (centro) a 100 (bordo): quanti cavalli
+ * nati nello stesso anno lascia dietro. Una punta senza dato resta al centro.
+ */
+function RagnoDoppio({ r }: { r: [PuntaRadar[] | null, PuntaRadar[] | null] }) {
+  const base = r[0] ?? r[1];
+  if (!base) return null;
+  const W = 420, H = 340, cx = W / 2, cy = H / 2 + 4, RR = 112;
+  const n = base.length;
+  const ang = (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / n;
+  const pt = (i: number, v: number) => { const a = ang(i), q = (RR * Math.max(0, Math.min(100, v))) / 100; return [cx + q * Math.cos(a), cy + q * Math.sin(a)] as const; };
+  const anello = (v: number) => base.map((_, i) => pt(i, v).join(",")).join(" ");
+  const val = (k: number, i: number) => r[k]?.[i]?.valore ?? null;
+  const forma = (k: number) => base.map((_, i) => pt(i, val(k, i) ?? 0).join(",")).join(" ");
+  const tratt = ["", "6 4"];
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 460, height: "auto", display: "block", margin: "0 auto" }} role="img" data-testid="ragno"
+      aria-label={"Profili a confronto: " + base.map((p, i) => `${p.etichetta} A ${val(0, i) == null ? "n.d." : Math.round(val(0, i)!)}, B ${val(1, i) == null ? "n.d." : Math.round(val(1, i)!)}`).join("; ")}>
+      {[25, 50, 75, 100].map(v => <polygon key={v} points={anello(v)} fill="none" stroke="hsl(220 10% 24%)" strokeWidth={v === 100 ? 1.2 : 0.8} strokeDasharray={v === 100 ? undefined : "2 3"} />)}
+      {base.map((p, i) => { const [x, y] = pt(i, 100); return <line key={p.chiave} x1={cx} y1={cy} x2={x} y2={y} stroke="hsl(220 10% 22%)" strokeWidth={0.8} />; })}
+      {[0, 1].map(k => r[k] && (
+        <g key={k}>
+          <polygon points={forma(k)} fill={COL[k]} fillOpacity={k === 0 ? 0.22 : 0.12} stroke={COL[k]} strokeWidth={2.2} strokeDasharray={tratt[k] || undefined} strokeLinejoin="round" />
+          {base.map((_, i) => { const v = val(k, i); if (v == null) return null; const [x, y] = pt(i, v);
+            return <circle key={i} cx={x} cy={y} r={3.4} fill={COL[k]} stroke="hsl(220 14% 10%)" strokeWidth={1.2} />; })}
+        </g>
+      ))}
+      {base.map((p, i) => {
+        const a = ang(i), c = Math.cos(a), s = Math.sin(a);
+        const x = cx + (RR + 16) * c, y = cy + (RR + 14) * s;
+        const anchor = Math.abs(c) < 0.2 ? "middle" : c > 0 ? "start" : "end";
+        const dy = s < -0.5 ? -14 : s > 0.5 ? 6 : -4;
+        const num = (k: number) => { const v = val(k, i); return v == null ? "n.d." : String(Math.round(v)); };
+        return (
+          <g key={p.chiave}>
+            <title>{SPIEGAZIONI[p.chiave] ?? p.etichetta}</title>
+            <text x={x} y={y + dy} textAnchor={anchor} fontSize={12} fill="hsl(210 8% 64%)" fontWeight={700}>{p.etichetta}</text>
+            <text x={x} y={y + dy + 15} textAnchor={anchor} fontSize={13} fontWeight={800} style={{ fontVariantNumeric: "tabular-nums" }}>
+              <tspan fill={r[0] ? A : FIOCO}>{num(0)}</tspan><tspan fill={FIOCO}> · </tspan><tspan fill={r[1] ? B : FIOCO}>{num(1)}</tspan>
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -256,22 +317,23 @@ export default function ComparePage() {
   };
   const c1 = carriera(h1, stats1), c2 = carriera(h2, stats2);
   const tasso = (n: number | null, d: number | null) => (isNum(n) && isNum(d) && d > 0 ? (n / d) * 100 : null);
+  // Ogni fatto compare una volta sola: il numero grezzo sta sotto la percentuale.
+  const suCorse = (n: number | null, c: { corse: number | null }) => isNum(n) && isNum(c.corse) ? `${intero(n)} su ${intero(c.corse)}` : null;
   const voci: Voce[] = ready ? [
-    { lab: "Voto", v: [h1.score ?? null, h2.score ?? null], meglio: "alto", f: v => v.toLocaleString("it-IT", { maximumFractionDigits: 1 }) },
-    { lab: "Corse", v: [c1.corse, c2.corse], meglio: "alto", f: intero },
-    { lab: "Vittorie", v: [c1.vitt, c2.vitt], meglio: "alto", f: intero },
-    { lab: "Nei primi 3", v: [c1.piazz, c2.piazz], meglio: "alto", f: intero },
-    { lab: "% vittorie", v: [tasso(c1.vitt, c1.corse), tasso(c2.vitt, c2.corse)], meglio: "alto", f: perc },
-    { lab: "% nei primi 3", v: [c1.piazzQuota, c2.piazzQuota], meglio: "alto", f: perc },
-    { lab: "Guadagni", v: [c1.guad, c2.guad], meglio: "alto", f: euro },
-    { lab: "€ a corsa", v: [isNum(c1.guad) && c1.corse ? c1.guad / c1.corse : null, isNum(c2.guad) && c2.corse ? c2.guad / c2.corse : null], meglio: "alto", f: euro },
-    { lab: "Record al km", v: [c1.rec, c2.rec], meglio: "basso", f: scriviRecord },
+    { lab: "Vittorie", v: [tasso(c1.vitt, c1.corse), tasso(c2.vitt, c2.corse)], meglio: "alto", f: perc, conta: true,
+      dettaglio: [suCorse(c1.vitt, c1), suCorse(c2.vitt, c2)] },
+    { lab: "Nei primi 3", v: [c1.piazzQuota, c2.piazzQuota], meglio: "alto", f: perc, conta: true,
+      dettaglio: [suCorse(c1.piazz, c1), suCorse(c2.piazz, c2)] },
+    { lab: "€ a corsa", v: [isNum(c1.guad) && c1.corse ? c1.guad / c1.corse : null, isNum(c2.guad) && c2.corse ? c2.guad / c2.corse : null], meglio: "alto", f: euro, conta: true },
+    { lab: "Record al km", v: [c1.rec, c2.rec], meglio: "basso", f: scriviRecord, conta: true },
+    { lab: "Corse", v: [c1.corse, c2.corse], meglio: "alto", f: intero, conta: false },
+    { lab: "Guadagni totali", v: [c1.guad, c2.guad], meglio: "alto", f: euro, conta: false },
   ] : [];
   const vinte = [0, 0];
   let contese = 0;
   for (const v of voci) {
     const [a, b] = v.v;
-    if (!isNum(a) || !isNum(b)) continue;
+    if (!v.conta || !isNum(a) || !isNum(b)) continue;
     contese++;
     if (a === b) continue;
     const i = v.meglio === "alto" ? (a > b ? 0 : 1) : (a < b ? 0 : 1);
@@ -293,19 +355,21 @@ export default function ComparePage() {
   return (
     <div className="page-shell">
       <style>{CSS}</style>
-      <IntestazionePagina icona={GitCompare} colore={BLU} titolo="Comparazione" margineSotto={16}
-        sottotitolo="Due cavalli uno contro l'altro: voto, carriera, record, pedigree e ippodromi.">
-        Scegli due cavalli. Per ogni numero la barra più lunga è quella migliore: il cavallo A in blu scuro, il cavallo B in azzurro.
-        Per il record al chilometro vince il tempo più basso. Il conto «meglio in» dice in quante voci ognuno dei due è davanti.
+      <IntestazionePagina icona={GitCompare} colore={GIALLO} titolo="Comparazione" margineSotto={16}
+        sottotitolo="Due cavalli uno contro l'altro: profilo a ragno, carriera, record, pedigree e ippodromi.">
+        Scegli due cavalli: il cavallo A è in giallo, il cavallo B in arancio. Il grafico a ragno mette uno sopra l'altro i due profili
+        della scheda cavallo. Sotto, per ogni numero la barra più lunga è quella migliore; per il record vince il tempo più basso.
+        Il conto «meglio in» usa solo quattro voci che non si ripetono: percentuale di vittorie, percentuale nei primi 3, euro vinti a corsa e record.
+        Corse e guadagni totali si vedono ma non contano, perché dicono soprattutto quanto ha corso un cavallo.
       </IntestazionePagina>
 
       <div className="cf-sel">
         <HorseSearch key={`a-${giro}`} value={parse(sel1).name} onChange={setSel1} indice={0} />
         <div className="cf-vs">
-          <span style={{ fontSize: 13, fontWeight: 900, color: BLU, letterSpacing: ".1em" }}>VS</span>
+          <span style={{ fontSize: 13, fontWeight: 900, color: GIALLO, letterSpacing: ".1em" }}>VS</span>
           <button onClick={scambia} disabled={!sel1 && !sel2} aria-label="Scambia i due cavalli" title="Scambia" data-testid="btn-scambia"
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 10, cursor: "pointer",
-              background: FONDO2, border: `1px solid ${BORDO}`, color: BLU }}>
+              background: FONDO2, border: `1px solid ${BORDO}`, color: GIALLO }}>
             <ArrowLeftRight size={16} />
           </button>
         </div>
@@ -336,9 +400,48 @@ export default function ComparePage() {
             <SchedaEroe h={h2} i={1} vinte={vinte[1]} />
           </div>
 
+          <div className="cf-sez" data-testid="sezione-ragno">
+            <div className="cf-tit">Il profilo a confronto</div>
+            <div style={{ fontSize: 12, color: MUTO, marginBottom: 6, lineHeight: 1.5 }}>
+              Ogni punta va da 0 al centro a 100 sul bordo: quanti cavalli nati nello stesso anno lascia dietro. Due cavalli di annate diverse
+              sono quindi misurati ognuno contro i propri coetanei. Frequenza e pedigree descrivono il cavallo ma non dicono chi è più bravo.
+             
+            </div>
+            {(h1.radar || h2.radar) ? (
+              <>
+                <RagnoDoppio r={[h1.radar ?? null, h2.radar ?? null]} />
+                <div style={{ display: "flex", justifyContent: "center", gap: 18, flexWrap: "wrap", fontSize: 12, color: MUTO, marginTop: 4 }}>
+                  {[0, 1].map(i => (
+                    <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke={COL[i]} strokeWidth={2.5} strokeDasharray={i === 1 ? "6 4" : undefined} /></svg>
+                      <b style={{ color: COL[i] }}>{LETTERA[i]}</b> {[h1, h2][i].name}{![h1, h2][i].radar && " (nessun profilo)"}
+                    </span>
+                  ))}
+                </div>
+                <details style={{ marginTop: 10, fontSize: 12, color: MUTO }}>
+                  <summary style={{ cursor: "pointer", color: GIALLO, fontWeight: 700 }}>Cosa misura ogni punta</summary>
+                  <div style={{ marginTop: 6, display: "grid", gap: 4, lineHeight: 1.45 }}>
+                    {(h1.radar ?? h2.radar).map((p: PuntaRadar) => (
+                      <div key={p.chiave}><b style={{ color: TESTO }}>{p.etichetta}</b>: {SPIEGAZIONI[p.chiave] ?? ""}</div>
+                    ))}
+                  </div>
+                </details>
+                {(!h1.radar || !h2.radar) && (
+                  <div style={{ fontSize: 11.5, color: FIOCO, textAlign: "center", marginTop: 6 }}>
+                    Il profilo c'è solo per i cavalli valutati sulle loro corse: chi ha corso poco o è un campione storico non ce l'ha.
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ fontSize: 12.5, color: FIOCO }}>Nessuno dei due ha un profilo: c'è solo per i cavalli valutati sulle loro corse.</div>
+            )}
+          </div>
+
           <div className="cf-sez">
             <div className="cf-tit">Numero per numero</div>
-            <div style={{ fontSize: 12, color: MUTO, marginBottom: 6 }}>La barra piena indica chi è davanti; quella più chiara chi è dietro.</div>
+            <div style={{ fontSize: 12, color: MUTO, marginBottom: 6 }}>
+              La barra piena indica chi è davanti, quella più chiara chi è dietro. Le righe grigie si vedono ma non contano nel punteggio.
+            </div>
             {voci.map(v => <RigaSpecchio key={v.lab} voce={v} />)}
           </div>
 
@@ -375,7 +478,7 @@ export default function ComparePage() {
           <div className="cf-sez">
             <div className="cf-tit">Pedigree</div>
             <div style={{ fontSize: 12, color: MUTO, marginBottom: 8 }}>
-              {inComune.length ? <>In comune: <b style={{ color: BLU }}>{inComune.join(", ")}</b> (evidenziati).</> : "Nessun antenato in comune fra padre, madre e nonni."}
+              {inComune.length ? <>In comune: <b style={{ color: GIALLO }}>{inComune.join(", ")}</b> (evidenziati).</> : "Nessun antenato in comune fra padre, madre e nonni."}
             </div>
             {PED.map(([lab, k]) => {
               const v = [pedVal(h1, k), pedVal(h2, k)];
@@ -385,8 +488,8 @@ export default function ComparePage() {
                 const comune = x && inComune.includes(x);
                 return (
                   <span style={{ textAlign: i === 0 ? "right" : "left", minWidth: 0, overflowWrap: "anywhere" }}>
-                    {x ? <Link href={linkPed(k, x)}><a style={{ color: comune ? BLU : TESTO, fontWeight: comune ? 800 : 600, textDecoration: "none",
-                      ...(comune ? { background: "color-mix(in srgb, " + BLU + " 14%, transparent)", borderRadius: 5, padding: "1px 6px" } : {}) }}>{x}</a></Link>
+                    {x ? <Link href={linkPed(k, x)}><a style={{ color: comune ? GIALLO : TESTO, fontWeight: comune ? 800 : 600, textDecoration: "none",
+                      ...(comune ? { background: "color-mix(in srgb, " + GIALLO + " 14%, transparent)", borderRadius: 5, padding: "1px 6px" } : {}) }}>{x}</a></Link>
                       : <span style={{ color: FIOCO }}>—</span>}
                   </span>
                 );
@@ -437,7 +540,7 @@ export default function ComparePage() {
 
       {!ready && !isLoading && (
         <div className="cf-sez" style={{ textAlign: "center", padding: "44px 20px", color: MUTO, fontSize: 13.5, borderStyle: "dashed" }}>
-          <GitCompare size={26} color={BLU} style={{ marginBottom: 10 }} />
+          <GitCompare size={26} color={GIALLO} style={{ marginBottom: 10 }} />
           <div>Scegli due cavalli qui sopra per vederli uno contro l'altro.</div>
         </div>
       )}

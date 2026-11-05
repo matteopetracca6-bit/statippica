@@ -39,7 +39,7 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "I migliori 2 anni, 3 anni, 4 anni e anziani per vincite, in carriera o in una sola stagione" },
     { href: "/qualifiche", label: "Qualifiche", nota: "Il primo tempo ufficiale dei giovani", icon: Award, colore: "hsl(57 72% 66%)",
       descrizione: "Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" },
-    { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(37 78% 50%)",
+    { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(46 95% 54%)",
       descrizione: "Confronta due cavalli su statistiche, carriera e genealogia" },
   ] },
   { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)",

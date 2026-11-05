@@ -1560,7 +1560,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
           WHERE UPPER(TRIM(h.name)) = ? AND h.birth_year = ?
           LIMIT 1
         `).get(row.name, row.birth_year) as any;
-        return { ...row, pedigree: ped || null };
+        // Il radar a sei punte della scheda cavallo, per sovrapporre i due profili.
+        let radar = null;
+        try { radar = radarCavallo(db, { ...row, dam: ped?.dam ?? null }); } catch { /* resta senza */ }
+        return { ...row, pedigree: ped || null, radar };
       };
       const h1 = getHorse(name1, year1);
       const h2 = getHorse(name2, year2);
