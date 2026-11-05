@@ -1,3 +1,4 @@
+import AltreProve, { type AltraProva } from "@/components/AltreProve";
 import { useEffect } from "react";
 import RottureGaloppo from "@/components/RottureGaloppo";
 import BandieraCavallo, { paeseCavallo } from "../components/BandieraCavallo";
@@ -80,7 +81,7 @@ interface HorseData {
   } | null;
   qualifica?: {
     data: string; pista: string | null; tempo: string | null; tempo_scartato?: string | null; allenatore: string | null;
-    eta: number; prove: number; posizione_annata: number | null; cavalli_annata: number | null;
+    eta: number; prove: number; estero?: boolean; tardiva?: boolean; altre?: AltraProva[]; posizione_annata: number | null; cavalli_annata: number | null;
   } | null;
   voto_previsto?: {
     eta: number; voto_coetanei: string; voto_previsto: string; voto_basso: string; voto_alto: string;
@@ -184,8 +185,11 @@ function QualificaCavallo({ q }: { q: HorseData["qualifica"] }) {
           : null}
         {q.tempo_scartato ? <> La fonte scrive «{q.tempo_scartato}»: per una qualifica non è un tempo credibile (quasi tutte stanno fra 1.14 e 1.24 al km), quindi non lo usiamo.</> : null}
         {q.allenatore ? <> Allenatore alla prova: {q.allenatore}.</> : null}
-        {q.prove > 1 ? <> Prove di qualifica: {q.prove}, qui la prima.</> : null}
+        {q.estero ? <> La fonte ha solo tempi fatti all'estero: non si confrontano con le qualifiche italiane.</> : null}
+        {q.tardiva ? <> La fonte ha solo prove fatte da adulto (riqualifiche dopo una sosta): non si confrontano con le qualifiche dei puledri.</> : null}
+        {(q.altre?.length ?? 0) > 0 ? <> Qui conta la {q.estero || q.tardiva ? "prima prova" : "prima qualifica fatta in Italia da giovane"}; la fonte ha anche {q.altre!.length === 1 ? "un'altra prova" : `altre ${q.altre!.length} prove`}, che non entrano nei confronti:</> : null}
       </div>
+      {(q.altre?.length ?? 0) > 0 && <div style={{ marginTop: 8 }}><AltreProve altre={q.altre!} colore="hsl(183 70% 60%)" /></div>}
     </div>
   );
 }

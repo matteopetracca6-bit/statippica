@@ -29,6 +29,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import GradeBadge from "../components/GradeBadge";
 import NomePista from "@/components/NomePista";
 import { tempoKm, formatRecord } from "@/lib/record";
+import AltreProve, { type AltraProva } from "../components/AltreProve";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/qualifiche");
@@ -40,10 +41,12 @@ interface QualRow {
   sire: string | null; dam: string | null; maternal_gsire: string | null; trainer: string | null;
   owner: string | null; breeder: string | null; known_name: string | null; birth_year: number | null;
   score: number | null; grade: string | null;
+  n_prove?: number; estero?: boolean; tardiva?: boolean; altre?: AltraProva[];
 }
 interface QualResponse { rows: QualRow[]; total: number; limit: number; offset: number; years: string[]; tracks: { track: string; n: number }[] }
 interface Padre { sire: string; n_figli: number; tempo_medio: number; migliore: number | null }
 interface QualStats {
+  n_righe?: number; n_solo_estero?: number; n_solo_adulti?: number;
   n_prove: number; n_cavalli: number; n_stalloni: number; n_nuovi: number; dal: string; al: string;
   tempo_medio: number | null; tempo_migliore: number | null; top_sires: Padre[]; distribuzione?: { t: number; n: number }[];
 }
@@ -91,9 +94,11 @@ function Distribuzione({ dist, t }: { dist: { t: number; n: number }[]; t: numbe
 }
 
 function SchedaProva({ r, stats, onClose, vaiPadre }: { r: QualRow; stats?: QualStats | null; onClose?: () => void; vaiPadre: (s: string) => void }) {
-  const pct = battute(r.time_km, stats?.distribuzione);
-  const diff = r.time_km != null && stats?.tempo_medio != null ? stats.tempo_medio - r.time_km : null;
-  const { data: fratelli } = useQuery<QualResponse>({
+  // Un tempo fatto all'estero non si confronta con le qualifiche italiane.
+  const fuori = !!(r.estero || r.tardiva);
+  const pct = fuori ? null : battute(r.time_km, stats?.distribuzione);
+  const diff = !fuori && r.time_km != null && stats?.tempo_medio != null ? stats.tempo_medio - r.time_km : null;
+  const { data: fratelli, isLoading: caricaFratelli } = useQuery<QualResponse>({
     queryKey: ["/api/qualifiche", "sire", r.sire],
     enabled: !!r.sire,
     queryFn: async () => (await apiRequest("GET", `/api/qualifiche?sire=${encodeURIComponent(r.sire!)}&limit=8&sort=time`)).json(),
@@ -103,13 +108,13 @@ function SchedaProva({ r, stats, onClose, vaiPadre }: { r: QualRow; stats?: Qual
     <div className="ed-dettaglio" data-testid="scheda-qualifica">
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="ed-etich">Prova di qualifica · {itDate(r.qual_date)}</div>
+          <div className="ed-etich">{r.estero ? "Prova all'estero" : r.tardiva ? "Riqualifica da adulto" : "Prova di qualifica"} · {itDate(r.qual_date)}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>
             <span style={{ fontSize: 19, fontWeight: 800, color: "var(--ed-testo)", overflowWrap: "anywhere" }}>{r.horse_name}</span>
             {r.grade && <GradeBadge grade={r.grade} />}
           </div>
           <div style={{ fontSize: 12.5, color: "var(--ed-muto)", marginTop: 3 }}>
-            {r.track ? <NomePista pista={r.track} colorato /> : "ippodromo non indicato"}
+            {r.track === "ES" ? "all'estero" : r.track ? <NomePista pista={r.track} colorato /> : "ippodromo non indicato"}
             {r.birth_year ? ` · nato nel ${r.birth_year}` : ""}
           </div>
         </div>
@@ -120,9 +125,21 @@ function SchedaProva({ r, stats, onClose, vaiPadre }: { r: QualRow; stats?: Qual
         <Cifra titolo="Tempo al km" valore={tempo(r)} colore={COLORE}
           sotto={diff == null ? undefined : diff >= 0 ? `${secondi(diff)} s meglio della media` : `${secondi(-diff)} s peggio della media`} />
         <Cifra titolo="Prove battute" valore={pct == null ? "—" : `${pct}%`} colore={pct != null && pct >= 75 ? VERDE : undefined}
-          sotto="quante prove su cento sono state più lente" />
+          sotto={r.estero ? "non si confronta: tempo fatto all'estero" : r.tardiva ? "non si confronta: prova fatta da adulto" : "quante qualifiche su cento sono state più lente"} />
       </div>
-      {stats?.distribuzione && stats.distribuzione.length > 0 && (
+      {r.estero && (
+        <div style={{ fontSize: 12.5, color: "var(--ed-muto)", marginTop: 10, lineHeight: 1.55 }}>
+          La fonte ha per questo cavallo solo tempi fatti all'estero: spesso sono corse vere, non qualifiche, e all'estero piste e regole
+          sono diverse. Il tempo si mostra ma resta fuori dalla classifica, in fondo all'elenco.
+        </div>
+      )}
+      {r.tardiva && (
+        <div style={{ fontSize: 12.5, color: "var(--ed-muto)", marginTop: 10, lineHeight: 1.55 }}>
+          La fonte ha per questo cavallo solo prove fatte a cinque anni o più: sono riqualifiche dopo una sosta, non la prova da giovane
+          (che per i nati prima del 2010 spesso manca). Un cavallo adulto va più forte di un puledro, quindi il tempo resta fuori dalla classifica.
+        </div>
+      )}
+      {!fuori && stats?.distribuzione && stats.distribuzione.length > 0 && (
         <div style={{ marginTop: 12 }}><Distribuzione dist={stats.distribuzione} t={r.time_km} /></div>
       )}
 
@@ -136,10 +153,20 @@ function SchedaProva({ r, stats, onClose, vaiPadre }: { r: QualRow; stats?: Qual
         <span style={{ color: "var(--ed-muto)" }}>Allevamento</span><span style={{ color: "var(--ed-testo)" }}>{r.breeder || "—"}</span>
       </div>
 
+      {(r.altre?.length ?? 0) > 0 && (
+        <>
+          <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Altre prove nella fonte · {r.altre!.length}</div>
+          <AltreProve altre={r.altre!} colore={COLORE} />
+          <div style={{ fontSize: 11.5, color: "var(--ed-fioco)", marginTop: 6, lineHeight: 1.5 }}>
+            Qui sopra conta solo la {fuori ? "prima prova" : "prima qualifica fatta in Italia da giovane"}; queste restano come informazione e non entrano nelle classifiche.
+          </div>
+        </>
+      )}
+
       {r.sire && (
         <>
           <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Altri figli di {r.sire} in qualifica</div>
-          {altri.length === 0 ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>È l'unico figlio di questo padre fra le prove raccolte.</div> : (
+          {caricaFratelli ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>Carico...</div> : altri.length === 0 ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>È l'unico figlio di questo padre fra le prove raccolte.</div> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {altri.map(x => (
                 <div key={chiave(x)} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12.5, padding: "6px 10px", borderRadius: 8, background: "var(--ed-fondo2)" }}>
@@ -240,7 +267,7 @@ function Prove({ stats, vaiPadre }: { stats?: QualStats | null; vaiPadre: (s: st
           style={{ display: "inline-flex", alignItems: "center", gap: 6, borderColor: soloNuovi ? COLORE : undefined, color: soloNuovi ? COLORE : undefined }}>
           <Sparkles size={13} /> Solo chi non ha ancora corso
         </button>
-        <span style={{ fontSize: 12.5, color: "var(--ed-muto)", marginLeft: "auto" }}>{num(total)} prove</span>
+        <span style={{ fontSize: 12.5, color: "var(--ed-muto)", marginLeft: "auto" }}>{num(total)} {total === 1 ? "cavallo" : "cavalli"}</span>
       </div>
 
       {isLoading && !data ? <CavalloCaricamento label="Carico le qualifiche..." /> : rows.length === 0 ? (
@@ -261,15 +288,17 @@ function Prove({ stats, vaiPadre }: { stats?: QualStats | null; vaiPadre: (s: st
                         <span className="ed-nome" style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{r.horse_name}</span>
                           {r.grade && <GradeBadge grade={r.grade} />}
+                          {(r.estero || r.tardiva) && <span title={r.estero ? "Tempo fatto all'estero: non entra nella classifica" : "Riqualifica da adulto: non entra nella classifica"} style={{ fontSize: 10, fontWeight: 700, color: "var(--ed-muto)", border: "1px solid var(--ed-bordo)", borderRadius: 5, padding: "0 5px", flexShrink: 0 }}>{r.estero ? "ESTERO" : "DA ADULTO"}</span>}
                           {!r.known_name && <span title="Non ha ancora corso" style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: COLORE, flexShrink: 0 }}><Sparkles size={10} />NUOVO</span>}
                         </span>
-                        <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={forza(r.time_km)} max={1} colore={COLORE} /></span>
+                        <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={r.estero || r.tardiva ? 0 : forza(r.time_km)} max={1} colore={COLORE} /></span>
                         <span className="ed-sotto" style={{ display: "block" }}>
-                          {r.sire || "padre —"} · {itDate(r.qual_date)}{r.track ? ` · ${r.track}` : ""}
+                          {r.sire || "padre —"} · {itDate(r.qual_date)}{r.track && r.track !== "ES" ? ` · ${r.track}` : ""}
+                          {(r.altre?.length ?? 0) > 0 ? ` · +${r.altre!.length} ${r.altre!.length === 1 ? "altra prova" : "altre prove"}` : ""}
                         </span>
                       </span>
                       <span style={{ textAlign: "right" }}>
-                        <span className="tabular" style={{ display: "block", fontSize: 17, fontWeight: 800, color: COLORE, whiteSpace: "nowrap" }}>{tempo(r)}</span>
+                        <span className="tabular" style={{ display: "block", fontSize: 17, fontWeight: 800, color: r.estero || r.tardiva ? "var(--ed-muto)" : COLORE, whiteSpace: "nowrap" }}>{tempo(r)}</span>
                         <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)" }}>al km</span>
                       </span>
                     </button>
@@ -406,7 +435,7 @@ export default function QualifichePage() {
 
       {stats && (
         <div className="ed-cifre" style={{ marginBottom: 16 }}>
-          <Cifra titolo="Prove" valore={num(stats.n_prove)} sotto={`dal ${itDate(stats.dal)} al ${itDate(stats.al)}`} />
+          <Cifra titolo="Qualifiche" valore={num(stats.n_prove)} sotto={`una per cavallo, dal ${itDate(stats.dal)} al ${itDate(stats.al)}`} />
           <Cifra titolo="Non hanno ancora corso" valore={num(stats.n_nuovi)} colore={COLORE} sotto={`su ${num(stats.n_cavalli)} cavalli`} />
           <Cifra titolo="Tempo medio" valore={stats.tempo_medio != null ? tempoKm(stats.tempo_medio) : "—"} sotto="al km" />
           <Cifra titolo="Miglior tempo" valore={stats.tempo_migliore != null ? tempoKm(stats.tempo_migliore) : "—"} colore={COLORE} sotto={`${num(stats.n_stalloni)} stalloni padri`} />
@@ -432,6 +461,17 @@ export default function QualifichePage() {
           I dati di qualifica vengono da VendoPuledri e si aggiornano ogni notte. «Prove battute» confronta il tempo con tutte le prove
           raccolte, senza tenere conto della pista né del giorno: una qualifica su una pista piccola o con il terreno pesante esce più lenta
           a parità di cavallo. Un buon tempo in qualifica è un primo indizio, non una previsione della carriera.
+        </Spiegazione>
+        <Spiegazione titolo="Perché alcuni cavalli avevano più tempi" compatta>
+          Per i cavalli più vecchi la fonte elenca sotto «qualifiche» anche altre prove: i tempi fatti all'estero (spesso corse vere,
+          per esempio NAPOLEON BAR in 1.10.1 a cinque anni), le riqualifiche che un cavallo deve rifare dopo una lunga sosta, anche anni
+          dopo il debutto, e a volte due prove a poche settimane di distanza. Qui ogni cavallo compare una volta sola, con la prima
+          qualifica fatta in Italia da giovane (a due, tre o quattro anni): è quella che dice com'era da puledro. Le altre prove si vedono
+          nella sua scheda, ognuna con il motivo, ma non entrano in classifiche, medie e «prove battute».
+          Chi ha solo tempi fatti all'estero{stats?.n_solo_estero ? ` (${num(stats.n_solo_estero)} cavalli, quasi tutti nati fuori Italia)` : ""} o
+          solo riqualifiche da adulto{stats?.n_solo_adulti ? ` (${num(stats.n_solo_adulti)} cavalli, nati quasi tutti prima del 2012)` : ""} compare
+          con la scritta ESTERO o DA ADULTO, in fondo alla classifica dei tempi.
+          {stats?.n_righe ? ` In tutto la fonte ha ${num(stats.n_righe)} righe per ${num(stats.n_prove)} cavalli.` : ""}
         </Spiegazione>
       </div>
       <CollegamentiCorrelati voci={[

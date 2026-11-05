@@ -1057,15 +1057,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
           const prove = db.prepare(`
             SELECT qual_date, track, time_raw, time_km, trainer
             FROM vp_qualifiche WHERE horse_name = @nome AND ${filtroAnnata}
-            ORDER BY qual_date ASC
+            ORDER BY (track = 'ES'), (CAST(substr(qual_date,1,4) AS INTEGER) - @anno >= 5), qual_date ASC
           `).all({ nome: String(horse.name).trim().toUpperCase(), anno: horse.birth_year }) as any[];
           if (prove.length) {
             const q = prove[0];
             let posizione: number | null = null, suTotale: number | null = null;
-            if (haAnnata && q.time_km) {
+            // Posizione fra le qualifiche principali italiane dell'annata
+            // (una per cavallo): un tempo fatto all'estero non si confronta.
+            const tardivaQ = Number(String(q.qual_date).slice(0, 4)) - horse.birth_year >= 5;
+            if (haAnnata && q.time_km && q.track !== "ES" && !tardivaQ) {
               const r = db.prepare(`
+                WITH ${cteQualifiche(db)}
                 SELECT SUM(CASE WHEN time_km < @t THEN 1 ELSE 0 END) + 1 AS pos, COUNT(*) AS n
-                FROM vp_qualifiche WHERE annata = @anno AND time_km IS NOT NULL
+                FROM qu WHERE annata = @anno AND rn = 1 AND fuori = 0 AND time_km IS NOT NULL
               `).get({ t: q.time_km, anno: horse.birth_year }) as any;
               if (r?.n >= 50) { posizione = r.pos; suTotale = r.n; }
             }
@@ -1078,6 +1082,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
               allenatore: q.trainer || null,
               eta: Number(String(q.qual_date).slice(0, 4)) - horse.birth_year,
               prove: prove.length,
+              estero: q.track === "ES",
+              tardiva: q.track !== "ES" && tardivaQ,
+              altre: prove.length > 1 ? altreProve(db, String(horse.name).trim().toUpperCase(), haAnnata ? horse.birth_year : null, q) : [],
               posizione_annata: posizione, cavalli_annata: suTotale,
             };
           }
@@ -3604,8 +3611,68 @@ export function registerRoutes(httpServer: Server, app: Express) {
     return chain.split("").reverse().join("");
   }
 
+  // QUALIFICHE: UNA SOLA PER CAVALLO (novembre 2026).
+  // Per i cavalli piu' vecchi la fonte elenca piu' righe sotto "qualifiche":
+  //  - i tempi fatti all'estero (pista "ES"): spesso sono corse vere, per
+  //    esempio NAPOLEON BAR 1.10.1 in Svezia a cinque anni, e non si possono
+  //    confrontare con una qualifica italiana;
+  //  - le riqualifiche: chi resta fermo a lungo deve rifare la prova, anche
+  //    anni dopo il debutto (NAPOLEON BAR a Roma nel 2017, a dieci anni);
+  //  - a volte due prove a poche settimane di distanza prima del debutto.
+  // La qualifica del cavallo e' la PRIMA FATTA IN ITALIA; se ce ne sono solo
+  // all'estero, la prima all'estero, segnata come tale e tenuta fuori dalle
+  // classifiche dei tempi. Le altre righe non spariscono: la scheda le mostra
+  // come "altre prove", ciascuna con il motivo.
+  function qualHaAnnata(db: any): boolean {
+    return (db.prepare("PRAGMA table_info(vp_qualifiche)").all() as any[]).some(c => c.name === "annata");
+  }
+  function cteQualifiche(db: any): string {
+    const haAnnata = qualHaAnnata(db);
+    const gruppo = haAnnata ? "q.horse_name, COALESCE(q.annata, -1)" : "q.horse_name";
+    // "tardiva": prova fatta a cinque anni o piu'. Da giovani ci si qualifica
+    // a 2-3 anni (qualche volta a 4); dopo e' una riqualifica, e i tempi
+    // sono quelli di un cavallo adulto (NESTA EFFE 1.11.9 a otto anni).
+    const tardiva = haAnnata
+      ? "CASE WHEN q.annata IS NOT NULL AND CAST(substr(q.qual_date,1,4) AS INTEGER) - q.annata >= 5 THEN 1 ELSE 0 END"
+      : "0";
+    return `qu0 AS (
+      SELECT q.*, CASE WHEN q.track = 'ES' THEN 1 ELSE 0 END AS estero, ${tardiva} AS tardiva
+      FROM vp_qualifiche q),
+    qu AS (
+      SELECT q.*,
+             ROW_NUMBER() OVER (PARTITION BY ${gruppo} ORDER BY q.estero, q.tardiva, q.qual_date) AS rn,
+             COUNT(*) OVER (PARTITION BY ${gruppo}) AS n_prove,
+             CASE WHEN q.estero = 1 OR q.tardiva = 1 THEN 1 ELSE 0 END AS fuori
+      FROM qu0 q)`;
+  }
+  /** Le altre prove di un cavallo, oltre a quella principale, con il motivo. */
+  function altreProve(db: any, nome: string, annata: number | null, principale: { qual_date: string }): any[] {
+    const haAnnata = qualHaAnnata(db);
+    const righe = db.prepare(`
+      SELECT qual_date, track, time_raw, time_km FROM vp_qualifiche
+      WHERE horse_name = ? ${haAnnata && annata != null ? "AND annata = ?" : ""}
+      ORDER BY qual_date`).all(...(haAnnata && annata != null ? [nome, annata] : [nome])) as any[];
+    let debutto: string | null = null;
+    try {
+      debutto = (db.prepare("SELECT MIN(race_date) AS d FROM races WHERE horse_name = ? AND track != 'ESTERO'").get(nome) as any)?.d ?? null;
+    } catch { /* archivio corse non pronto */ }
+    const t0 = Date.parse(principale.qual_date);
+    return righe
+      .filter(r => !(r.qual_date === principale.qual_date))
+      .map(r => {
+        let motivo: string;
+        if (r.track === "ES") motivo = "estero";
+        else if (annata != null && Number(String(r.qual_date).slice(0, 4)) - annata >= 5) motivo = "adulto";
+        else if (debutto && r.qual_date > debutto) motivo = "dopo_debutto";
+        else if (Date.parse(r.qual_date) - t0 > 365 * 86400000) motivo = "riqualifica";
+        else if (r.qual_date < principale.qual_date) motivo = "prima";
+        else motivo = "ripetuta";
+        return { ...r, motivo };
+      });
+  }
+
   // GET /api/qualifiche — prove di qualifica, il primo tempo ufficiale di un
-  // cavallo giovane, prima ancora che debutti in corsa.
+  // cavallo giovane, prima ancora che debutti in corsa. Una riga per cavallo.
   app.get("/api/qualifiche", (req, res) => {
     const db = getDb();
     try {
@@ -3620,8 +3687,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const sort = (req.query.sort as string) === "date" ? "date" : "time";
       const limit = Math.min(500, parseInt(req.query.limit as string) || 100);
       const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+      const haAnnata = qualHaAnnata(db);
 
-      const where: string[] = ["1=1"];
+      const where: string[] = ["q.rn = 1"];
       const params: any[] = [];
       if (q) { where.push("q.horse_name LIKE ?"); params.push(`%${q}%`); }
       if (year) { where.push("substr(q.qual_date,1,4) = ?"); params.push(year); }
@@ -3630,22 +3698,27 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // "solo nuovi" = cavalli che nel nostro archivio corse non esistono
       if (onlyNew) where.push("h.name IS NULL");
 
+      const cte = `WITH ${cteQualifiche(db)}`;
       const base = `
-        FROM vp_qualifiche q
+        FROM qu q
         LEFT JOIN horses h ON h.name = q.horse_name
         LEFT JOIN horse_ratings hr ON hr.name = q.horse_name
                                    AND hr.rating_mode = 'performance'
         WHERE ${where.join(" AND ")}
       `;
-      const total = (db.prepare(`SELECT COUNT(*) AS n ${base}`).get(...params) as any).n;
+      const total = (db.prepare(`${cte} SELECT COUNT(*) AS n ${base}`).get(...params) as any).n;
 
+      // I tempi fatti all'estero non entrano nella classifica dei tempi:
+      // finiscono in fondo, dopo tutte le qualifiche italiane.
       const order = sort === "date"
         ? "q.qual_date DESC, q.time_km ASC"
-        : "(q.time_km IS NULL), q.time_km ASC, q.qual_date DESC";
+        : "(q.fuori = 1 OR q.time_km IS NULL), q.time_km ASC, q.qual_date DESC";
 
       const rows = db.prepare(`
+        ${cte}
         SELECT q.horse_name, q.qual_date, q.track, q.time_raw, q.time_km,
                q.sire, q.dam, q.maternal_gsire, q.trainer, q.owner, q.breeder,
+               ${haAnnata ? "q.annata" : "NULL AS annata"}, q.n_prove, q.estero, q.tardiva,
                h.name AS known_name, h.birth_year,
                hr.score, hr.grade
         ${base}
@@ -3654,14 +3727,20 @@ export function registerRoutes(httpServer: Server, app: Express) {
       `).all(...params, limit, offset) as any[];
 
       const years = db.prepare(
-        "SELECT DISTINCT substr(qual_date,1,4) AS y FROM vp_qualifiche ORDER BY y DESC"
+        `${cte} SELECT DISTINCT substr(qual_date,1,4) AS y FROM qu WHERE rn = 1 ORDER BY y DESC`
       ).all().map((r: any) => r.y);
       const tracks = db.prepare(
-        "SELECT track, COUNT(*) AS n FROM vp_qualifiche WHERE track != '' GROUP BY track ORDER BY n DESC"
+        `${cte} SELECT track, COUNT(*) AS n FROM qu WHERE rn = 1 AND track != '' GROUP BY track ORDER BY n DESC`
       ).all();
 
       res.json({
-        rows: rows.map(r => ({ ...r, grade_color: r.grade ? gradeColor(r.grade) : null })),
+        rows: rows.map(r => ({
+          ...r,
+          estero: !!r.estero,
+          tardiva: !!r.tardiva,
+          altre: r.n_prove > 1 ? altreProve(db, r.horse_name, r.annata ?? null, r) : [],
+          grade_color: r.grade ? gradeColor(r.grade) : null,
+        })),
         total, limit, offset, years, tracks,
       });
     } catch (e: any) {
@@ -3669,37 +3748,46 @@ export function registerRoutes(httpServer: Server, app: Express) {
     } finally { db.close(); }
   });
 
-  // GET /api/qualifiche/stats — riepilogo per l'intestazione della pagina
+  // GET /api/qualifiche/stats — riepilogo per l'intestazione della pagina.
+  // Contano solo le qualifiche principali fatte in Italia, una per cavallo.
   app.get("/api/qualifiche/stats", pronta(), (_req, res) => {
     const db = getDb();
     try {
       if (!vpTableExists(db, "vp_qualifiche")) return res.json(null);
+      const cte = `WITH ${cteQualifiche(db)}, it AS (SELECT * FROM qu WHERE rn = 1 AND fuori = 0)`;
       const s = db.prepare(`
-        SELECT COUNT(*) AS n_prove,
-               COUNT(DISTINCT horse_name) AS n_cavalli,
-               COUNT(DISTINCT sire) AS n_stalloni,
-               MIN(qual_date) AS dal, MAX(qual_date) AS al,
-               ROUND(AVG(time_km), 1) AS tempo_medio,
-               MIN(time_km) AS tempo_migliore
-        FROM vp_qualifiche
+        ${cte}
+        SELECT (SELECT COUNT(*) FROM vp_qualifiche) AS n_righe,
+               (SELECT COUNT(*) FROM qu WHERE rn = 1) AS n_prove,
+               (SELECT COUNT(*) FROM qu WHERE rn = 1 AND estero = 1) AS n_solo_estero,
+               (SELECT COUNT(*) FROM qu WHERE rn = 1 AND estero = 0 AND tardiva = 1) AS n_solo_adulti,
+               (SELECT COUNT(DISTINCT horse_name) FROM qu WHERE rn = 1) AS n_cavalli,
+               (SELECT COUNT(DISTINCT sire) FROM qu WHERE rn = 1) AS n_stalloni,
+               (SELECT MIN(qual_date) FROM qu WHERE rn = 1) AS dal,
+               (SELECT MAX(qual_date) FROM qu WHERE rn = 1) AS al,
+               (SELECT ROUND(AVG(time_km), 1) FROM it) AS tempo_medio,
+               (SELECT MIN(time_km) FROM it) AS tempo_migliore
       `).get() as any;
       const nuovi = (db.prepare(`
-        SELECT COUNT(DISTINCT q.horse_name) AS n FROM vp_qualifiche q
+        ${cte}
+        SELECT COUNT(DISTINCT q.horse_name) AS n FROM qu q
         LEFT JOIN horses h ON h.name = q.horse_name
-        WHERE h.name IS NULL
+        WHERE q.rn = 1 AND h.name IS NULL
       `).get() as any).n;
       const topSires = db.prepare(`
+        ${cte}
         SELECT sire, COUNT(*) AS n_figli, ROUND(AVG(time_km), 1) AS tempo_medio,
                MIN(time_km) AS migliore
-        FROM vp_qualifiche
+        FROM it
         WHERE sire IS NOT NULL AND time_km IS NOT NULL
         GROUP BY sire HAVING COUNT(*) >= 5
         ORDER BY tempo_medio ASC LIMIT 40
       `).all();
-      // Quante prove per ogni tempo (al decimo di secondo): serve alla pagina
-      // per dire a ogni cavallo "piu' veloce di quante prove su cento".
+      // Quante qualifiche per ogni tempo (al decimo di secondo): serve alla
+      // pagina per dire a ogni cavallo "piu' veloce di quante su cento".
       const distribuzione = db.prepare(`
-        SELECT time_km AS t, COUNT(*) AS n FROM vp_qualifiche
+        ${cte}
+        SELECT time_km AS t, COUNT(*) AS n FROM it
         WHERE time_km IS NOT NULL GROUP BY time_km ORDER BY time_km
       `).all();
       res.json({ ...s, n_nuovi: nuovi, top_sires: topSires, distribuzione });
