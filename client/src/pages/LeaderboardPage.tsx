@@ -142,7 +142,7 @@ function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: st
       )}
       {mode === "pedigree" && (
         <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--ed-muto)", lineHeight: 1.55 }}>
-          Questo cavallo non ha ancora una carriera: il voto è una stima che viene da quanto valgono il padre e la madre, non da come corre.
+          Questo cavallo non ha ancora una carriera: il voto è una stima che viene da quanto valgono il padre e la madre, non da come corre. È lo stesso voto atteso dell'Advisor, ancora sperimentale: dice poco sul singolo cavallo, per questo quasi tutti stanno fra A e B e le lettere più alte sono rare.
         </div>
       )}
 

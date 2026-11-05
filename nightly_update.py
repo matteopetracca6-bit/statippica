@@ -3122,6 +3122,118 @@ def phase_pulisci_voti_pedigree(conn: sqlite3.Connection):
 
 
 # ─────────────────────────────────────────────
+# FASE 3c-bis — VOTO DA PEDIGREE (cavalli che non hanno mai corso)
+#
+# I vecchi voti da pedigree erano stati scritti una volta sola, con una
+# formula che non esiste piu' nel progetto, e non venivano mai ricalcolati:
+# il punteggio era solo la posizione fra i cavalli senza carriera (0-100) e
+# la lettera usava una scala sua, per cui un cavallo su cinque era S e venti
+# cavalli avevano lo stesso 99,65. Una S da pedigree non voleva dire la
+# stessa cosa di una S dalle corse.
+#
+# Adesso il voto da pedigree e' lo stesso "voto atteso" dell'Advisor, con gli
+# stessi pesi (advisor_model.json, versione 3):
+#   padre: voto medio dei figli valutati, attenuato se sono pochi;
+#   madre: punti della pagina Fattrici piu' un gradino fisso se ha figli
+#          valutati; altrimenti, con peso minore, la produzione della madre
+#          o della nonna materna; altrimenti la media generale.
+# La lettera usa la stessa scala del voto atteso dell'Advisor. E' una stima
+# sperimentale e debole (spiega una piccola parte dei risultati): per questo
+# i voti si concentrano attorno alla media e le lettere alte sono rare.
+# Popolazione: nati dal 2012 a due anni fa, mai partiti, senza voto dalle
+# corse ne' fra gli storici, con padre noto.
+# ─────────────────────────────────────────────
+def _lettera_voto_atteso(v: float) -> str:
+    for soglia, g in ((75, "SSS"), (62, "SS"), (52, "S"), (43, "A"), (34, "B"),
+                      (26, "C"), (18, "D"), (9, "E")):
+        if v >= soglia:
+            return g
+    return "F"
+
+
+def phase_voti_pedigree(conn: sqlite3.Connection):
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "advisor_model.json")) as f:
+            m = json.load(f)
+    except Exception as e:
+        print(f"[PEDIGREE] pesi dell'Advisor non leggibili, voti da pedigree non aggiornati: {e}", file=sys.stderr)
+        return
+    if int(m.get("version", 0)) < 3:
+        print("[PEDIGREE] pesi dell'Advisor troppo vecchi, voti da pedigree non aggiornati", file=sys.stderr)
+        return
+    media = float(m["population_mean"]); k_sire = float(m["k_sire"]); k_dam = float(m["k_dam"])
+
+    def attenua(avg, n, k):
+        if avg is None or not n:
+            return media
+        w = n / (n + k)
+        return media + w * (avg - media)
+
+    padri = {r[0]: (r[1], r[2]) for r in conn.execute("""
+        SELECT UPPER(TRIM(sire)), AVG(score), COUNT(*) FROM horse_ratings
+         WHERE rating_mode = 'performance' AND score IS NOT NULL AND sire IS NOT NULL
+         GROUP BY 1""")}
+    madri = {r[0]: (r[1], r[2]) for r in conn.execute("""
+        SELECT UPPER(TRIM(h.dam)), AVG(r.score), COUNT(*) FROM horse_ratings r
+          JOIN horses h ON h.name = r.name AND h.birth_year = r.birth_year
+         WHERE r.rating_mode = 'performance' AND r.score IS NOT NULL AND h.dam IS NOT NULL
+         GROUP BY 1""")}
+    punti = {r[0]: r[1] for r in conn.execute("""
+        SELECT UPPER(TRIM(dam)), final_score FROM dam_rating_stats
+         WHERE final_score IS NOT NULL AND COALESCE(n_valutati, 0) > 0""")}
+    madre_di = {}
+    for nome, madre in conn.execute("SELECT UPPER(TRIM(name)), UPPER(TRIM(dam)) FROM horses WHERE dam IS NOT NULL"):
+        madre_di.setdefault(nome, madre)
+
+    ultimo_anno = datetime.utcnow().year - 2
+    righe = conn.execute(f"""
+        SELECT h.name, h.birth_year, h.sire, h.dam FROM horses h
+         WHERE h.birth_year BETWEEN 2012 AND ?
+           AND COALESCE(h.career_races, 0) = 0
+           AND COALESCE(h.horse_class, '{CLASS_ATHLETE}') = '{CLASS_ATHLETE}'
+           AND h.sire IS NOT NULL AND TRIM(h.sire) <> ''
+           AND NOT EXISTS (SELECT 1 FROM horse_ratings a
+                            WHERE a.name = h.name AND a.birth_year = h.birth_year
+                              AND a.rating_mode IN ('performance', 'storico'))
+    """, (ultimo_anno,)).fetchall()
+
+    calcolati = []
+    for nome, anno, padre, madre in righe:
+        p = _normalize_name(padre) if padre else ""
+        avg, n = padri.get(p.upper().strip(), (None, 0))
+        eff_padre = attenua(avg, n, k_sire)
+        d = (madre or "").upper().strip()
+        if d and d in punti:
+            parte_madre = m["w_dam"] * punti[d] + m.get("w_dam_con_figli", 0)
+        else:
+            if d and d in madri:
+                eff = attenua(*madri[d], k_dam)
+            elif d and madre_di.get(d) in madri:
+                eff = attenua(*madri[madre_di[d]], k_dam * 2)
+            else:
+                eff = media
+            parte_madre = m.get("w_nonna", 0) * eff
+        v = max(0.0, min(100.0, m["intercept"] + m["w_sire"] * eff_padre + parte_madre))
+        calcolati.append((nome, anno, p or None, round(v, 2), _lettera_voto_atteso(v)))
+
+    ora = datetime.utcnow().isoformat()
+    conn.execute("DELETE FROM horse_ratings WHERE rating_mode = 'pedigree'")
+    conn.executemany(f"""
+        INSERT INTO horse_ratings
+            (name, birth_year, sire, score, grade, career_races, career_wins,
+             career_earnings, rating_mode, horse_class, last_updated)
+        VALUES (?,?,?,?,?, 0, 0, 0, 'pedigree', '{CLASS_ATHLETE}', ?)
+    """, [(*c[:3], c[3], c[4], ora) for c in calcolati])
+    conn.commit()
+    conta = {}
+    for c in calcolati:
+        conta[c[4]] = conta.get(c[4], 0) + 1
+    print(f"[PEDIGREE] Voti da pedigree ricalcolati: {len(calcolati)} cavalli mai partiti; "
+          + ", ".join(f"{g} {conta.get(g, 0)}" for g in ("SSS", "SS", "S", "A", "B", "C", "D", "E", "F")),
+          file=sys.stderr)
+
+
+# ─────────────────────────────────────────────
 # FASE 3b — RATINGS STALLONI
 # Formula: base_score = (SSS×100+SS×85+...+F×2) / n_figli_totali
 #          stallion_score = base_score × volume_multiplier
@@ -5429,6 +5541,7 @@ def main():
         phase_pulisci_voti_pedigree(conn)  # FASE 3a-ter: via dal pedigree chi ha corso
         phase_stallion_ratings(conn)    # FASE 3b: rating stalloni
         phase_dam_ratings(conn)         # FASE 3c: rating fattrici (sulla progenie)
+        phase_voti_pedigree(conn)       # FASE 3c-bis: voto da pedigree per chi non ha corso
         phase_grade_stability(conn)     # FASE 3d: affidabilita' del voto per eta'
         phase_driver_stats(conn)        # FASE 3e: rendimento guidatori
         phase_track_stats(conn)         # FASE 3f: schede ippodromi e numeri di partenza
