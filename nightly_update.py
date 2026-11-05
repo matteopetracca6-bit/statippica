@@ -3185,7 +3185,9 @@ def phase_voti_pedigree(conn: sqlite3.Connection):
     for nome, madre in conn.execute("SELECT UPPER(TRIM(name)), UPPER(TRIM(dam)) FROM horses WHERE dam IS NOT NULL"):
         madre_di.setdefault(nome, madre)
 
-    ultimo_anno = datetime.utcnow().year - 2
+    # Fino ai nati dell'anno scorso: i puledri della generazione M (2025) che
+    # sono gia' nell'archivio entrano qui; gli altri arrivano dalle aste.
+    ultimo_anno = datetime.utcnow().year - 1
     righe = conn.execute(f"""
         SELECT h.name, h.birth_year, h.sire, h.dam FROM horses h
          WHERE h.birth_year BETWEEN 2012 AND ?
@@ -3196,6 +3198,32 @@ def phase_voti_pedigree(conn: sqlite3.Connection):
                             WHERE a.name = h.name AND a.birth_year = h.birth_year
                               AND a.rating_mode IN ('performance', 'storico'))
     """, (ultimo_anno,)).fetchall()
+
+    # Puledri della generazione M (nati nel 2025) visti alle aste yearling
+    # del 2026 (aste_yearling.csv): padre e madre sono noti, ma nell'archivio
+    # delle corse non ci sono ancora. Entrano con lo stesso calcolo; quando un
+    # puledro arriva nell'archivio vale la riga dell'archivio.
+    gia = {(r[0], r[1]) for r in righe}
+    in_archivio = {(r[0].upper().strip(), r[1]) for r in conn.execute(
+        "SELECT name, birth_year FROM horses WHERE birth_year = 2025")}
+    try:
+        import csv as _csv
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "aste_yearling.csv"),
+                  encoding="utf-8") as f:
+            lotti_m = [r for r in _csv.DictReader(f) if (r.get("generazione") or "").strip() == "M"]
+    except Exception as e:
+        print(f"[PEDIGREE] aste della generazione M non leggibili: {e}", file=sys.stderr)
+        lotti_m = []
+    visti = set()
+    da_asta = 0
+    for l in lotti_m:
+        nome = (l.get("puledro") or "").strip().upper()
+        padre = (l.get("padre") or "").strip().upper()
+        if not nome or not padre or nome in visti or (nome, 2025) in in_archivio or (nome, 2025) in gia:
+            continue
+        visti.add(nome)
+        da_asta += 1
+        righe.append((nome, 2025, padre, (l.get("madre") or "").strip().upper()))
 
     calcolati = []
     for nome, anno, padre, madre in righe:
@@ -3228,7 +3256,8 @@ def phase_voti_pedigree(conn: sqlite3.Connection):
     conta = {}
     for c in calcolati:
         conta[c[4]] = conta.get(c[4], 0) + 1
-    print(f"[PEDIGREE] Voti da pedigree ricalcolati: {len(calcolati)} cavalli mai partiti; "
+    print(f"[PEDIGREE] Voti da pedigree ricalcolati: {len(calcolati)} cavalli mai partiti "
+          f"(di cui {da_asta} puledri M dalle aste); "
           + ", ".join(f"{g} {conta.get(g, 0)}" for g in ("SSS", "SS", "S", "A", "B", "C", "D", "E", "F")),
           file=sys.stderr)
 

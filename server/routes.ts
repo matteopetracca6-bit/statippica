@@ -1493,7 +1493,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
                hr.guad_italia, hr.guad_estero,
                hr.grade_annata, hr.pos_annata, hr.tot_annata,
-               h.country, h.sex
+               h.country, h.sex,
+               CASE WHEN h.name IS NULL THEN 1 ELSE 0 END AS fuori_archivio
         ${fromClause}
         WHERE ${where}
         ORDER BY ${sortCol} ${sortDir}${sortExtra}
@@ -1529,11 +1530,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
           ? `SELECT DISTINCT birth_year FROM horse_ratings
              WHERE birth_year IS NOT NULL AND rating_mode = 'storico'
              ORDER BY birth_year DESC`
+          // Ogni classifica offre solo i suoi anni: i puledri del 2025 hanno
+          // solo il voto da pedigree e non vanno proposti fra quelli in gara.
           : `SELECT DISTINCT birth_year FROM horse_ratings
              WHERE birth_year IS NOT NULL AND COALESCE(horse_class, 'athlete') = 'athlete'
-               AND rating_mode <> 'storico'
+               AND rating_mode = ?
              ORDER BY birth_year DESC`,
-      ).all() as any[];
+      ).all(...(storico ? [] : [(req.query.mode as string) === "pedigree" ? "pedigree" : "performance"])) as any[];
       res.json(rows.map((r) => r.birth_year));
     } finally {
       db.close();

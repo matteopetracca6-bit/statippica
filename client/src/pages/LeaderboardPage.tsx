@@ -33,6 +33,7 @@ interface LeaderboardRow {
   pos_annata?: number | null;
   tot_annata?: number | null;
   country?: string | null;
+  fuori_archivio?: number;
   sex?: string | null;
   score: number;
   earn_percentile: number | null;
@@ -146,12 +147,19 @@ function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: st
         </div>
       )}
 
+      {r.fuori_archivio ? (
+        <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--ed-muto)", lineHeight: 1.55 }} data-testid="puledro-asta">
+          Puledro della generazione M, nato nel {r.birth_year}: lo conosciamo dalle aste yearling, con padre e madre, ma non è ancora nell'archivio delle corse, quindi non ha una scheda.{" "}
+          <Link href="/generazione-m" className="collegamento-scheda">Vedi Generazione M</Link>
+        </div>
+      ) : (
       <Link href={`/horse/${encodeURIComponent(r.name)}/${r.birth_year}`}>
         <a data-testid="link-scheda-cavallo" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, background: COLORE, color: "hsl(220 13% 7%)",
           borderRadius: 9, padding: "9px 14px", fontWeight: 800, fontSize: 13, textDecoration: "none" }}>
           Scheda completa <ArrowRight size={14} />
         </a>
       </Link>
+      )}
     </div>
   );
 }
