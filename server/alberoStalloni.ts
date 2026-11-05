@@ -183,8 +183,9 @@ export function alberoStalloni(db: Database.Database, chiaveCache: string): Albe
     const morto = notaMorte
       ? { data: notaMorte.data, fonte: notaMorte.fonte, url: notaMorte.url }
       : cat?.stud_status === "deceased" ? { data: null, fonte: "catalogo di monta", url: null } : null;
-    const inMonta = !!(cat?.stagione_ok && STATI_IN_MONTA.has(cat.stud_status));
-    // Morto ma ancora nel catalogo della stagione: la monta si fa con il seme congelato.
+    // Deceduto ma ancora nel catalogo della stagione (come VARENNE o READY
+    // CASH): resta fra gli stalloni in monta, e nell'albero ha il fiocco di neve.
+    const inMonta = !!(cat?.stagione_ok && (STATI_IN_MONTA.has(cat.stud_status) || (morto && cat.stud_status === "deceased")));
     const congelato = inMonta && !!morto;
     // Senza catalogo italiano: se i figli piu' giovani sono nati negli ultimi
     // due anni dell'archivio, lo stallone probabilmente e' ancora in monta

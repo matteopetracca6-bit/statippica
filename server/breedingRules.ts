@@ -73,7 +73,7 @@ export const SOGLIE = {
     nota: "Art. 7 Norme tecniche: dalla stagione di monta 2006, 150 fattrici "
       + "iscritte al libro genealogico per stallone per anno solare, "
       + "indipendentemente dal tipo di inseminazione. Stesso limite per "
-      + "stalloni esteri che servono in Italia con seme refrigerato o congelato.",
+      + "stalloni esteri che servono in Italia.",
   },
   stallone_deceduto: {
     nota: "Art. 7 Norme tecniche: il germoplasma di uno stallone deceduto e' "

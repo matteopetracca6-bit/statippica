@@ -92,7 +92,7 @@ function SchedaStazione({ f, stalloni, onClose }: { f: Farm; stalloni: Stallone[
                 </span>
                 <span style={{ display: "block", fontSize: 11, color: "var(--ed-muto)", marginTop: 1 }}>
                   {num(s.n_figli_totali)} figli{isNum(s.pct_top_S) ? ` · ${num(s.pct_top_S, 1)}% di vertice` : ""}
-                  {s.stud_status === "deceased" ? " · morto" : ""}
+                  {s.stud_status === "deceased" ? " · deceduto" : ""}
                 </span>
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 8 }}>

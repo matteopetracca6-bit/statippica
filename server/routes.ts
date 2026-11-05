@@ -1359,7 +1359,6 @@ export function registerRoutes(httpServer: Server, app: Express) {
           catalog_sire:          stud.catalog_sire,
           catalog_dam:           stud.catalog_dam,
           catalog_dam_sire:      stud.catalog_dam_sire,
-          catalog_notes:         stud.catalog_notes,
           catalog_url:           stud.catalog_url,
           catalog_synced_at:     stud.catalog_synced_at,
         } : null,

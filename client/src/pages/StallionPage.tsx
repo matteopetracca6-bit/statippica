@@ -482,9 +482,8 @@ export default function StallionPage() {
                     );
                   })()}
                   {stallion.attivita?.morto && (
-                    <span style={{ display: "block", marginTop: 2, color: stallion.attivita.seme_congelato ? "hsl(195 80% 70%)" : undefined }}>
-                      {stallion.attivita.morto.data ? `Morto il ${stallion.attivita.morto.data.slice(8, 10)}/${stallion.attivita.morto.data.slice(5, 7)}/${stallion.attivita.morto.data.slice(0, 4)}` : "Morto"}
-                      {stallion.attivita.seme_congelato ? ": la monta continua con il seme congelato" : ""}
+                    <span style={{ display: "block", marginTop: 2, color: "hsl(210 10% 82%)", fontWeight: 600 }} data-testid="stallone-deceduto">
+                      {stallion.attivita.morto.data ? `Deceduto il ${stallion.attivita.morto.data.slice(8, 10)}/${stallion.attivita.morto.data.slice(5, 7)}/${stallion.attivita.morto.data.slice(0, 4)}` : "Deceduto"}
                       {stallion.attivita.morto.url ? <> (<a href={stallion.attivita.morto.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{stallion.attivita.morto.fonte}</a>)</> : null}
                     </span>
                   )}
@@ -518,11 +517,12 @@ export default function StallionPage() {
 
           {/* Scheda monta: dati del catalogo stalloni della stagione */}
           {stallion.stud && (stallion.stud.stud_farm_address || stallion.stud.record_1600
-            || stallion.stud.record_2000 || stallion.stud.catalog_sire || stallion.stud.catalog_notes) && (
+            || stallion.stud.record_2000 || stallion.stud.catalog_sire) && (
             <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }}>
               <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "hsl(183 60% 55%)", marginBottom: "12px" }}>
                 {["active", "da_concordare", "free"].includes(stallion.stud.stud_status || "")
                   ? "STAGIONE DI MONTA"
+                  : stallion.stud.stud_status === "deceased" ? "DATI DI MONTA — DECEDUTO"
                   : "DATI DI MONTA — NON IN CATALOGO 2026"}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "22px 34px" }}>
@@ -542,11 +542,11 @@ export default function StallionPage() {
                   <Fact label="Vincite in carriera" value={"\u20ac" + Math.round(stallion.stud.catalog_earnings_eur).toLocaleString("it-IT")} />
                 )}
                 {stallion.stud.catalog_birth_year && <Fact label="Anno di nascita" value={String(stallion.stud.catalog_birth_year)} />}
-                {stallion.stud.catalog_notes && <Fact label="Seme e spedizioni" value={stallion.stud.catalog_notes} wide />}
               </div>
               <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "14px" }}>
                 {["active", "da_concordare", "free"].includes(stallion.stud.stud_status || "")
                   ? "Per prenotare la monta contatta direttamente l'allevamento indicato sopra."
+                  : stallion.stud.stud_status === "deceased" ? "Per sapere se la monta è ancora possibile contatta l'allevamento indicato sopra."
                   : "Questo stallone non risulta nel catalogo monte della stagione 2026: i dati qui sopra sono quelli dell'ultima stagione rilevata."}
               </div>
             </div>

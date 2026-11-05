@@ -2,7 +2,7 @@
  * ALBERO DEGLI STALLONI (novembre 2026).
  *
  * Gli stalloni divisi per generazione, in base agli anni in cui sono nati i
- * loro figli: papa' (in monta adesso, anche con il seme congelato), nonni,
+ * loro figli: papa' (in monta adesso, anche se deceduti), nonni,
  * bisnonni, trisnonni, antenati. Il calcolo e' in server/alberoStalloni.ts.
  *
  * Il voto di uno stallone conta solo i figli che hanno corso negli anni
@@ -29,7 +29,7 @@ import { periodoMonta } from "@/lib/periodoMonta";
 const COLORE = coloreScheda("/stalloni/albero");
 const COLORI_GEN = ["hsl(120 55% 52%)", "hsl(183 65% 55%)", "hsl(210 70% 65%)", "hsl(265 55% 68%)", "hsl(35 70% 60%)"];
 const DESCRIZIONE_GEN = [
-  "In monta nella stagione di adesso, anche chi è morto ma ha ancora il seme congelato.",
+  "In monta nella stagione di adesso, anche chi è deceduto ma resta nel catalogo (fiocco di neve).",
   "Non più in monta: la generazione prima dei papà.",
   "Due generazioni prima dei papà.",
   "Tre generazioni prima dei papà.",
@@ -87,7 +87,7 @@ function Scheda({ s, asse, scelto, legato, onScegli }: { s: Stallone; asse: [num
           <a onClick={e => e.stopPropagation()} style={{ fontWeight: 700, fontSize: 14, color: "hsl(210 10% 92%)", textDecoration: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{s.nome}</a>
         </Link>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-          {s.seme_congelato && <span title="Monta con seme congelato" style={{ color: "hsl(195 80% 70%)", display: "flex" }}><Snowflake size={14} /></span>}
+          {s.morto && s.seme_congelato && <span title="Deceduto, ancora nel catalogo di monta" aria-label="Deceduto, ancora nel catalogo di monta" role="img" style={{ color: "hsl(195 80% 70%)", display: "flex" }} data-testid={`fiocco-${s.nome}`}><Snowflake size={14} /></span>}
           {s.voto ? <span style={{ opacity: s.voto_confrontabile ? 1 : 0.45 }}><GradeBadge grade={s.voto} size="sm" /></span> : null}
         </span>
       </div>
@@ -101,8 +101,7 @@ function Scheda({ s, asse, scelto, legato, onScegli }: { s: Stallone; asse: [num
         {s.anno_punta ? <span className="tabular">più figli nel {s.anno_punta}</span> : null}
       </div>
       <div style={{ fontSize: 11, color: "var(--muted)", minHeight: 15 }}>
-        {s.morto && s.seme_congelato ? <span style={{ color: "hsl(195 80% 70%)" }}>morto{s.morto.data ? ` il ${dataIt(s.morto.data)}` : ""}, seme congelato</span>
-          : s.morto ? <span>morto</span>
+        {s.morto ? <span style={{ color: s.seme_congelato ? "hsl(195 80% 70%)" : undefined }}>deceduto{s.morto.data ? ` il ${dataIt(s.morto.data)}` : ""}</span>
           : s.fuori_catalogo_recente ? <span>non nel catalogo italiano, figli nati fino al {s.ultimo_figlio}</span>
           : s.posto_generazione ? <span>{s.posto_generazione}° su {s.su_generazione} nella sua generazione</span>
           : s.voto && !s.voto_confrontabile ? <span>voto non confrontabile: pochi figli negli anni dell'archivio</span>
@@ -185,8 +184,8 @@ export default function AlberoStalloniPage() {
       <IntestazionePagina icona={GitBranch} colore={COLORE} titolo="Albero degli stalloni" margineSotto={16}
         sottotitolo="Gli stalloni divisi per generazione, in base agli anni in cui sono nati i loro figli: papà, nonni, bisnonni e così via.">
         Ogni stallone sta nella generazione degli anni in cui ha fatto più figli. Si guarda l'anno centrale dei figli in archivio: metà
-        sono nati prima, metà dopo. I papà sono gli stalloni in monta nella stagione {data?.stagione ?? "di adesso"}, compresi quelli morti
-        che si usano ancora con il seme congelato, come VARENNE. Ci sono anche quelli fuori dal catalogo italiano che hanno figli nati fino
+        sono nati prima, metà dopo. I papà sono gli stalloni in monta nella stagione {data?.stagione ?? "di adesso"}, compresi quelli deceduti
+        che restano nel catalogo, come VARENNE: li riconosci dal fiocco di neve. Ci sono anche quelli fuori dal catalogo italiano che hanno figli nati fino
         all'ultimo anno. Fra un padre e un suo figlio stallone passano di solito {data?.distanza_generazione ?? 8} anni: è la distanza
         usata per separare le generazioni.
         <br /><br />
