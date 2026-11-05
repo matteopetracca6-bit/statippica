@@ -11,12 +11,12 @@
  * quelli della sua generazione e il voto, quando non e' confrontabile, lo si
  * dice.
  *
- * Toccando uno stallone si vede la sua linea paterna: il padre, il nonno e
+ * Toccando una scheda si apre la pagina dello stallone; il bottone "Vedi linea paterna" mostra il padre, il nonno e
  * cosi' via verso l'alto, e i figli stalloni verso il basso.
  */
 import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { GitBranch, Search, X, Snowflake, ChevronRight, ChevronDown } from "lucide-react";
@@ -73,8 +73,10 @@ function Andamento({ per_anno, da, a, colore }: { per_anno: { anno: number; n: n
 
 function Scheda({ s, asse, scelto, legato, onScegli }: { s: Stallone; asse: [number, number]; scelto: boolean; legato: boolean; onScegli: () => void }) {
   const colore = COLORI_GEN[s.generazione] ?? COLORE;
+  const [, vai] = useLocation();
   return (
-    <div role="button" tabIndex={0} onClick={onScegli} onKeyDown={e => { if (e.key === "Enter") onScegli(); }}
+    <div role="link" tabIndex={0} onClick={() => vai(`/stallion/${encodeURIComponent(s.nome)}`)} onKeyDown={e => { if (e.key === "Enter") vai(`/stallion/${encodeURIComponent(s.nome)}`); }}
+      title={`Apri la scheda di ${s.nome}`}
       data-testid={`albero-${s.nome}`} id={`albero-${s.nome.replace(/[^A-Z0-9]/g, "_")}`}
       style={{
         background: scelto ? "hsl(220 14% 13%)" : "hsl(220 12% 10%)", cursor: "pointer", minWidth: 0,
@@ -83,9 +85,7 @@ function Scheda({ s, asse, scelto, legato, onScegli }: { s: Stallone; asse: [num
         display: "flex", flexDirection: "column", gap: 6,
       }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <Link href={`/stallion/${encodeURIComponent(s.nome)}`}>
-          <a onClick={e => e.stopPropagation()} style={{ fontWeight: 700, fontSize: 14, color: "hsl(210 10% 92%)", textDecoration: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{s.nome}</a>
-        </Link>
+        <span style={{ fontWeight: 700, fontSize: 14, color: "hsl(210 10% 92%)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{s.nome}</span>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           {s.morto && s.seme_congelato && <span title="Deceduto, ancora nel catalogo di monta" aria-label="Deceduto, ancora nel catalogo di monta" role="img" style={{ color: "hsl(195 80% 70%)", display: "flex" }} data-testid={`fiocco-${s.nome}`}><Snowflake size={14} /></span>}
           {s.voto ? <span style={{ opacity: s.voto_confrontabile ? 1 : 0.45 }}><GradeBadge grade={s.voto} size="sm" /></span> : null}
@@ -108,6 +108,11 @@ function Scheda({ s, asse, scelto, legato, onScegli }: { s: Stallone; asse: [num
           : null}
         {s.posto_generazione && (s.morto || s.fuori_catalogo_recente) ? <span> · {s.posto_generazione}° su {s.su_generazione}</span> : null}
       </div>
+      <button type="button" onClick={e => { e.stopPropagation(); onScegli(); }} onKeyDown={e => e.stopPropagation()}
+        data-testid={`linea-${s.nome}`}
+        style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 7, border: `1px solid ${scelto ? colore : "hsl(220 10% 22%)"}`, background: "transparent", color: scelto ? colore : "hsl(210 8% 70%)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+        <GitBranch size={11} /> {scelto ? "Linea mostrata sopra" : "Vedi linea paterna"}
+      </button>
     </div>
   );
 }
@@ -251,7 +256,7 @@ export default function AlberoStalloniPage() {
                   ) : <span style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 6 }}>Nessun figlio stallone con almeno {data.min_figli} figli in archivio.</span>}
                 </div>
               </>
-            ) : <span style={{ fontSize: 12.5, color: "var(--muted)" }}>Tocca uno stallone per vedere la sua linea.</span>}
+            ) : <span style={{ fontSize: 12.5, color: "var(--muted)" }}>Premi «Vedi linea paterna» su uno stallone per vedere la sua linea. Toccando la scheda si apre la pagina dello stallone.</span>}
           </div>
 
           {data.generazioni.map(g => {
@@ -267,7 +272,7 @@ export default function AlberoStalloniPage() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
                   {mostrati.map(s => (
-                    <Scheda key={s.nome} s={s} asse={asse} scelto={s.nome === scelto} legato={legati.has(s.nome)} onScegli={() => scegli(s.nome)} />
+                    <Scheda key={s.nome} s={s} asse={asse} scelto={s.nome === scelto} legato={legati.has(s.nome)} onScegli={() => { scegli(s.nome); setTimeout(() => document.querySelector('[data-testid="linea-paterna"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
                   ))}
                 </div>
                 {elenco.length > QUANTI && (
