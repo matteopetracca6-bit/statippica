@@ -14,6 +14,7 @@ export interface VoceScuderia {
   madre?: string | null;
   prezzo?: number | null;
   asta?: boolean;
+  offerta?: number | null;   // quanto ti offrono per venderlo (facoltativo)
 }
 export interface Scuderia { mensile: number; voci: VoceScuderia[] }
 
@@ -54,6 +55,13 @@ export function useScuderia() {
     aggiungi: (v: Omit<VoceScuderia, "id">) => {
       if (s.voci.some(x => chiaveVoce(x) === chiaveVoce(v))) return;
       scrivi({ ...s, voci: [...s.voci, { ...v, id: Math.random().toString(36).slice(2, 10) }] });
+    },
+    /** Aggiunge piu' voci insieme, saltando quelle gia' presenti. */
+    aggiungiMolte: (nuove: Omit<VoceScuderia, "id">[]) => {
+      const chiavi = new Set(s.voci.map(chiaveVoce));
+      const da = nuove.filter(v => { const k = chiaveVoce(v); if (chiavi.has(k)) return false; chiavi.add(k); return true; });
+      if (da.length) scrivi({ ...s, voci: [...s.voci, ...da.map(v => ({ ...v, id: Math.random().toString(36).slice(2, 10) }))] });
+      return da.length;
     },
     togli: (id: string) => scrivi({ ...s, voci: s.voci.filter(x => x.id !== id) }),
     togliVoce: (v: Partial<VoceScuderia>) => scrivi({ ...s, voci: s.voci.filter(x => chiaveVoce(x) !== chiaveVoce(v)) }),

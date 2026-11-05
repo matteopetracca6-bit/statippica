@@ -4,11 +4,11 @@
  * di carriera. I conti sono in server/scuderia.ts; l'elenco sta nel browser.
  */
 import { coloreScheda } from "@/lib/sezioni";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Briefcase, Trash2, Plus } from "lucide-react";
+import { Briefcase, Trash2, Plus, KeyRound, Search } from "lucide-react";
 import Sagoma from "../components/Sagoma";
 import NameSelect from "../components/NameSelect";
 import GradeBadge from "../components/GradeBadge";
@@ -129,6 +129,206 @@ function Aggiungi() {
   );
 }
 
+// Il proprietario arriva dalla sua scheda: il router lo mette prima del "#"
+// (?proprietario=X#/scuderia), un link scritto a mano dopo (#/scuderia?proprietario=X).
+const parametriHash = () => {
+  if (typeof window === "undefined") return new URLSearchParams();
+  const h = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+  return h.get("proprietario") ? h : new URLSearchParams(window.location.search);
+};
+
+/** Importa i cavalli di un proprietario: quelli che oggi corrono per lui. */
+function ImportaProprietario() {
+  const { aggiungiMolte, sostituisci, scuderia } = useScuderia();
+  const [testo, setTesto] = useState("");
+  const [scelto, setScelto] = useState<string | null>(() => parametriHash().get("proprietario"));
+  const [fatto, setFatto] = useState<string | null>(null);
+  const { data: elenco } = useQuery<any>({
+    queryKey: ["/api/proprietari"],
+    queryFn: async () => (await apiRequest("GET", "/api/proprietari")).json(),
+  });
+  const { data: cav, isFetching } = useQuery<any>({
+    queryKey: ["/api/scuderia/da-proprietario", scelto],
+    enabled: !!scelto,
+    queryFn: async () => (await apiRequest("GET", `/api/scuderia/da-proprietario/${encodeURIComponent(scelto!)}`)).json(),
+  });
+  const proposte = useMemo(() => {
+    const q = testo.trim().toUpperCase();
+    if (q.length < 2 || !elenco?.proprietari) return [];
+    return (elenco.proprietari as any[])
+      .filter(p => p.nome.toUpperCase().includes(q) || p.proprietario.includes(q))
+      .sort((a, b) => (b.attivo - a.attivo) || (b.n_corse_recenti - a.n_corse_recenti))
+      .slice(0, 8);
+  }, [testo, elenco]);
+  useEffect(() => { setFatto(null); }, [scelto]);
+
+  if (elenco && !elenco.disponibile) {
+    return (
+      <div className="pannello" style={{ ...CARD, marginTop: 12, fontSize: 12.5, color: MUTED }}>
+        <KeyRound size={13} style={{ verticalAlign: -2, marginRight: 6, color: ACCENTO }} />
+        Presto potrai riempire la scuderia scrivendo il nome del proprietario: i dati dei proprietari si stanno raccogliendo.
+      </div>
+    );
+  }
+  const voci = (cav?.cavalli ?? []).filter((c: any) => c.anno).map((c: any) => ({ tipo: "cavallo" as const, nome: c.nome, anno: c.anno }));
+  const nomeProp = cav?.nome ?? (elenco?.proprietari as any[] | undefined)?.find(p => p.proprietario === scelto)?.nome ?? scelto;
+  const bott: React.CSSProperties = { background: "hsl(220 10% 14%)", border: "1px solid hsl(220 10% 22%)", color: "hsl(210 10% 86%)", borderRadius: 8, padding: "7px 12px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" };
+  return (
+    <div className="pannello" style={{ ...CARD, marginTop: 12 }} data-testid="importa-proprietario">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <KeyRound size={15} color={ACCENTO} />
+        <b style={{ fontSize: 13.5, color: TESTO }}>Prendi i cavalli di un proprietario</b>
+      </div>
+      {!scelto ? (
+        <div style={{ position: "relative", maxWidth: 420 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 22%)", borderRadius: 8, padding: "7px 10px" }}>
+            <Search size={14} color={MUTED} />
+            <input value={testo} onChange={e => setTesto(e.target.value)} placeholder="Nome del proprietario o della scuderia" aria-label="Nome del proprietario"
+              data-testid="input-proprietario-scuderia"
+              style={{ background: "transparent", border: 0, outline: "none", color: TESTO, fontSize: 13, flex: 1, fontFamily: "inherit", minWidth: 0 }} />
+          </label>
+          {proposte.length > 0 && (
+            <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
+              {proposte.map(p => (
+                <button key={p.proprietario} onClick={() => { setScelto(p.proprietario); setTesto(""); }} data-testid="proposta-proprietario"
+                  style={{ ...bott, textAlign: "left", display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <span style={{ fontWeight: 700, color: TESTO }}>{p.nome}</span>
+                  <span style={{ color: MUTED, fontSize: 11.5, whiteSpace: "nowrap" }}>{p.attivo ? `${p.n_cavalli_recenti} cavalli di recente` : "non più in attività"}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8, lineHeight: 1.5 }}>
+            Prende i cavalli che oggi corrono per quel proprietario, cioè quelli la cui ultima corsa, negli ultimi 12 mesi, è con i suoi colori.
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div style={{ fontSize: 13, color: "hsl(210 10% 84%)", lineHeight: 1.6 }}>
+            {isFetching && !cav ? "Cerco i cavalli..." : <>
+              <b style={{ color: TESTO }}>{nomeProp}</b>: {voci.length === 0 ? "nessun cavallo ha corso per lui negli ultimi 12 mesi." :
+                <>{voci.length === 1 ? "1 cavallo corre" : `${voci.length} cavalli corrono`} oggi per questo proprietario.</>}
+            </>}
+          </div>
+          {voci.length > 0 && (
+            <div style={{ fontSize: 12, color: MUTED, margin: "6px 0 10px", lineHeight: 1.6 }}>
+              {voci.slice(0, 12).map((v: any) => titolo(v.nome)).join(", ")}{voci.length > 12 ? ` e altri ${voci.length - 12}` : ""}.
+            </div>
+          )}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {voci.length > 0 && <>
+              <button style={{ ...bott, borderColor: ACCENTO, color: ACCENTO, fontWeight: 700 }} data-testid="importa-sostituisci"
+                onClick={() => { if (scuderia.voci.length === 0 || confirm("Sostituire la scuderia con questi cavalli?")) { sostituisci(voci); setFatto(`Scuderia sostituita con ${voci.length} cavalli.`); } }}>
+                Usa come la mia scuderia
+              </button>
+              {scuderia.voci.length > 0 && <button style={bott} onClick={() => { const n = aggiungiMolte(voci); setFatto(n ? `Aggiunti ${n} cavalli.` : "Erano già tutti nella scuderia."); }}>
+                Aggiungi a quelli che ho
+              </button>}
+            </>}
+            <button style={bott} onClick={() => setScelto(null)}>Scegli un altro proprietario</button>
+          </div>
+          {fatto && <div style={{ fontSize: 12.5, color: VERDE, marginTop: 8 }}>{fatto}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** L'offerta per un cavallo, scritta a mano e salvata nella scuderia. */
+function CampoOfferta({ id, valore }: { id: string; valore: number | null }) {
+  const { modifica } = useScuderia();
+  const [t, setT] = useState(valore != null ? String(valore) : "");
+  useEffect(() => { setT(valore != null ? String(valore) : ""); }, [valore]);
+  const salva = () => {
+    const n = t.trim() === "" ? null : Math.max(0, Math.round(Number(t)));
+    if (n != null && !Number.isFinite(n)) { setT(valore != null ? String(valore) : ""); return; }
+    if (n !== valore) modifica(id, { offerta: n });
+  };
+  return (
+    <input type="number" min={0} step={1000} inputMode="numeric" value={t} placeholder="—" aria-label="Offerta in euro"
+      onChange={e => setT(e.target.value)} onBlur={salva} onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      style={{ background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 22%)", borderRadius: 7, color: TESTO, padding: "5px 8px", fontSize: 12.5, width: 100, fontFamily: "inherit", textAlign: "right" }} />
+  );
+}
+
+const ESITI: Record<string, { testo: string; colore: string }> = {
+  vendere: { testo: "Vendere conviene", colore: VERDE },
+  tenere: { testo: "Tenerlo conviene", colore: ORO },
+  pari: { testo: "Circa uguale", colore: MUTED },
+};
+
+/** Tenere o vendere, cavallo per cavallo, e cosa cambia se vendi. */
+function TenereVendere({ d }: { d: any }) {
+  const vd = d.vendite;
+  const t = d.prossimi_12_mesi;
+  return (
+    <>
+      <Titoletto nota={<>Tenere un cavallo vale, in media, quello che può ancora vincere meno l'allenamento che costerà. Venderlo vale l'offerta che ricevi.
+        Quanto lo hai pagato non conta: è già speso in entrambi i casi. Scrivi un'offerta per vedere quale scelta rende di più.</>}>
+        Tenere o vendere
+      </Titoletto>
+      {(() => {
+        const neg = d.voci.filter((v: any) => v.vendita.tenere <= 0).length;
+        return neg > 0 ? (
+          <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 8px", lineHeight: 1.6 }}>
+            Con {euro(d.mensile)} al mese, {neg === d.voci.length ? (neg === 1 ? "il cavallo costa" : `tutti i ${neg} cavalli costano`) : `${neg} cavalli su ${d.voci.length} costano`} in media
+            più di quanto vinceranno: per {neg === 1 ? "lui" : "loro"} qualsiasi offerta è meglio che tenerli, e anche fermarli conviene.
+            Se il tuo costo mensile è più basso, scrivilo in alto: il conto cambia.
+          </p>
+        ) : null;
+      })()}
+      <div style={{ overflowX: "auto" }}>
+        <table className="tabella-tenere" data-testid="tabella-vendere">
+          <thead><tr>
+            <th>Cavallo</th><th className="num">Tenerlo vale</th><th className="num nascondi-mobile">Vendere conviene sopra</th><th className="num">Offerta (€)</th><th>Esito</th>
+          </tr></thead>
+          <tbody>
+            {d.voci.map((v: any) => {
+              const e = v.vendita?.esito ? ESITI[v.vendita.esito] : null;
+              return (
+                <tr key={v.id}>
+                  <td style={{ whiteSpace: "normal", minWidth: 110 }}>
+                    <span style={{ color: TESTO, fontWeight: 700 }}>{v.nome ? titolo(v.nome) : "Puledro"}</span>
+                    <div style={{ fontSize: 11, color: MUTED }}>{v.vendita.base === "carriera" ? (v.tipo === "puledro" ? "carriera attesa del puledro" : "resto della carriera") : "solo i prossimi 12 mesi"}</div>
+                  </td>
+                  <td className="num tabular" style={{ color: colSaldo(v.vendita.tenere), fontWeight: 700 }}>{euro(v.vendita.tenere)}</td>
+                  <td className="num tabular nascondi-mobile">{v.vendita.tenere <= 0 ? <span style={{ color: MUTED }}>qualsiasi prezzo</span> : euro(v.vendita.soglia)}</td>
+                  <td className="num"><CampoOfferta id={v.id} valore={v.vendita.offerta} /></td>
+                  <td style={{ whiteSpace: "normal", minWidth: 120 }}>
+                    {e ? <>
+                      <b style={{ color: e.colore, fontSize: 12.5 }}>{e.testo}</b>
+                      <div style={{ fontSize: 11, color: MUTED }}>
+                        {v.vendita.esito === "pari" ? "differenza entro il 10%" : `${euro(Math.abs(v.vendita.differenza))} ${v.vendita.esito === "vendere" ? "in più vendendo" : "in più tenendolo"}`}
+                      </div>
+                    </> : <span style={{ fontSize: 11.5, color: MUTED }}>{v.vendita.tenere <= 0 ? "costa più di quanto renderà" : "scrivi un'offerta"}</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {vd && vd.cavalli.length > 0 && (
+        <div className="pannello" style={{ ...CARD, marginTop: 10 }} data-testid="riassunto-vendite">
+          <b style={{ fontSize: 13.5, color: TESTO }}>Se vendi {vd.cavalli.length === 1 ? "questo cavallo" : `questi ${vd.cavalli.length} cavalli`}</b>
+          <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>
+            {vd.cavalli.map((n: string) => titolo(n)).join(", ")}: incassi <b style={{ color: TESTO }}>{euro(vd.incasso)}</b>
+            {vd.valore_rinunciato >= 0
+              ? <> e rinunci a una carriera che vale in media {euro(vd.valore_rinunciato)}</>
+              : <> e in più eviti una carriera che in media costerebbe {euro(-vd.valore_rinunciato)} più di quanto renderebbe</>},
+            quindi ci guadagni circa <b style={{ color: VERDE }}>{euro(vd.guadagno)}</b>.
+            {vd.dopo && <> Nei prossimi 12 mesi il saldo atteso della scuderia passa da {euro(t.saldo_atteso_12)} a <b style={{ color: colSaldo(vd.dopo.saldo_atteso_12) }}>{euro(vd.dopo.saldo_atteso_12)}</b> e
+              chiude in pari nel {pc(vd.dopo.prob_in_pari)} dei casi invece che nel {pc(t.prob_in_pari)}.</>}
+          </p>
+        </div>
+      )}
+      {vd && vd.con_offerta > 0 && vd.cavalli.length === 0 && (
+        <p style={{ fontSize: 12.5, color: MUTED, marginTop: 8 }}>Con le offerte scritte, nessun cavallo rende di più venduto che tenuto.</p>
+      )}
+    </>
+  );
+}
+
 export default function ScuderiaPage() {
   const { scuderia, togli, impostaMensile, sostituisci, svuota } = useScuderia();
   const [mensileScritto, setMensileScritto] = useState(String(scuderia.mensile));
@@ -151,7 +351,7 @@ export default function ScuderiaPage() {
   return (
     <div className="page-shell">
       <IntestazionePagina icona={Briefcase} colore={ACCENTO} titolo="La tua scuderia" margineSotto={14}
-        sottotitolo="I tuoi cavalli e puledri insieme: cassa dei prossimi 12 mesi, rischio e valore di carriera.">
+        sottotitolo="I tuoi cavalli e puledri insieme: cassa dei prossimi 12 mesi, rischio, valore di carriera e quando conviene vendere.">
         Metti insieme i tuoi cavalli e i tuoi puledri. Il sito guarda la scuderia come un'azienda: quanto entra e quanto esce nei prossimi 12 mesi,
         quanto è rischiosa nel suo insieme e quanto vale la carriera che i cavalli hanno ancora davanti. L'elenco resta salvato in questo browser.
       </IntestazionePagina>
@@ -170,6 +370,7 @@ export default function ScuderiaPage() {
       </div>
 
       <Aggiungi />
+      <ImportaProprietario />
 
       {vuota && (
         <div className="pannello" style={{ ...CARD, marginTop: 14, color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.7 }}>
@@ -274,6 +475,8 @@ export default function ScuderiaPage() {
         </div>
         {d.non_trovati?.length > 0 && <p style={{ fontSize: 12, color: ORO, marginTop: 8 }}>Non trovati in archivio: {d.non_trovati.join(", ")}.</p>}
 
+        <TenereVendere d={d} />
+
         <Titoletto nota="Quanto vale, in media, quello che i cavalli possono ancora fare in carriera, al netto dell'allenamento che costeranno. Per i puledri è il valore di «Quanto vale un puledro».">
           Il valore della scuderia
         </Titoletto>
@@ -297,6 +500,9 @@ export default function ScuderiaPage() {
           in <Link href="/controllo" style={{ color: ACCENTO }}>Controllo a posteriori</Link>.</p>
           <p>Valore di carriera: per i cavalli in attività i premi che possono ancora vincere, meno l'allenamento degli anni in cui resteranno in attività. Non contano rivendita,
           valore da riproduttore e premi all'allevatore, tutti a favore.</p>
+          <p>Tenere o vendere: si confronta l'offerta con il valore di carriera (per chi non ha una stima di carriera, con il saldo dei prossimi 12 mesi).
+          È una media: un cavallo può andare meglio o peggio, e il conto non sa niente delle condizioni fisiche che conosci tu. Sotto il 10% di differenza
+          le due scelte si equivalgono, come nel Punto di pareggio. Il sito non stima quanto vale un cavallo sul mercato: l'offerta la scrivi tu.</p>
         </Spiegazione>
       </div>
       <CollegamentiCorrelati voci={[

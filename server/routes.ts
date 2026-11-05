@@ -375,6 +375,36 @@ export function registerRoutes(httpServer: Server, app: Express) {
       db.close();
     }
   });
+  // IMPORTA DA UN PROPRIETARIO: i cavalli che oggi corrono per lui, cioe'
+  // quelli la cui ultima corsa (negli ultimi 12 mesi dell'archivio) ha questo
+  // proprietario. Chi e' stato venduto e corre per un altro non c'e'.
+  app.get("/api/scuderia/da-proprietario/:name", (req, res) => {
+    const db = getDb();
+    try {
+      const chiave = decodeURIComponent(req.params.name).toUpperCase();
+      if (!haProprietari(db)) return res.json({ disponibile: false, cavalli: [] });
+      const o = db.prepare("SELECT proprietario, nome FROM owner_stats WHERE proprietario = ?").get(chiave) as any;
+      const fine = (db.prepare("SELECT MAX(race_date) AS d FROM races").get() as any)?.d;
+      const cavalli = db.prepare(`
+        WITH ultime AS (
+          SELECT horse_name, MAX(race_date) AS ultima FROM races
+          WHERE owner IS NOT NULL AND race_date >= date(?, '-12 months')
+          GROUP BY horse_name)
+        SELECT u.horse_name AS nome, h.birth_year AS anno, u.ultima AS ultima_corsa,
+               (SELECT COUNT(*) FROM races r2 WHERE r2.horse_name = u.horse_name AND r2.owner = ?) AS n_corse
+        FROM ultime u
+        JOIN races r ON r.horse_name = u.horse_name AND r.race_date = u.ultima
+        LEFT JOIN horses h ON h.name = u.horse_name
+        WHERE r.owner = ?
+        GROUP BY u.horse_name
+        ORDER BY u.ultima DESC`).all(fine, chiave, chiave) as any[];
+      res.json({ disponibile: true, proprietario: chiave, nome: o?.nome ?? null, dal: fine, cavalli });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    } finally {
+      db.close();
+    }
+  });
   app.get("/api/scuderia/esempio", (_req, res) => {
     const db = getDb();
     try {

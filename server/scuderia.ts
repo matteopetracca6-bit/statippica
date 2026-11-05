@@ -40,6 +40,7 @@ export interface VoceScuderia {
   prezzo?: number | null;
   asta?: boolean;
   mensile?: number | null;
+  offerta?: number | null;   // quanto ti offrono oggi per venderlo (facoltativo)
 }
 
 const SIMULAZIONI = 5000;
@@ -150,7 +151,33 @@ interface VoceValutata {
   carriera: { premi_futuri: number; allenamento_futuro: number; valore: number; anni_attesi: number | null } | null;
   guadagni_finora: number | null;
   nota: string | null;
+  vendita: Vendita;
   campioni: Float64Array;
+}
+
+// ── Tenere o vendere ──────────────────────────────────────────────────────
+// Tenere il cavallo vale quello che puo' ancora vincere meno l'allenamento
+// che costera' (il valore di carriera). Venderlo vale l'offerta. Quello che
+// hai gia' speso (prezzo pagato, allevamento) e' uguale nei due casi e non
+// conta. Senza una stima di carriera si usa il saldo dei prossimi 12 mesi.
+// Sotto il 10% di differenza (almeno 1.000 euro) le due scelte si equivalgono:
+// e' la stessa fascia del Punto di pareggio.
+interface Vendita {
+  tenere: number;                 // quanto vale tenerlo, in media
+  base: "carriera" | "12_mesi";   // da dove viene quel valore
+  soglia: number;                 // sopra questa offerta vendere conviene
+  offerta: number | null;
+  differenza: number | null;      // offerta - tenere
+  esito: "vendere" | "tenere" | "pari" | null;
+}
+function valutaVendita(tenere: number, base: Vendita["base"], offertaIn: number | null | undefined): Vendita {
+  const soglia = Math.max(0, Math.round(tenere));
+  const offerta = offertaIn != null && offertaIn >= 0 && Number.isFinite(offertaIn) ? Math.round(offertaIn) : null;
+  if (offerta == null) return { tenere: Math.round(tenere), base, soglia, offerta: null, differenza: null, esito: null };
+  const diff = offerta - tenere;
+  const fascia = Math.max(1000, 0.1 * Math.max(Math.abs(tenere), offerta));
+  const esito = Math.abs(diff) <= fascia ? "pari" : diff > 0 ? "vendere" : "tenere";
+  return { tenere: Math.round(tenere), base, soglia, offerta, differenza: Math.round(diff), esito };
 }
 
 function valutaVoce(db: Database.Database, v: VoceScuderia, i: number, mensileBase: number, casuale: () => number): VoceValutata | null {
@@ -232,6 +259,9 @@ function valutaVoce(db: Database.Database, v: VoceScuderia, i: number, mensileBa
   const ord = Float64Array.from(campioni).sort();
   const attesi = campioni.reduce((a, b) => a + b, 0) / SIMULAZIONI;
   const copre = campioni.filter(x => x >= costo).length / SIMULAZIONI;
+  const vendita = carriera
+    ? valutaVendita(carriera.valore, "carriera", v.offerta)
+    : valutaVendita(attesi - costo, "12_mesi", v.offerta);
   return {
     id: v.id ?? String(i), tipo, nome, anno, eta, padre, madre, voto,
     prezzo: v.prezzo != null && v.prezzo > 0 ? Math.round(v.prezzo) : null,
@@ -239,7 +269,7 @@ function valutaVoce(db: Database.Database, v: VoceScuderia, i: number, mensileBa
     premi_attesi_12: Math.round(attesi), saldo_atteso_12: Math.round(attesi - costo),
     prob_copre: Math.round(1000 * copre) / 10,
     premi_12_basso: Math.round(quantile(ord, 0.1)), premi_12_alto: Math.round(quantile(ord, 0.9)),
-    fonte, carriera, guadagni_finora: guadagni, nota, campioni,
+    fonte, carriera, guadagni_finora: guadagni, nota, vendita, campioni,
   };
 }
 
@@ -305,6 +335,21 @@ export function valutaScuderia(db: Database.Database, vociIn: VoceScuderia[], me
   // confrontarla con quella della scuderia intera.
   const probMediaSingolo = voci.reduce((t, v) => t + v.prob_copre, 0) / voci.length;
 
+  // Vendere chi ha un'offerta migliore di quanto vale tenerlo: quanto si
+  // incassa, a quanto valore di carriera si rinuncia e come cambiano i
+  // prossimi 12 mesi senza quei cavalli.
+  const venduti = voci.filter(v => v.vendita.esito === "vendere");
+  const conOfferta = voci.filter(v => v.vendita.offerta != null).length;
+  const restanoDopoVendita = voci.filter(v => !venduti.includes(v));
+  const vendite = {
+    con_offerta: conOfferta,
+    cavalli: venduti.map(v => v.nome),
+    incasso: Math.round(venduti.reduce((t, v) => t + (v.vendita.offerta ?? 0), 0)),
+    valore_rinunciato: Math.round(venduti.reduce((t, v) => t + v.vendita.tenere, 0)),
+    guadagno: Math.round(venduti.reduce((t, v) => t + (v.vendita.differenza ?? 0), 0)),
+    dopo: venduti.length && restanoDopoVendita.length ? riassunto(restanoDopoVendita) : null,
+  };
+
   const carriere = voci.filter(v => v.carriera);
   const valoreCarriera = carriere.reduce((t, v) => t + (v.carriera?.valore ?? 0), 0);
   const pagati = voci.filter(v => v.prezzo != null);
@@ -324,6 +369,7 @@ export function valutaScuderia(db: Database.Database, vociIn: VoceScuderia[], me
       da_fermare: daFermare.map(v => ({ id: v.id, nome: v.nome, saldo_atteso_12: v.saldo_atteso_12, prob_copre: v.prob_copre })),
       dopo_aver_fermato: dopo ? pulisci(dopo) : null,
     },
+    vendite: { ...vendite, dopo: vendite.dopo ? pulisci(vendite.dopo) : null },
     carriera: {
       valore_atteso: Math.round(valoreCarriera),
       cavalli_con_stima: carriere.length,

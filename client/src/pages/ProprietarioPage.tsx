@@ -8,7 +8,7 @@
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { MapPin, Users, Timer, KeyRound } from "lucide-react";
+import { MapPin, Users, Timer, KeyRound, Briefcase } from "lucide-react";
 import IntestazioneScheda from "../components/IntestazioneScheda";
 import { Cifra } from "../components/DueColonne";
 import GradeBadge from "../components/GradeBadge";
@@ -110,6 +110,16 @@ export default function ProprietarioPage() {
             sotto={d.n_cavalli >= 3 ? `premi medi di un suo cavallo in una stagione` : `meno di tre cavalli: dipende da uno solo`} />
         </>}
       />
+      {d.attivo ? (
+        <div style={{ margin: "-4px 0 14px" }}>
+          <Link href={`/scuderia?proprietario=${encodeURIComponent(d.proprietario)}`}>
+            <a data-testid="link-scuderia-proprietario" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700,
+              color: COLORE_PROPRIETARI, border: `1px solid ${COLORE_PROPRIETARI}`, borderRadius: 8, padding: "6px 12px", textDecoration: "none" }}>
+              <Briefcase size={13} /> Apri i suoi cavalli in «La tua scuderia»
+            </a>
+          </Link>
+        </div>
+      ) : null}
 
       <Spiegazione titolo="Come leggere questi numeri" compatta>
         Vittorie e premi dicono quanti e quali cavalli ha questa scuderia. «A cavallo
