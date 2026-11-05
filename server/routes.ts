@@ -2550,8 +2550,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
         FROM horse_ratings WHERE name = ? AND rating_mode = 'performance' LIMIT 1
       `).get(name) as any;
 
+      // Il voto mostrato qui viene dalle corse del cavallo, non dal pedigree:
+      // diciamo quanto e' affidabile e se il cavallo ha gia' figli in archivio
+      // (solo allora lo chiamiamo stallone o fattrice).
+      const figli = (db.prepare(
+        "SELECT COUNT(*) AS n FROM horses WHERE UPPER(TRIM(sire)) = ? OR UPPER(TRIM(dam)) = ?"
+      ).get(name, name) as any)?.n ?? 0;
+      const annoOggi = new Date().getFullYear();
+      const aff = rating && tree.birth_year ? affidabilitaVoto(annoOggi - tree.birth_year, rating.grade) : null;
+
       res.json({
         horse: tree,
+        figli,
+        affidabilita: aff && (aff as any).disponibile ? { livello: (aff as any).livello } : null,
         rating: rating || null,
         inbreeding_coefficient: Math.round(inbreedingCoeff * 1000) / 10,
         common_ancestors: commonAncestors.slice(0, 10),

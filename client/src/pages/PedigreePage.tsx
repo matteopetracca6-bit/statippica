@@ -35,10 +35,12 @@ interface PedigreeData {
   common_ancestors: { name: string; contribution: number }[];
   max_generations?: number;
   has_source_pedigree?: boolean;
+  figli?: number;
+  affidabilita?: { livello?: "provvisorio" | "in_via_di_conferma" | "consolidato" } | null;
 }
 
 // Render a pedigree node as a small card
-function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode | null; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void }) {
+function PedNode({ node, gen, maxGen, hovered, onHover, etichettaRadice }: { node: PedigreeNode | null; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void; etichettaRadice?: string }) {
   // Piu' si va indietro nelle generazioni, piu' le caselle sono strette:
   // nella quinta ce ne sono trentadue in colonna.
   const compact = gen >= 4;
@@ -105,7 +107,7 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
           fontSize: "9px", marginTop: "3px", fontWeight: 700,
           color: node.sex === "M" ? "hsl(183 60% 55%)" : "hsl(300 40% 60%)",
         }}>
-          {node.sex === "M" ? "♂ Stallone" : "♀ Fattrice"}
+          {gen === 0 && etichettaRadice ? etichettaRadice : node.sex === "M" ? "♂ Stallone" : "♀ Fattrice"}
         </div>
       )}
       {/* Highlight indicator for common ancestors */}
@@ -126,7 +128,7 @@ function PedNode({ node, gen, maxGen, hovered, onHover }: { node: PedigreeNode |
  * cui i pedigree si leggono di solito, e regge anche le trentadue caselle
  * della quinta generazione senza diventare una striscia illeggibile.
  */
-function GenColumn({ nodes, gen, maxGen, hovered, onHover, title }: { nodes: (PedigreeNode | null)[]; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void; title: string }) {
+function GenColumn({ nodes, gen, maxGen, hovered, onHover, title, etichettaRadice }: { nodes: (PedigreeNode | null)[]; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void; title: string; etichettaRadice?: string }) {
   return (
     <div style={{ flex: gen === 0 ? "0 0 150px" : gen >= 4 ? "1 1 105px" : "1 1 125px", display: "flex", flexDirection: "column", minWidth: 0 }}>
       <div style={{
@@ -137,7 +139,7 @@ function GenColumn({ nodes, gen, maxGen, hovered, onHover, title }: { nodes: (Pe
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: gen >= 4 ? "2px" : "4px" }}>
         {nodes.map((node, i) => (
           <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", minHeight: 0 }}>
-            <PedNode node={node} gen={gen} maxGen={maxGen} hovered={hovered} onHover={onHover} />
+            <PedNode node={node} gen={gen} maxGen={maxGen} hovered={hovered} onHover={onHover} etichettaRadice={etichettaRadice} />
           </div>
         ))}
       </div>
@@ -163,6 +165,13 @@ function getGenerationRows(root: PedigreeNode, maxGen: number): (PedigreeNode | 
     }
   }
   return rows;
+}
+
+function sessoSoggetto(d: PedigreeData) {
+  const rip = (d.figli ?? 0) > 0;
+  if (d.horse.sex === "M") return rip ? "♂ Stallone" : "♂ Maschio";
+  if (d.horse.sex === "F") return rip ? "♀ Fattrice" : "♀ Femmina";
+  return "—";
 }
 
 export default function PedigreePage() {
@@ -296,34 +305,52 @@ export default function PedigreePage() {
                 {data.horse.name}
               </div>
               <div style={{ fontSize: "12px", color: "hsl(210 8% 52%)", marginTop: "3px" }}>
-                {data.horse.birth_year || "—"} · {data.horse.sex === "M" ? "♂ Stallone" : data.horse.sex === "F" ? "♀ Fattrice" : "—"}
-
-                {data.horse.career_races ? ` · ${data.horse.career_races} corse` : ""}
+                {data.horse.birth_year || "—"} · {sessoSoggetto(data)}
+                {data.horse.career_races ? ` · ${data.horse.career_races} corse` : " · non ha corso"}
+              </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 6, fontSize: 12 }}>
+                <Link href={`/horse/${encodeURIComponent(data.horse.name)}/${data.horse.birth_year ?? ""}`}><a style={{ color: "hsl(183 70% 55%)" }}>Apri la scheda del cavallo</a></Link>
+                {(data.figli ?? 0) > 0 && data.horse.sex === "M" && (
+                  <Link href={`/stallion/${encodeURIComponent(data.horse.name)}`}><a style={{ color: "hsl(183 70% 55%)" }}>Apri la scheda da stallone ({data.figli} figli)</a></Link>
+                )}
+                {(data.figli ?? 0) > 0 && data.horse.sex === "F" && (
+                  <Link href={`/fattrice/${encodeURIComponent(data.horse.name)}`}><a style={{ color: "hsl(183 70% 55%)" }}>Apri la scheda da fattrice ({data.figli} figli)</a></Link>
+                )}
               </div>
             </div>
             {data.rating && (
-              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginLeft: "auto", flexWrap: "wrap" }} data-testid="voto-corse">
                 {data.rating.grade && <GradeBadge grade={data.rating.grade} />}
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "hsl(210 8% 38%)", textTransform: "uppercase" }}>Score</div>
+                  <div style={{ fontSize: "10px", color: "hsl(210 8% 38%)", textTransform: "uppercase" }}>Voto dalle corse</div>
                   <div className="tabular" style={{ fontSize: "16px", fontWeight: 700, color: "hsl(183 80% 58%)" }}>
                     {data.rating.score?.toFixed(1)}
                   </div>
+                  {data.affidabilita?.livello && (
+                    <div style={{ fontSize: 10.5, fontWeight: 600, color: data.affidabilita.livello === "provvisorio" ? "hsl(28 85% 62%)" : data.affidabilita.livello === "in_via_di_conferma" ? "hsl(51 75% 60%)" : "hsl(140 50% 55%)" }}>
+                      {data.affidabilita.livello === "provvisorio" ? "provvisorio" : data.affidabilita.livello === "in_via_di_conferma" ? "in via di conferma" : "consolidato"}
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "10px", color: "hsl(210 8% 38%)", textTransform: "uppercase" }}>Guadagni</div>
                   <div className="tabular" style={{ fontSize: "16px", fontWeight: 700, color: "hsl(51 70% 55%)" }}>
-                    €{(data.rating.career_earnings / 1000).toFixed(0)}k
+                    €{Math.round(data.rating.career_earnings).toLocaleString("it-IT")}
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "10px", color: "hsl(210 8% 38%)", textTransform: "uppercase" }}>Win rate</div>
+                  <div style={{ fontSize: "10px", color: "hsl(210 8% 38%)", textTransform: "uppercase" }}>Vittorie</div>
                   <div className="tabular" style={{ fontSize: "16px", fontWeight: 700, color: "hsl(100 50% 55%)" }}>
-                    {data.rating.win_rate?.toFixed(1)}%
+                    {data.rating.career_wins} su {data.rating.career_races}
                   </div>
                 </div>
               </div>
             )}
+            <div style={{ flexBasis: "100%", fontSize: 11.5, color: "var(--muted)" }}>
+              {data.rating
+                ? "Il voto viene dalle corse di questo cavallo, non dal suo pedigree. Il pedigree qui sotto mostra solo gli antenati."
+                : "Questo cavallo non ha ancora un voto dalle corse. Il pedigree qui sotto mostra solo gli antenati."}
+            </div>
           </div>
 
           {/* Inbreeding info */}
@@ -385,6 +412,7 @@ export default function PedigreePage() {
                   key={i}
                   nodes={col}
                   gen={i}
+                  etichettaRadice={i === 0 ? sessoSoggetto(data) : undefined}
                   maxGen={maxGen}
                   title={GEN_TITLES[i] || `${i}ª gen.`}
                   hovered={hoveredAncestor}
