@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Scale } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useScuderia } from "@/lib/scuderia";
 
 const MUTED = "hsl(210 8% 50%)";
 import { ESITO_COLORE as COLORE, ESITO_NOME as NOME } from "@/lib/esiti";
@@ -68,9 +69,11 @@ const griglia: React.CSSProperties = { display: "grid", gridTemplateColumns: "re
 export function PareggioCavallo({ nome, anno }: { nome: string; anno: number }) {
   const [montaScritta, setMontaScritta] = useState("");
   const monta = montaScritta.trim() !== "" && Number(montaScritta) >= 0 ? String(Math.round(Number(montaScritta))) : "";
+  // stesso costo al mese delle pagine di Economia
+  const mensile = useScuderia().scuderia.mensile || 1200;
   const { data: d, isFetching } = useQuery<any>({
-    queryKey: ["/api/pareggio/cavallo", nome, anno, monta],
-    queryFn: async () => (await apiRequest("GET", `/api/pareggio/cavallo?nome=${encodeURIComponent(nome)}&anno=${anno}&monta=${monta}`)).json(),
+    queryKey: ["/api/pareggio/cavallo", nome, anno, monta, mensile],
+    queryFn: async () => (await apiRequest("GET", `/api/pareggio/cavallo?nome=${encodeURIComponent(nome)}&anno=${anno}&monta=${monta}&mensile=${mensile}`)).json(),
     staleTime: 30 * 60 * 1000,
     placeholderData: (prev: any) => prev,
   });

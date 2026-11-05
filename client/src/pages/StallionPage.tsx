@@ -269,14 +269,14 @@ function StallionNavArrow({ direction, neighbor, onClick }: {
       {!isNext && <ChevronLeft size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
       <div style={{ textAlign: isNext ? "right" : "left", overflow: "hidden" }}>
         <div style={{ fontSize: "10px", color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          {isNext ? "Score superiore" : "Score inferiore"}
+          {isNext ? "Voto più alto" : "Voto più basso"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: isNext ? "flex-end" : "flex-start" }}>
           <GradeBadge grade={neighbor.grade} size="sm" />
           <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 75%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {neighbor.name}
           </span>
-          <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 45%)", flexShrink: 0 }}>{neighbor.final_score?.toFixed(1)}</span>
+          <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 45%)", flexShrink: 0 }}>{neighbor.final_score?.toFixed(1).replace(".", ",")}</span>
         </div>
       </div>
       {isNext && <ChevronRight size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
@@ -410,20 +410,21 @@ export default function StallionPage() {
 
   return (
     <div className="page-shell fade-in">
-      <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
-        <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
-          <ArrowLeft size={16} /> Indietro
-        </button>
-        <StallionSearchBar onSelect={name => navigate(`/stallion/${encodeURIComponent(name)}`)} />
-      </div>
-
-      {/* Prev/Next navigation */}
-      {neighbors && (neighbors.prev || neighbors.next) && (
-        <div className="navigazione-vicini" style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
-          <StallionNavArrow direction="prev" neighbor={neighbors.prev} onClick={navigateTo} />
-          <StallionNavArrow direction="next" neighbor={neighbors.next} onClick={navigateTo} />
+      {/* Come nella scheda cavallo: elenco, ricerca e stalloni vicini su una fascia sola. */}
+      <div className="barra-scheda">
+        <div style={{ display: "flex", gap: "16px", alignItems: "center", flex: "1 1 420px", flexWrap: "wrap" }}>
+          <Link href="/stalloni" style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", textDecoration: "none", flexShrink: 0 }} data-testid="link-tutti-stalloni">
+            <ArrowLeft size={16} /> Tutti gli stalloni
+          </Link>
+          <StallionSearchBar onSelect={name => navigate(`/stallion/${encodeURIComponent(name)}`)} />
         </div>
-      )}
+        {neighbors && (neighbors.prev || neighbors.next) && (
+          <div className="navigazione-vicini" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <StallionNavArrow direction="prev" neighbor={neighbors.prev} onClick={navigateTo} />
+            <StallionNavArrow direction="next" neighbor={neighbors.next} onClick={navigateTo} />
+          </div>
+        )}
+      </div>
 
       {isSearch && (
         <div style={{ fontSize: "14px", color: "hsl(210 8% 45%)", marginTop: "12px" }}>

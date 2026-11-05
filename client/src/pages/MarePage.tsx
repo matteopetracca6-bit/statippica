@@ -69,10 +69,14 @@ function eur(v: number | null | undefined): string {
   return "€ " + Math.round(v).toLocaleString("it-IT");
 }
 
+const TITOLO_SEZ: React.CSSProperties = {
+  fontSize: "10.5px", color: "hsl(210 8% 48%)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px",
+};
+
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="pannello" style={{
-      padding: "12px 14px",
+    <div style={{
+      padding: "12px 14px", borderRadius: 10, background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 17%)",
       minWidth: "140px",
       flex: "1 1 140px" }}>
       <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", color: "hsl(210 8% 55%)", fontWeight: 700 }}>
@@ -153,10 +157,10 @@ export default function MarePage() {
         ) : undefined}
       />
 
-      {/* Carriera propria */}
-      <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 8px" }}>
-        La sua carriera
-      </h2>
+      {/* Carriera propria: un riquadro col titolo piccolo in alto, come nelle
+          altre schede singole (allenatore, proprietario, guidatore). */}
+      <div className="pannello" style={{ padding: "16px 18px", marginBottom: "22px" }} data-testid="carriera-fattrice">
+      <div style={TITOLO_SEZ}>La sua carriera</div>
       <Spiegazione titolo="Dove trovo le sue gare" compatta>
         Qui ci sono i totali di carriera. Quando le sue corse sono nell'archivio, l'elenco gara per
         gara è nella sua scheda da atleta (il collegamento è sotto il nome). Ogni notte il sito
@@ -164,7 +168,7 @@ export default function MarePage() {
         I totali non incidono sul voto della progenie, servono a leggerlo.
       </Spiegazione>
       {ownRaces > 0 ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "24px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
           <Stat label="Corse" value={String(ownRaces)} />
           <Stat label="Vittorie" value={String(s?.own_wins ?? own?.career_wins ?? 0)} />
           <Stat label="Guadagni" value={eur(s?.own_earnings ?? own?.career_earnings)} />
@@ -172,18 +176,16 @@ export default function MarePage() {
           {s?.own_grade && <Stat label="Suo voto da atleta" value={s.own_grade} />}
         </div>
       ) : (
-        <div className="pannello" style={{ padding: "14px", marginBottom: "24px",
-          fontSize: "13px", color: "hsl(210 8% 65%)" }}>
+        <div style={{ fontSize: "13px", color: "hsl(210 8% 65%)" }}>
           Carriera non ancora recuperata. Il lavoro notturno recupera i totali dei riproduttori a
           gruppi: questa fattrice è in coda.
         </div>
       )}
+      </div>
 
       {/* Progenie */}
-      <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 90%)", margin: "0 0 10px" }}>
-        Progenie ({data.offspring.length})
-      </h2>
       <div className="pannello" style={{ overflowX: "auto" }}>
+        <div style={{ ...TITOLO_SEZ, padding: "14px 16px 0" }}>Progenie · {data.offspring.length} {data.offspring.length === 1 ? "figlio" : "figli"}</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

@@ -77,12 +77,14 @@ const CSS_PULEDRO = `
 /* ------------------------------------------------------------------ */
 
 function QuantoVale({ iniziale, vaiAste }: { iniziale: Scelta; vaiAste: () => void }) {
-  const { scuderia } = useScuderia();
+  const { scuderia, impostaMensile } = useScuderia();
   const q = parametri();
   const [padre, setPadre] = useState(iniziale.padre);
   const [madre, setMadre] = useState(iniziale.madre);
   const [prezzo, setPrezzo] = useState(iniziale.prezzo);
-  const [mensile, setMensile] = useState(Number(q.get("mensile")) || scuderia.mensile || 1200);
+  const [mensile, setMensileQui] = useState(Number(q.get("mensile")) || scuderia.mensile || 1200);
+  // stesso costo al mese in tutte le pagine di Economia
+  const setMensile = (n: number) => { setMensileQui(n); if (n >= 100) impostaMensile(Math.round(n)); };
   const [margine, setMargine] = useState(0);
   const [asta, setAsta] = useState(iniziale.asta);
   const nome = iniziale.nome;

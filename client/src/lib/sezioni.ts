@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -83,6 +83,8 @@ export const GRUPPI: Gruppo[] = [
   { nome: "Economia", icon: Scale, colore: "hsl(160 60% 50%)",
     descrizione: "Costi, premi attesi, prezzo dei puledri e rischio della scuderia",
     schede: [
+    { href: "/economia", label: "Da dove parto", nota: "Scegli la tua situazione e trova lo strumento giusto", icon: Compass, colore: "hsl(160 60% 50%)",
+      descrizione: "Ho un puledro, un cavallo che corre o più cavalli: quale pagina risponde alla mia domanda" },
     { href: "/scuderia", label: "La tua scuderia", nota: "I tuoi cavalli insieme: cassa, rischio e valore", icon: Briefcase, colore: "hsl(175 55% 48%)",
       descrizione: "Entrate e spese dei prossimi 12 mesi, rischio della scuderia e valore di carriera" },
     { href: "/puledro", label: "Puledri e aste", nota: "Prezzo massimo, vendere o far correre, aste 2026", icon: Tag, colore: "hsl(160 60% 50%)",

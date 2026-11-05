@@ -22,7 +22,8 @@ import GradeBadge from "../components/GradeBadge";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/allevatori/classifiche");
-const VERDE = "hsl(120 55% 52%)";
+// I premi in giallo come in tutto il sito (prima erano verdi solo qui).
+const VERDE = "hsl(51 75% 58%)";
 const PAGE = 30;
 const sel: React.CSSProperties = { padding: "8px 10px", borderRadius: 9, border: "1px solid var(--ed-bordo)", background: "var(--ed-fondo)", color: "var(--ed-testo)", fontSize: 12.5, fontFamily: "inherit" };
 const ETA = [{ k: "tutte", t: "Tutte le età" }, { k: "2", t: "2 anni" }, { k: "3", t: "3 anni" }, { k: "4", t: "4 anni" }, { k: "anziani", t: "Anziani" }];

@@ -37,7 +37,8 @@ interface Stallone {
 
 type SortKey = "final_score" | "earnings" | "top_S" | "figli" | "stallions";
 const ORDINI: [SortKey, string][] = [["final_score", "Voto"], ["top_S", "Figli di vertice"], ["earnings", "Guadagni"], ["figli", "Figli"], ["stallions", "Stalloni"]];
-const VERDE = "hsl(120 55% 52%)";
+// "Di vertice" col colore del voto S, come nella scheda Allevatori.
+const VERDE = COLORE_SCHEDA_VOTO.S;
 const ORO = "hsl(51 75% 58%)";
 
 /** Guadagno medio per figlio: la media dei suoi stalloni, non la somma. */

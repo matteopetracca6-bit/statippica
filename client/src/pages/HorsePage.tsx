@@ -18,7 +18,7 @@ import LineaMaterna from "../components/LineaMaterna";
 import GradeBadge from "../components/GradeBadge";
 import HorseSearchBar from "../components/HorseSearchBar";
 import { CoppaGara } from "@/components/CoppaGara";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal, Timer, KeyRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Trophy, Clock, Flag, Coins, MapPin, Heart, Medal, Timer, KeyRound, GitCompare } from "lucide-react";
 import IntestazioneScheda from "../components/IntestazioneScheda";
 import { Cifra } from "../components/DueColonne";
 import { palmares, nomeGara, GARE_GP, type VittoriaGP } from "@/data/granPremi";
@@ -381,14 +381,14 @@ function NavArrow({ direction, neighbor, onClick }: {
       {!isNext && <ChevronLeft size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
       <div style={{ textAlign: isNext ? "right" : "left", overflow: "hidden" }}>
         <div style={{ fontSize: "10px", color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          {isNext ? "Score superiore" : "Score inferiore"}
+          {isNext ? "Voto più alto" : "Voto più basso"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: isNext ? "flex-end" : "flex-start" }}>
           <GradeBadge grade={neighbor.grade} size="sm" />
           <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 75%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {neighbor.name}
           </span>
-          <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 45%)", flexShrink: 0 }}>{neighbor.score?.toFixed(1)}</span>
+          <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 45%)", flexShrink: 0 }}>{neighbor.score?.toFixed(1).replace(".", ",")}</span>
         </div>
       </div>
       {isNext && <ChevronRight size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
@@ -600,6 +600,13 @@ export default function HorsePage() {
   const navigateTo = (hName: string, hYear: number) => {
     navigate(`/horse/${encodeURIComponent(hName)}/${hYear}`);
   };
+  // Le ultime cinque corse, dalla piu' vecchia alla piu' recente: come sta
+  // andando adesso, subito sotto il voto.
+  const ultimeCorse = [...(horse.races ?? [])]
+    .filter(r => r.race_date)
+    .sort((a, b) => b.race_date.localeCompare(a.race_date))
+    .slice(0, 5)
+    .reverse();
 
   return (
     // Tutti i riquadri della scheda prendono il colore del voto del cavallo
@@ -609,9 +616,10 @@ export default function HorsePage() {
       {/* Indietro, ricerca e cavalli vicini: da computer stanno su una fascia sola. */}
       <div className="barra-scheda">
       <div style={{ display: "flex", gap: "16px", alignItems: "center", flex: "1 1 420px" }}>
-        <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
-          <ArrowLeft size={16} /> Indietro
-        </button>
+        {/* Come nelle altre schede singole: si torna all'elenco di tutti. */}
+        <Link href="/leaderboard" style={{ display: "flex", alignItems: "center", gap: "6px", color: "hsl(210 8% 50%)", fontSize: "13px", textDecoration: "none", flexShrink: 0 }} data-testid="link-tutti-cavalli">
+          <ArrowLeft size={16} /> Tutti i cavalli
+        </Link>
       </div>
 
       {/* Prev/Next navigation */}
@@ -679,6 +687,13 @@ export default function HorsePage() {
           {/* Collegamenti all'economia: la scuderia e, per i giovani, il valore del puledro. */}
           <span style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
             <AggiungiScuderia voce={{ tipo: "cavallo", nome: horse.name, anno: horse.birth_year }} />
+            <Link href={`/compare?a=${encodeURIComponent(`${horse.name}__${horse.birth_year}`)}`} data-testid="link-confronta"
+                  title="Apri la Comparazione con questo cavallo già scelto" style={{
+                    display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", borderRadius: 8, fontWeight: 700,
+                    padding: "6px 11px", fontSize: 12.5, textDecoration: "none", border: "1px solid hsl(46 70% 40%)",
+                    background: "hsl(46 50% 11%)", color: "hsl(46 95% 62%)" }}>
+              <GitCompare size={13} /> Confronta con…
+            </Link>
             {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 3 && horse.pedigree?.sire && (
               <Link href={`/puledro?padre=${encodeURIComponent(horse.pedigree.sire)}&madre=${encodeURIComponent(horse.pedigree.dam ?? "")}&nome=${encodeURIComponent(horse.name)}`}
                     style={{ fontSize: "12.5px", color: "hsl(25 75% 62%)" }}>
@@ -741,7 +756,7 @@ export default function HorsePage() {
       <section id="sez-palmares"><Palmares nome={horse.name} anno={horse.birth_year} /></section>
 
       {((horse.rating_mode === "performance" && (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto))
-        || (stats?.bestRaces?.length ?? 0) > 0 || (horse.career_earnings ?? 0) > 0) && (
+        || (stats?.bestRaces?.length ?? 0) > 0 || (horse.career_earnings ?? 0) > 0 || ultimeCorse.length > 0) && (
       <div className="pannello in-breve" style={panelStyle}>
         <div style={panelTitle}>In breve</div>
         <div className="in-breve-griglia">
@@ -822,6 +837,30 @@ export default function HorsePage() {
                 </div>
               )}
             </div>
+            </div>
+          )}
+          {ultimeCorse.length > 0 && (
+            <div className="in-breve-parte" data-testid="ultime-corse">
+              <div className="in-breve-titolo">Ultime {ultimeCorse.length} corse</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                {ultimeCorse.map((r, i) => {
+                  const pos = r.placement;
+                  const fuori = pos == null || pos <= 0;
+                  const sfondo = pos === 1 ? "color-mix(in srgb, var(--colore-pannello, hsl(51 80% 55%)) 28%, transparent)"
+                    : pos != null && pos <= 3 ? "hsl(220 10% 20%)" : "hsl(220 10% 13%)";
+                  return (
+                    <span key={i} title={`${r.race_date ?? ""} · ${nomePista(r.track) ?? r.track ?? ""}${r.distance ? ` · ${r.distance} m` : ""}`}
+                          className="tabular" style={{ minWidth: 34, textAlign: "center", padding: "5px 7px", borderRadius: 7, fontSize: 13, fontWeight: 800,
+                            background: sfondo, color: fuori ? "hsl(0 55% 62%)" : pos! <= 3 ? "hsl(210 10% 92%)" : "hsl(210 8% 55%)",
+                            border: "1px solid hsl(220 10% 20%)" }}>
+                      {fuori ? (r.placement_raw || "—") : `${pos}°`}
+                    </span>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
+                dalla più vecchia alla più recente · ultima {ultimeCorse[ultimeCorse.length - 1].race_date ?? ""}
+              </div>
             </div>
           )}
           {stats && stats.bestRaces.length > 0 && (

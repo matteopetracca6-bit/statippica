@@ -22,6 +22,7 @@ const PareggioPage = lazy(() => import("./pages/PareggioPage"));
 const TenerePage = lazy(() => import("./pages/TenerePage"));
 const GenerazionePage = lazy(() => import("./pages/GenerazionePage"));
 const ScuderiaPage = lazy(() => import("./pages/ScuderiaPage"));
+const EconomiaPage = lazy(() => import("./pages/EconomiaPage"));
 const PuledroPage = lazy(() => import("./pages/PuledroPage"));
 const ControlloPage = lazy(() => import("./pages/ControlloPage"));
 const HorsePage = lazy(() => import("./pages/HorsePage"));
@@ -115,6 +116,7 @@ export default function App() {
               <Route path="/aste" component={GenerazionePage} />
               <Route path="/controllo" component={ControlloPage} />
               <Route path="/controllo-a-posteriori" component={ControlloPage} />
+              <Route path="/economia" component={EconomiaPage} />
               <Route path="/scuderia" component={ScuderiaPage} />
               <Route path="/portafoglio" component={ScuderiaPage} />
               <Route path="/puledro" component={PuledroPage} />

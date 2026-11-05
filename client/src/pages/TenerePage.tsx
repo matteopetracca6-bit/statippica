@@ -26,6 +26,7 @@ import IntestazionePagina from "../components/IntestazionePagina";
 import { ESITO_COLORE } from "@/lib/esiti";
 import { testoProb } from "@/lib/probCopre";
 import BandieraCavallo from "@/components/BandieraCavallo";
+import { useScuderia } from "@/lib/scuderia";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/tenere");
@@ -123,7 +124,11 @@ function ElencoCavalli({ mensile, costo }: { mensile: string; costo: number }) {
   const [etaMin, setEtaMin] = useState("");
   const [etaMax, setEtaMax] = useState("");
   const [sesso, setSesso] = useState("");
-  const [cercaScritto, setCercaScritto] = useState("");
+  // ?cavallo=NOME (dalla scheda del cavallo o dal Punto di pareggio) apre gia' la ricerca.
+  const [cercaScritto, setCercaScritto] = useState(() => {
+    const qs = window.location.hash.split("?")[1] ?? window.location.search.slice(1);
+    return new URLSearchParams(qs).get("cavallo") ?? new URLSearchParams(window.location.search).get("cavallo") ?? "";
+  });
   const [ordina, setOrdina] = useState("prob");
   const [pagina, setPagina] = useState(1);
   const [aperto, setAperto] = useState<string | null>(null);
@@ -339,8 +344,11 @@ function PerStallone({ mensile, costo }: { mensile: string; costo: number }) {
 
 export default function TenerePage() {
   const [scheda, setScheda] = useState<"cavalli" | "stalloni">("cavalli");
-  const [mensileScritto, setMensileScritto] = useState("1200");
+  // Il costo al mese e' lo stesso in tutte le pagine di Economia.
+  const { scuderia, impostaMensile } = useScuderia();
+  const [mensileScritto, setMensileScritto] = useState(String(scuderia.mensile || 1200));
   const mensile = useRitardo(Number(mensileScritto) >= 100 ? String(Math.round(Number(mensileScritto))) : "1200", 400);
+  useEffect(() => { const n = Number(mensile); if (n >= 100 && n !== scuderia.mensile) impostaMensile(n); }, [mensile]);
   const costo = 12 * (Number(mensile) || 1200);
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>

@@ -282,9 +282,10 @@ body {
   /* Ogni casella si spartisce la riga in parti uguali. */
   .genealogia-griglia > div > * { flex: 1 1 0; min-width: 0; }
 
-  /* Le due schede del cavallo precedente e successivo, una sopra l'altra. */
-  .navigazione-vicini { flex-wrap: wrap; }
-  .navigazione-vicini > button { max-width: none !important; flex: 1 1 100% !important; }
+  /* Le due schede del cavallo precedente e successivo, affiancate su una riga
+     sola: prima occupavano due righe intere sopra il nome. */
+  .navigazione-vicini { flex-wrap: nowrap !important; width: 100%; gap: 8px !important; }
+  .navigazione-vicini > * { max-width: none !important; flex: 1 1 0 !important; min-width: 0; padding: 8px 10px !important; }
 }
 
 /* Riga del pronostico gara: sei colonne (posizione, medaglia, nome, voto,

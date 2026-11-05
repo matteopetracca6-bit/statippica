@@ -26,6 +26,7 @@ import GradeBadge from "../components/GradeBadge";
 import NameSelect from "../components/NameSelect";
 import { Link } from "wouter";
 import AggiungiScuderia from "../components/AggiungiScuderia";
+import { useScuderia } from "@/lib/scuderia";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
@@ -80,7 +81,11 @@ interface Base {
 const get = (u: string) => apiRequest("GET", u).then(r => r.json());
 
 export default function PareggioPage() {
-  const [mensile, setMensile] = useState(1200);
+  // Il costo al mese e' lo stesso in tutte le pagine di Economia: si scrive
+  // una volta e lo ritrovano Tenere o fermare, Puledri e La tua scuderia.
+  const { scuderia, impostaMensile } = useScuderia();
+  const [mensile, setMensileQui] = useState(scuderia.mensile || 1200);
+  const setMensile = (n: number) => { setMensileQui(n); if (n >= 100) impostaMensile(Math.round(n)); };
   const [modo, setModo] = useState<"allevo" | "compro">("allevo");
   const [monta, setMonta] = useState<number | null>(null);
   const [prezzo, setPrezzo] = useState<number | null>(null);
@@ -106,11 +111,7 @@ export default function PareggioPage() {
 
   // Un cavallo
   const [cavallo, setCavallo] = useState<{ nome: string; anno?: number | null } | null>(null);
-  const { data: cv, isFetching: cvCarica } = useQuery<any>({
-    queryKey: ["/api/pareggio/cavallo", cavallo?.nome, cavallo?.anno, mensile, manca ? null : ingresso],
-    queryFn: () => get(`/api/pareggio/cavallo?nome=${encodeURIComponent(cavallo!.nome)}&anno=${cavallo!.anno ?? ""}&mensile=${mensile}&ingresso=${manca ? "" : ingresso}`),
-    enabled: !!cavallo,
-  });
+
 
   // Un incrocio
   const [padre, setPadre] = useState("");
@@ -151,7 +152,7 @@ export default function PareggioPage() {
         { id: "sez-pesi", testo: "Quanto pesa ogni costo" },
         { id: "sez-cavallo", testo: "Un cavallo" },
         { id: "sez-incrocio", testo: "Un incrocio" },
-        { id: "vendere", testo: "Vendere o far correre" },
+        { id: "vendere", testo: "Puledri e scuderia" },
         { id: "sez-metodo", testo: "Come è fatto il conto" },
       ]} />
 
@@ -265,45 +266,24 @@ export default function PareggioPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: "14px", marginBottom: "18px" }}>
-        {/* UN CAVALLO */}
+        {/* UN CAVALLO: il conto vero sta in "Tenere o fermare" (premi attesi
+            da oggi) e nella scheda del cavallo (bilancio della carriera). Qui
+            prima c'era un terzo conto, sugli ultimi 12 mesi, che a volte dava
+            una risposta diversa dagli altri due. */}
         <div id="sez-cavallo" className="pannello" style={CARD}>
           <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un cavallo: tenerlo o fermarlo?</h2>
           <Spiegazione compatta>
-            Confronta quello che ha vinto negli ultimi 12 mesi con quanto costa in un anno, e fa il bilancio della carriera fin qui.
+            Per un cavallo preciso il conto si fa in due posti: «Tenere o fermare» guarda avanti, cioè quanto vincerà probabilmente nei prossimi
+            12 mesi contro la spesa di un anno; la scheda del cavallo, nella parte Economia, fa il bilancio della carriera fin qui.
+            Il costo al mese che scrivi qui sopra vale anche lì.
           </Spiegazione>
           <NameSelect value={cavallo?.nome ?? ""} endpoint="/api/search/horse" placeholder="Scegli un cavallo"
                       onChange={(nome, o) => setCavallo(nome ? { nome, anno: o?.birth_year ?? null } : null)} />
-          {cvCarica && <Sagoma riquadri={3} />}
-          {cv && !cvCarica && (
-            <div style={{ marginTop: "14px", display: "grid", gap: "10px" }}>
-              <div style={{ fontSize: "13px", color: "hsl(210 10% 88%)" }}>
-                <b>{cv.nome}</b> ({cv.anno}) <GradeBadge grade={cv.voto} size="sm" />{" "}
-                <AggiungiScuderia piccolo voce={{ tipo: "cavallo", nome: cv.nome, anno: cv.anno }} />
-                <span style={{ color: MUTED }}> · {cv.gare} gare in {cv.stagioni} stagioni · {euro(cv.guadagni_carriera)} vinti</span>
-                {!cv.voto_da_corsa && <div style={{ color: MUTED, fontSize: "12px" }}>Non ha ancora corso: il voto viene solo dalla genealogia.</div>}
-              </div>
-              <div className="pannello" style={{ padding: "10px 12px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                  <b style={{ fontSize: "13px" }}>Tenerlo un altro anno</b><Esito e={cv.gestione.esito} />
-                </div>
-                <div style={{ fontSize: "12.5px", color: MUTED, marginTop: "4px", lineHeight: 1.6 }}>
-                  {cv.ultimi_12_mesi.gare === 0
-                    ? "Nessuna corsa negli ultimi 12 mesi: non c'è un rendimento recente da confrontare."
-                    : <>Ultimi 12 mesi: {euro(cv.gestione.rendimento_annuo)} in {cv.ultimi_12_mesi.gare} gare, contro {euro(cv.gestione.costo_annuo)} di costo annuo ({euro(cv.gestione.differenza)}).</>}
-                </div>
-              </div>
-              <div className="pannello" style={{ padding: "10px 12px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                  <b style={{ fontSize: "13px" }}>Bilancio della carriera</b>{cv.carriera && <Esito e={cv.carriera.esito} />}
-                </div>
-                <div style={{ fontSize: "12.5px", color: MUTED, marginTop: "4px", lineHeight: 1.6 }}>
-                  {cv.carriera ? <>
-                    Costo stimato {euro(cv.carriera.speso_stimato)}, bilancio {euro(cv.carriera.bilancio)}
-                    {manca && cv.monta != null && <> (con la monta del padre dal catalogo, {euro(cv.monta)})</>}.
-                    {cv.carriera.mancano_per_pareggio > 0 && <> Per arrivare in pari dovrebbe vincere ancora {euro(cv.carriera.mancano_per_pareggio)}.</>}
-                  </> : <>La monta del padre non è nel catalogo: scrivila nel campo «Prezzo della monta» in alto per avere il bilancio.</>}
-                </div>
-              </div>
+          {cavallo && (
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" }} data-testid="pareggio-cavallo-link">
+              <Link href={`/tenere?cavallo=${encodeURIComponent(cavallo.nome)}`} style={{ ...bottone(true), textDecoration: "none" }}>Tenere o fermare: i prossimi 12 mesi</Link>
+              {cavallo.anno && <Link href={`/horse/${encodeURIComponent(cavallo.nome)}/${cavallo.anno}`} style={{ ...bottone(false), textDecoration: "none" }}>Bilancio della carriera, nella sua scheda</Link>}
+              {cavallo.anno && <AggiungiScuderia piccolo voce={{ tipo: "cavallo", nome: cavallo.nome, anno: cavallo.anno }} />}
             </div>
           )}
         </div>
@@ -370,16 +350,18 @@ export default function PareggioPage() {
           insieme al prezzo massimo (e' lo stesso conto visto da chi compra). */}
       <div id="vendere" className="pannello" style={{ ...CARD, marginBottom: "18px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ flex: "1 1 320px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un puledro: comprarlo, venderlo o farlo correre?</h2>
+          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "hsl(210 10% 88%)", margin: "0 0 4px" }}>Un puledro o più cavalli insieme</h2>
           <Spiegazione compatta>
-            Il prezzo massimo da pagare e la scelta fra vendere all'asta e far correre sono lo stesso conto, ora in una pagina sola, caso per caso.
-            Per mettere insieme più cavalli e vedere il rischio di tutta la scuderia c'è «La tua scuderia».
+            Il prezzo massimo da pagare per un puledro e la scelta fra venderlo e farlo correre stanno in «Puledri e aste».
+            Per mettere insieme più cavalli e vedere il rischio di tutta la scuderia c'è «La tua scuderia». Non sai da dove partire?
+            «Economia: da dove parto» ti indica lo strumento giusto.
           </Spiegazione>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <Link href="/puledro" style={{ ...bottone(true), textDecoration: "none" }}>Puledri e aste</Link>
           <Link href="/puledro?modo=vendo" style={{ ...bottone(false), textDecoration: "none" }}>Vendere o far correre</Link>
           <Link href="/scuderia" style={{ ...bottone(false), textDecoration: "none" }}>La tua scuderia</Link>
+          <Link href="/economia" style={{ ...bottone(false), textDecoration: "none" }}>Da dove parto</Link>
         </div>
       </div>
 
