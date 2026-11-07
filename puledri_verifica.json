@@ -16,18 +16,18 @@
    2022
   ]
  },
- "n_impara": 14026,
- "n_prova": 6487,
+ "n_impara": 14030,
+ "n_prova": 6488,
  "copertura_prova": [
   {
    "anno": 2020,
-   "in_archivio": 2043,
+   "in_archivio": 2045,
    "nati_ufficiali": null,
    "quota": null
   },
   {
    "anno": 2021,
-   "in_archivio": 2144,
+   "in_archivio": 2143,
    "nati_ufficiali": 2192,
    "quota": 0.978
   },
@@ -41,56 +41,56 @@
  "scelta_informazioni": [
   {
    "informazione": "Solo il padre (punto di partenza)",
-   "auc": 0.5819,
+   "auc": 0.5812,
    "tenuta": true
   },
   {
    "informazione": "Produzione della madre: quanti suoi figli corrono e quanti diventano buoni",
    "chiave": "madre",
-   "auc": 0.5985,
-   "guadagno": 0.0165,
+   "auc": 0.598,
+   "guadagno": 0.0168,
    "tenuta": true
   },
   {
    "informazione": "Linea materna: produzione della nonna quando la madre non ha figli noti",
    "chiave": "nonna",
-   "auc": 0.5983,
+   "auc": 0.5978,
    "guadagno": -0.0002,
    "tenuta": false
   },
   {
    "informazione": "Padre della madre: quanto rendono le figlie di quello stallone come fattrici",
    "chiave": "padre_madre",
-   "auc": 0.6028,
-   "guadagno": 0.0044,
+   "auc": 0.6022,
+   "guadagno": 0.0042,
    "tenuta": true
   },
   {
    "informazione": "Eta' della madre al parto",
    "chiave": "eta_madre",
-   "auc": 0.6043,
-   "guadagno": 0.0014,
+   "auc": 0.6038,
+   "guadagno": 0.0016,
    "tenuta": false
   },
   {
    "informazione": "Numero del parto (primo figlio, secondo, ...)",
    "chiave": "parto",
-   "auc": 0.5945,
-   "guadagno": -0.0083,
+   "auc": 0.5946,
+   "guadagno": -0.0076,
    "tenuta": false
   },
   {
    "informazione": "Incrocio fra la linea del padre e il padre della madre",
    "chiave": "incrocio",
-   "auc": 0.6022,
-   "guadagno": -0.0006,
+   "auc": 0.6018,
+   "guadagno": -0.0004,
    "tenuta": false
   },
   {
    "informazione": "Consanguineita' (antenati in comune)",
    "chiave": "inbreeding",
    "tenuta": false,
-   "esclusa_perche": "dato presente per il 94% di chi corre e per il 0% di chi non corre: la sua presenza rivela gia' il risultato"
+   "esclusa_perche": "dato presente per il 99% di chi corre e per il 0% di chi non corre: la sua presenza rivela gia' il risultato"
   }
  ],
  "informazioni_usate": [
@@ -98,17 +98,17 @@
   "padre_madre"
  ],
  "corre": {
-  "auc_modello": 0.6074,
-  "auc_solo_padre": 0.5928,
-  "brier_modello": 0.2109,
-  "brier_costante": 0.2102,
-  "quota_reale": 0.7009,
-  "quota_prevista": 0.7876,
+  "auc_modello": 0.6076,
+  "auc_solo_padre": 0.5927,
+  "brier_modello": 0.2102,
+  "brier_costante": 0.21,
+  "quota_reale": 0.7014,
+  "quota_prevista": 0.7852,
   "contro_solo_padre": {
-   "vantaggio": 0.0146,
+   "vantaggio": 0.0149,
    "intervallo95": [
-    0.0047,
-    0.0246
+    0.0046,
+    0.0245
    ],
    "significativo": true,
    "giri": 2000
@@ -117,78 +117,78 @@
    {
     "quinto": 1,
     "n": 1298,
-    "previsto": 0.6895,
-    "reale": 0.5778,
-    "scarto": -0.1116
+    "previsto": 0.6894,
+    "reale": 0.577,
+    "scarto": -0.1124
    },
    {
     "quinto": 2,
     "n": 1298,
-    "previsto": 0.7426,
+    "previsto": 0.7413,
     "reale": 0.6549,
-    "scarto": -0.0877
+    "scarto": -0.0864
    },
    {
     "quinto": 3,
-    "n": 1297,
-    "previsto": 0.7836,
-    "reale": 0.7271,
-    "scarto": -0.0566
+    "n": 1298,
+    "previsto": 0.7812,
+    "reale": 0.7319,
+    "scarto": -0.0493
    },
    {
     "quinto": 4,
     "n": 1297,
-    "previsto": 0.8286,
-    "reale": 0.7409,
-    "scarto": -0.0877
+    "previsto": 0.8249,
+    "reale": 0.7394,
+    "scarto": -0.0855
    },
    {
     "quinto": 5,
     "n": 1297,
-    "previsto": 0.8938,
+    "previsto": 0.8892,
     "reale": 0.8042,
-    "scarto": -0.0897
+    "scarto": -0.0851
    }
   ],
   "per_anno": [
    {
     "anno": 2020,
-    "n": 2043,
-    "quota_reale": 0.7362,
-    "quota_prevista": 0.7828,
-    "auc_modello": 0.6161,
-    "auc_solo_padre": 0.5977
+    "n": 2045,
+    "quota_reale": 0.7355,
+    "quota_prevista": 0.7807,
+    "auc_modello": 0.6173,
+    "auc_solo_padre": 0.5978
    },
    {
     "anno": 2021,
-    "n": 2144,
-    "quota_reale": 0.6945,
-    "quota_prevista": 0.7873,
-    "auc_modello": 0.595,
-    "auc_solo_padre": 0.5788
+    "n": 2143,
+    "quota_reale": 0.6953,
+    "quota_prevista": 0.7851,
+    "auc_modello": 0.5952,
+    "auc_solo_padre": 0.5793
    },
    {
     "anno": 2022,
     "n": 2300,
-    "quota_reale": 0.6757,
-    "quota_prevista": 0.7921,
-    "auc_modello": 0.6172,
-    "auc_solo_padre": 0.6024
+    "quota_reale": 0.677,
+    "quota_prevista": 0.7893,
+    "auc_modello": 0.6163,
+    "auc_solo_padre": 0.6018
    }
   ]
  },
  "buono": {
-  "auc_modello": 0.6139,
-  "auc_solo_padre": 0.6011,
+  "auc_modello": 0.6147,
+  "auc_solo_padre": 0.6015,
   "brier_modello": 0.1819,
-  "brier_costante": 0.1875,
-  "quota_reale": 0.25,
-  "quota_prevista": 0.258,
+  "brier_costante": 0.1876,
+  "quota_reale": 0.2502,
+  "quota_prevista": 0.2578,
   "contro_solo_padre": {
-   "vantaggio": 0.0128,
+   "vantaggio": 0.0132,
    "intervallo95": [
-    0.0034,
-    0.0224
+    0.0031,
+    0.0227
    ],
    "significativo": true,
    "giri": 2000
@@ -197,71 +197,71 @@
    {
     "quinto": 1,
     "n": 1298,
-    "previsto": 0.1772,
-    "reale": 0.1495,
-    "scarto": -0.0277
+    "previsto": 0.1778,
+    "reale": 0.1487,
+    "scarto": -0.0291
    },
    {
     "quinto": 2,
     "n": 1298,
-    "previsto": 0.2137,
-    "reale": 0.2026,
-    "scarto": -0.0111
+    "previsto": 0.214,
+    "reale": 0.2018,
+    "scarto": -0.0121
    },
    {
     "quinto": 3,
-    "n": 1297,
-    "previsto": 0.2362,
-    "reale": 0.2606,
-    "scarto": 0.0244
+    "n": 1298,
+    "previsto": 0.2363,
+    "reale": 0.2643,
+    "scarto": 0.0279
    },
    {
     "quinto": 4,
     "n": 1297,
-    "previsto": 0.2838,
-    "reale": 0.2691,
-    "scarto": -0.0147
+    "previsto": 0.2833,
+    "reale": 0.2675,
+    "scarto": -0.0158
    },
    {
     "quinto": 5,
     "n": 1297,
-    "previsto": 0.3794,
+    "previsto": 0.3778,
     "reale": 0.3685,
-    "scarto": -0.0109
+    "scarto": -0.0092
    }
   ],
   "per_anno": [
    {
     "anno": 2020,
-    "n": 2043,
-    "quota_reale": 0.2501,
-    "quota_prevista": 0.2557,
-    "auc_modello": 0.6224,
-    "auc_solo_padre": 0.6122
+    "n": 2045,
+    "quota_reale": 0.2499,
+    "quota_prevista": 0.2555,
+    "auc_modello": 0.6231,
+    "auc_solo_padre": 0.6124
    },
    {
     "anno": 2021,
-    "n": 2144,
-    "quota_reale": 0.25,
-    "quota_prevista": 0.2578,
-    "auc_modello": 0.5953,
-    "auc_solo_padre": 0.5921
+    "n": 2143,
+    "quota_reale": 0.2506,
+    "quota_prevista": 0.2576,
+    "auc_modello": 0.597,
+    "auc_solo_padre": 0.5934
    },
    {
     "anno": 2022,
     "n": 2300,
     "quota_reale": 0.25,
-    "quota_prevista": 0.2604,
-    "auc_modello": 0.6239,
-    "auc_solo_padre": 0.5992
+    "quota_prevista": 0.2601,
+    "auc_modello": 0.6242,
+    "auc_solo_padre": 0.5991
    }
   ],
-  "auc_consiglio_di_oggi": 0.6014,
+  "auc_consiglio_di_oggi": 0.6018,
   "contro_consiglio_di_oggi": {
-   "vantaggio": 0.0125,
+   "vantaggio": 0.0129,
    "intervallo95": [
-    0.0042,
-    0.0213
+    0.0037,
+    0.0217
    ],
    "significativo": true,
    "giri": 2000
