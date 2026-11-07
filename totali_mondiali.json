@@ -7,6 +7,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
   },
+  "ABC FREIGHT|1974": {
+   "nome": "ABC FREIGHT",
+   "anno": 1974,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "ADRI DI JESOLO|1997": {
    "nome": "ADRI DI JESOLO",
    "anno": 1997,
@@ -114,6 +120,12 @@
    "anno": 1997,
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
+  },
+  "APPROBATION|1997": {
+   "nome": "APPROBATION",
+   "anno": 1997,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "AXEL BLACK JET|1997": {
    "nome": "AXEL BLACK JET",
@@ -300,6 +312,12 @@
    "anno": 1999,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "CELESTE PL|1999": {
+   "nome": "CELESTE PL",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "CESARE|1999": {
    "nome": "CESARE",
@@ -556,6 +574,18 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
   },
+  "DEPUIS BLUE|2000": {
+   "nome": "DEPUIS BLUE",
+   "anno": 2000,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "DESIRE' DEL PINO|2000": {
+   "nome": "DESIRE' DEL PINO",
+   "anno": 2000,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "DI GIORGIO TRIO|2000": {
    "nome": "DI GIORGIO TRIO",
    "anno": 2000,
@@ -678,17 +708,35 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "ECUME DES JOURS|2001": {
+   "nome": "ECUME DES JOURS",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "EDIZIONE AJ|2001": {
    "nome": "EDIZIONE AJ",
    "anno": 2001,
    "esito": "non_trovato",
    "letto_il": "2026-11-06"
   },
+  "EIFFEL AS|2001": {
+   "nome": "EIFFEL AS",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "EL NINO|2001": {
    "nome": "EL NINO",
    "anno": 2001,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
+  },
+  "ELBAVI|2001": {
+   "nome": "ELBAVI",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "ELDGRADO BI|2001": {
    "nome": "ELDGRADO BI",
@@ -713,6 +761,12 @@
    "anno": 2001,
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
+  },
+  "ENIGMA BI|2001": {
+   "nome": "ENIGMA BI",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "ENTELLA AS|2001": {
    "nome": "ENTELLA AS",
@@ -742,11 +796,29 @@
     }
    ]
   },
+  "ERBESIA|2001": {
+   "nome": "ERBESIA",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "ERICA D'ALFA|2001": {
+   "nome": "ERICA D'ALFA",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "ERIKA BI|2001": {
    "nome": "ERIKA BI",
    "anno": 2001,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "ERINNA DEL RONCO|2001": {
+   "nome": "ERINNA DEL RONCO",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "ESUPER SHAR SM|2001": {
    "nome": "ESUPER SHAR SM",
@@ -777,6 +849,18 @@
    "anno": 2001,
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
+  },
+  "EVERY DAY FEDS|2001": {
+   "nome": "EVERY DAY FEDS",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "EVOILA' CAF|2001": {
+   "nome": "EVOILA' CAF",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "EXPLOIT CAF|2001": {
    "nome": "EXPLOIT CAF",
@@ -872,6 +956,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "FIUMARA KING|2002": {
+   "nome": "FIUMARA KING",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "FLOWER BIGI|2002": {
    "nome": "FLOWER BIGI",
    "anno": 2002,
@@ -901,6 +991,12 @@
    "anno": 2002,
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
+  },
+  "FOHLE BSM|2002": {
+   "nome": "FOHLE BSM",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "FOIRA SM SPIN|2002": {
    "nome": "FOIRA SM SPIN",
@@ -937,6 +1033,12 @@
    "anno": 2002,
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
+  },
+  "FRAGOLA PARK|2002": {
+   "nome": "FRAGOLA PARK",
+   "anno": 2002,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "FRANKA ZS|2002": {
    "nome": "FRANKA ZS",
@@ -1019,6 +1121,18 @@
    "anno": 2003,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "GENGIS FANS|2003": {
+   "nome": "GENGIS FANS",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "GENNY DI AZZURRA|2003": {
+   "nome": "GENNY DI AZZURRA",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "GERARD|2003": {
    "nome": "GERARD",
@@ -1116,6 +1230,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
   },
+  "GO TO THE TOP|1991": {
+   "nome": "GO TO THE TOP",
+   "anno": 1991,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "GODIVA BI|2003": {
    "nome": "GODIVA BI",
    "anno": 2003,
@@ -1156,6 +1276,18 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-06"
   },
+  "GRETEL GRIF|2003": {
+   "nome": "GRETEL GRIF",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "GRIFFIN BABY|2003": {
+   "nome": "GRIFFIN BABY",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "GUANTANAMELA|2003": {
    "nome": "GUANTANAMELA",
    "anno": 2003,
@@ -1191,6 +1323,12 @@
    "anno": 1989,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "HILDY GILDY|1990": {
+   "nome": "HILDY GILDY",
+   "anno": 1990,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "HORNBY BOWL|1989": {
    "nome": "HORNBY BOWL",
@@ -1250,11 +1388,23 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "IEANINE CAM|2004": {
+   "nome": "IEANINE CAM",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "IGOR FONT|2004": {
    "nome": "IGOR FONT",
    "anno": 2004,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
+  },
+  "IGOR LIIS|2004": {
+   "nome": "IGOR LIIS",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "IKRAM FERM|2004": {
    "nome": "IKRAM FERM",
@@ -1316,11 +1466,23 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "INDIA DI JESOLO|2004": {
+   "nome": "INDIA DI JESOLO",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "INDU' JET|2004": {
    "nome": "INDU' JET",
    "anno": 2004,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
+  },
+  "INFANTA|2004": {
+   "nome": "INFANTA",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "INFINITIF|2004": {
    "nome": "INFINITIF",
@@ -1352,6 +1514,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "IRIDE KING|2004": {
+   "nome": "IRIDE KING",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "IRINA|2004": {
    "nome": "IRINA",
    "anno": 2004,
@@ -1370,6 +1538,18 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
   },
+  "ISAGORA SAS|2004": {
+   "nome": "ISAGORA SAS",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "ISIDE BI|2004": {
+   "nome": "ISIDE BI",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "ISLAND EFFE|2004": {
    "nome": "ISLAND EFFE",
    "anno": 2004,
@@ -1387,6 +1567,18 @@
    "anno": 2004,
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
+  },
+  "ISSIMA FONT|2004": {
+   "nome": "ISSIMA FONT",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "ITALA|2004": {
+   "nome": "ITALA",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "ITALIA ITALIA AC|2004": {
    "nome": "ITALIA ITALIA AC",
@@ -1439,6 +1631,12 @@
    "anno": 2005,
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
+  },
+  "LA PAZ|2005": {
+   "nome": "LA PAZ",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "LA VIDA LOCA|2005": {
    "nome": "LA VIDA LOCA",
@@ -1883,6 +2081,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-06"
   },
+  "MEGAN GRIF|2006": {
+   "nome": "MEGAN GRIF",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "MELANIA SF|2006": {
    "nome": "MELANIA SF",
    "anno": 2006,
@@ -1997,6 +2201,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
   },
+  "NADIA CAM|2007": {
+   "nome": "NADIA CAM",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "NAKITAST|2007": {
    "nome": "NAKITAST",
    "anno": 2007,
@@ -2045,6 +2255,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
   },
+  "NAVAYA DE GLORIA|2007": {
+   "nome": "NAVAYA DE GLORIA",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "NEANDER JET|2007": {
    "nome": "NEANDER JET",
    "anno": 2007,
@@ -2062,6 +2278,12 @@
    "anno": 2007,
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
+  },
+  "NEILOS OM|2007": {
+   "nome": "NEILOS OM",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "NERA AZZURRA|2007": {
    "nome": "NERA AZZURRA",
@@ -2139,6 +2361,18 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
   },
+  "NINA DI AZZURRA|2007": {
+   "nome": "NINA DI AZZURRA",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "NIRVANA VA|2007": {
+   "nome": "NIRVANA VA",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "NO MAN'S LAND|2007": {
    "nome": "NO MAN'S LAND",
    "anno": 2007,
@@ -2192,6 +2426,12 @@
    "anno": 2007,
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
+  },
+  "NUVOLA DI POGGIO|2007": {
+   "nome": "NUVOLA DI POGGIO",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "OASIS BI|2008": {
    "nome": "OASIS BI",
@@ -2256,6 +2496,12 @@
    "anno": 2008,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "OLIVIASS|2008": {
+   "nome": "OLIVIASS",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "OLMO HOLZ|2008": {
    "nome": "OLMO HOLZ",
@@ -2326,6 +2572,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "ORO FKS|2008": {
+   "nome": "ORO FKS",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "ORONTE|1989": {
    "nome": "ORONTE",
    "anno": 1989,
@@ -2355,6 +2607,12 @@
    "anno": 2008,
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
+  },
+  "OTRAS BI|2008": {
+   "nome": "OTRAS BI",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "OUDRY DEI VELTRI|2008": {
    "nome": "OUDRY DEI VELTRI",
@@ -2434,6 +2692,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
   },
+  "PAPALLA|2009": {
+   "nome": "PAPALLA",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "PARA NO VERTE MAS|2009": {
    "nome": "PARA NO VERTE MAS",
    "anno": 2009,
@@ -2451,6 +2715,12 @@
    "anno": 2009,
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
+  },
+  "PARIS ROC|2009": {
+   "nome": "PARIS ROC",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "PARK OK|1990": {
    "nome": "PARK OK",
@@ -2494,6 +2764,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
   },
+  "PELIGRO|2009": {
+   "nome": "PELIGRO",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "PEPEVITA|2009": {
    "nome": "PEPEVITA",
    "anno": 2009,
@@ -2530,6 +2806,18 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
   },
+  "PETRA INN RONCO|2009": {
+   "nome": "PETRA INN RONCO",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
+  "PICASSO LL|2009": {
+   "nome": "PICASSO LL",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "PICCARDO|1990": {
    "nome": "PICCARDO",
    "anno": 1990,
@@ -2554,6 +2842,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "PLUSHY|1990": {
+   "nome": "PLUSHY",
+   "anno": 1990,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "POTENZA OM|2009": {
    "nome": "POTENZA OM",
    "anno": 2009,
@@ -2565,6 +2859,12 @@
    "anno": 1990,
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
+  },
+  "PRIMAVERA AS|2009": {
+   "nome": "PRIMAVERA AS",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "PRIME PROSPECT|1999": {
    "nome": "PRIME PROSPECT",
@@ -2595,6 +2895,12 @@
    "anno": 2009,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
+  },
+  "QUICK STEP|1990": {
+   "nome": "QUICK STEP",
+   "anno": 1990,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "RADIOFRECCIA FI|2010": {
    "nome": "RADIOFRECCIA FI",
@@ -2659,6 +2965,12 @@
    "anno": 2010,
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
+  },
+  "REGALE|2010": {
+   "nome": "REGALE",
+   "anno": 2010,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "REGENT LB|1991": {
    "nome": "REGENT LB",
@@ -2878,6 +3190,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "SCARLET KNIGHT|1998": {
+   "nome": "SCARLET KNIGHT",
+   "anno": 1998,
+   "esito": "trovato",
+   "letto_il": "2026-11-07",
+   "corse": 80,
+   "vittorie": 44,
+   "guadagni": {
+    "importo": 17760273,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Scarlet Knight",
+     "url": "https://sv.wikipedia.org/wiki/Scarlet_Knight"
+    }
+   ]
+  },
   "SCEICCO|2011": {
    "nome": "SCEICCO",
    "anno": 2011,
@@ -2889,6 +3223,12 @@
    "anno": 2011,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "SCINTILLA DOMAR|1992": {
+   "nome": "SCINTILLA DOMAR",
+   "anno": 1992,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "SEATTLE BI|2011": {
    "nome": "SEATTLE BI",
@@ -3124,6 +3464,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
   },
+  "TIBOLLA MO|1993": {
+   "nome": "TIBOLLA MO",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "TIMOKO|2007": {
    "nome": "TIMOKO",
    "anno": 2007,
@@ -3192,6 +3538,12 @@
    "anno": 1990,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
+  },
+  "TREMESTIERI|1993": {
+   "nome": "TREMESTIERI",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "TRIPLE T STORM|1990": {
    "nome": "TRIPLE T STORM",
@@ -3274,6 +3626,12 @@
    "anno": 1994,
    "esito": "non_trovato",
    "letto_il": "2026-11-06"
+  },
+  "URLA DI JESOLO|1994": {
+   "nome": "URLA DI JESOLO",
+   "anno": 1994,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "URONOMETRO|1994": {
    "nome": "URONOMETRO",
@@ -3411,11 +3769,23 @@
     }
    ]
   },
+  "VILLEIKA NES|1995": {
+   "nome": "VILLEIKA NES",
+   "anno": 1995,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
+  },
   "VINCENNES|2008": {
    "nome": "VINCENNES",
    "anno": 2008,
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
+  },
+  "VITA DE GLORIA|1995": {
+   "nome": "VITA DE GLORIA",
+   "anno": 1995,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-07"
   },
   "VIVA LUCE|1995": {
    "nome": "VIVA LUCE",
@@ -3434,6 +3804,28 @@
    "anno": 1995,
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
+  },
+  "VOLTIGEUR DE MYRT|2009": {
+   "nome": "VOLTIGEUR DE MYRT",
+   "anno": 2009,
+   "esito": "trovato",
+   "letto_il": "2026-11-07",
+   "corse": 87,
+   "vittorie": 15,
+   "guadagni": {
+    "importo": 1406277,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Voltigeur de Myrt",
+     "url": "https://sv.wikipedia.org/wiki/Voltigeur_de_Myrt"
+    }
+   ]
   },
   "WESGATE CROWN|1991": {
    "nome": "WESGATE CROWN",
@@ -3568,5 +3960,5 @@
    "letto_il": "2026-11-06"
   }
  },
- "aggiornato_il": "2026-11-06"
+ "aggiornato_il": "2026-11-07"
 }
