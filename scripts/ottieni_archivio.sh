@@ -31,6 +31,28 @@ bash "$(dirname "$0")/aspetta_turno.sh" || exit 1
 
 echo "== Procuro l'archivio =="
 
+# Scarica un file del rilascio. Prima la strada solita (indirizzo pubblico);
+# se GitHub non risponde, riprova con l'accesso del lavoro (gh, con GH_TOKEN):
+# l'8/11/2026 GitHub ha dato errore 504 per ore solo a chi scaricava senza
+# accesso, e due lavori si sono fermati senza archivio.
+scarica() { # $1 = nome del file nel rilascio, $2 = dove salvarlo
+  rm -f "$2"
+  if curl -fsSL --retry 3 --retry-delay 5 -m 600 -o "$2" "https://github.com/$REPO/releases/download/archivio/$1"; then
+    return 0
+  fi
+  if [ -n "${GH_TOKEN:-}" ] && command -v gh >/dev/null 2>&1; then
+    echo "   indirizzo pubblico non risponde: riprovo con l'accesso del lavoro"
+    local i
+    for i in 1 2 3; do
+      if gh release download archivio --repo "$REPO" -p "$1" -O "$2" --clobber 2>/dev/null; then
+        return 0
+      fi
+      sleep 10
+    done
+  fi
+  return 1
+}
+
 ottieni() {
   # 1) La strada normale: il rilascio.
   echo "-> Scarico dal rilascio: $INDIRIZZO"
@@ -38,7 +60,7 @@ ottieni() {
   # pubblicata). pubblica_archivio.sh la ricontrolla alla fine: se nel
   # frattempo qualcun altro ha pubblicato, non si copre il suo lavoro.
   curl -sIL -m 60 "$INDIRIZZO" | tr -d '\r' | grep -i '^last-modified:' | tail -1 > .archivio_targa || true
-  if curl -fsSL --retry 3 --retry-delay 5 -m 600 -o /tmp/archivio.gz "$INDIRIZZO"; then
+  if scarica data.db.gz /tmp/archivio.gz; then
     local byte; byte=$(stat -c%s /tmp/archivio.gz 2>/dev/null || echo 0)
     echo "   scaricati $byte byte"
     if [ "$byte" -ge "$BYTE_MINIMI" ] && gunzip -c /tmp/archivio.gz > data.db 2>/dev/null; then
@@ -53,7 +75,7 @@ ottieni() {
   #    mette da parte pubblica_archivio.sh, solo quando e' buona. Serve se la
   #    copia principale risulta rovinata, come il 28/09/2026.
   echo "-> Provo la scorta: ${INDIRIZZO%.gz}.precedente.gz"
-  if curl -fsSL --retry 3 --retry-delay 5 -m 600 -o /tmp/archivio.gz "${INDIRIZZO%.db.gz}.db.precedente.gz"; then
+  if scarica data.db.precedente.gz /tmp/archivio.gz; then
     local byte2; byte2=$(stat -c%s /tmp/archivio.gz 2>/dev/null || echo 0)
     echo "   scaricati $byte2 byte"
     if [ "$byte2" -ge "$BYTE_MINIMI" ] && gunzip -c /tmp/archivio.gz > data.db 2>/dev/null; then
