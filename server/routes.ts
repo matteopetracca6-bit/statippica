@@ -2655,7 +2655,14 @@ export function registerRoutes(httpServer: Server, app: Express) {
       });
 
       // Cost model (matching roi_model.py)
-      const studFee = studRow?.stud_fee_eur ?? 0;
+      // La monta puo' essere scritta a mano da chi usa l'Advisor (?monta=):
+      // vale piu' del catalogo. Se non c'e' ne' l'una ne' l'altro la monta
+      // resta fuori dai costi e la risposta lo dice (monta_nota = false):
+      // un prezzo non si inventa.
+      const montaScritta = Number(req.query.monta);
+      const montaManuale = Number.isFinite(montaScritta) && montaScritta > 0 ? Math.round(montaScritta) : null;
+      const studFee = montaManuale ?? studRow?.stud_fee_eur ?? 0;
+      const montaNota = montaManuale != null || (studRow?.stud_fee_eur ?? 0) > 0;
       const COSTI = {
         riproduzione: 430 + 80 + 400 + 15 * 340,
         puledro_anno1: 9 * 180 + 96 + 500,
@@ -2771,6 +2778,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         mare,
         mareData: mareData || null,
         stud_fee: studFee,
+        monta_manuale: montaManuale != null,
+        monta_nota: montaNota,
         prediction,
         inbreeding_detail: inb,
         reasons,
@@ -2894,7 +2903,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // Body: { fattrice: string, budget_max?: number }
   // ──────────────────────────────────────────────
   app.post("/api/advisor", (req, res) => {
-    const { fattrice, budget_max } = req.body as { fattrice: string; budget_max?: number };
+    const { fattrice, budget_max, stallone, monta } = req.body as { fattrice: string; budget_max?: number; stallone?: string; monta?: number };
     if (!fattrice) return res.status(400).json({ error: "fattrice required" });
 
     const fattriceUpper = fattrice.trim().toUpperCase();
@@ -2934,8 +2943,42 @@ export function registerRoutes(httpServer: Server, app: Express) {
         }
       }
 
+      // Uno stallone scritto a mano: anche fuori catalogo o senza tassa di
+      // monta nota. La monta si prende da chi scrive, se la scrive; se no dal
+      // catalogo; se no resta "non nota" (mai stimata).
+      const stalloneUp = (stallone || "").trim().toUpperCase();
+      let singolo: any[] | null = null;
+      let stalloneNonTrovato = false;
+      if (stalloneUp) {
+        const info = db.prepare(`
+          SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
+                 srs.avg_score, srs.n_in_corsa, srs.n_figli_totali, srs.n_SSS, srs.n_SS, srs.n_S,
+                 srs.pct_top_S, srs.avg_earnings, s.media_in_corsa, s.progeny_earnings_2024
+            FROM stallions s LEFT JOIN stallion_rating_stats srs ON s.name = srs.sire
+           WHERE UPPER(TRIM(s.name)) = ? LIMIT 1`).get(stalloneUp) as any
+          ?? db.prepare(`
+          SELECT srs.sire AS name, NULL AS stud_fee_eur, NULL AS stud_farm, NULL AS stud_status,
+                 srs.avg_score, srs.n_in_corsa, srs.n_figli_totali, srs.n_SSS, srs.n_SS, srs.n_S,
+                 srs.pct_top_S, srs.avg_earnings, NULL AS media_in_corsa, NULL AS progeny_earnings_2024
+            FROM stallion_rating_stats srs WHERE UPPER(TRIM(srs.sire)) = ? LIMIT 1`).get(stalloneUp) as any
+          ?? ((db.prepare("SELECT COUNT(*) n FROM horses WHERE UPPER(TRIM(name)) = ? OR UPPER(TRIM(sire)) = ?").get(stalloneUp, stalloneUp) as any).n > 0
+              ? { name: stalloneUp, stud_fee_eur: null, n_figli_totali: 0 } : null);
+        if (!info) stalloneNonTrovato = true;
+        else {
+          const m = Number(monta);
+          const manuale = Number.isFinite(m) && m > 0 ? Math.round(m) : null;
+          singolo = [{ ...info, stud_fee_eur: manuale ?? (info.stud_fee_eur > 0 ? info.stud_fee_eur : null),
+                       monta_manuale: manuale != null, antenato: ancestorNames.has(stalloneUp) }];
+        }
+      }
+      if (stalloneNonTrovato) {
+        return res.json({ found: true, fattrice: { ...horse, come_fattrice: puntiFattrice(db, horse.name) },
+          ancestors: Array.from(ancestorNames), budget_max: null, candidates: [], stallone: stalloneUp,
+          stallone_non_trovato: true, validazione: null });
+      }
+
       // Get all stallions with stats + stud fee
-      const allStallions = db.prepare(`
+      const allStallions = singolo ?? db.prepare(`
         SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
                srs.avg_score, srs.n_in_corsa, srs.n_figli_totali, srs.n_SSS, srs.n_SS, srs.n_S,
                srs.pct_top_S, srs.avg_earnings, s.media_in_corsa, s.progeny_earnings_2024
@@ -2949,6 +2992,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Filter out inbreeding risk (ancestor in common) + budget
       const candidates = allStallions
         .filter((s: any) => {
+          if (singolo) return true;
           const nameUp = s.name.toUpperCase();
           if (ancestorNames.has(nameUp)) return false; // direct ancestor
           if (budget_max && s.stud_fee_eur > budget_max) return false;
@@ -3017,7 +3061,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // punti e grado della pagina Fattrici, per mostrarli uguali qui
         fattrice: { ...horse, come_fattrice: puntiFattrice(db, horse.name) },
         ancestors: Array.from(ancestorNames),
-        budget_max: budget_max || null,
+        budget_max: singolo ? null : (budget_max || null),
+        stallone: singolo ? stalloneUp : null,
         candidates,
         validazione,
       });

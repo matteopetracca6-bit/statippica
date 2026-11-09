@@ -133,7 +133,9 @@ export default function NameSelect({ value, onChange, endpoint, placeholder, lab
             <div style={{ padding: "12px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>Cerco…</div>
           )}
           {!isFetching && options.length === 0 && (
-            <div style={{ padding: "12px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>Nessun cavallo trovato</div>
+            <div style={{ padding: "12px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>
+              Nessun cavallo trovato{query.trim() ? <>: premi Invio per usare «{query.trim()}» come scritto</> : null}
+            </div>
           )}
           {options.map((o, i) => (
             <div

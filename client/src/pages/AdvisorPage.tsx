@@ -87,6 +87,8 @@ interface AdvisorResult {
     come_fattrice?: { punti: number; grado: string | null; n: number } | null };
   ancestors?: string[];
   budget_max?: number;
+  stallone?: string | null;
+  stallone_non_trovato?: boolean;
   candidates?: Candidate[];
   validazione?: {
     stato: string; sperimentale: boolean; riserva?: string | null;
@@ -112,12 +114,16 @@ interface Candidate {
   value_index?: number | null;
   inbreeding_pct?: number | null;
   inbreeding_level?: string | null;
+  monta_manuale?: boolean;
+  antenato?: boolean;
 }
 
 interface Simulation {
   stallion: string;
   mare: string;
   stud_fee: number;
+  monta_manuale?: boolean;
+  monta_nota?: boolean;
   distribution?: { grade: string; probability: number; stallion_count: number; avg_earnings: number; expected_earnings: number }[];
   total_offspring?: number;
   source?: string;
@@ -155,6 +161,10 @@ type Ordine = "buoni" | "monta" | "valore" | "figli";
 /* ------------------------------------------------------------------ */
 
 const CSS = `
+.adv-modo { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: hsl(220 12% 9%); border: 1px solid ${C.bordo}; margin-bottom: 10px; flex-wrap: wrap; }
+.adv-modo button { padding: 7px 12px; border-radius: 7px; border: none; background: transparent; color: hsl(210 8% 62%); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.adv-modo button[aria-pressed="true"] { background: hsl(183 100% 38% / 0.16); color: hsl(183 80% 62%); }
+.adv-cerca.adv-cerca-4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 190px auto; }
 .adv-cerca { display: grid; grid-template-columns: minmax(0, 1fr) 190px auto; gap: 12px; align-items: end;
   padding: 18px; border-radius: 14px; background: hsl(220 12% 9%); border: 1px solid ${C.bordo}; margin-bottom: 18px; }
 .adv-avviso { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 10px;
@@ -197,7 +207,9 @@ const CSS = `
   .adv-dettaglio { position: static; padding: 14px; }
 }
 @media (max-width: 640px) {
-  .adv-cerca { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .adv-cerca, .adv-cerca.adv-cerca-4 { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .adv-modo { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .adv-modo button { padding: 8px 6px; font-size: 12px; }
   .adv-riga { grid-template-columns: 22px minmax(0, 1fr) auto; }
   .adv-riga .adv-pos { display: none; }
   .adv-cifre { grid-template-columns: minmax(0, 1fr); }
@@ -279,8 +291,8 @@ type Scheda = "economia" | "genetica" | "regole" | "perche";
 function Dettaglio({ c, mare, onClose }: { c: Candidate; mare: string; onClose?: () => void }) {
   const [scheda, setScheda] = useState<Scheda>("economia");
   const { data: sim, isLoading, isError } = useQuery<Simulation>({
-    queryKey: ["/api/advisor/simulate", c.name, mare],
-    queryFn: () => apiRequest("GET", `/api/advisor/simulate?stallion=${encodeURIComponent(c.name)}&mare=${encodeURIComponent(mare)}`).then(r => r.json()),
+    queryKey: ["/api/advisor/simulate", c.name, mare, c.monta_manuale ? c.stud_fee_eur : null],
+    queryFn: () => apiRequest("GET", `/api/advisor/simulate?stallion=${encodeURIComponent(c.name)}&mare=${encodeURIComponent(mare)}${c.monta_manuale && isNum(c.stud_fee_eur) ? `&monta=${c.stud_fee_eur}` : ""}`).then(r => r.json()),
     staleTime: 120000,
   });
 
@@ -297,7 +309,7 @@ function Dettaglio({ c, mare, onClose }: { c: Candidate; mare: string; onClose?:
             {c.name} <span style={{ color: C.fioco, fontWeight: 500 }}>×</span> <span style={{ color: C.viola }}>{mare}</span>
           </div>
           <div style={{ fontSize: 12, color: C.muto, marginTop: 3, display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <span>Monta <strong style={{ color: C.oro }}>{euro(c.stud_fee_eur)}</strong></span>
+            <span>Monta <strong style={{ color: C.oro }}>{isNum(c.stud_fee_eur) && c.stud_fee_eur > 0 ? euro(c.stud_fee_eur) : "non nota"}</strong>{c.monta_manuale ? " (scritta da te)" : ""}</span>
             <span>{num(c.n_figli_totali)} figli valutati</span>
             <Link href={`/stallion/${encodeURIComponent(c.name)}`}>
               <a style={{ color: C.cyan, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}>
@@ -407,6 +419,15 @@ function SchedaEconomia({ sim }: { sim: Simulation }) {
         <span className="tabular" style={{ color: "hsl(15 70% 58%)" }}>{euro(costi.costo_atteso)}</span>
       </div>
       <div style={{ fontSize: 11, color: C.fioco, marginTop: 4 }}>Tiene conto che circa 5 puledri su 100 non arrivano all'età delle corse.</div>
+      {sim.monta_nota === false && (
+        <div style={{ fontSize: 12, color: "hsl(35 80% 62%)", marginTop: 8 }} data-testid="monta-non-nota">
+          La tassa di monta di questo stallone non la conosciamo: qui non è nei costi, quindi il costo vero è più alto.
+          Scrivila nel campo "Monta" in alto per includerla.
+        </div>
+      )}
+      {sim.monta_manuale && (
+        <div style={{ fontSize: 11.5, color: C.muto, marginTop: 6 }}>La monta usata nei conti è quella che hai scritto tu.</div>
+      )}
     </>
   );
 }
@@ -561,8 +582,9 @@ function Riga({ c, pos, attiva, spuntato, onApri, onSpunta }: {
       </div>
       <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
         <span className="tabular" style={{ fontSize: 12.5, fontWeight: 700, color: isNum(c.stud_fee_eur) && c.stud_fee_eur > 0 ? C.oro : C.fioco, whiteSpace: "nowrap" }}>
-          {euro(c.stud_fee_eur)}
+          {isNum(c.stud_fee_eur) && c.stud_fee_eur > 0 ? euro(c.stud_fee_eur) : "monta non nota"}
         </span>
+        {c.monta_manuale && <span style={{ fontSize: 10.5, color: C.muto }}>scritta da te</span>}
         {sopra != null && (
           <span className="tabular" style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap", color: sopra >= 0 ? C.buono : "hsl(0 55% 60%)" }}>
             {sopra >= 0 ? "+" : ""}{num(sopra)} sulla media
@@ -581,6 +603,11 @@ function Riga({ c, pos, attiva, spuntato, onApri, onSpunta }: {
 export default function AdvisorPage() {
   const [fattrice, setFattrice] = useState("");
   const [budget, setBudget] = useState("");
+  // Due modi: tutti gli stalloni del catalogo con monta nota, oppure uno
+  // stallone scritto a mano (anche senza monta nota), con la monta facoltativa.
+  const [modo, setModo] = useState<"catalogo" | "stallone">("catalogo");
+  const [stallone, setStallone] = useState("");
+  const [montaScritta, setMontaScritta] = useState("");
   const [aperto, setAperto] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [mostraConfronto, setMostraConfronto] = useState(false);
@@ -588,7 +615,7 @@ export default function AdvisorPage() {
   const desktop = useDesktop();
   const confrontoRef = useRef<HTMLDivElement>(null);
 
-  const { mutate, data, isPending } = useMutation<AdvisorResult, Error, { fattrice: string; budget_max?: number }>({
+  const { mutate, data, isPending } = useMutation<AdvisorResult, Error, { fattrice: string; budget_max?: number; stallone?: string; monta?: number }>({
     mutationFn: async (body) => (await apiRequest("POST", "/api/advisor", body)).json(),
   });
 
@@ -596,7 +623,12 @@ export default function AdvisorPage() {
     if (!nome.trim()) return;
     setAperto(null); setSelected([]); setMostraConfronto(false);
     const b = parseInt(budget);
-    mutate({ fattrice: nome.trim(), budget_max: Number.isFinite(b) && b > 0 ? b : undefined },
+    const m = parseInt(montaScritta);
+    if (modo === "stallone" && !stallone.trim()) return;
+    const corpo = modo === "stallone"
+      ? { fattrice: nome.trim(), stallone: stallone.trim(), monta: Number.isFinite(m) && m > 0 ? m : undefined }
+      : { fattrice: nome.trim(), budget_max: Number.isFinite(b) && b > 0 ? b : undefined };
+    mutate(corpo,
       { onSuccess: r => { if (r?.found && r.candidates?.length && window.matchMedia("(min-width: 1024px)").matches) setAperto(r.candidates[0].name); } });
   }
 
@@ -637,32 +669,47 @@ export default function AdvisorPage() {
       </IntestazionePagina>
 
       {/* 1. Ricerca */}
-      <form className="adv-cerca" onSubmit={e => { e.preventDefault(); cerca(fattrice); }}>
+      <div className="adv-modo" role="group" aria-label="Come cercare">
+        <button type="button" aria-pressed={modo === "catalogo"} onClick={() => setModo("catalogo")} data-testid="modo-catalogo">Tutti gli stalloni con monta</button>
+        <button type="button" aria-pressed={modo === "stallone"} onClick={() => setModo("stallone")} data-testid="modo-stallone">Uno stallone che scelgo io</button>
+      </div>
+      <form className={`adv-cerca${modo === "stallone" ? " adv-cerca-4" : ""}`} onSubmit={e => { e.preventDefault(); cerca(fattrice); }}>
         <div style={{ minWidth: 0 }}>
           <NameSelect label="Fattrice" value={fattrice} onChange={n => setFattrice(n.toUpperCase())}
             endpoint="/api/search/fattrice" placeholder="Scegli una fattrice dall'elenco" />
         </div>
+        {modo === "stallone" && (
+          <div style={{ minWidth: 0 }}>
+            <NameSelect label="Stallone" value={stallone} onChange={n => setStallone(n.toUpperCase())}
+              endpoint="/api/search/stallion" placeholder="Scegli o scrivi il nome" />
+          </div>
+        )}
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: "hsl(210 8% 48%)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>
-            Monta massima
+            {modo === "stallone" ? "Monta (se la sai)" : "Monta massima"}
           </label>
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "hsl(220 12% 14%)", border: "1px solid hsl(220 10% 22%)", borderRadius: 8, padding: "10px 12px" }}>
             <Euro size={15} style={{ color: "hsl(210 8% 48%)", flexShrink: 0 }} />
-            <input value={budget} onChange={e => setBudget(e.target.value)} placeholder="Nessun limite" type="number" min="0" inputMode="numeric"
-              data-testid="input-budget" style={{ flex: 1, minWidth: 0, background: "none", border: "none", outline: "none", color: C.testo, fontSize: 14 }} />
+            {modo === "stallone" ? (
+              <input value={montaScritta} onChange={e => setMontaScritta(e.target.value)} placeholder="Dal catalogo, se c'è" type="number" min="0" inputMode="numeric"
+                data-testid="input-monta" style={{ flex: 1, minWidth: 0, background: "none", border: "none", outline: "none", color: C.testo, fontSize: 14 }} />
+            ) : (
+              <input value={budget} onChange={e => setBudget(e.target.value)} placeholder="Nessun limite" type="number" min="0" inputMode="numeric"
+                data-testid="input-budget" style={{ flex: 1, minWidth: 0, background: "none", border: "none", outline: "none", color: C.testo, fontSize: 14 }} />
+            )}
           </div>
         </div>
-        <button type="submit" disabled={isPending || !fattrice.trim()} data-testid="button-advisor-submit" style={{
+        <button type="submit" disabled={isPending || !fattrice.trim() || (modo === "stallone" && !stallone.trim())} data-testid="button-advisor-submit" style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 22px", borderRadius: 8, border: "none",
-          background: isPending || !fattrice.trim() ? "hsl(220 10% 18%)" : "hsl(183 100% 38%)",
-          color: isPending || !fattrice.trim() ? "hsl(210 8% 45%)" : "hsl(220 13% 7%)",
-          cursor: isPending || !fattrice.trim() ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700,
+          background: isPending || !fattrice.trim() || (modo === "stallone" && !stallone.trim()) ? "hsl(220 10% 18%)" : "hsl(183 100% 38%)",
+          color: isPending || !fattrice.trim() || (modo === "stallone" && !stallone.trim()) ? "hsl(210 8% 45%)" : "hsl(220 13% 7%)",
+          cursor: isPending || !fattrice.trim() || (modo === "stallone" && !stallone.trim()) ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700,
         }}>
-          <Search size={15} /> {isPending ? "Analisi..." : "Trova stalloni"}
+          <Search size={15} /> {isPending ? "Analisi..." : modo === "stallone" ? "Valuta la coppia" : "Trova stalloni"}
         </button>
       </form>
 
-      {isPending && <CavalloCaricamento label="Ricerca stalloni compatibili..." />}
+      {isPending && <CavalloCaricamento label={modo === "stallone" ? "Valuto la coppia..." : "Ricerca stalloni compatibili..."} />}
 
       {/* Fattrice non trovata */}
       {!isPending && data && !data.found && (
@@ -776,21 +823,29 @@ export default function AdvisorPage() {
           {/* Barra della classifica */}
           <div className="adv-barra">
             <div style={{ fontSize: 14, fontWeight: 800, color: C.testo, marginRight: "auto" }}>
-              {lista.length} stalloni compatibili
+              {data.stallone ? `${data.stallone} con questa fattrice` : `${lista.length} stalloni compatibili`}
               {isNum(data.budget_max) && data.budget_max > 0 && (
                 <span style={{ fontSize: 12, fontWeight: 500, color: C.muto }}> · monta fino a {euro(data.budget_max)}</span>
               )}
             </div>
-            <div className="adv-ordina" role="group" aria-label="Ordina per">
+            {!data.stallone && <div className="adv-ordina" role="group" aria-label="Ordina per">
               {([["buoni", "Più buoni"], ["monta", "Monta più bassa"], ["valore", "Qualità per euro"], ["figli", "Più figli valutati"]] as [Ordine, string][]).map(([k, t]) => (
                 <button key={k} type="button" aria-pressed={ordine === k} onClick={() => setOrdine(k)}>{t}</button>
               ))}
-            </div>
+            </div>}
           </div>
 
+          {lista.some(c => c.antenato) && (
+            <div className="adv-avviso" data-testid="avviso-antenato">
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span>Questo stallone è già fra gli antenati della fattrice (padre o nonno): nell'elenco automatico verrebbe escluso. Guarda la consanguineità nel dettaglio.</span>
+            </div>
+          )}
           {lista.length === 0 ? (
             <div style={{ padding: 18, borderRadius: 12, background: "hsl(220 12% 9%)", border: `1px solid ${C.bordo}`, fontSize: 13, color: C.muto }}>
-              Nessuno stallone compatibile{isNum(data.budget_max) ? " con questa monta massima: prova ad alzarla o a toglierla." : "."}
+              {data.stallone_non_trovato
+                ? `Lo stallone "${data.stallone}" non è nell'archivio: controlla come è scritto o sceglilo dall'elenco.`
+                : <>Nessuno stallone compatibile{isNum(data.budget_max) ? " con questa monta massima: prova ad alzarla o a toglierla." : "."}</>}
             </div>
           ) : (
             <div className="adv-griglia">
