@@ -5168,6 +5168,41 @@ def phase_repair_race_dates(conn: sqlite3.Connection) -> dict:
     return report
 
 
+def _armonizza_lordi(conn: sqlite3.Connection) -> int:
+    """Lordo uguale al netto nelle corse italiane: si ricava dal netto.
+
+    Alcune letture non trovano il lordo e scrivono lordo = netto. In Italia il
+    netto e' la parte del proprietario (85% del premio del cavallo; 42,5% in
+    alcune corse con ripartizione speciale, per esempio molte corse dei due e
+    tre anni). Per non sbagliare si usa la proporzione degli altri cavalli
+    della STESSA corsa; se nessun altro ha il lordo vero, l'85% del
+    regolamento. Le gare all'ESTERO restano com'erano: li' il premio e' unico.
+    Si rifa' ogni notte, cosi' anche le gare nuove vengono armonizzate.
+    """
+    da_fare = conn.execute("""
+        SELECT id, race_date, track, race_number, prize_net FROM races
+        WHERE prize_net > 0 AND COALESCE(track, '') NOT IN ('', 'ESTERO')
+          AND (prize_gross IS NULL OR prize_gross <= 0 OR prize_gross = prize_net)""").fetchall()
+    quote: dict = {}
+    for _id, data, pista, numero, _n in da_fare:
+        k = (data, pista, numero)
+        if k in quote:
+            continue
+        r = None
+        if numero is not None:
+            riga = conn.execute("""
+                SELECT ROUND(prize_net / prize_gross, 3) q, COUNT(*) n FROM races
+                WHERE race_date = ? AND track = ? AND race_number = ?
+                  AND prize_net > 0 AND prize_gross > prize_net
+                GROUP BY q ORDER BY n DESC LIMIT 1""", (data, pista, numero)).fetchone()
+            if riga and 0.2 <= riga[0] <= 0.95:
+                r = riga[0]
+        quote[k] = r or 0.85
+    conn.executemany("UPDATE races SET prize_gross = ? WHERE id = ?",
+                     [(round(netto / quote[(d, p, n)], 2), i) for i, d, p, n, netto in da_fare])
+    return len(da_fare)
+
+
 def phase_data_quality(conn: sqlite3.Connection) -> dict:
     """
     FASE QA: Controlla e corregge la qualita dei dati ad ogni esecuzione notturna.
@@ -5176,6 +5211,10 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     """
     print("\n[FASE QA] Controllo qualita dati...", file=sys.stderr)
     report = {"stats_fixed": 0, "orphans": 0, "duplicates": 0, "no_rating": 0, "tracks_fixed": 0, "times_normalized": 0}
+
+    # 0) Lordo uguale al netto nelle corse italiane (vedi _armonizza_lordi).
+    report["lordi_armonizzati"] = _armonizza_lordi(conn)
+    print(f"  Lordi ricavati dal netto: {report['lordi_armonizzati']}", file=sys.stderr)
 
     # 1) Ricalcola career_stats per i cavalli dove non combaciano
     # ATTENZIONE: i RIPRODUTTORI (horse_class='breeder': nati <2012 o recuperati
