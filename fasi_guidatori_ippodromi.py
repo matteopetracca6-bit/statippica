@@ -67,8 +67,18 @@ def etichetta_affidabilita(a: float) -> str:
     return "insufficiente"
 
 
+# Novembre 2026: le statistiche di guidatori, ippodromi e numeri di partenza
+# partono dal 2016. Prima di allora l'archivio ha solo una parte delle gare
+# (mancano i cavalli nati prima del 2012 e la fonte ufficiale parte dal 2016),
+# quindi le stagioni 2013-2015 non sono confrontabili con le altre. Le gare
+# senza data restano fuori per lo stesso motivo.
+INIZIO_STATISTICHE = "2016-01-01"
+
+
 def crea_tabelle(conn: sqlite3.Connection) -> None:
     """Le due tabelle sono dati derivati: si possono ricostruire da zero."""
+    conn.execute(f"""CREATE TEMP VIEW IF NOT EXISTS gare_statistiche AS
+                     SELECT * FROM races WHERE race_date >= '{INIZIO_STATISTICHE}'""")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS driver_stats (
             driver            TEXT PRIMARY KEY,
@@ -194,7 +204,7 @@ def phase_driver_stats(conn: sqlite3.Connection) -> int:
         SELECT horse_name,
                AVG(CAST(placement AS REAL) / total_starters),
                COUNT(*)
-        FROM races
+        FROM gare_statistiche
         WHERE placement IS NOT NULL AND total_starters > {MIN_PARTENTI}
         GROUP BY horse_name
         HAVING COUNT(*) >= 5
@@ -207,7 +217,7 @@ def phase_driver_stats(conn: sqlite3.Connection) -> int:
     media_partenza: dict[int, float] = {}
     for pos, media in conn.execute(f"""
         SELECT start_pos, AVG(CAST(placement AS REAL) / total_starters)
-        FROM races
+        FROM gare_statistiche
         WHERE placement IS NOT NULL AND total_starters > {MIN_PARTENTI}
           AND start_pos BETWEEN 1 AND 20
         GROUP BY start_pos
@@ -226,7 +236,7 @@ def phase_driver_stats(conn: sqlite3.Connection) -> int:
 
     for driver, horse, place, tot, pos, track in conn.execute(f"""
         SELECT driver, horse_name, placement, total_starters, start_pos, track
-        FROM races
+        FROM gare_statistiche
         WHERE placement IS NOT NULL AND total_starters > {MIN_PARTENTI}
           AND driver IS NOT NULL AND TRIM(driver) != ''
     """):
@@ -255,7 +265,7 @@ def phase_driver_stats(conn: sqlite3.Connection) -> int:
                SUM(COALESCE(prize_net, 0)),
                MIN(race_date), MAX(race_date),
                SUM(CASE WHEN race_date >= date('now', '-18 months') THEN 1 ELSE 0 END)
-        FROM races
+        FROM gare_statistiche
         WHERE driver IS NOT NULL AND TRIM(driver) != ''
         GROUP BY driver
     """):
@@ -311,14 +321,14 @@ def phase_track_stats(conn: sqlite3.Connection) -> int:
                AVG(NULLIF(total_starters, 0)),
                AVG(NULLIF(time_km, 0)),
                COUNT(DISTINCT driver)
-        FROM races
+        FROM gare_statistiche
         WHERE track IS NOT NULL AND TRIM(track) != ''
         GROUP BY track
     """):
         # Distanza piu' frequente, non media: le distanze sono categorie
         # (1600, 2100, 2600), e la loro media non corrisponde a nessuna gara.
         dist = conn.execute("""
-            SELECT distance FROM races
+            SELECT distance FROM gare_statistiche
             WHERE track = ? AND distance IS NOT NULL AND distance > 0
             GROUP BY distance ORDER BY COUNT(*) DESC LIMIT 1
         """, (track,)).fetchone()
@@ -326,19 +336,19 @@ def phase_track_stats(conn: sqlite3.Connection) -> int:
         # Quanto pesa partire dietro su questa pista.
         interno = conn.execute("""
             SELECT AVG(CASE WHEN placement <= 3 THEN 1.0 ELSE 0 END)
-            FROM races WHERE track = ? AND placement IS NOT NULL
+            FROM gare_statistiche WHERE track = ? AND placement IS NOT NULL
               AND start_pos BETWEEN 1 AND 3 AND total_starters > 4
         """, (track,)).fetchone()[0]
         esterno = conn.execute("""
             SELECT AVG(CASE WHEN placement <= 3 THEN 1.0 ELSE 0 END)
-            FROM races WHERE track = ? AND placement IS NOT NULL
+            FROM gare_statistiche WHERE track = ? AND placement IS NOT NULL
               AND start_pos >= 7 AND total_starters > 4
         """, (track,)).fetchone()[0]
         vantaggio = (round(100 * (interno - esterno), 2)
                      if interno is not None and esterno is not None else None)
 
         recenti = conn.execute("""
-            SELECT COUNT(*) FROM races
+            SELECT COUNT(*) FROM gare_statistiche
             WHERE track = ? AND race_date >= date('now', '-12 months')
         """, (track,)).fetchone()[0]
 
@@ -372,7 +382,7 @@ def phase_track_stats(conn: sqlite3.Connection) -> int:
         SELECT start_pos, COUNT(*),
                AVG(CASE WHEN placement = 1 THEN 1.0 ELSE 0 END) * 100,
                AVG(CASE WHEN placement <= 3 THEN 1.0 ELSE 0 END) * 100
-        FROM races
+        FROM gare_statistiche
         WHERE placement IS NOT NULL AND start_pos BETWEEN 1 AND 16
           AND total_starters > 4
         GROUP BY start_pos
@@ -383,7 +393,7 @@ def phase_track_stats(conn: sqlite3.Connection) -> int:
         SELECT start_pos, track, COUNT(*),
                AVG(CASE WHEN placement = 1 THEN 1.0 ELSE 0 END) * 100,
                AVG(CASE WHEN placement <= 3 THEN 1.0 ELSE 0 END) * 100
-        FROM races
+        FROM gare_statistiche
         WHERE placement IS NOT NULL AND start_pos BETWEEN 1 AND 16
           AND total_starters > 4 AND track IS NOT NULL AND TRIM(track) != ''
         GROUP BY start_pos, track

@@ -54,6 +54,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
 
+      - name: Recupera le gare mancanti dai risultati ufficiali
+        # Novembre 2026 (scripts/gare_ufficiali.py): dalle stesse pagine
+        # ufficiali prende le gare che l'archivio non ha, soprattutto quelle
+        # dei cavalli nati prima del 2012 (stagioni 2016-2019). Va prima degli
+        # allenatori, cosi' le gare nuove ricevono subito allenatore e
+        # proprietario. Ogni pagina si controlla da sola contro l'archivio e si
+        # scarta sotto il 90% di concordanza. Se la fonte non risponde, la
+        # notte prosegue senza: si riprende la volta dopo.
+        run: |
+          python3 scripts/gare_ufficiali.py --db data.db --minuti 40 --atleti --genitori \
+            || echo "::warning::recupero delle gare ufficiali non riuscito, si riprova la prossima notte"
+          python3 - <<'PY'
+          import sqlite3
+          c = sqlite3.connect('data.db')
+          try:
+              for stato, n in c.execute("SELECT COALESCE(motivo, stato), COUNT(*) FROM gare_ufficiali_attesa GROUP BY 1 ORDER BY 2 DESC"):
+                  print(f"  {stato:30} {n}")
+              lette = c.execute("SELECT esito, COUNT(*) FROM gare_ufficiali_lette GROUP BY 1").fetchall()
+              print("  giornate lette:", dict(lette))
+          except sqlite3.Error as e:
+              print("  tabelle non ancora create:", e)
+          PY
+
       - name: Raccogli gli allenatori e calcola le schede
         # Il tempo per leggere e' quello che resta fino a 300 minuti dalla
         # partenza (l'attesa del turno compresa), con un minimo di 10: cosi'

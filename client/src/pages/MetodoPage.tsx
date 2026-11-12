@@ -171,6 +171,14 @@ export default function MetodoPage() {
           classifica storica a parte, perche' di loro online esistono solo i totali di carriera e i montepremi
           di allora non sono confrontabili con quelli di oggi.
         </p>
+        <p data-testid="nota-stagioni">
+          <strong>Le stagioni dal 2016 in poi sono complete</strong>: oltre alle schede dei cavalli, l'archivio legge
+          i risultati ufficiali MASAF giornata per giornata, che riportano anche le gare dei cavalli piu' anziani.
+          <strong> Le stagioni 2013-2015 invece sono a meta'</strong>: i risultati ufficiali partono dal 2016 e per
+          quegli anni non c'e' una fonte pubblica con le singole gare dei cavalli nati prima del 2012. Per questo le
+          statistiche di guidatori, ippodromi, numeri di partenza, allenatori e proprietari partono dal 2016.
+          Dei cavalli nati prima del 2012 il sito ha solo le gare dal 2016: per loro non c'e' un voto.
+        </p>
       </Sezione>
 
       <Sezione titolo="Il voto dei cavalli">
@@ -268,7 +276,8 @@ export default function MetodoPage() {
         <ul>
           <li>Un voto descrive la carriera corsa, non il valore genetico del cavallo.</li>
           <li>I cavalli con poche corse o i giudizi con pochi figli sono segnalati: vanno letti come impressioni, non come misure.</li>
-          <li>I guidatori sono visti solo dal 2014, e solo mentre guidano cavalli nati dal 2012.</li>
+          <li>Guidatori, ippodromi e numeri di partenza si contano dal 2016: le stagioni 2013-2015 hanno solo una parte delle gare.</li>
+          <li>Nelle gare prese dai risultati ufficiali manca il premio dei primi cinque arrivati: la fonte riporta solo il montepremi della corsa, e il sito non lo stima.</li>
           <li>Le gare all'estero contano nelle carriere, ma la fonte le raccoglie sotto un'unica voce e non hanno una scheda per pista.</li>
           <li>Nessuna stima del sito e' un consiglio d'acquisto: dove l'incertezza e' grande, la pagina lo dice.</li>
         </ul>

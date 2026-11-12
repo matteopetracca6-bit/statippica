@@ -1025,6 +1025,11 @@ def _fetch_and_insert_full_career(conn: sqlite3.Connection, name: str, birth_yea
     sire_norm = _normalize_name(data.get("sire"))
     dam_norm  = _normalize_name(data.get("dam"))
 
+    # TrottoWeb conosce il cavallo: se era stato creato dai risultati ufficiali
+    # (carriera solo dal 2016, senza totali), da qui in poi la carriera e'
+    # quella completa e il controllo di qualita' puo' rifarne i totali.
+    conn.execute("UPDATE horses SET tw_found = 1 WHERE name = ? AND COALESCE(tw_found, 0) = 0", (name,))
+
     # Cavallo mai visto (tipico: arriva dall'estero per una corsa in Italia).
     # Prima si salvavano le sue gare ma non la scheda: niente voto, niente
     # padre e madre, e ogni notte lo si riscaricava da capo perche' risultava
@@ -2417,7 +2422,12 @@ def _parent_candidates(conn: sqlite3.Connection) -> tuple[list[tuple[str, str, i
             known[key] = (races, fetched)
 
     counts: dict[tuple[str, str], int] = {}
-    for sire, dam in conn.execute("SELECT sire, dam FROM horses"):
+    # Novembre 2026: i cavalli aggiunti dalla fonte ufficiale (gare_ufficiali.py,
+    # nati prima del 2012) hanno padre e madre degli anni '80-'90: non si va a
+    # cercare la carriera di migliaia di genitori che non hanno mai corso qui.
+    for sire, dam in conn.execute(
+        "SELECT sire, dam FROM horses WHERE COALESCE(source_role, '') != 'gare_ufficiali'"
+    ):
         for raw, role in ((dam, "dam"), (sire, "sire")):
             pname = _normalize_name(raw)
             if not pname:
@@ -3898,6 +3908,10 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
                     conn.execute("""UPDATE races SET race_code = ?
                                     WHERE id = ? AND race_code NOT GLOB '*_R[0-9]*'""",
                                  (r.get("race_code"), already[0]))
+                # Le gare arrivate dai risultati ufficiali non hanno il premio
+                # dei primi cinque: se TrottoWeb lo conosce, lo si completa.
+                conn.execute("""UPDATE races SET prize_net = ? WHERE id = ? AND prize_net IS NULL""",
+                             (r.get("prize_net"), already[0]))
                 conn.execute("""UPDATE races SET
                                     race_number    = COALESCE(race_number, ?),
                                     start_pos      = COALESCE(start_pos, ?),
@@ -5162,6 +5176,7 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
             FROM horses h
             LEFT JOIN races r ON r.horse_name = h.name
             WHERE COALESCE(h.horse_class, 'athlete') <> 'breeder'
+              AND NOT (COALESCE(h.source_role, '') = 'gare_ufficiali' AND COALESCE(h.tw_found, 0) = 0)
             GROUP BY h.name, h.birth_year
             HAVING COALESCE(h.career_races, 0) != COUNT(r.id)
                 OR (COUNT(r.id) > 0 AND COALESCE(h.career_places, 0) !=
@@ -5191,6 +5206,11 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
               AND (COALESCE(horses.career_races, 0) != sub.actual_races
                    OR COALESCE(horses.career_places, 0) != sub.actual_places)
               AND COALESCE(horses.horse_class, 'athlete') <> 'breeder'
+              -- Novembre 2026: atleti visti solo nei risultati ufficiali (dal
+              -- 2016) e non trovati su TrottoWeb. La loro carriera e' parziale
+              -- e senza premi dei primi cinque: niente totali, quindi niente voto.
+              AND NOT (COALESCE(horses.source_role, '') = 'gare_ufficiali'
+                       AND COALESCE(horses.tw_found, 0) = 0)
         """)
         # Also reset horses that had stats but have 0 races in the table
         conn.execute("""
