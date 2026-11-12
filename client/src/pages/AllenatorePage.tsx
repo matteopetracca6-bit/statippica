@@ -5,6 +5,7 @@
  */
 
 import { useRoute, Link } from "wouter";
+import { quotaStimata } from "../lib/quotePremi";
 import RottureGaloppo from "@/components/RottureGaloppo";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -109,6 +110,8 @@ export default function AllenatorePage() {
             sotto={`${euro(d.premi_per_corsa)} a corsa`} />
           <Cifra titolo="Ultimi 12 mesi" valore={d.premi_12_mesi > 0 ? euro(d.premi_12_mesi) : "—"}
             sotto={`${d.vittorie_12_mesi} vittorie`} />
+          <Cifra titolo="Sua quota (stima)" valore={euro(quotaStimata(d.premi_totali, "allenatore"))} colore="hsl(45 85% 62%)"
+            sotto="10% dei premi, da regolamento" />
           <div className="ed-cifra">
             <div className="ed-etich">A parità di cavallo</div>
             <div style={{ marginTop: 8 }}><BarraEffetto e={giudicabile ? d.effetto : null} /></div>

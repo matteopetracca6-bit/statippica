@@ -538,6 +538,14 @@ def init_db(conn: sqlite3.Connection):
         except sqlite3.OperationalError:
             pass  # colonna già esistente
 
+    # Premio dei primi cinque calcolato dalla regola ufficiale (gare recuperate
+    # dai risultati MASAF, scripts/gare_ufficiali.py): 1 = calcolato, si
+    # sostituisce appena TrottoWeb porta il premio vero.
+    try:
+        conn.execute("ALTER TABLE races ADD COLUMN prize_calc INTEGER")
+    except sqlite3.OperationalError:
+        pass
+
     # Cavalli inseriti prima di questa modifica non hanno backfill_status -> pending
     conn.execute("UPDATE horses SET backfill_status='pending' WHERE backfill_status IS NULL")
 
@@ -3909,9 +3917,15 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
                                     WHERE id = ? AND race_code NOT GLOB '*_R[0-9]*'""",
                                  (r.get("race_code"), already[0]))
                 # Le gare arrivate dai risultati ufficiali non hanno il premio
-                # dei primi cinque: se TrottoWeb lo conosce, lo si completa.
+                # dei primi cinque, o ce l'hanno calcolato dalla regola
+                # (prize_calc = 1): se TrottoWeb conosce quello vero, vince lui.
                 conn.execute("""UPDATE races SET prize_net = ? WHERE id = ? AND prize_net IS NULL""",
                              (r.get("prize_net"), already[0]))
+                if float(r.get("prize_net") or 0) > 0:
+                    conn.execute("""UPDATE races SET prize_net = ?, prize_gross = ?, prize_calc = NULL
+                                    WHERE id = ? AND prize_calc = 1""",
+                                 (float(r["prize_net"]), float(r.get("prize_gross") or r["prize_net"]),
+                                  already[0]))
                 conn.execute("""UPDATE races SET
                                     race_number    = COALESCE(race_number, ?),
                                     start_pos      = COALESCE(start_pos, ?),

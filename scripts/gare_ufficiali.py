@@ -31,7 +31,18 @@ Il premio vinto dal singolo cavallo NON c'e' (c'e' solo la dotazione della
 corsa). Non si inventa: dal sesto posto in giu' e per gli squalificati si
 scrive 0 (in archivio e' cosi' nel 99% dei casi), per i primi cinque resta
 vuoto, che vuol dire "non lo so". La dotazione si conserva nella tabella di
-attesa, se un giorno si volesse stimarlo.
+attesa.
+
+PREMIO CALCOLATO DALLA REGOLA (12/11/2026). Il regolamento delle corse al trotto
+(allegato 2, tabella "ripartizione premi al traguardo") divide la dotazione:
+al cavallo arrivato 1-2-3-4-5 vanno il 46-22-12-6-4% di (dotazione / 1,1),
+perche' la cifra scritta sulla pagina comprende anche la parte degli
+allevatori; di questa somma l'85% e' del proprietario (il "netto" dell'archivio),
+il 10% dell'allenatore e il 5% del guidatore. Prova su 781 piazzamenti gia' in
+archivio con il premio vero: dal 2016 al 2024 coincide al centesimo in 540 casi
+su 549; nel 2025-2026 sbaglia circa una volta su cinque, quindi da li' non si
+calcola. Il premio calcolato e' segnato (races.prize_calc = 1): quando la scheda
+del cavallo su TrottoWeb porta il premio vero, lo sostituisce.
 
 Le schede "Prestazioni del cavallo" della stessa fonte NON si leggono: il sito
 le esclude ai programmi automatici (robots.txt).
@@ -387,6 +398,47 @@ def crea_tabelle(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+# ── Premio dei primi cinque dalla regola ufficiale ──────────────────────────
+
+QUOTE_PREMIO = {1: 0.46, 2: 0.22, 3: 0.12, 4: 0.06, 5: 0.04}
+QUOTA_PROPRIETARIO = 0.85
+ULTIMO_ANNO_PREMIO_CALCOLATO = 2024
+
+
+def premio_da_regola(arrivo, dotazione, data) -> tuple | None:
+    """(netto, lordo) del cavallo, o None se la regola non si applica."""
+    if not arrivo or arrivo not in QUOTE_PREMIO or not dotazione or dotazione <= 0:
+        return None
+    if not data or int(str(data)[:4]) > ULTIMO_ANNO_PREMIO_CALCOLATO:
+        return None
+    lordo = round(dotazione / 1.1 * QUOTE_PREMIO[arrivo], 2)
+    return round(lordo * QUOTA_PROPRIETARIO, 2), lordo
+
+
+def colonna_premio_calcolato(conn: sqlite3.Connection) -> None:
+    if "prize_calc" not in {r[1] for r in conn.execute("PRAGMA table_info(races)")}:
+        conn.execute("ALTER TABLE races ADD COLUMN prize_calc INTEGER")
+
+
+def calcola_premi(conn: sqlite3.Connection) -> int:
+    """Completa le gare gia' inserite dalla fonte ufficiale rimaste senza premio
+    (inserite prima che il calcolo esistesse)."""
+    n = 0
+    ippodromi = {k: tuple(v.split("|", 1)) for k, v in _mappa(conn, "ippodromo", minimo=5).items()}
+    for data, codice, corsa, arrivo, dotazione in conn.execute("""
+            SELECT data, codice, corsa, arrivo, dotazione FROM gare_ufficiali_attesa
+            WHERE stato = 'inserita' AND arrivo BETWEEN 1 AND 5 AND dotazione > 0""").fetchall():
+        premio = premio_da_regola(arrivo, dotazione, data)
+        if not premio or codice not in ippodromi:
+            continue
+        n += conn.execute("""UPDATE races SET prize_net = ?, prize_gross = ?, prize_calc = 1
+                             WHERE race_code = ? AND race_date = ? AND placement = ?
+                               AND prize_net IS NULL""",
+                          (premio[0], premio[1], f"{data}_{ippodromi[codice][1]}_{corsa}",
+                           data, arrivo)).rowcount
+    return n
+
+
 # ── Cosa manca (senza rete) ─────────────────────────────────────────────────
 
 def _archivio_in_memoria(conn: sqlite3.Connection) -> dict:
@@ -641,7 +693,7 @@ def inserisci(conn: sqlite3.Connection, atleti: bool = False, genitori: bool = F
     attesa = conn.execute("""
         SELECT t.data, t.codice, t.corsa, t.cavallo, t.chiave, t.sesso, t.mantello,
                t.anno_nascita, t.padre, t.madre, t.arrivo, t.esito, t.numero, t.partenti,
-               t.distanza, t.tempo, t.guidatore
+               t.distanza, t.tempo, t.guidatore, t.dotazione
         FROM gare_ufficiali_attesa t
         JOIN gare_ufficiali_lette l ON l.data = t.data AND l.codice = t.codice
         WHERE l.esito = 'ok' AND (t.stato = 'attesa' OR t.stato = 'saltata')
@@ -649,7 +701,7 @@ def inserisci(conn: sqlite3.Connection, atleti: bool = False, genitori: bool = F
 
     for riga in attesa:
         (data, codice, corsa, cavallo, k, sesso, mantello, anno, padre, madre,
-         arrivo, esito, numero, partenti, distanza, tempo, guid_uff) = riga
+         arrivo, esito, numero, partenti, distanza, tempo, guid_uff, dotazione) = riga
 
         if (k, data) in datate:
             segna(riga, "saltata", "gia_presente")
@@ -727,16 +779,23 @@ def inserisci(conn: sqlite3.Connection, atleti: bool = False, genitori: bool = F
             conti["schede_create"] += 1
 
         # Premio del singolo cavallo: la fonte non lo da'. Dal sesto in giu' e
-        # per chi non e' classificato e' zero; per i primi cinque non si sa.
-        premio = None if (arrivo is not None and arrivo <= 5) else 0.0
+        # per chi non e' classificato e' zero; per i primi cinque si calcola
+        # dalla regola ufficiale (vedi in cima), e resta vuoto se non si puo'.
+        calcolato = premio_da_regola(arrivo, dotazione, data)
+        if calcolato:
+            netto, lordo, segno = calcolato[0], calcolato[1], 1
+        elif arrivo is not None and arrivo <= 5:
+            netto, lordo, segno = None, None, None
+        else:
+            netto, lordo, segno = 0.0, None, None
         cur = conn.execute("""
             INSERT OR IGNORE INTO races
                 (horse_name, race_date, track, placement, placement_raw, time_km, distance,
                  driver, prize_net, prize_gross, race_code, race_number, start_pos,
-                 total_starters)
-            VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?,?)""",
+                 total_starters, prize_calc)
+            VALUES (?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?)""",
             (nome, data, pista, arrivo, esito_arch, tempo, distanza, guidatore,
-             premio, None, codice_gara, corsa, numero, partenti))
+             netto, lordo, codice_gara, corsa, numero, partenti, segno))
         if cur.rowcount:
             datate.add((k, data))
             segna(riga, "inserita")
@@ -809,6 +868,7 @@ def main() -> int:
         return sonda(conn, a.sonda)
     conn = sqlite3.connect(a.db)
     crea_tabelle(conn)
+    colonna_premio_calcolato(conn)
     if a.pulisci:
         n = conn.execute("DELETE FROM gare_ufficiali_attesa WHERE stato IN ('inserita','data_assegnata')").rowcount
         conn.commit()
@@ -825,6 +885,7 @@ def main() -> int:
         log("[GARE-UFFICIALI] raccolta:", raccogli(conn, a.minuti, a.giornate))
     prima = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
     esito = inserisci(conn, atleti=a.atleti, genitori=a.genitori, date=not a.senza_date)
+    esito["premi_completati"] = calcola_premi(conn)
     conn.commit()
     dopo = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
     log("[GARE-UFFICIALI] inserimento:", esito)

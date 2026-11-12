@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { MapPin, Users } from "lucide-react";
 import IntestazioneScheda from "../components/IntestazioneScheda";
 import { Cifra } from "../components/DueColonne";
+import { quotaStimata } from "../lib/quotePremi";
 import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
@@ -80,6 +81,10 @@ export default function DriverPage() {
             sotto={`${d.n_vittorie.toLocaleString("it-IT")} su ${d.n_gare.toLocaleString("it-IT")}`} />
           <Cifra titolo="Partenza media" valore={d.partenza_media != null ? d.partenza_media.toFixed(1).replace(".", ",") : "\u2014"}
             sotto="già scontata dal rendimento" />
+          <Cifra titolo="Premi dei suoi cavalli" valore={euro(d.premi_totali || 0)} colore="hsl(45 80% 62%)"
+            sotto="parte dei proprietari" />
+          <Cifra titolo="Sua quota (stima)" valore={euro(quotaStimata(d.premi_totali, "guidatore"))} colore="hsl(45 80% 62%)"
+            sotto="5% del premio, da regolamento" />
         </>}
       />
 

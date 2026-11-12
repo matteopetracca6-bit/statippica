@@ -14,6 +14,7 @@
  * Layout a due colonne come Guidatori: elenco a sinistra, scheda a destra.
  */
 import { coloreScheda } from "@/lib/sezioni";
+import { quotaStimata } from "../lib/quotePremi";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -104,7 +105,7 @@ function SchedaAllenatore({ a, onClose }: { a: Allenatore; onClose?: () => void 
 
       <div className="ed-cifre" style={{ marginTop: 14, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
         <Cifra titolo="Vittorie" valore={num(a.n_vittorie)} colore="hsl(100 50% 60%)" sotto={`il ${pct(a.pct_vittorie)} delle corse · primi tre ${pct(a.pct_primi_tre)}`} />
-        <Cifra titolo="Premi dal 2016" valore={euro(a.premi_totali)} colore="hsl(45 80% 62%)" sotto={`${euro(a.premi_per_corsa)} a corsa`} />
+        <Cifra titolo="Premi dal 2016" valore={euro(a.premi_totali)} colore="hsl(45 80% 62%)" sotto={`${euro(a.premi_per_corsa)} a corsa · sua quota ≈ ${euro(quotaStimata(a.premi_totali, "allenatore"))}`} />
         <Cifra titolo="Ultimi 12 mesi" valore={a.premi_12_mesi > 0 ? euro(a.premi_12_mesi) : "—"} sotto={`${num(a.vittorie_12_mesi)} vittorie`} />
         <Cifra titolo="Corse" valore={num(a.n_corse)} sotto={`${num(a.n_cavalli)} cavalli · ${num(a.n_cavalli_recenti)} recenti`} />
       </div>

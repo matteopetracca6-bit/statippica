@@ -16,6 +16,7 @@
  * del guidatore scelto a destra (sul telefono sotto la riga).
  */
 import { coloreScheda } from "@/lib/sezioni";
+import { quotaStimata } from "../lib/quotePremi";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -93,7 +94,7 @@ function SchedaGuidatore({ d, onClose }: { d: Driver; onClose?: () => void }) {
       <div className="ed-cifre" style={{ marginTop: 10, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
         <Cifra titolo="Gare" valore={num(d.n_gare)} sotto={`${num(d.n_cavalli)} cavalli · ${num(d.n_gare_recenti)} recenti`} />
         <Cifra titolo="Vittorie" valore={pct(d.pct_vittorie)} sotto={`${num(d.n_vittorie)} vinte · primi tre ${pct(d.pct_primi_tre)}`} />
-        <Cifra titolo="Premi vinti" valore={euro(d.premi_totali)} colore="hsl(45 80% 62%)" />
+        <Cifra titolo="Premi vinti" valore={euro(d.premi_totali)} colore="hsl(45 80% 62%)" sotto={`sua quota ≈ ${euro(quotaStimata(d.premi_totali, "guidatore"))} (stima)`} />
         <Cifra titolo="Partenza media" valore={num(d.partenza_media, 1)} sotto="già scontata nel rendimento" />
       </div>
 
