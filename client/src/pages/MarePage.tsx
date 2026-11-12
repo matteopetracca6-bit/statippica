@@ -62,6 +62,8 @@ interface MareDetail {
     n_gare?: number;   // gare nell'archivio: se > 0 c'e' la scheda da atleta
   } | null;
   offspring: Offspring[];
+  // Figli nati prima che la cavalla avesse due anni: sono di un'omonima.
+  figli_omonima?: { name: string; birth_year: number | null }[];
 }
 
 function eur(v: number | null | undefined): string {
@@ -186,7 +188,7 @@ export default function MarePage() {
       {/* Progenie */}
       <div className="pannello" style={{ overflowX: "auto" }}>
         <div style={{ ...TITOLO_SEZ, padding: "14px 16px 0" }}>Progenie · {data.offspring.length} {data.offspring.length === 1 ? "figlio" : "figli"}</div>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        {data.offspring.length > 0 && <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
               <th style={head}>Figlio</th>
@@ -225,7 +227,22 @@ export default function MarePage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table>}
+        {data.offspring.length === 0 && (
+          <div style={{ padding: "12px 16px", fontSize: 13, color: "hsl(210 8% 60%)" }}>Nessun figlio di questa cavalla in archivio.</div>
+        )}
+        {(data.figli_omonima?.length ?? 0) > 0 && (
+          <div data-testid="nota-omonima" style={{ margin: "4px 16px 14px", padding: "10px 12px", borderRadius: 8,
+            background: "hsl(40 60% 50% / 0.08)", border: "1px solid hsl(40 60% 50% / 0.3)", fontSize: 13, lineHeight: 1.5 }}>
+            {data.figli_omonima!.map((f, i) => (
+              <span key={f.name}>{i > 0 ? (i === data.figli_omonima!.length - 1 ? " e " : ", ") : ""}
+                <Link href={`/horse/${encodeURIComponent(f.name)}/${f.birth_year}`} className="collegamento-scheda">{f.name}</Link>
+                {f.birth_year ? ` (${f.birth_year})` : ""}</span>
+            ))}
+            {data.figli_omonima!.length === 1 ? " risulta figlio" : " risultano figli"} di un'altra {data.dam}, nata prima,
+            che non è nel nostro archivio: {own?.birth_year ? `questa è nata nel ${own.birth_year} e ` : ""}non può esserne la madre.
+          </div>
+        )}
       </div>
 
       {/* Novembre 2026: madre, nonna e bisnonna della fattrice con i loro figli */}

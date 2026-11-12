@@ -54,8 +54,14 @@ function madriDaGenealogia(db: Database.Database, nome: string): Record<string, 
   }
 }
 
-function figliDi(db: Database.Database, madre: string): Omit<FiglioLinea, "linea">[] {
-  return db.prepare(`
+/**
+ * Figli di una madre, dentro una finestra di anni. Un solo cavallo per nome
+ * in archivio: se due cavalle si chiamano uguale (GENNY JET del 2022 e una
+ * GENNY JET piu' anziana), i figli nati prima che la giovane avesse due anni
+ * sono dell'altra.
+ */
+function figliDi(db: Database.Database, madre: string, natiDal: number | null = null, natiPrima: number | null = null): Omit<FiglioLinea, "linea">[] {
+  return (db.prepare(`
     SELECT h.name nome, h.birth_year nato, NULLIF(h.sex, '') sesso, h.sire padre,
            COALESCE(h.career_races, 0) corse, COALESCE(h.career_wins, 0) vittorie,
            COALESCE(h.career_earnings, 0) vincite, h.record_career record,
@@ -69,23 +75,44 @@ function figliDi(db: Database.Database, madre: string): Omit<FiglioLinea, "linea
             SELECT 1 FROM horses t
             WHERE t.birth_year = h.birth_year AND t.dam = h.dam AND t.name <> h.name
               AND substr(t.name, 1, length(h.name) + 2) = h.name || ' ('))
-    ORDER BY h.birth_year, h.name`).all(madre) as Omit<FiglioLinea, "linea">[];
+    ORDER BY h.birth_year, h.name`).all(madre) as Omit<FiglioLinea, "linea">[])
+    .filter(f => f.nato == null
+      || ((natiDal == null || f.nato >= natiDal) && (natiPrima == null || f.nato < natiPrima)));
 }
+
+const annoDi = (db: Database.Database, nome: string): number | null =>
+  (db.prepare("SELECT birth_year FROM horses WHERE name = ? LIMIT 1").get(nome) as any)?.birth_year ?? null;
 
 export function lineaMaterna(db: Database.Database, nomeCavallo: string): { cavallo: string; madri: MadreLinea[] } {
   const cavallo = norm(nomeCavallo);
   const gen = madriDaGenealogia(db, cavallo);
   const catena: string[] = [];
+  // Per ogni madre: e' l'omonima piu' anziana di un cavallo dell'archivio?
+  // Allora la riga in archivio non e' sua e i suoi dati non si usano.
+  const omonime: boolean[] = [];
+  const anniOmonima: (number | null)[] = [];
   let corrente = cavallo;
+  let annoGiu = annoDi(db, cavallo);
+  let rigaValida = true;
   for (let i = 0; i < 3; i++) {
-    const m = damDi(db, corrente) ?? gen["m".repeat(i + 1)] ?? null;
+    const m = (rigaValida ? damDi(db, corrente) : null) ?? gen["m".repeat(i + 1)] ?? null;
     if (!m || catena.includes(m) || m === cavallo) break;
+    const annoM = annoDi(db, m);
+    const omonima = annoGiu != null && annoM != null && annoM > annoGiu - 2;
     catena.push(m);
+    omonime.push(omonima);
+    anniOmonima.push(omonima ? annoM : null);
+    rigaValida = !omonima;
+    annoGiu = omonima ? null : annoM;
     corrente = m;
   }
 
   const madri: MadreLinea[] = catena.map((nome, i) => {
-    const figli = figliDi(db, nome).map(f => ({
+    const omonima = omonime[i];
+    const annoRiga = annoDi(db, nome);
+    const figli = (omonima
+      ? figliDi(db, nome, null, anniOmonima[i]! + 2)
+      : figliDi(db, nome, annoRiga != null ? annoRiga + 2 : null, null)).map(f => ({
       ...f, vincite: Math.round(f.vincite || 0),
       linea: norm(f.nome) === (i === 0 ? cavallo : catena[i - 1]),
     }));
@@ -100,8 +127,10 @@ export function lineaMaterna(db: Database.Database, nomeCavallo: string): { cava
         : { nome: giu, nato: null, sesso: null, padre: null, corse: 0, vittorie: 0, vincite: 0, record: null, voto: null, linea: true });
       figli.sort((a, b) => (a.nato ?? 0) - (b.nato ?? 0));
     }
-    const propria = db.prepare(`SELECT birth_year, sire, career_races, career_earnings FROM horses WHERE name = ? LIMIT 1`).get(nome) as any;
-    const stats = db.prepare(`SELECT grade, own_races, own_earnings FROM dam_rating_stats WHERE dam = ?`).get(nome) as any;
+    const propria = omonima ? null
+      : db.prepare(`SELECT birth_year, sire, career_races, career_earnings FROM horses WHERE name = ? LIMIT 1`).get(nome) as any;
+    const stats = omonima ? null
+      : db.prepare(`SELECT grade, own_races, own_earnings FROM dam_rating_stats WHERE dam = ?`).get(nome) as any;
     const corsi = figli.filter(f => f.corse > 0);
     const migliore = corsi.reduce<FiglioLinea | null>((b, f) => (!b || f.vincite > b.vincite ? f : b), null);
     return {

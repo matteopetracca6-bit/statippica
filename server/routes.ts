@@ -36,6 +36,17 @@ import { valutaPuledro, mensileDiPareggio, FATTORE_ASTA, tabellaVoti, soglie, va
 // DB lives in project root (committed to repo, updated nightly via git push)
 const DB_PATH = path.resolve(process.cwd(), "data.db");
 
+/**
+ * Novembre 2026: l'archivio ha un solo cavallo per nome, quindi due omonimi
+ * si confondono. GENNY JET del 2022 risultava madre di NARCIS (2007) e
+ * MAIELLA (2006), figlie di un'altra GENNY JET piu' anziana. Un genitore deve
+ * essere nato almeno due anni prima del figlio; si tiene un margine largo
+ * perche' alcuni stalloni hanno l'anno di nascita sbagliato di poco.
+ * `g` e `f` sono gli alias SQL di genitore e figlio.
+ */
+const genitoreCompatibile = (g: string, f: string) =>
+  `(${g}.birth_year IS NULL OR ${f}.birth_year IS NULL OR ${g}.birth_year <= ${f}.birth_year - 2)`;
+
 // Lock applicativo per il trigger manuale della pipeline nightly:
 // impedisce due esecuzioni concorrenti nello stesso processo Node.
 let nightlyRunning = false;
@@ -907,7 +918,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       if (horse.sex === "F") {
         const nomi = Array.from(new Set([name, name.replace(/\s*\([A-Z]{1,3}\)$/, "").trim()]));
         for (const n of nomi) {
-          const k = (db.prepare(`SELECT COUNT(*) AS n FROM horses WHERE UPPER(TRIM(dam)) = ?`).get(n) as any)?.n ?? 0;
+          const k = (db.prepare(`SELECT COUNT(*) AS n FROM horses WHERE UPPER(TRIM(dam)) = ?
+                                    AND (? IS NULL OR birth_year IS NULL OR birth_year >= ? + 2)`)
+            .get(n, horse.birth_year ?? null, horse.birth_year ?? null) as any)?.n ?? 0;
           if (k > 0) {
             const pf = puntiFattrice(db, n);
             horse.come_fattrice = { nome: n, n_figli: k, punti: pf?.punti ?? null, grado: pf?.grado ?? null };
@@ -945,8 +958,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
           s.unire_sire AS sire_unire_sire, s.unire_dam AS sire_unire_dam,
           d.unire_sire AS dam_unire_sire,  d.unire_dam AS dam_unire_dam
         FROM horses h
-        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != ''
-        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam))  AND h.dam  IS NOT NULL AND h.dam  != ''
+        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != '' AND ${genitoreCompatibile("s", "h")}
+        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam))  AND h.dam  IS NOT NULL AND h.dam  != '' AND ${genitoreCompatibile("d", "h")}
         WHERE UPPER(TRIM(h.name)) = ? AND h.birth_year = ?
         LIMIT 1
       `).get(name, year) as any;
@@ -1222,8 +1235,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
                s.unire_sire AS sire_unire_sire, s.unire_dam AS sire_unire_dam,
                d.unire_sire AS dam_unire_sire, d.unire_dam AS dam_unire_dam
         FROM horses h
-        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != ''
-        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam)) AND h.dam IS NOT NULL AND h.dam != ''
+        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != '' AND ${genitoreCompatibile("s", "h")}
+        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam)) AND h.dam IS NOT NULL AND h.dam != '' AND ${genitoreCompatibile("d", "h")}
         WHERE h.name = ?
         LIMIT 1
       `).get(name) as any;
@@ -1563,8 +1576,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
             s.sire AS sire_sire, s.dam AS sire_dam,
             d.sire AS dam_sire, d.dam AS dam_dam
           FROM horses h
-          LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire))
-          LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam))
+          LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND ${genitoreCompatibile("s", "h")}
+          LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam)) AND ${genitoreCompatibile("d", "h")}
           LEFT JOIN stallion_pedigree sp ON sp.name = h.name
           WHERE UPPER(TRIM(h.name)) = ? AND h.birth_year = ?
           LIMIT 1
@@ -1654,9 +1667,16 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT * FROM dam_rating_stats WHERE UPPER(TRIM(dam)) = ?
       `).get(name) as any;
 
+      const own = db.prepare(`
+        SELECT name, birth_year, sire, dam, country,
+               career_races, career_wins, career_earnings, record_career,
+               COALESCE(horse_class, 'athlete') AS horse_class
+        FROM horses WHERE UPPER(TRIM(name)) = ? LIMIT 1
+      `).get(name) as any;
+
       // I figli si leggono comunque, anche senza riga di rating: una fattrice
       // appena citata deve avere una scheda, non un 404.
-      const offspring = db.prepare(`
+      const tutti = db.prepare(`
         SELECT h.name, h.birth_year, h.sex, h.sire,
                hr.grade, hr.score, hr.career_races, hr.career_wins,
                hr.career_earnings, hr.record_career
@@ -1672,17 +1692,16 @@ export function registerRoutes(httpServer: Server, app: Express) {
                   AND substr(t.name, 1, length(h.name) + 2) = h.name || ' ('))
         ORDER BY hr.score IS NULL, hr.score DESC, h.birth_year DESC
       `).all(name) as any[];
+      // Figli nati prima che questa cavalla avesse due anni: sono di
+      // un'omonima piu' anziana che non e' in archivio, non suoi.
+      const annoMadre = own?.birth_year ?? null;
+      const diOmonima = (f: any) => annoMadre != null && f.birth_year != null && f.birth_year < annoMadre + 2;
+      const offspring = tutti.filter(f => !diOmonima(f));
+      const figli_omonima = tutti.filter(diOmonima).map(f => ({ name: f.name, birth_year: f.birth_year }));
 
-      if (!stats && offspring.length === 0) {
+      if (!stats && offspring.length === 0 && figli_omonima.length === 0) {
         return res.status(404).json({ message: "Fattrice non trovata" });
       }
-
-      const own = db.prepare(`
-        SELECT name, birth_year, sire, dam, country,
-               career_races, career_wins, career_earnings, record_career,
-               COALESCE(horse_class, 'athlete') AS horse_class
-        FROM horses WHERE UPPER(TRIM(name)) = ? LIMIT 1
-      `).get(name) as any;
       // Gare della fattrice presenti nell'archivio, per il collegamento alla
       // sua scheda da atleta (la carriera la recupera il lavoro notturno).
       if (own) {
@@ -1690,7 +1709,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
           .get(own.name) as any)?.n ?? 0;
       }
 
-      res.json({ dam: stats?.dam || name, stats: stats || null, own: own || null, offspring });
+      // Se tutti i figli sono dell'omonima, anche i suoi punti da fattrice non
+      // sono di questa cavalla.
+      const statsMostrati = offspring.length === 0 && figli_omonima.length > 0 ? null : stats;
+      res.json({ dam: stats?.dam || name, stats: statsMostrati || null, own: own || null, offspring, figli_omonima });
     } finally {
       db.close();
     }
@@ -2449,12 +2471,17 @@ export function registerRoutes(httpServer: Server, app: Express) {
      * usa quella: cosi' l'albero si completa anche quando del soggetto di
      * partenza non sappiamo nulla ma di suo nonno si'.
      */
-    function buildTree(n: string, depth: number, chain: string, srcName: string, srcChain: string): any {
+    function buildTree(n: string, depth: number, chain: string, srcName: string, srcChain: string, annoFiglio: number | null = null): any {
       if (depth > MAX_GEN || !n) return null;
-      const h = getHorse(n);
+      let h = getHorse(n);
       if (!h) return null;
+      // Omonimo troppo giovane per essere il genitore: in archivio c'e' un
+      // altro cavallo con lo stesso nome, quindi di lui si tiene solo il nome
+      // e i suoi antenati si leggono dalla fonte del figlio.
+      const omonimo = !!(annoFiglio && h.birth_year && h.birth_year > annoFiglio - 2);
+      if (omonimo) h = { name: h.name, birth_year: null, sire: null, dam: null, missing: true };
 
-      const own = mapOf(h.name || n);
+      const own = omonimo ? new Map<string, string>() : mapOf(h.name || n);
       let useName = srcName, useChain = srcChain;
       if (own.size > 0) { useName = (h.name || n); useChain = ""; }
       const srcMap = useName === name ? vp : mapOf(useName);
@@ -2469,8 +2496,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         career_earnings: h.career_earnings,
         career_wins: h.career_wins,
         career_races: h.career_races,
-        sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p") : null,
-        dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m") : null,
+        sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p", h.birth_year ?? null) : null,
+        dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m", h.birth_year ?? null) : null,
         missing: h.missing || false,
         from_source: !!h.missing,
       };
@@ -2478,8 +2505,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
     const tree = buildTree(name, 0, "", name, "");
     if (!tree) return { tree: null, vp, MAX_GEN };
-    if (!tree.sire && vp.get("p")) tree.sire = buildTree(vp.get("p")!, 1, "p", name, "p");
-    if (!tree.dam && vp.get("m")) tree.dam = buildTree(vp.get("m")!, 1, "m", name, "m");
+    if (!tree.sire && vp.get("p")) tree.sire = buildTree(vp.get("p")!, 1, "p", name, "p", tree.birth_year ?? null);
+    if (!tree.dam && vp.get("m")) tree.dam = buildTree(vp.get("m")!, 1, "m", name, "m", tree.birth_year ?? null);
     return { tree, vp, MAX_GEN };
   }
 
