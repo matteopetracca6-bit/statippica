@@ -38,11 +38,14 @@ PREMIO CALCOLATO DALLA REGOLA (12/11/2026). Il regolamento delle corse al trotto
 al cavallo arrivato 1-2-3-4-5 vanno il 46-22-12-6-4% di (dotazione / 1,1),
 perche' la cifra scritta sulla pagina comprende anche la parte degli
 allevatori; di questa somma l'85% e' del proprietario (il "netto" dell'archivio),
-il 10% dell'allenatore e il 5% del guidatore. Prova su 781 piazzamenti gia' in
-archivio con il premio vero: dal 2016 al 2024 coincide al centesimo in 540 casi
-su 549; nel 2025-2026 sbaglia circa una volta su cinque, quindi da li' non si
-calcola. Il premio calcolato e' segnato (races.prize_calc = 1): quando la scheda
-del cavallo su TrottoWeb porta il premio vero, lo sostituisce.
+il 10% dell'allenatore e il 5% del guidatore. Prova su 1.685 piazzamenti gia'
+in archivio con il premio vero (2016, 2019, 2022, 2024, 2025, 2026): il netto
+calcolato coincide entro il 2% in 1.609 casi (95%), senza differenze fra gli
+anni. Le eccezioni sono corse con una ripartizione speciale. (Una prima prova
+sembrava peggiore nel 2025-2026: era l'archivio, dove in parte di quelle gare
+il "lordo" e' uguale al netto.) Si usa la stima SOLO se il premio vero manca: il
+premio calcolato e' segnato (races.prize_calc = 1) e quando la scheda del
+cavallo su TrottoWeb porta il premio vero, lo sostituisce.
 
 Le schede "Prestazioni del cavallo" della stessa fonte NON si leggono: il sito
 le esclude ai programmi automatici (robots.txt).
@@ -402,14 +405,13 @@ def crea_tabelle(conn: sqlite3.Connection) -> None:
 
 QUOTE_PREMIO = {1: 0.46, 2: 0.22, 3: 0.12, 4: 0.06, 5: 0.04}
 QUOTA_PROPRIETARIO = 0.85
-ULTIMO_ANNO_PREMIO_CALCOLATO = 2024
 
 
 def premio_da_regola(arrivo, dotazione, data) -> tuple | None:
     """(netto, lordo) del cavallo, o None se la regola non si applica."""
     if not arrivo or arrivo not in QUOTE_PREMIO or not dotazione or dotazione <= 0:
         return None
-    if not data or int(str(data)[:4]) > ULTIMO_ANNO_PREMIO_CALCOLATO:
+    if not data:
         return None
     lordo = round(dotazione / 1.1 * QUOTE_PREMIO[arrivo], 2)
     return round(lordo * QUOTA_PROPRIETARIO, 2), lordo

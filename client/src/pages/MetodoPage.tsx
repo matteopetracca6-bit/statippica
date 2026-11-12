@@ -277,8 +277,8 @@ export default function MetodoPage() {
           <li>Un voto descrive la carriera corsa, non il valore genetico del cavallo.</li>
           <li>I cavalli con poche corse o i giudizi con pochi figli sono segnalati: vanno letti come impressioni, non come misure.</li>
           <li>Guidatori, ippodromi e numeri di partenza si contano dal 2016: le stagioni 2013-2015 hanno solo una parte delle gare.</li>
-          <li>Nelle gare prese dai risultati ufficiali il premio dei primi cinque è calcolato dal montepremi della corsa con la tabella del regolamento (al cavallo 46, 22, 12, 6 e 4%; del suo premio l'85% va al proprietario, il 10% all'allenatore, il 5% al guidatore). Su 549 premi veri del 2016-2024 il calcolo coincide al centesimo in 540 casi; dal 2025 sbaglia più spesso e non si usa. Appena arriva il premio vero, sostituisce quello calcolato.</li>
-          <li>La "quota" di allenatori e guidatori è una stima fatta con le stesse percentuali: non comprende ingaggi, premi aggiunti o accordi privati.</li>
+          <li>Nelle gare prese dai risultati ufficiali il premio dei primi cinque è calcolato dal montepremi della corsa con la tabella del regolamento (al cavallo 46, 22, 12, 6 e 4%; del suo premio l'85% va al proprietario, il 10% all'allenatore, il 5% al guidatore). La stima si usa solo quando il premio vero manca: provata su 1.685 premi veri dal 2016 al 2026, coincide in 95 casi su 100 (le eccezioni sono corse con premi divisi in modo speciale). Appena arriva il premio vero, sostituisce quello calcolato.</li>
+          <li>La "quota" di allenatori e guidatori è sempre una stima: le fonti pubbliche non riportano quanto incassano davvero. Si calcola con le stesse percentuali sui premi dei loro cavalli (veri quando ci sono, stimati solo quando mancano) e non comprende ingaggi, premi aggiunti o accordi privati.</li>
           <li>Le gare all'estero contano nelle carriere, ma la fonte le raccoglie sotto un'unica voce e non hanno una scheda per pista.</li>
           <li>Nessuna stima del sito e' un consiglio d'acquisto: dove l'incertezza e' grande, la pagina lo dice.</li>
         </ul>
