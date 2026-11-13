@@ -1,7 +1,7 @@
 {
  "cutoff_year": 2019,
- "n_train": 10629,
- "n_test": 6795,
+ "n_train": 10631,
+ "n_test": 6796,
  "train_years": [
   2012,
   2019
@@ -13,11 +13,11 @@
  "population_mean": 50.92,
  "test_mean": 44.55,
  "coefficients": {
-  "intercept": -3.6951,
-  "sire": 0.8202,
+  "intercept": -3.642,
+  "sire": 0.8204,
   "dam": 0.1743,
-  "dam_con_figli": 8.449,
-  "nonna": 0.1684
+  "dam_con_figli": 8.3864,
+  "nonna": 0.1679
  },
  "models": [
   {
@@ -25,12 +25,12 @@
    "note": "Il modello del sito: indizio del padre e punti della pagina Fattrici per la madre (o la nonna materna se la madre non ha figli valutati), calcolati solo sui cavalli nati prima del taglio.",
    "leaky": false,
    "mae": 17.49,
-   "pearson": 0.16,
+   "pearson": 0.159,
    "spearman": 0.156,
    "top_decile": {
-    "top_mean": 50.83,
+    "top_mean": 50.87,
     "population_mean": 44.55,
-    "lift": 6.28,
+    "lift": 6.32,
     "n_top": 679
    }
   },
@@ -40,11 +40,11 @@
    "leaky": false,
    "mae": 17.87,
    "pearson": 0.136,
-   "spearman": 0.139,
+   "spearman": 0.138,
    "top_decile": {
     "top_mean": 49.75,
     "population_mean": 44.55,
-    "lift": 5.21,
+    "lift": 5.2,
     "n_top": 679
    }
   },
@@ -58,7 +58,7 @@
    "top_decile": {
     "top_mean": 48.57,
     "population_mean": 44.55,
-    "lift": 4.02,
+    "lift": 4.01,
     "n_top": 679
    }
   },
@@ -80,13 +80,13 @@
    "label": "Costo della monta (oggi)",
    "note": "Ordinare per prezzo. Attenzione: il prezzo di oggi e' stato fissato DOPO aver visto come sono andati questi figli, quindi e' un confronto falsato a suo favore.",
    "leaky": true,
-   "mae": 3099.02,
+   "mae": 3098.58,
    "pearson": 0.13,
    "spearman": 0.081,
    "top_decile": {
-    "top_mean": 52.78,
+    "top_mean": 52.79,
     "population_mean": 44.55,
-    "lift": 8.23,
+    "lift": 8.24,
     "n_top": 679
    }
   }
@@ -118,24 +118,24 @@
    {
     "contro": "Solo il padre",
     "domanda": "La linea materna aggiunge davvero qualcosa?",
-    "vantaggio": 0.0174,
+    "vantaggio": 0.0173,
     "intervallo95": [
-     0.0018,
-     0.0338
+     0.0017,
+     0.0341
     ],
-    "quota_ricampionamenti_sfavorevoli": 0.009,
+    "quota_ricampionamenti_sfavorevoli": 0.01,
     "significativo": true,
     "n_giri": 2000
    },
    {
     "contro": "Fama del padre",
     "domanda": "L'Advisor batte chi sceglie guardando il nome del padre?",
-    "vantaggio": 0.0172,
+    "vantaggio": 0.0171,
     "intervallo95": [
-     0.0005,
-     0.0347
+     0.0008,
+     0.0348
     ],
-    "quota_ricampionamenti_sfavorevoli": 0.022,
+    "quota_ricampionamenti_sfavorevoli": 0.02,
     "significativo": true,
     "n_giri": 2000
    },
@@ -143,10 +143,10 @@
     "contro": "Costo della monta (oggi)",
     "domanda": "L'Advisor batte chi sceglie guardando il prezzo?",
     "avvertenza": "Il prezzo di oggi e' stato fissato dopo aver visto questi risultati, quindi gioca in casa. Se l'Advisor lo batte comunque, il confronto e' conservativo.",
-    "vantaggio": 0.0751,
+    "vantaggio": 0.075,
     "intervallo95": [
-     0.0432,
-     0.1068
+     0.0434,
+     0.1064
     ],
     "quota_ricampionamenti_sfavorevoli": 0.0,
     "significativo": true,
@@ -154,7 +154,7 @@
    }
   ],
   "contro_il_caso": {
-   "spearman_osservato": 0.156,
+   "spearman_osservato": 0.1557,
    "valore_p": 0.0005,
    "n_giri": 2000
   }
@@ -170,17 +170,17 @@
   {
    "label": "Fattrici senza figli valutati",
    "note": "Caso difficile e piu' frequente nella pratica: della fattrice non si sa nulla di diretto.",
-   "n": 2965,
-   "spearman_advisor": 0.129,
-   "spearman_solo_padre": 0.118,
-   "spearman_con_nonna_materna": 0.127,
+   "n": 2966,
+   "spearman_advisor": 0.128,
+   "spearman_solo_padre": 0.117,
+   "spearman_con_nonna_materna": 0.126,
    "n_con_nonna_informativa": 2307,
    "nota_nonna": "Quando la fattrice non ha figli valutati, l'Advisor guarda la produzione della nonna materna. Questa riga misura se serve."
   }
  ],
  "scatter": [
   {
-   "pred": 54.7,
+   "pred": 54.8,
    "actual": 39.5
   },
   {
@@ -188,11 +188,11 @@
    "actual": 30.3
   },
   {
-   "pred": 44.7,
+   "pred": 44.8,
    "actual": 41.0
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 34.8
   },
   {
@@ -200,7 +200,7 @@
    "actual": 29.6
   },
   {
-   "pred": 55.5,
+   "pred": 55.4,
    "actual": 35.2
   },
   {
@@ -224,7 +224,7 @@
    "actual": 38.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 40.1
   },
   {
@@ -232,7 +232,7 @@
    "actual": 46.7
   },
   {
-   "pred": 52.3,
+   "pred": 52.4,
    "actual": 39.2
   },
   {
@@ -244,11 +244,11 @@
    "actual": 35.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 47.7
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 45.0
   },
   {
@@ -276,7 +276,7 @@
    "actual": 43.5
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 38.6
   },
   {
@@ -284,7 +284,7 @@
    "actual": 36.3
   },
   {
-   "pred": 55.2,
+   "pred": 55.1,
    "actual": 46.5
   },
   {
@@ -296,7 +296,7 @@
    "actual": 35.1
   },
   {
-   "pred": 50.3,
+   "pred": 50.4,
    "actual": 28.9
   },
   {
@@ -320,7 +320,7 @@
    "actual": 37.8
   },
   {
-   "pred": 47.1,
+   "pred": 47.2,
    "actual": 36.6
   },
   {
@@ -356,7 +356,7 @@
    "actual": 14.5
   },
   {
-   "pred": 51.3,
+   "pred": 51.4,
    "actual": 49.6
   },
   {
@@ -396,7 +396,7 @@
    "actual": 53.5
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 39.4
   },
   {
@@ -416,7 +416,7 @@
    "actual": 37.0
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 41.7
   },
   {
@@ -452,7 +452,7 @@
    "actual": 36.4
   },
   {
-   "pred": 52.0,
+   "pred": 52.1,
    "actual": 47.5
   },
   {
@@ -484,7 +484,7 @@
    "actual": 26.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 46.5
   },
   {
@@ -492,7 +492,7 @@
    "actual": 45.1
   },
   {
-   "pred": 47.9,
+   "pred": 48.0,
    "actual": 49.2
   },
   {
@@ -544,7 +544,7 @@
    "actual": 63.3
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 56.7
   },
   {
@@ -556,7 +556,7 @@
    "actual": 37.4
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 14.0
   },
   {
@@ -568,11 +568,11 @@
    "actual": 39.2
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 31.2
   },
   {
-   "pred": 43.7,
+   "pred": 43.8,
    "actual": 44.1
   },
   {
@@ -592,7 +592,7 @@
    "actual": 14.0
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 64.3
   },
   {
@@ -620,11 +620,11 @@
    "actual": 45.8
   },
   {
-   "pred": 51.1,
+   "pred": 51.2,
    "actual": 59.7
   },
   {
-   "pred": 52.1,
+   "pred": 52.2,
    "actual": 14.0
   },
   {
@@ -632,7 +632,7 @@
    "actual": 31.8
   },
   {
-   "pred": 48.0,
+   "pred": 48.1,
    "actual": 45.2
   },
   {
@@ -680,11 +680,11 @@
    "actual": 42.5
   },
   {
-   "pred": 55.0,
+   "pred": 55.1,
    "actual": 43.4
   },
   {
-   "pred": 48.6,
+   "pred": 48.7,
    "actual": 42.6
   },
   {
@@ -756,7 +756,7 @@
    "actual": 60.4
   },
   {
-   "pred": 44.9,
+   "pred": 45.0,
    "actual": 21.0
   },
   {
@@ -768,7 +768,7 @@
    "actual": 18.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 55.5
   },
   {
@@ -784,7 +784,7 @@
    "actual": 8.6
   },
   {
-   "pred": 45.4,
+   "pred": 45.5,
    "actual": 64.0
   },
   {
@@ -792,7 +792,7 @@
    "actual": 38.3
   },
   {
-   "pred": 52.9,
+   "pred": 53.0,
    "actual": 51.3
   },
   {
@@ -800,7 +800,7 @@
    "actual": 29.4
   },
   {
-   "pred": 52.0,
+   "pred": 52.1,
    "actual": 23.0
   },
   {
@@ -812,7 +812,7 @@
    "actual": 30.2
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 7.5
   },
   {
@@ -900,7 +900,7 @@
    "actual": 16.9
   },
   {
-   "pred": 45.5,
+   "pred": 45.6,
    "actual": 22.8
   },
   {
@@ -916,7 +916,7 @@
    "actual": 7.4
   },
   {
-   "pred": 48.2,
+   "pred": 48.3,
    "actual": 8.5
   },
   {
@@ -944,7 +944,7 @@
    "actual": 48.6
   },
   {
-   "pred": 43.3,
+   "pred": 43.4,
    "actual": 48.2
   },
   {
@@ -952,7 +952,7 @@
    "actual": 45.5
   },
   {
-   "pred": 45.7,
+   "pred": 45.8,
    "actual": 44.5
   },
   {
@@ -972,12 +972,12 @@
    "actual": 33.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 49.1
   },
   {
    "pred": 52.2,
-   "actual": 57.5
+   "actual": 57.4
   },
   {
    "pred": 51.9,
@@ -1032,11 +1032,11 @@
    "actual": 54.6
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 71.7
   },
   {
-   "pred": 45.4,
+   "pred": 45.5,
    "actual": 53.0
   },
   {
@@ -1044,7 +1044,7 @@
    "actual": 72.2
   },
   {
-   "pred": 46.8,
+   "pred": 46.9,
    "actual": 61.4
   },
   {
@@ -1064,7 +1064,7 @@
    "actual": 68.6
   },
   {
-   "pred": 46.8,
+   "pred": 46.9,
    "actual": 53.4
   },
   {
@@ -1072,7 +1072,7 @@
    "actual": 76.3
   },
   {
-   "pred": 51.4,
+   "pred": 51.5,
    "actual": 49.4
   },
   {
@@ -1092,7 +1092,7 @@
    "actual": 60.2
   },
   {
-   "pred": 53.4,
+   "pred": 53.5,
    "actual": 42.4
   },
   {
@@ -1108,7 +1108,7 @@
    "actual": 28.0
   },
   {
-   "pred": 56.3,
+   "pred": 56.4,
    "actual": 58.2
   },
   {
@@ -1132,15 +1132,15 @@
    "actual": 65.2
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 54.0
   },
   {
-   "pred": 47.3,
+   "pred": 47.4,
    "actual": 37.0
   },
   {
-   "pred": 56.4,
+   "pred": 56.5,
    "actual": 23.0
   },
   {
@@ -1168,7 +1168,7 @@
    "actual": 17.7
   },
   {
-   "pred": 49.2,
+   "pred": 49.3,
    "actual": 43.4
   },
   {
@@ -1176,7 +1176,7 @@
    "actual": 47.4
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 18.7
   },
   {
@@ -1184,11 +1184,11 @@
    "actual": 28.8
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 43.7
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 45.8
   },
   {
@@ -1200,7 +1200,7 @@
    "actual": 67.2
   },
   {
-   "pred": 48.6,
+   "pred": 48.7,
    "actual": 73.4
   },
   {
@@ -1224,27 +1224,27 @@
    "actual": 48.8
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 56.0
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 56.5
   },
   {
-   "pred": 53.2,
+   "pred": 53.3,
    "actual": 45.5
   },
   {
-   "pred": 48.2,
+   "pred": 48.3,
    "actual": 37.2
   },
   {
-   "pred": 48.7,
+   "pred": 48.8,
    "actual": 33.3
   },
   {
-   "pred": 45.5,
+   "pred": 45.4,
    "actual": 48.7
   },
   {
@@ -1260,7 +1260,7 @@
    "actual": 38.1
   },
   {
-   "pred": 47.0,
+   "pred": 47.1,
    "actual": 34.6
   },
   {
@@ -1268,7 +1268,7 @@
    "actual": 39.9
   },
   {
-   "pred": 48.7,
+   "pred": 48.8,
    "actual": 16.7
   },
   {
@@ -1293,18 +1293,18 @@
   },
   {
    "pred": 52.1,
-   "actual": 42.2
+   "actual": 42.3
   },
   {
    "pred": 51.4,
    "actual": 36.7
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 22.4
   },
   {
-   "pred": 48.9,
+   "pred": 49.0,
    "actual": 56.2
   },
   {
@@ -1312,7 +1312,7 @@
    "actual": 52.9
   },
   {
-   "pred": 47.8,
+   "pred": 47.9,
    "actual": 7.5
   },
   {
@@ -1344,7 +1344,7 @@
    "actual": 44.9
   },
   {
-   "pred": 53.9,
+   "pred": 54.0,
    "actual": 66.3
   },
   {
@@ -1376,7 +1376,7 @@
    "actual": 40.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 40.2
   },
   {
@@ -1413,7 +1413,7 @@
   },
   {
    "pred": 49.8,
-   "actual": 39.1
+   "actual": 39.2
   },
   {
    "pred": 47.9,
@@ -1436,7 +1436,7 @@
    "actual": 44.0
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 37.8
   },
   {
@@ -1456,7 +1456,7 @@
    "actual": 45.5
   },
   {
-   "pred": 56.1,
+   "pred": 56.2,
    "actual": 41.9
   },
   {
@@ -1468,7 +1468,7 @@
    "actual": 60.3
   },
   {
-   "pred": 56.9,
+   "pred": 56.8,
    "actual": 82.8
   },
   {
@@ -1492,7 +1492,7 @@
    "actual": 43.3
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 29.7
   },
   {
@@ -1528,7 +1528,7 @@
    "actual": 51.3
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 7.3
   },
   {
@@ -1540,7 +1540,7 @@
    "actual": 42.6
   },
   {
-   "pred": 51.4,
+   "pred": 51.5,
    "actual": 62.4
   },
   {
@@ -1564,7 +1564,7 @@
    "actual": 66.7
   },
   {
-   "pred": 52.8,
+   "pred": 52.7,
    "actual": 38.0
   },
   {
@@ -1600,7 +1600,7 @@
    "actual": 7.4
   },
   {
-   "pred": 48.6,
+   "pred": 48.7,
    "actual": 56.1
   },
   {
@@ -1616,7 +1616,7 @@
    "actual": 7.4
   },
   {
-   "pred": 46.7,
+   "pred": 46.8,
    "actual": 19.5
   },
   {
@@ -1648,7 +1648,7 @@
    "actual": 40.6
   },
   {
-   "pred": 48.7,
+   "pred": 48.8,
    "actual": 49.1
   },
   {
@@ -1712,7 +1712,7 @@
    "actual": 24.9
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 56.0
   },
   {
@@ -1732,7 +1732,7 @@
    "actual": 44.8
   },
   {
-   "pred": 54.2,
+   "pred": 54.3,
    "actual": 50.3
   },
   {
@@ -1744,7 +1744,7 @@
    "actual": 56.9
   },
   {
-   "pred": 52.9,
+   "pred": 53.0,
    "actual": 45.9
   },
   {
@@ -1780,7 +1780,7 @@
    "actual": 39.1
   },
   {
-   "pred": 53.4,
+   "pred": 53.5,
    "actual": 68.2
   },
   {
@@ -1792,7 +1792,7 @@
    "actual": 67.8
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 22.0
   },
   {
@@ -1804,11 +1804,11 @@
    "actual": 37.6
   },
   {
-   "pred": 36.6,
+   "pred": 36.7,
    "actual": 23.0
   },
   {
-   "pred": 59.1,
+   "pred": 59.0,
    "actual": 46.5
   },
   {
@@ -1820,7 +1820,7 @@
    "actual": 19.1
   },
   {
-   "pred": 51.0,
+   "pred": 51.1,
    "actual": 7.8
   },
   {
@@ -1852,7 +1852,7 @@
    "actual": 52.0
   },
   {
-   "pred": 46.2,
+   "pred": 46.3,
    "actual": 21.1
   },
   {
@@ -1872,7 +1872,7 @@
    "actual": 55.8
   },
   {
-   "pred": 49.4,
+   "pred": 49.5,
    "actual": 24.7
   },
   {
@@ -1880,7 +1880,7 @@
    "actual": 63.3
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 41.7
   },
   {
@@ -1932,7 +1932,7 @@
    "actual": 42.5
   },
   {
-   "pred": 48.9,
+   "pred": 49.0,
    "actual": 49.5
   },
   {
@@ -1944,7 +1944,7 @@
    "actual": 51.5
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 74.0
   },
   {
@@ -1964,7 +1964,7 @@
    "actual": 80.2
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 80.1
   },
   {
@@ -2004,7 +2004,7 @@
    "actual": 66.2
   },
   {
-   "pred": 52.0,
+   "pred": 52.1,
    "actual": 56.4
   },
   {
@@ -2016,7 +2016,7 @@
    "actual": 25.0
   },
   {
-   "pred": 53.5,
+   "pred": 53.6,
    "actual": 48.6
   },
   {
@@ -2052,7 +2052,7 @@
    "actual": 74.4
   },
   {
-   "pred": 45.2,
+   "pred": 45.3,
    "actual": 28.7
   },
   {
@@ -2064,7 +2064,7 @@
    "actual": 44.4
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 7.4
   },
   {
@@ -2116,11 +2116,11 @@
    "actual": 64.9
   },
   {
-   "pred": 53.5,
+   "pred": 53.6,
    "actual": 45.7
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 60.6
   },
   {
@@ -2137,7 +2137,7 @@
   },
   {
    "pred": 50.1,
-   "actual": 58.5
+   "actual": 58.4
   },
   {
    "pred": 54.0,
@@ -2172,7 +2172,7 @@
    "actual": 47.4
   },
   {
-   "pred": 48.0,
+   "pred": 48.1,
    "actual": 56.9
   },
   {
@@ -2192,7 +2192,7 @@
    "actual": 43.7
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 45.6
   },
   {
@@ -2244,7 +2244,7 @@
    "actual": 34.7
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 40.7
   },
   {
@@ -2284,7 +2284,7 @@
    "actual": 64.9
   },
   {
-   "pred": 51.4,
+   "pred": 51.5,
    "actual": 24.1
   },
   {
@@ -2301,7 +2301,7 @@
   },
   {
    "pred": 43.8,
-   "actual": 47.3
+   "actual": 47.2
   },
   {
    "pred": 53.0,
@@ -2336,11 +2336,11 @@
    "actual": 68.2
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 78.3
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 53.2
   },
   {
@@ -2369,7 +2369,7 @@
   },
   {
    "pred": 53.8,
-   "actual": 68.4
+   "actual": 68.3
   },
   {
    "pred": 58.9,
@@ -2384,7 +2384,7 @@
    "actual": 51.4
   },
   {
-   "pred": 45.7,
+   "pred": 45.8,
    "actual": 66.2
   },
   {
@@ -2396,11 +2396,11 @@
    "actual": 27.1
   },
   {
-   "pred": 48.1,
+   "pred": 48.2,
    "actual": 24.0
   },
   {
-   "pred": 54.0,
+   "pred": 54.1,
    "actual": 17.0
   },
   {
@@ -2408,7 +2408,7 @@
    "actual": 28.6
   },
   {
-   "pred": 47.5,
+   "pred": 47.6,
    "actual": 52.6
   },
   {
@@ -2416,7 +2416,7 @@
    "actual": 38.2
   },
   {
-   "pred": 52.4,
+   "pred": 52.5,
    "actual": 54.2
   },
   {
@@ -2428,7 +2428,7 @@
    "actual": 46.1
   },
   {
-   "pred": 52.6,
+   "pred": 52.7,
    "actual": 52.0
   },
   {
@@ -2436,15 +2436,15 @@
    "actual": 42.3
   },
   {
-   "pred": 54.3,
+   "pred": 54.4,
    "actual": 32.9
   },
   {
-   "pred": 47.5,
+   "pred": 47.6,
    "actual": 45.5
   },
   {
-   "pred": 53.2,
+   "pred": 53.3,
    "actual": 37.0
   },
   {
@@ -2453,10 +2453,10 @@
   },
   {
    "pred": 59.1,
-   "actual": 32.1
+   "actual": 32.0
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 46.1
   },
   {
@@ -2533,10 +2533,10 @@
   },
   {
    "pred": 53.2,
-   "actual": 67.2
+   "actual": 67.1
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 59.3
   },
   {
@@ -2548,11 +2548,11 @@
    "actual": 65.5
   },
   {
-   "pred": 48.0,
+   "pred": 48.1,
    "actual": 59.4
   },
   {
-   "pred": 55.2,
+   "pred": 55.3,
    "actual": 70.8
   },
   {
@@ -2564,7 +2564,7 @@
    "actual": 60.1
   },
   {
-   "pred": 48.4,
+   "pred": 48.5,
    "actual": 51.2
   },
   {
@@ -2572,7 +2572,7 @@
    "actual": 56.8
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 33.0
   },
   {
@@ -2584,7 +2584,7 @@
    "actual": 42.2
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 48.2
   },
   {
@@ -2600,7 +2600,7 @@
    "actual": 75.3
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 7.5
   },
   {
@@ -2612,7 +2612,7 @@
    "actual": 55.3
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 16.7
   },
   {
@@ -2632,7 +2632,7 @@
    "actual": 36.7
   },
   {
-   "pred": 45.9,
+   "pred": 46.0,
    "actual": 26.5
   },
   {
@@ -2652,11 +2652,11 @@
    "actual": 26.5
   },
   {
-   "pred": 53.4,
+   "pred": 53.5,
    "actual": 59.3
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 50.1
   },
   {
@@ -2668,12 +2668,12 @@
    "actual": 7.5
   },
   {
-   "pred": 51.9,
+   "pred": 51.8,
    "actual": 7.5
   },
   {
-   "pred": 45.8,
-   "actual": 54.8
+   "pred": 45.9,
+   "actual": 54.7
   },
   {
    "pred": 49.7,
@@ -2696,7 +2696,7 @@
    "actual": 59.8
   },
   {
-   "pred": 48.4,
+   "pred": 48.5,
    "actual": 33.5
   },
   {
@@ -2708,7 +2708,7 @@
    "actual": 37.9
   },
   {
-   "pred": 49.2,
+   "pred": 49.3,
    "actual": 50.6
   },
   {
@@ -2752,7 +2752,7 @@
    "actual": 41.6
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 57.8
   },
   {
@@ -2776,7 +2776,7 @@
    "actual": 67.3
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 59.5
   },
   {
@@ -2784,11 +2784,11 @@
    "actual": 28.2
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 7.7
   },
   {
-   "pred": 52.0,
+   "pred": 51.9,
    "actual": 41.2
   },
   {
@@ -2820,7 +2820,7 @@
    "actual": 67.8
   },
   {
-   "pred": 50.9,
+   "pred": 51.0,
    "actual": 37.4
   },
   {
@@ -2856,7 +2856,7 @@
    "actual": 68.4
   },
   {
-   "pred": 51.5,
+   "pred": 51.6,
    "actual": 7.6
   },
   {
@@ -2900,7 +2900,7 @@
    "actual": 33.1
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 37.8
   },
   {
@@ -2912,7 +2912,7 @@
    "actual": 28.4
   },
   {
-   "pred": 44.9,
+   "pred": 45.0,
    "actual": 19.9
   },
   {
@@ -2936,7 +2936,7 @@
    "actual": 31.6
   },
   {
-   "pred": 46.9,
+   "pred": 47.0,
    "actual": 34.4
   },
   {
@@ -2952,7 +2952,7 @@
    "actual": 29.8
   },
   {
-   "pred": 48.3,
+   "pred": 48.4,
    "actual": 50.9
   },
   {
@@ -2960,7 +2960,7 @@
    "actual": 29.4
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 68.1
   },
   {
@@ -2972,11 +2972,11 @@
    "actual": 48.5
   },
   {
-   "pred": 50.2,
+   "pred": 50.3,
    "actual": 53.7
   },
   {
-   "pred": 46.2,
+   "pred": 46.3,
    "actual": 19.7
   },
   {
@@ -2992,7 +2992,7 @@
    "actual": 22.7
   },
   {
-   "pred": 49.2,
+   "pred": 49.3,
    "actual": 31.1
   },
   {
@@ -3024,7 +3024,7 @@
    "actual": 40.7
   },
   {
-   "pred": 47.7,
+   "pred": 47.8,
    "actual": 60.1
   },
   {
@@ -3036,7 +3036,7 @@
    "actual": 51.7
   },
   {
-   "pred": 43.6,
+   "pred": 43.7,
    "actual": 8.2
   },
   {
@@ -3064,11 +3064,11 @@
    "actual": 7.5
   },
   {
-   "pred": 49.0,
+   "pred": 49.1,
    "actual": 47.0
   },
   {
-   "pred": 52.0,
+   "pred": 52.1,
    "actual": 58.6
   },
   {
@@ -3088,7 +3088,7 @@
    "actual": 64.9
   },
   {
-   "pred": 47.1,
+   "pred": 47.2,
    "actual": 68.9
   },
   {
@@ -3108,11 +3108,11 @@
    "actual": 7.5
   },
   {
-   "pred": 48.7,
+   "pred": 48.8,
    "actual": 50.0
   },
   {
-   "pred": 51.5,
+   "pred": 51.6,
    "actual": 53.6
   },
   {
@@ -3161,7 +3161,7 @@
   },
   {
    "pred": 52.9,
-   "actual": 48.9
+   "actual": 48.8
   },
   {
    "pred": 53.4,
@@ -3180,7 +3180,7 @@
    "actual": 9.3
   },
   {
-   "pred": 46.9,
+   "pred": 47.0,
    "actual": 45.3
   },
   {
@@ -3192,7 +3192,7 @@
    "actual": 37.5
   },
   {
-   "pred": 50.6,
+   "pred": 50.7,
    "actual": 79.4
   },
   {
@@ -3260,7 +3260,7 @@
    "actual": 36.3
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 41.0
   },
   {
@@ -3276,11 +3276,11 @@
    "actual": 66.0
   },
   {
-   "pred": 46.0,
+   "pred": 46.1,
    "actual": 66.5
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 63.9
   },
   {
@@ -3312,11 +3312,11 @@
    "actual": 63.7
   },
   {
-   "pred": 53.8,
+   "pred": 53.7,
    "actual": 7.4
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 45.9
   },
   {
@@ -3333,7 +3333,7 @@
   },
   {
    "pred": 56.3,
-   "actual": 55.9
+   "actual": 55.8
   },
   {
    "pred": 58.5,
@@ -3341,14 +3341,14 @@
   },
   {
    "pred": 48.9,
-   "actual": 28.7
+   "actual": 28.8
   },
   {
    "pred": 45.6,
    "actual": 48.9
   },
   {
-   "pred": 49.1,
+   "pred": 49.2,
    "actual": 42.9
   },
   {
@@ -3380,7 +3380,7 @@
    "actual": 54.1
   },
   {
-   "pred": 53.9,
+   "pred": 54.0,
    "actual": 8.8
   },
   {
@@ -3420,7 +3420,7 @@
    "actual": 47.6
   },
   {
-   "pred": 47.2,
+   "pred": 47.3,
    "actual": 51.9
   },
   {
@@ -3428,11 +3428,11 @@
    "actual": 7.6
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 26.8
   },
   {
-   "pred": 47.2,
+   "pred": 47.3,
    "actual": 17.1
   },
   {
@@ -3444,7 +3444,7 @@
    "actual": 62.6
   },
   {
-   "pred": 52.8,
+   "pred": 52.9,
    "actual": 46.0
   },
   {
@@ -3456,12 +3456,12 @@
    "actual": 57.5
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 37.4
   },
   {
    "pred": 46.5,
-   "actual": 40.4
+   "actual": 40.3
   },
   {
    "pred": 49.5,
@@ -3472,7 +3472,7 @@
    "actual": 27.2
   },
   {
-   "pred": 44.5,
+   "pred": 44.6,
    "actual": 49.6
   },
   {
@@ -3480,11 +3480,11 @@
    "actual": 44.1
   },
   {
-   "pred": 46.2,
+   "pred": 46.3,
    "actual": 59.3
   },
   {
-   "pred": 46.8,
+   "pred": 46.9,
    "actual": 58.4
   },
   {
@@ -3508,20 +3508,20 @@
    "actual": 28.6
   },
   {
-   "pred": 53.8,
+   "pred": 53.9,
    "actual": 30.6
   },
   {
-   "pred": 50.1,
+   "pred": 50.2,
    "actual": 17.1
   },
   {
-   "pred": 48.8,
+   "pred": 48.9,
    "actual": 7.5
   },
   {
-   "pred": 46.6,
-   "actual": 68.0
+   "pred": 46.7,
+   "actual": 67.9
   },
   {
    "pred": 47.7,
@@ -3532,7 +3532,7 @@
    "actual": 65.7
   },
   {
-   "pred": 47.1,
+   "pred": 47.2,
    "actual": 58.8
   },
   {
@@ -3560,11 +3560,11 @@
    "actual": 72.5
   },
   {
-   "pred": 47.1,
+   "pred": 47.2,
    "actual": 27.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 18.9
   },
   {
@@ -3580,7 +3580,7 @@
    "actual": 33.7
   },
   {
-   "pred": 49.1,
+   "pred": 49.2,
    "actual": 77.8
   },
   {
@@ -3592,7 +3592,7 @@
    "actual": 34.2
   },
   {
-   "pred": 52.0,
+   "pred": 52.1,
    "actual": 43.2
   },
   {
@@ -3612,7 +3612,7 @@
    "actual": 7.7
   },
   {
-   "pred": 56.8,
+   "pred": 56.9,
    "actual": 30.6
   },
   {
@@ -3624,7 +3624,7 @@
    "actual": 33.7
   },
   {
-   "pred": 56.9,
+   "pred": 57.0,
    "actual": 57.5
   },
   {
@@ -3640,7 +3640,7 @@
    "actual": 42.7
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 39.5
   },
   {
@@ -3648,7 +3648,7 @@
    "actual": 20.4
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 45.4
   },
   {
@@ -3660,7 +3660,7 @@
    "actual": 36.3
   },
   {
-   "pred": 47.9,
+   "pred": 48.0,
    "actual": 39.7
   },
   {
@@ -3724,7 +3724,7 @@
    "actual": 34.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 56.3
   },
   {
@@ -3744,7 +3744,7 @@
    "actual": 49.4
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 37.5
   },
   {
@@ -3752,7 +3752,7 @@
    "actual": 5.3
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 58.3
   },
   {
@@ -3764,7 +3764,7 @@
    "actual": 36.6
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 72.6
   },
   {
@@ -3772,7 +3772,7 @@
    "actual": 39.2
   },
   {
-   "pred": 46.5,
+   "pred": 46.6,
    "actual": 72.7
   },
   {
@@ -3796,7 +3796,7 @@
    "actual": 12.9
   },
   {
-   "pred": 36.6,
+   "pred": 36.7,
    "actual": 23.6
   },
   {
@@ -3808,7 +3808,7 @@
    "actual": 57.0
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 69.0
   },
   {
@@ -3820,8 +3820,8 @@
    "actual": 5.3
   },
   {
-   "pred": 49.1,
-   "actual": 53.9
+   "pred": 49.2,
+   "actual": 53.8
   },
   {
    "pred": 52.3,
@@ -3844,7 +3844,7 @@
    "actual": 51.4
   },
   {
-   "pred": 49.4,
+   "pred": 49.5,
    "actual": 56.2
   },
   {
@@ -3853,7 +3853,7 @@
   },
   {
    "pred": 52.7,
-   "actual": 49.5
+   "actual": 49.4
   },
   {
    "pred": 55.6,
@@ -3864,7 +3864,7 @@
    "actual": 69.4
   },
   {
-   "pred": 58.4,
+   "pred": 58.3,
    "actual": 28.0
   },
   {
@@ -3876,7 +3876,7 @@
    "actual": 67.5
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 46.4
   },
   {
@@ -3908,7 +3908,7 @@
    "actual": 59.0
   },
   {
-   "pred": 50.6,
+   "pred": 50.7,
    "actual": 76.7
   },
   {
@@ -3916,15 +3916,15 @@
    "actual": 53.7
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 5.3
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 5.4
   },
   {
-   "pred": 45.8,
+   "pred": 45.9,
    "actual": 68.8
   },
   {
@@ -3945,7 +3945,7 @@
   },
   {
    "pred": 48.2,
-   "actual": 69.9
+   "actual": 69.8
   },
   {
    "pred": 47.7,
@@ -3980,11 +3980,11 @@
    "actual": 19.0
   },
   {
-   "pred": 44.9,
+   "pred": 45.0,
    "actual": 51.9
   },
   {
-   "pred": 51.8,
+   "pred": 51.7,
    "actual": 17.9
   },
   {
@@ -4000,7 +4000,7 @@
    "actual": 36.5
   },
   {
-   "pred": 55.6,
+   "pred": 55.7,
    "actual": 71.4
   },
   {
@@ -4012,11 +4012,11 @@
    "actual": 61.4
   },
   {
-   "pred": 46.0,
+   "pred": 46.1,
    "actual": 56.1
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 52.4
   },
   {
@@ -4044,7 +4044,7 @@
    "actual": 73.5
   },
   {
-   "pred": 47.1,
+   "pred": 47.2,
    "actual": 12.5
   },
   {
@@ -4176,7 +4176,7 @@
    "actual": 46.1
   },
   {
-   "pred": 40.8,
+   "pred": 40.9,
    "actual": 37.5
   },
   {
@@ -4192,7 +4192,7 @@
    "actual": 72.0
   },
   {
-   "pred": 55.1,
+   "pred": 55.2,
    "actual": 36.7
   },
   {
@@ -4204,7 +4204,7 @@
    "actual": 36.4
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 51.3
   },
   {
@@ -4224,7 +4224,7 @@
    "actual": 49.3
   },
   {
-   "pred": 41.3,
+   "pred": 41.4,
    "actual": 35.6
   },
   {
@@ -4248,7 +4248,7 @@
    "actual": 11.8
   },
   {
-   "pred": 53.5,
+   "pred": 53.6,
    "actual": 83.7
   },
   {
@@ -4301,7 +4301,7 @@
   },
   {
    "pred": 54.4,
-   "actual": 58.6
+   "actual": 58.5
   },
   {
    "pred": 54.0,
@@ -4324,7 +4324,7 @@
    "actual": 5.3
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 56.4
   },
   {
@@ -4332,11 +4332,11 @@
    "actual": 33.1
   },
   {
-   "pred": 46.5,
+   "pred": 46.6,
    "actual": 64.0
   },
   {
-   "pred": 47.5,
+   "pred": 47.6,
    "actual": 76.2
   },
   {
@@ -4364,8 +4364,8 @@
    "actual": 6.2
   },
   {
-   "pred": 51.5,
-   "actual": 63.5
+   "pred": 51.6,
+   "actual": 63.4
   },
   {
    "pred": 47.5,
@@ -4389,7 +4389,7 @@
   },
   {
    "pred": 53.4,
-   "actual": 63.5
+   "actual": 63.4
   },
   {
    "pred": 57.3,
@@ -4424,7 +4424,7 @@
    "actual": 53.8
   },
   {
-   "pred": 46.8,
+   "pred": 46.7,
    "actual": 11.7
   },
   {
@@ -4432,11 +4432,11 @@
    "actual": 51.8
   },
   {
-   "pred": 47.5,
+   "pred": 47.6,
    "actual": 71.6
   },
   {
-   "pred": 51.1,
+   "pred": 51.2,
    "actual": 77.5
   },
   {
@@ -4444,12 +4444,12 @@
    "actual": 71.3
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 60.1
   },
   {
    "pred": 46.2,
-   "actual": 54.6
+   "actual": 54.5
   },
   {
    "pred": 56.0,
@@ -4484,7 +4484,7 @@
    "actual": 33.6
   },
   {
-   "pred": 58.4,
+   "pred": 58.3,
    "actual": 71.7
   },
   {
@@ -4500,11 +4500,11 @@
    "actual": 48.8
   },
   {
-   "pred": 47.1,
-   "actual": 61.2
+   "pred": 47.2,
+   "actual": 61.1
   },
   {
-   "pred": 49.1,
+   "pred": 49.2,
    "actual": 70.1
   },
   {
@@ -4516,7 +4516,7 @@
    "actual": 5.2
   },
   {
-   "pred": 51.8,
+   "pred": 51.9,
    "actual": 42.9
   },
   {
@@ -4573,14 +4573,14 @@
   },
   {
    "pred": 61.7,
-   "actual": 62.1
+   "actual": 62.0
   },
   {
-   "pred": 45.5,
+   "pred": 45.6,
    "actual": 5.6
   },
   {
-   "pred": 59.6,
+   "pred": 59.5,
    "actual": 57.8
   },
   {
@@ -4596,7 +4596,7 @@
    "actual": 46.5
   },
   {
-   "pred": 38.3,
+   "pred": 38.4,
    "actual": 18.5
   },
   {
@@ -4628,7 +4628,7 @@
    "actual": 62.1
   },
   {
-   "pred": 52.5,
+   "pred": 52.6,
    "actual": 46.0
   },
   {
@@ -4708,7 +4708,7 @@
    "actual": 12.8
   },
   {
-   "pred": 49.8,
+   "pred": 49.9,
    "actual": 45.2
   },
   {
@@ -4736,16 +4736,16 @@
    "actual": 44.7
   },
   {
-   "pred": 55.2,
+   "pred": 55.3,
    "actual": 64.2
   },
   {
-   "pred": 47.5,
+   "pred": 47.6,
    "actual": 45.0
   },
   {
    "pred": 57.6,
-   "actual": 56.3
+   "actual": 56.2
   },
   {
    "pred": 50.9,
@@ -4768,7 +4768,7 @@
    "actual": 72.1
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 79.5
   },
   {
@@ -4776,7 +4776,7 @@
    "actual": 63.0
   },
   {
-   "pred": 51.5,
+   "pred": 51.6,
    "actual": 63.8
   },
   {
@@ -4832,7 +4832,7 @@
    "actual": 5.3
   },
   {
-   "pred": 47.2,
+   "pred": 47.3,
    "actual": 65.0
   },
   {
@@ -4845,7 +4845,7 @@
   },
   {
    "pred": 45.2,
-   "actual": 56.5
+   "actual": 56.4
   },
   {
    "pred": 46.3,
@@ -4864,7 +4864,7 @@
    "actual": 21.3
   },
   {
-   "pred": 50.1,
+   "pred": 50.2,
    "actual": 7.8
   },
   {
@@ -4892,7 +4892,7 @@
    "actual": 24.8
   },
   {
-   "pred": 52.4,
+   "pred": 52.5,
    "actual": 39.5
   },
   {
@@ -4900,11 +4900,11 @@
    "actual": 81.8
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 68.4
   },
   {
-   "pred": 56.2,
+   "pred": 56.3,
    "actual": 54.5
   },
   {
@@ -4916,8 +4916,8 @@
    "actual": 76.9
   },
   {
-   "pred": 56.9,
-   "actual": 42.6
+   "pred": 56.8,
+   "actual": 42.5
   },
   {
    "pred": 46.9,
@@ -4928,7 +4928,7 @@
    "actual": 58.8
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 63.1
   },
   {
@@ -4948,7 +4948,7 @@
    "actual": 69.0
   },
   {
-   "pred": 53.7,
+   "pred": 53.8,
    "actual": 60.0
   },
   {
@@ -4984,8 +4984,8 @@
    "actual": 76.9
   },
   {
-   "pred": 53.0,
-   "actual": 73.1
+   "pred": 53.1,
+   "actual": 73.0
   },
   {
    "pred": 48.4,
@@ -5016,8 +5016,8 @@
    "actual": 63.7
   },
   {
-   "pred": 45.0,
-   "actual": 69.3
+   "pred": 45.1,
+   "actual": 69.2
   },
   {
    "pred": 58.2,
@@ -5036,7 +5036,7 @@
    "actual": 19.6
   },
   {
-   "pred": 45.5,
+   "pred": 45.6,
    "actual": 47.9
   },
   {
@@ -5056,7 +5056,7 @@
    "actual": 31.6
   },
   {
-   "pred": 51.5,
+   "pred": 51.4,
    "actual": 48.5
   },
   {
@@ -5088,11 +5088,11 @@
    "actual": 5.3
   },
   {
-   "pred": 56.5,
+   "pred": 56.6,
    "actual": 71.9
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 61.9
   },
   {
@@ -5116,7 +5116,7 @@
    "actual": 57.0
   },
   {
-   "pred": 46.1,
+   "pred": 46.2,
    "actual": 5.5
   },
   {
@@ -5192,7 +5192,7 @@
    "actual": 39.5
   },
   {
-   "pred": 42.4,
+   "pred": 42.5,
    "actual": 63.3
   },
   {
@@ -5208,7 +5208,7 @@
    "actual": 69.3
   },
   {
-   "pred": 46.3,
+   "pred": 46.4,
    "actual": 80.9
   },
   {
@@ -5244,7 +5244,7 @@
    "actual": 59.2
   },
   {
-   "pred": 44.6,
+   "pred": 44.7,
    "actual": 19.1
   },
   {
@@ -5276,7 +5276,7 @@
    "actual": 70.6
   },
   {
-   "pred": 47.1,
+   "pred": 47.2,
    "actual": 43.2
   },
   {
@@ -5304,7 +5304,7 @@
    "actual": 30.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 26.5
   },
   {
@@ -5324,7 +5324,7 @@
    "actual": 59.2
   },
   {
-   "pred": 47.6,
+   "pred": 47.7,
    "actual": 48.1
   },
   {
@@ -5376,7 +5376,7 @@
    "actual": 65.5
   },
   {
-   "pred": 49.0,
+   "pred": 49.1,
    "actual": 34.7
   },
   {
@@ -5404,7 +5404,7 @@
    "actual": 51.4
   },
   {
-   "pred": 56.9,
+   "pred": 56.8,
    "actual": 57.2
   },
   {
@@ -5412,7 +5412,7 @@
    "actual": 46.1
   },
   {
-   "pred": 48.4,
+   "pred": 48.5,
    "actual": 68.2
   },
   {
@@ -5436,7 +5436,7 @@
    "actual": 12.1
   },
   {
-   "pred": 47.0,
+   "pred": 47.1,
    "actual": 77.0
   },
   {
@@ -5456,7 +5456,7 @@
    "actual": 24.0
   },
   {
-   "pred": 43.0,
+   "pred": 43.1,
    "actual": 26.0
   },
   {
@@ -5501,10 +5501,10 @@
   },
   {
    "pred": 59.0,
-   "actual": 71.8
+   "actual": 71.7
   },
   {
-   "pred": 50.4,
+   "pred": 50.5,
    "actual": 30.9
   },
   {
@@ -5532,7 +5532,7 @@
    "actual": 56.3
   },
   {
-   "pred": 50.5,
+   "pred": 50.4,
    "actual": 77.8
   },
   {
@@ -5540,7 +5540,7 @@
    "actual": 44.1
   },
   {
-   "pred": 51.2,
+   "pred": 51.3,
    "actual": 60.3
   },
   {
@@ -5564,19 +5564,19 @@
    "actual": 55.8
   },
   {
-   "pred": 53.7,
-   "actual": 60.7
+   "pred": 53.8,
+   "actual": 60.6
   },
   {
    "pred": 48.4,
    "actual": 60.3
   },
   {
-   "pred": 48.0,
+   "pred": 48.1,
    "actual": 17.0
   },
   {
-   "pred": 58.8,
+   "pred": 58.7,
    "actual": 48.0
   },
   {
@@ -5600,15 +5600,15 @@
    "actual": 65.8
   },
   {
-   "pred": 47.0,
-   "actual": 20.9
+   "pred": 47.1,
+   "actual": 21.0
   },
   {
    "pred": 54.6,
    "actual": 76.7
   },
   {
-   "pred": 52.9,
+   "pred": 53.0,
    "actual": 40.3
   },
   {
@@ -5616,7 +5616,7 @@
    "actual": 38.1
   },
   {
-   "pred": 47.4,
+   "pred": 47.5,
    "actual": 33.2
   },
   {
@@ -5624,7 +5624,7 @@
    "actual": 57.0
   },
   {
-   "pred": 42.8,
+   "pred": 42.9,
    "actual": 5.5
   },
   {
@@ -5717,7 +5717,7 @@
   },
   {
    "pred": 47.4,
-   "actual": 37.9
+   "actual": 37.8
   },
   {
    "pred": 47.5,
@@ -5736,7 +5736,7 @@
    "actual": 29.1
   },
   {
-   "pred": 45.9,
+   "pred": 46.0,
    "actual": 27.5
   },
   {
@@ -5780,7 +5780,7 @@
    "actual": 60.4
   },
   {
-   "pred": 53.0,
+   "pred": 53.1,
    "actual": 65.8
   },
   {
@@ -5820,7 +5820,7 @@
    "actual": 5.3
   },
   {
-   "pred": 47.9,
+   "pred": 48.0,
    "actual": 19.6
   },
   {
@@ -5828,7 +5828,7 @@
    "actual": 51.5
   },
   {
-   "pred": 49.2,
+   "pred": 49.3,
    "actual": 70.2
   },
   {
@@ -5852,7 +5852,7 @@
    "actual": 24.5
   },
   {
-   "pred": 47.3,
+   "pred": 47.4,
    "actual": 37.8
   },
   {
@@ -5864,11 +5864,11 @@
    "actual": 49.4
   },
   {
-   "pred": 46.2,
+   "pred": 46.3,
    "actual": 63.2
   },
   {
-   "pred": 45.3,
+   "pred": 45.4,
    "actual": 29.6
   },
   {
@@ -5896,7 +5896,7 @@
    "actual": 70.8
   },
   {
-   "pred": 48.5,
+   "pred": 48.6,
    "actual": 41.5
   },
   {
@@ -5917,7 +5917,7 @@
   },
   {
    "pred": 49.3,
-   "actual": 51.4
+   "actual": 51.3
   },
   {
    "pred": 47.9,
@@ -5928,7 +5928,7 @@
    "actual": 64.1
   },
   {
-   "pred": 45.2,
+   "pred": 45.3,
    "actual": 5.2
   },
   {
@@ -5952,7 +5952,7 @@
    "actual": 57.7
   },
   {
-   "pred": 54.9,
+   "pred": 55.0,
    "actual": 44.6
   },
   {
@@ -6000,7 +6000,7 @@
    "actual": 11.8
   },
   {
-   "pred": 49.6,
+   "pred": 49.7,
    "actual": 54.2
   },
   {
@@ -6024,7 +6024,7 @@
    "actual": 67.2
   },
   {
-   "pred": 47.7,
+   "pred": 47.8,
    "actual": 70.3
   },
   {
@@ -6076,7 +6076,7 @@
    "actual": 52.6
   },
   {
-   "pred": 55.7,
+   "pred": 55.2,
    "actual": 63.1
   },
   {
@@ -6104,7 +6104,7 @@
    "actual": 79.2
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 34.4
   },
   {
@@ -6116,7 +6116,7 @@
    "actual": 69.4
   },
   {
-   "pred": 47.0,
+   "pred": 47.1,
    "actual": 58.5
   },
   {
@@ -6140,7 +6140,7 @@
    "actual": 68.9
   },
   {
-   "pred": 46.6,
+   "pred": 46.7,
    "actual": 11.8
   },
   {
