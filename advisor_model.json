@@ -1,18 +1,18 @@
 {
  "version": 3,
- "trained_on": 17427,
- "population_mean": 48.4392,
+ "trained_on": 17434,
+ "population_mean": 48.4672,
  "k_sire": 8.0,
  "k_dam": 2.0,
- "intercept": 0.377098,
- "w_sire": 0.835867,
- "w_dam": 0.214641,
- "w_dam_con_figli": 2.192633,
- "w_nonna": 0.055988,
- "residual_sd": 22.2251,
+ "intercept": 0.518846,
+ "w_sire": 0.836717,
+ "w_dam": 0.214574,
+ "w_dam_con_figli": 2.011662,
+ "w_nonna": 0.05247,
+ "residual_sd": 22.2035,
  "backtest_summary": {
   "spearman": 0.156,
-  "mae": 17.49,
-  "baseline_spearman": 0.139
+  "mae": 17.47,
+  "baseline_spearman": 0.14
  }
 }
