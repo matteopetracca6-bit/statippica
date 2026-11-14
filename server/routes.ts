@@ -907,6 +907,35 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const tot = db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) p
                               FROM races WHERE horse_name = ?`).get(name) as any;
       horse.career_top3 = tot?.n ? (tot.p ?? 0) : ((horse.career_wins ?? 0) + (horse.career_places ?? 0));
+      // Carriera parziale (novembre 2026): cavalli con gare in archivio ma senza
+      // i totali di carriera. Sono quelli recuperati dai risultati ufficiali
+      // MASAF (solo dal 2016) che le schede di TrottoWeb non trovano, e i
+      // riproduttori nati prima del 2012. Invece di "0 corse, 0 euro" la
+      // testata mostra i conti delle gare che abbiamo, e dice che sono parziali.
+      // Le gare si contano da due anni dopo la nascita (omonimi piu' anziani).
+      horse.carriera_parziale = null;
+      if (!(horse.career_races > 0) && tot?.n > 0) {
+        const conCalc = (db.prepare("PRAGMA table_info(races)").all() as any[]).some(c => c.name === "prize_calc");
+        const s = db.prepare(`
+          SELECT COUNT(*) n,
+                 SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) w,
+                 SUM(CASE WHEN placement BETWEEN 2 AND 3 THEN 1 ELSE 0 END) pl,
+                 SUM(COALESCE(prize_net, 0)) e,
+                 MIN(CASE WHEN time_km > 0 THEN time_km END) rec,
+                 MIN(race_date) prima, MAX(race_date) ultima,
+                 ${conCalc ? "SUM(CASE WHEN prize_calc = 1 THEN 1 ELSE 0 END)" : "0"} stimati
+          FROM races WHERE horse_name = ? AND (? IS NULL OR race_date >= (? + 2) || '-01-01')`)
+          .get(name, horse.birth_year ?? null, horse.birth_year ?? null) as any;
+        if (s?.n > 0) {
+          horse.career_races = s.n;
+          horse.career_wins = s.w ?? 0;
+          horse.career_places = s.pl ?? 0;
+          horse.career_top3 = (s.w ?? 0) + (s.pl ?? 0);
+          horse.career_earnings = Math.round((s.e ?? 0) * 100) / 100;
+          if (!horse.record_career && s.rec) horse.record_career = s.rec;
+          horse.carriera_parziale = { n: s.n, dal: s.prima, al: s.ultima, premi_stimati: s.stimati ?? 0 };
+        }
+      }
       // E' anche stallone da monta? Allora la scheda porta alla pagina stallone.
       horse.stallone_come = vpTableExists(db, "cavalli_alias")
         ? ((db.prepare(`SELECT alias FROM cavalli_alias WHERE nome = ?`).get(name) as any)?.alias ?? null)

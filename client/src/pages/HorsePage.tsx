@@ -591,10 +591,12 @@ export default function HorsePage() {
   // Tre scale diverse, e vanno chiamate per nome: confonderle era il difetto
   // che portava Varenne (46 corse, 41 vittorie, nessuna gara in archivio) a
   // comparire come un grado A qualunque accanto ai cavalli in attivita'.
+  const parziale = (horse as any).carriera_parziale as { n: number; dal: string; al: string; premi_stimati: number } | null;
   const MODE_LABEL =
     horse.rating_mode === "performance" ? "Gare"
       : horse.rating_mode === "storico" ? "Storico"
-        : "Pedigree";
+        : parziale ? "Carriera parziale"
+          : "Pedigree";
   const eStorico = horse.rating_mode === "storico";
 
   const navigateTo = (hName: string, hYear: number) => {
@@ -718,7 +720,16 @@ export default function HorsePage() {
             valore={horse.career_earnings != null ? `€ ${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
           <Cifra titolo="Record al km" valore={horse.record_career ? formatRecord(horse.record_career) : "—"} colore="hsl(183 70% 60%)" />
         </>}
-        avviso={eStorico ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} /> : undefined}
+        avviso={eStorico ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
+          : parziale ? (
+            <div data-testid="nota-carriera-parziale" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(45 85% 70%)",
+                 border: "1px solid hsl(45 70% 45% / .45)", background: "hsl(45 60% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
+              Carriera parziale: questi numeri contano solo le {parziale.n} gare che abbiamo
+              (dal {parziale.dal.slice(8, 10)}/{parziale.dal.slice(5, 7)}/{parziale.dal.slice(0, 4)}), lette dai risultati ufficiali.
+              La carriera completa non è disponibile, quindi il cavallo non ha un voto.
+              {parziale.premi_stimati > 0 && <> In {parziale.premi_stimati} gare il premio è stimato dalla tabella del regolamento.</>}
+            </div>
+          ) : undefined}
       />
 
       {/* Novembre 2026, scheda compattata. In alto il riepilogo, sempre

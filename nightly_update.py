@@ -3212,6 +3212,14 @@ def phase_voti_pedigree(conn: sqlite3.Connection):
            AND COALESCE(h.career_races, 0) = 0
            AND COALESCE(h.horse_class, '{CLASS_ATHLETE}') = '{CLASS_ATHLETE}'
            AND h.sire IS NOT NULL AND TRIM(h.sire) <> ''
+           -- "Mai partito" vuol dire senza gare: i cavalli recuperati dai
+           -- risultati ufficiali che TrottoWeb non trova hanno gare ma non i
+           -- totali (career_races = 0). Non sono mai partiti: niente voto
+           -- atteso. (Si guardano solo le gare da due anni dopo la nascita,
+           -- per non farsi ingannare da un omonimo piu' anziano.)
+           AND NOT EXISTS (SELECT 1 FROM races g
+                            WHERE g.horse_name = h.name
+                              AND g.race_date >= (h.birth_year + 2) || '-01-01')
            AND NOT EXISTS (SELECT 1 FROM horse_ratings a
                             WHERE a.name = h.name AND a.birth_year = h.birth_year
                               AND a.rating_mode IN ('performance', 'storico'))
