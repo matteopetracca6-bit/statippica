@@ -2165,6 +2165,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "MOON LIGHT BI|2006": {
+   "nome": "MOON LIGHT BI",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-15"
+  },
   "MORIERA AS|2006": {
    "nome": "MORIERA AS",
    "anno": 2006,
@@ -2607,6 +2613,12 @@
    "anno": 2008,
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
+  },
+  "ORTENSIA PIT|2008": {
+   "nome": "ORTENSIA PIT",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-15"
   },
   "OSIRIDE GRIF|2008": {
    "nome": "OSIRIDE GRIF",
@@ -3386,6 +3398,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "STILUS AMNIS|2011": {
+   "nome": "STILUS AMNIS",
+   "anno": 2011,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-15"
+  },
   "SUGAR REY|2011": {
    "nome": "SUGAR REY",
    "anno": 2011,
@@ -3966,5 +3984,5 @@
    "letto_il": "2026-11-06"
   }
  },
- "aggiornato_il": "2026-11-14"
+ "aggiornato_il": "2026-11-15"
 }
