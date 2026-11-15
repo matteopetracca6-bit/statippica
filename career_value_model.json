@@ -22,22 +22,22 @@
     "cumulato_tipico_a_questa_eta": 0.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
-    "residuo_medio": 239,
+    "residuo_medio": 229,
     "residuo_p25": 0,
-    "residuo_p75": 257,
-    "anni_attesi_ancora": 1.1,
+    "residuo_p75": 256,
+    "anni_attesi_ancora": 1.0,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 3,
-      "prob_attivo": 0.781,
+      "prob_attivo": 0.77,
       "guadagno_mediano_anno": 0.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 4,
-      "prob_attivo": 0.257,
+      "prob_attivo": 0.245,
       "guadagno_mediano_anno": 0.0,
       "su_dati_della_fascia": true
      },
@@ -53,16 +53,16 @@
     "cumulato_tipico_a_questa_eta": 0.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
-    "residuo_medio": 51,
+    "residuo_medio": 52,
     "residuo_p25": 0,
-    "residuo_p75": 49,
-    "anni_attesi_ancora": 0.4,
+    "residuo_p75": 52,
+    "anni_attesi_ancora": 0.3,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 4,
-      "prob_attivo": 0.329,
+      "prob_attivo": 0.319,
       "guadagno_mediano_anno": 0.0,
       "su_dati_della_fascia": true
      },
@@ -75,209 +75,179 @@
     ]
    },
    "4": {
-    "cumulato_tipico_a_questa_eta": 170.0,
-    "quota_futura_tipica": 0.338,
-    "residuo_mediano": 87,
-    "residuo_medio": 240,
-    "residuo_p25": 14,
-    "residuo_p75": 197,
+    "cumulato_tipico_a_questa_eta": 131.0,
+    "quota_futura_tipica": 0.0,
+    "residuo_mediano": 0,
+    "residuo_medio": 18,
+    "residuo_p25": 0,
+    "residuo_p75": 11,
     "anni_attesi_ancora": 0.1,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 5,
-      "prob_attivo": 0.081,
+      "prob_attivo": 0.084,
       "guadagno_mediano_anno": 0.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.012,
-      "guadagno_mediano_anno": 3512.0,
-      "su_dati_della_fascia": false
-     },
-     {
-      "eta": 7,
-      "prob_attivo": 0.009,
-      "guadagno_mediano_anno": 3211.0,
-      "su_dati_della_fascia": false
-     },
-     {
-      "eta": 8,
-      "prob_attivo": 0.006,
-      "guadagno_mediano_anno": 2676.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.015,
+      "guadagno_mediano_anno": 0.0,
+      "su_dati_della_fascia": true
      }
     ]
    },
    "5": {
-    "cumulato_tipico_a_questa_eta": 177.0,
-    "quota_futura_tipica": 0.872,
-    "residuo_mediano": 1208,
-    "residuo_medio": 3432,
-    "residuo_p25": 189,
-    "residuo_p75": 2860,
-    "anni_attesi_ancora": 0.4,
+    "cumulato_tipico_a_questa_eta": 170.0,
+    "quota_futura_tipica": 0.084,
+    "residuo_mediano": 16,
+    "residuo_medio": 90,
+    "residuo_p25": 2,
+    "residuo_p75": 66,
+    "anni_attesi_ancora": 0.2,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 6,
-      "prob_attivo": 0.152,
-      "guadagno_mediano_anno": 3512.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.182,
+      "guadagno_mediano_anno": 0.0,
+      "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.107,
-      "guadagno_mediano_anno": 3211.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.032,
+      "guadagno_mediano_anno": 0.0,
+      "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.072,
-      "guadagno_mediano_anno": 2676.0,
-      "su_dati_della_fascia": false
-     },
-     {
-      "eta": 9,
-      "prob_attivo": 0.046,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
-     },
-     {
-      "eta": 10,
-      "prob_attivo": 0.026,
-      "guadagno_mediano_anno": 1856.0,
-      "su_dati_della_fascia": false
-     },
-     {
-      "eta": 11,
-      "prob_attivo": 0.011,
-      "guadagno_mediano_anno": 650.0,
+      "prob_attivo": 0.006,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "6": {
-    "cumulato_tipico_a_questa_eta": 187.0,
-    "quota_futura_tipica": 0.959,
-    "residuo_mediano": 4406,
-    "residuo_medio": 14011,
-    "residuo_p25": 653,
-    "residuo_p75": 10768,
-    "anni_attesi_ancora": 1.7,
+    "cumulato_tipico_a_questa_eta": 170.0,
+    "quota_futura_tipica": 0.465,
+    "residuo_mediano": 148,
+    "residuo_medio": 584,
+    "residuo_p25": 19,
+    "residuo_p75": 416,
+    "anni_attesi_ancora": 0.2,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 7,
-      "prob_attivo": 0.7,
-      "guadagno_mediano_anno": 3211.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.174,
+      "guadagno_mediano_anno": 0.0,
+      "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.469,
-      "guadagno_mediano_anno": 2676.0,
+      "prob_attivo": 0.032,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.303,
+      "prob_attivo": 0.021,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.168,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.012,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.074,
+      "prob_attivo": 0.005,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "7": {
-    "cumulato_tipico_a_questa_eta": 170.0,
-    "quota_futura_tipica": 0.948,
-    "residuo_mediano": 3085,
-    "residuo_medio": 11471,
-    "residuo_p25": 409,
-    "residuo_p75": 8148,
-    "anni_attesi_ancora": 1.5,
+    "cumulato_tipico_a_questa_eta": 129.0,
+    "quota_futura_tipica": 0.868,
+    "residuo_mediano": 849,
+    "residuo_medio": 3161,
+    "residuo_p25": 112,
+    "residuo_p75": 2247,
+    "anni_attesi_ancora": 0.4,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 8,
-      "prob_attivo": 0.671,
-      "guadagno_mediano_anno": 2676.0,
+      "prob_attivo": 0.185,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.433,
+      "prob_attivo": 0.119,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.24,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.066,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.106,
+      "prob_attivo": 0.029,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "8": {
-    "cumulato_tipico_a_questa_eta": 187.0,
-    "quota_futura_tipica": 0.911,
-    "residuo_mediano": 1923,
-    "residuo_medio": 8937,
-    "residuo_p25": 193,
-    "residuo_p75": 6101,
+    "cumulato_tipico_a_questa_eta": 129.0,
+    "quota_futura_tipica": 0.937,
+    "residuo_mediano": 1908,
+    "residuo_medio": 8914,
+    "residuo_p25": 188,
+    "residuo_p75": 6088,
     "anni_attesi_ancora": 1.2,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 9,
-      "prob_attivo": 0.645,
+      "prob_attivo": 0.644,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
       "prob_attivo": 0.358,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.158,
+      "prob_attivo": 0.157,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "9": {
-    "cumulato_tipico_a_questa_eta": 187.0,
-    "quota_futura_tipica": 0.864,
-    "residuo_mediano": 1189,
-    "residuo_medio": 3348,
-    "residuo_p25": 121,
-    "residuo_p75": 3753,
+    "cumulato_tipico_a_questa_eta": 129.0,
+    "quota_futura_tipica": 0.901,
+    "residuo_mediano": 1171,
+    "residuo_medio": 3330,
+    "residuo_p25": 113,
+    "residuo_p75": 3745,
     "anni_attesi_ancora": 0.8,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
@@ -285,38 +255,38 @@
      {
       "eta": 10,
       "prob_attivo": 0.555,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.245,
+      "prob_attivo": 0.243,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "10": {
-    "cumulato_tipico_a_questa_eta": 187.0,
-    "quota_futura_tipica": 0.606,
-    "residuo_mediano": 287,
-    "residuo_medio": 1159,
+    "cumulato_tipico_a_questa_eta": 105.0,
+    "quota_futura_tipica": 0.731,
+    "residuo_mediano": 285,
+    "residuo_medio": 1149,
     "residuo_p25": 0,
-    "residuo_p75": 1727,
+    "residuo_p75": 1713,
     "anni_attesi_ancora": 0.4,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 11,
-      "prob_attivo": 0.442,
+      "prob_attivo": 0.438,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "11": {
-    "cumulato_tipico_a_questa_eta": 194.0,
+    "cumulato_tipico_a_questa_eta": 187.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
     "residuo_medio": 0,
@@ -343,105 +313,74 @@
   "30-40": {
    "2": {
     "cumulato_tipico_a_questa_eta": 476.0,
-    "quota_futura_tipica": 0.772,
-    "residuo_mediano": 1613,
-    "residuo_medio": 2438,
-    "residuo_p25": 536,
-    "residuo_p75": 3620,
+    "quota_futura_tipica": 0.771,
+    "residuo_mediano": 1606,
+    "residuo_medio": 2411,
+    "residuo_p25": 532,
+    "residuo_p75": 3579,
     "anni_attesi_ancora": 1.8,
     "quota_su_dati_della_fascia": 0.99,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 3,
-      "prob_attivo": 0.979,
-      "guadagno_mediano_anno": 1402.0,
+      "prob_attivo": 0.971,
+      "guadagno_mediano_anno": 1394.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 4,
-      "prob_attivo": 0.686,
-      "guadagno_mediano_anno": 323.0,
+      "prob_attivo": 0.671,
+      "guadagno_mediano_anno": 330.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.147,
+      "prob_attivo": 0.139,
       "guadagno_mediano_anno": 0.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.03,
-      "guadagno_mediano_anno": 21.0,
+      "prob_attivo": 0.034,
+      "guadagno_mediano_anno": 207.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.006,
+      "prob_attivo": 0.007,
       "guadagno_mediano_anno": 3211.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "3": {
-    "cumulato_tipico_a_questa_eta": 2159.0,
-    "quota_futura_tipica": 0.102,
-    "residuo_mediano": 245,
-    "residuo_medio": 673,
-    "residuo_p25": 3,
-    "residuo_p75": 951,
+    "cumulato_tipico_a_questa_eta": 2135.0,
+    "quota_futura_tipica": 0.114,
+    "residuo_mediano": 273,
+    "residuo_medio": 741,
+    "residuo_p25": 6,
+    "residuo_p75": 1005,
     "anni_attesi_ancora": 0.9,
-    "quota_su_dati_della_fascia": 0.93,
+    "quota_su_dati_della_fascia": 0.86,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 4,
-      "prob_attivo": 0.701,
-      "guadagno_mediano_anno": 323.0,
+      "prob_attivo": 0.691,
+      "guadagno_mediano_anno": 330.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.15,
+      "prob_attivo": 0.143,
       "guadagno_mediano_anno": 0.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.031,
-      "guadagno_mediano_anno": 21.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 7,
-      "prob_attivo": 0.006,
-      "guadagno_mediano_anno": 3211.0,
-      "su_dati_della_fascia": false
-     }
-    ]
-   },
-   "4": {
-    "cumulato_tipico_a_questa_eta": 2751.0,
-    "quota_futura_tipica": 0.015,
-    "residuo_mediano": 42,
-    "residuo_medio": 211,
-    "residuo_p25": 7,
-    "residuo_p75": 175,
-    "anni_attesi_ancora": 0.3,
-    "quota_su_dati_della_fascia": 0.02,
-    "stima_solida": false,
-    "prossimi_anni": [
-     {
-      "eta": 5,
-      "prob_attivo": 0.214,
-      "guadagno_mediano_anno": 0.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 6,
-      "prob_attivo": 0.044,
-      "guadagno_mediano_anno": 21.0,
+      "prob_attivo": 0.035,
+      "guadagno_mediano_anno": 207.0,
       "su_dati_della_fascia": true
      },
      {
@@ -453,172 +392,215 @@
      {
       "eta": 8,
       "prob_attivo": 0.005,
-      "guadagno_mediano_anno": 2676.0,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      }
     ]
    },
-   "5": {
-    "cumulato_tipico_a_questa_eta": 2808.0,
-    "quota_futura_tipica": 0.079,
-    "residuo_mediano": 242,
-    "residuo_medio": 855,
-    "residuo_p25": 36,
-    "residuo_p75": 669,
+   "4": {
+    "cumulato_tipico_a_questa_eta": 2687.0,
+    "quota_futura_tipica": 0.024,
+    "residuo_mediano": 66,
+    "residuo_medio": 283,
+    "residuo_p25": 9,
+    "residuo_p75": 228,
     "anni_attesi_ancora": 0.3,
-    "quota_su_dati_della_fascia": 0.02,
+    "quota_su_dati_della_fascia": 0.16,
     "stima_solida": false,
     "prossimi_anni": [
      {
+      "eta": 5,
+      "prob_attivo": 0.207,
+      "guadagno_mediano_anno": 0.0,
+      "su_dati_della_fascia": true
+     },
+     {
       "eta": 6,
-      "prob_attivo": 0.206,
-      "guadagno_mediano_anno": 21.0,
+      "prob_attivo": 0.05,
+      "guadagno_mediano_anno": 207.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.038,
+      "prob_attivo": 0.011,
       "guadagno_mediano_anno": 3211.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 8,
-      "prob_attivo": 0.026,
-      "guadagno_mediano_anno": 2676.0,
+      "prob_attivo": 0.007,
+      "guadagno_mediano_anno": 2675.0,
+      "su_dati_della_fascia": false
+     }
+    ]
+   },
+   "5": {
+    "cumulato_tipico_a_questa_eta": 2737.0,
+    "quota_futura_tipica": 0.123,
+    "residuo_mediano": 385,
+    "residuo_medio": 1237,
+    "residuo_p25": 50,
+    "residuo_p75": 1001,
+    "anni_attesi_ancora": 0.4,
+    "quota_su_dati_della_fascia": 0.13,
+    "stima_solida": false,
+    "prossimi_anni": [
+     {
+      "eta": 6,
+      "prob_attivo": 0.243,
+      "guadagno_mediano_anno": 207.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 7,
+      "prob_attivo": 0.053,
+      "guadagno_mediano_anno": 3211.0,
+      "su_dati_della_fascia": false
+     },
+     {
+      "eta": 8,
+      "prob_attivo": 0.036,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.017,
+      "prob_attivo": 0.023,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.009,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.013,
+      "guadagno_mediano_anno": 1825.0,
+      "su_dati_della_fascia": false
+     },
+     {
+      "eta": 11,
+      "prob_attivo": 0.006,
+      "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "6": {
-    "cumulato_tipico_a_questa_eta": 2812.0,
-    "quota_futura_tipica": 0.293,
-    "residuo_mediano": 1166,
-    "residuo_medio": 3708,
-    "residuo_p25": 173,
-    "residuo_p75": 2850,
+    "cumulato_tipico_a_questa_eta": 2771.0,
+    "quota_futura_tipica": 0.332,
+    "residuo_mediano": 1380,
+    "residuo_medio": 4388,
+    "residuo_p25": 204,
+    "residuo_p75": 3375,
     "anni_attesi_ancora": 0.5,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 7,
-      "prob_attivo": 0.185,
+      "prob_attivo": 0.22,
       "guadagno_mediano_anno": 3211.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 8,
-      "prob_attivo": 0.124,
-      "guadagno_mediano_anno": 2676.0,
+      "prob_attivo": 0.147,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.08,
+      "prob_attivo": 0.095,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.044,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.053,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.02,
+      "prob_attivo": 0.023,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "7": {
-    "cumulato_tipico_a_questa_eta": 2805.0,
-    "quota_futura_tipica": 0.524,
-    "residuo_mediano": 3085,
-    "residuo_medio": 11471,
-    "residuo_p25": 409,
-    "residuo_p75": 8148,
-    "anni_attesi_ancora": 1.5,
+    "cumulato_tipico_a_questa_eta": 2747.0,
+    "quota_futura_tipica": 0.528,
+    "residuo_mediano": 3074,
+    "residuo_medio": 11448,
+    "residuo_p25": 405,
+    "residuo_p75": 8137,
+    "anni_attesi_ancora": 1.4,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 8,
       "prob_attivo": 0.671,
-      "guadagno_mediano_anno": 2676.0,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.433,
+      "prob_attivo": 0.432,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
       "prob_attivo": 0.24,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.106,
+      "prob_attivo": 0.105,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "8": {
-    "cumulato_tipico_a_questa_eta": 2820.0,
-    "quota_futura_tipica": 0.405,
-    "residuo_mediano": 1923,
-    "residuo_medio": 8937,
-    "residuo_p25": 193,
-    "residuo_p75": 6101,
+    "cumulato_tipico_a_questa_eta": 2720.0,
+    "quota_futura_tipica": 0.412,
+    "residuo_mediano": 1908,
+    "residuo_medio": 8914,
+    "residuo_p25": 188,
+    "residuo_p75": 6088,
     "anni_attesi_ancora": 1.2,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 9,
-      "prob_attivo": 0.645,
+      "prob_attivo": 0.644,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
       "prob_attivo": 0.358,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.158,
+      "prob_attivo": 0.157,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "9": {
-    "cumulato_tipico_a_questa_eta": 2861.0,
+    "cumulato_tipico_a_questa_eta": 2809.0,
     "quota_futura_tipica": 0.294,
-    "residuo_mediano": 1189,
-    "residuo_medio": 3348,
-    "residuo_p25": 121,
-    "residuo_p75": 3753,
+    "residuo_mediano": 1171,
+    "residuo_medio": 3330,
+    "residuo_p25": 113,
+    "residuo_p75": 3745,
     "anni_attesi_ancora": 0.8,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
@@ -626,38 +608,38 @@
      {
       "eta": 10,
       "prob_attivo": 0.555,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.245,
+      "prob_attivo": 0.243,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "10": {
-    "cumulato_tipico_a_questa_eta": 2866.0,
-    "quota_futura_tipica": 0.091,
-    "residuo_mediano": 287,
-    "residuo_medio": 1159,
+    "cumulato_tipico_a_questa_eta": 2788.0,
+    "quota_futura_tipica": 0.093,
+    "residuo_mediano": 285,
+    "residuo_medio": 1149,
     "residuo_p25": 0,
-    "residuo_p75": 1727,
+    "residuo_p75": 1713,
     "anni_attesi_ancora": 0.4,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 11,
-      "prob_attivo": 0.442,
+      "prob_attivo": 0.438,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "11": {
-    "cumulato_tipico_a_questa_eta": 3048.0,
+    "cumulato_tipico_a_questa_eta": 2807.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
     "residuo_medio": 0,
@@ -683,319 +665,307 @@
   },
   "40-50": {
    "2": {
-    "cumulato_tipico_a_questa_eta": 1003.0,
-    "quota_futura_tipica": 0.812,
-    "residuo_mediano": 4326,
-    "residuo_medio": 5772,
-    "residuo_p25": 1414,
-    "residuo_p75": 8293,
-    "anni_attesi_ancora": 2.3,
-    "quota_su_dati_della_fascia": 1.0,
-    "stima_solida": true,
-    "prossimi_anni": [
-     {
-      "eta": 3,
-      "prob_attivo": 0.963,
-      "guadagno_mediano_anno": 3250.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 4,
-      "prob_attivo": 0.797,
-      "guadagno_mediano_anno": 1368.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 5,
-      "prob_attivo": 0.341,
-      "guadagno_mediano_anno": 105.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 6,
-      "prob_attivo": 0.103,
-      "guadagno_mediano_anno": 229.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 7,
-      "prob_attivo": 0.041,
-      "guadagno_mediano_anno": 580.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 8,
-      "prob_attivo": 0.015,
-      "guadagno_mediano_anno": 734.0,
-      "su_dati_della_fascia": true
-     }
-    ]
-   },
-   "3": {
-    "cumulato_tipico_a_questa_eta": 4532.0,
-    "quota_futura_tipica": 0.216,
-    "residuo_mediano": 1249,
-    "residuo_medio": 2495,
-    "residuo_p25": 197,
-    "residuo_p75": 3448,
-    "anni_attesi_ancora": 1.4,
+    "cumulato_tipico_a_questa_eta": 986.0,
+    "quota_futura_tipica": 0.822,
+    "residuo_mediano": 4558,
+    "residuo_medio": 5600,
+    "residuo_p25": 1677,
+    "residuo_p75": 8111,
+    "anni_attesi_ancora": 2.4,
     "quota_su_dati_della_fascia": 0.99,
     "stima_solida": true,
     "prossimi_anni": [
      {
+      "eta": 3,
+      "prob_attivo": 0.99,
+      "guadagno_mediano_anno": 3383.0,
+      "su_dati_della_fascia": true
+     },
+     {
       "eta": 4,
-      "prob_attivo": 0.827,
-      "guadagno_mediano_anno": 1368.0,
+      "prob_attivo": 0.86,
+      "guadagno_mediano_anno": 1311.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.354,
-      "guadagno_mediano_anno": 105.0,
+      "prob_attivo": 0.371,
+      "guadagno_mediano_anno": 59.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.107,
-      "guadagno_mediano_anno": 229.0,
+      "prob_attivo": 0.091,
+      "guadagno_mediano_anno": 143.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.042,
-      "guadagno_mediano_anno": 580.0,
+      "prob_attivo": 0.026,
+      "guadagno_mediano_anno": 394.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.016,
-      "guadagno_mediano_anno": 734.0,
+      "prob_attivo": 0.009,
+      "guadagno_mediano_anno": 2675.0,
+      "su_dati_della_fascia": false
+     }
+    ]
+   },
+   "3": {
+    "cumulato_tipico_a_questa_eta": 4712.0,
+    "quota_futura_tipica": 0.206,
+    "residuo_mediano": 1219,
+    "residuo_medio": 2087,
+    "residuo_p25": 226,
+    "residuo_p75": 3081,
+    "anni_attesi_ancora": 1.4,
+    "quota_su_dati_della_fascia": 0.97,
+    "stima_solida": true,
+    "prossimi_anni": [
+     {
+      "eta": 4,
+      "prob_attivo": 0.869,
+      "guadagno_mediano_anno": 1311.0,
       "su_dati_della_fascia": true
      },
      {
-      "eta": 9,
-      "prob_attivo": 0.009,
-      "guadagno_mediano_anno": 1212.0,
+      "eta": 5,
+      "prob_attivo": 0.375,
+      "guadagno_mediano_anno": 59.0,
       "su_dati_della_fascia": true
+     },
+     {
+      "eta": 6,
+      "prob_attivo": 0.092,
+      "guadagno_mediano_anno": 143.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 7,
+      "prob_attivo": 0.026,
+      "guadagno_mediano_anno": 394.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 8,
+      "prob_attivo": 0.009,
+      "guadagno_mediano_anno": 2675.0,
+      "su_dati_della_fascia": false
+     },
+     {
+      "eta": 9,
+      "prob_attivo": 0.006,
+      "guadagno_mediano_anno": 1790.0,
+      "su_dati_della_fascia": false
      }
     ]
    },
    "4": {
-    "cumulato_tipico_a_questa_eta": 6298.0,
-    "quota_futura_tipica": 0.022,
-    "residuo_mediano": 143,
-    "residuo_medio": 866,
-    "residuo_p25": 3,
-    "residuo_p75": 906,
+    "cumulato_tipico_a_questa_eta": 6536.0,
+    "quota_futura_tipica": 0.014,
+    "residuo_mediano": 92,
+    "residuo_medio": 477,
+    "residuo_p25": 5,
+    "residuo_p75": 451,
     "anni_attesi_ancora": 0.6,
-    "quota_su_dati_della_fascia": 0.92,
-    "stima_solida": true,
+    "quota_su_dati_della_fascia": 0.57,
+    "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 5,
-      "prob_attivo": 0.428,
-      "guadagno_mediano_anno": 105.0,
+      "prob_attivo": 0.432,
+      "guadagno_mediano_anno": 59.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.13,
-      "guadagno_mediano_anno": 229.0,
+      "prob_attivo": 0.106,
+      "guadagno_mediano_anno": 143.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.051,
-      "guadagno_mediano_anno": 580.0,
+      "prob_attivo": 0.03,
+      "guadagno_mediano_anno": 394.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.019,
-      "guadagno_mediano_anno": 734.0,
-      "su_dati_della_fascia": true
+      "prob_attivo": 0.01,
+      "guadagno_mediano_anno": 2675.0,
+      "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.011,
-      "guadagno_mediano_anno": 1212.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 10,
-      "prob_attivo": 0.006,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.007,
+      "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "5": {
-    "cumulato_tipico_a_questa_eta": 6486.0,
-    "quota_futura_tipica": 0.035,
-    "residuo_mediano": 233,
-    "residuo_medio": 1262,
-    "residuo_p25": 7,
-    "residuo_p75": 1346,
-    "anni_attesi_ancora": 0.5,
-    "quota_su_dati_della_fascia": 0.87,
-    "stima_solida": true,
+    "cumulato_tipico_a_questa_eta": 6793.0,
+    "quota_futura_tipica": 0.024,
+    "residuo_mediano": 170,
+    "residuo_medio": 671,
+    "residuo_p25": 14,
+    "residuo_p75": 607,
+    "anni_attesi_ancora": 0.4,
+    "quota_su_dati_della_fascia": 0.37,
+    "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 6,
-      "prob_attivo": 0.303,
-      "guadagno_mediano_anno": 229.0,
+      "prob_attivo": 0.246,
+      "guadagno_mediano_anno": 143.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.119,
-      "guadagno_mediano_anno": 580.0,
+      "prob_attivo": 0.069,
+      "guadagno_mediano_anno": 394.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.045,
-      "guadagno_mediano_anno": 734.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 9,
-      "prob_attivo": 0.026,
-      "guadagno_mediano_anno": 1212.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 10,
-      "prob_attivo": 0.014,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.024,
+      "guadagno_mediano_anno": 2675.0,
       "su_dati_della_fascia": false
      },
      {
-      "eta": 11,
-      "prob_attivo": 0.006,
-      "guadagno_mediano_anno": 650.0,
+      "eta": 9,
+      "prob_attivo": 0.015,
+      "guadagno_mediano_anno": 1790.0,
+      "su_dati_della_fascia": false
+     },
+     {
+      "eta": 10,
+      "prob_attivo": 0.009,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "6": {
-    "cumulato_tipico_a_questa_eta": 6619.0,
-    "quota_futura_tipica": 0.076,
-    "residuo_mediano": 541,
-    "residuo_medio": 2194,
-    "residuo_p25": 24,
-    "residuo_p75": 2488,
-    "anni_attesi_ancora": 0.7,
-    "quota_su_dati_della_fascia": 0.81,
-    "stima_solida": true,
+    "cumulato_tipico_a_questa_eta": 6863.0,
+    "quota_futura_tipica": 0.075,
+    "residuo_mediano": 557,
+    "residuo_medio": 1958,
+    "residuo_p25": 59,
+    "residuo_p75": 1687,
+    "anni_attesi_ancora": 0.5,
+    "quota_su_dati_della_fascia": 0.2,
+    "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 7,
-      "prob_attivo": 0.392,
-      "guadagno_mediano_anno": 580.0,
+      "prob_attivo": 0.281,
+      "guadagno_mediano_anno": 394.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.149,
-      "guadagno_mediano_anno": 734.0,
-      "su_dati_della_fascia": true
+      "prob_attivo": 0.097,
+      "guadagno_mediano_anno": 2675.0,
+      "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.085,
-      "guadagno_mediano_anno": 1212.0,
-      "su_dati_della_fascia": true
+      "prob_attivo": 0.063,
+      "guadagno_mediano_anno": 1790.0,
+      "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.047,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.035,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.021,
+      "prob_attivo": 0.015,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "7": {
-    "cumulato_tipico_a_questa_eta": 6624.0,
-    "quota_futura_tipica": 0.108,
-    "residuo_mediano": 799,
-    "residuo_medio": 2626,
-    "residuo_p25": 60,
-    "residuo_p75": 3229,
-    "anni_attesi_ancora": 0.8,
-    "quota_su_dati_della_fascia": 0.68,
-    "stima_solida": true,
+    "cumulato_tipico_a_questa_eta": 6892.0,
+    "quota_futura_tipica": 0.187,
+    "residuo_mediano": 1587,
+    "residuo_medio": 5909,
+    "residuo_p25": 209,
+    "residuo_p75": 4200,
+    "anni_attesi_ancora": 0.7,
+    "quota_su_dati_della_fascia": 0.0,
+    "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 8,
-      "prob_attivo": 0.379,
-      "guadagno_mediano_anno": 734.0,
-      "su_dati_della_fascia": true
+      "prob_attivo": 0.346,
+      "guadagno_mediano_anno": 2675.0,
+      "su_dati_della_fascia": false
      },
      {
       "eta": 9,
-      "prob_attivo": 0.217,
-      "guadagno_mediano_anno": 1212.0,
-      "su_dati_della_fascia": true
+      "prob_attivo": 0.223,
+      "guadagno_mediano_anno": 1790.0,
+      "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.12,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.124,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.053,
+      "prob_attivo": 0.054,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "8": {
-    "cumulato_tipico_a_questa_eta": 6618.0,
-    "quota_futura_tipica": 0.172,
-    "residuo_mediano": 1372,
-    "residuo_medio": 3815,
-    "residuo_p25": 158,
-    "residuo_p75": 4255,
-    "anni_attesi_ancora": 1.0,
-    "quota_su_dati_della_fascia": 0.5,
+    "cumulato_tipico_a_questa_eta": 6888.0,
+    "quota_futura_tipica": 0.217,
+    "residuo_mediano": 1908,
+    "residuo_medio": 8914,
+    "residuo_p25": 188,
+    "residuo_p75": 6088,
+    "anni_attesi_ancora": 1.2,
+    "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 9,
-      "prob_attivo": 0.571,
-      "guadagno_mediano_anno": 1212.0,
-      "su_dati_della_fascia": true
+      "prob_attivo": 0.644,
+      "guadagno_mediano_anno": 1790.0,
+      "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.317,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.358,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.14,
+      "prob_attivo": 0.157,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "9": {
-    "cumulato_tipico_a_questa_eta": 6686.0,
-    "quota_futura_tipica": 0.151,
-    "residuo_mediano": 1189,
-    "residuo_medio": 3348,
-    "residuo_p25": 121,
-    "residuo_p75": 3753,
+    "cumulato_tipico_a_questa_eta": 7009.0,
+    "quota_futura_tipica": 0.143,
+    "residuo_mediano": 1171,
+    "residuo_medio": 3330,
+    "residuo_p25": 113,
+    "residuo_p75": 3745,
     "anni_attesi_ancora": 0.8,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
@@ -1003,38 +973,38 @@
      {
       "eta": 10,
       "prob_attivo": 0.555,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.245,
+      "prob_attivo": 0.243,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "10": {
-    "cumulato_tipico_a_questa_eta": 6840.0,
-    "quota_futura_tipica": 0.04,
-    "residuo_mediano": 287,
-    "residuo_medio": 1159,
+    "cumulato_tipico_a_questa_eta": 7252.0,
+    "quota_futura_tipica": 0.038,
+    "residuo_mediano": 285,
+    "residuo_medio": 1149,
     "residuo_p25": 0,
-    "residuo_p75": 1727,
+    "residuo_p75": 1713,
     "anni_attesi_ancora": 0.4,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 11,
-      "prob_attivo": 0.442,
+      "prob_attivo": 0.438,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "11": {
-    "cumulato_tipico_a_questa_eta": 7078.0,
+    "cumulato_tipico_a_questa_eta": 7625.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
     "residuo_medio": 0,
@@ -1062,134 +1032,91 @@
    "2": {
     "cumulato_tipico_a_questa_eta": 1683.0,
     "quota_futura_tipica": 0.848,
-    "residuo_mediano": 9409,
-    "residuo_medio": 11198,
-    "residuo_p25": 4490,
-    "residuo_p75": 15829,
+    "residuo_mediano": 9419,
+    "residuo_medio": 11329,
+    "residuo_p25": 4605,
+    "residuo_p75": 15816,
     "anni_attesi_ancora": 3.0,
     "quota_su_dati_della_fascia": 0.99,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 3,
-      "prob_attivo": 0.992,
-      "guadagno_mediano_anno": 5556.0,
+      "prob_attivo": 0.999,
+      "guadagno_mediano_anno": 5559.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 4,
-      "prob_attivo": 0.939,
-      "guadagno_mediano_anno": 3567.0,
+      "prob_attivo": 0.959,
+      "guadagno_mediano_anno": 3485.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.659,
-      "guadagno_mediano_anno": 644.0,
+      "prob_attivo": 0.665,
+      "guadagno_mediano_anno": 581.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.275,
-      "guadagno_mediano_anno": 238.0,
+      "prob_attivo": 0.274,
+      "guadagno_mediano_anno": 248.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.083,
-      "guadagno_mediano_anno": 156.0,
+      "prob_attivo": 0.094,
+      "guadagno_mediano_anno": 177.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.026,
-      "guadagno_mediano_anno": 0.0,
+      "prob_attivo": 0.028,
+      "guadagno_mediano_anno": 100.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "3": {
     "cumulato_tipico_a_questa_eta": 7347.0,
-    "quota_futura_tipica": 0.349,
-    "residuo_mediano": 3933,
-    "residuo_medio": 5339,
-    "residuo_p25": 1414,
-    "residuo_p75": 7538,
-    "anni_attesi_ancora": 2.0,
+    "quota_futura_tipica": 0.345,
+    "residuo_mediano": 3874,
+    "residuo_medio": 5379,
+    "residuo_p25": 1433,
+    "residuo_p75": 7510,
+    "anni_attesi_ancora": 2.1,
     "quota_su_dati_della_fascia": 0.99,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 4,
-      "prob_attivo": 0.947,
-      "guadagno_mediano_anno": 3567.0,
+      "prob_attivo": 0.961,
+      "guadagno_mediano_anno": 3485.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.665,
-      "guadagno_mediano_anno": 644.0,
+      "prob_attivo": 0.666,
+      "guadagno_mediano_anno": 581.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.277,
-      "guadagno_mediano_anno": 238.0,
+      "prob_attivo": 0.275,
+      "guadagno_mediano_anno": 248.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.084,
-      "guadagno_mediano_anno": 156.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 8,
-      "prob_attivo": 0.026,
-      "guadagno_mediano_anno": 0.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 9,
-      "prob_attivo": 0.017,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
-     }
-    ]
-   },
-   "4": {
-    "cumulato_tipico_a_questa_eta": 11534.0,
-    "quota_futura_tipica": 0.048,
-    "residuo_mediano": 586,
-    "residuo_medio": 1512,
-    "residuo_p25": 5,
-    "residuo_p75": 1891,
-    "anni_attesi_ancora": 1.1,
-    "quota_su_dati_della_fascia": 0.91,
-    "stima_solida": true,
-    "prossimi_anni": [
-     {
-      "eta": 5,
-      "prob_attivo": 0.702,
-      "guadagno_mediano_anno": 644.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 6,
-      "prob_attivo": 0.292,
-      "guadagno_mediano_anno": 238.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 7,
-      "prob_attivo": 0.089,
-      "guadagno_mediano_anno": 156.0,
+      "prob_attivo": 0.094,
+      "guadagno_mediano_anno": 177.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
       "prob_attivo": 0.028,
-      "guadagno_mediano_anno": 0.0,
+      "guadagno_mediano_anno": 100.0,
       "su_dati_della_fascia": true
      },
      {
@@ -1197,182 +1124,225 @@
       "prob_attivo": 0.018,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
-     },
-     {
-      "eta": 10,
-      "prob_attivo": 0.01,
-      "guadagno_mediano_anno": 1856.0,
-      "su_dati_della_fascia": false
      }
     ]
    },
-   "5": {
-    "cumulato_tipico_a_questa_eta": 12599.0,
-    "quota_futura_tipica": 0.015,
-    "residuo_mediano": 195,
-    "residuo_medio": 838,
-    "residuo_p25": 8,
-    "residuo_p75": 830,
-    "anni_attesi_ancora": 0.6,
-    "quota_su_dati_della_fascia": 0.61,
+   "4": {
+    "cumulato_tipico_a_questa_eta": 11489.0,
+    "quota_futura_tipica": 0.045,
+    "residuo_mediano": 546,
+    "residuo_medio": 1565,
+    "residuo_p25": 5,
+    "residuo_p75": 1899,
+    "anni_attesi_ancora": 1.1,
+    "quota_su_dati_della_fascia": 0.9,
     "stima_solida": true,
     "prossimi_anni": [
      {
+      "eta": 5,
+      "prob_attivo": 0.693,
+      "guadagno_mediano_anno": 581.0,
+      "su_dati_della_fascia": true
+     },
+     {
       "eta": 6,
-      "prob_attivo": 0.416,
-      "guadagno_mediano_anno": 238.0,
+      "prob_attivo": 0.286,
+      "guadagno_mediano_anno": 248.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.126,
-      "guadagno_mediano_anno": 156.0,
+      "prob_attivo": 0.098,
+      "guadagno_mediano_anno": 177.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.039,
-      "guadagno_mediano_anno": 0.0,
+      "prob_attivo": 0.029,
+      "guadagno_mediano_anno": 100.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.025,
+      "prob_attivo": 0.019,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.014,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.01,
+      "guadagno_mediano_anno": 1825.0,
+      "su_dati_della_fascia": false
+     }
+    ]
+   },
+   "5": {
+    "cumulato_tipico_a_questa_eta": 12520.0,
+    "quota_futura_tipica": 0.017,
+    "residuo_mediano": 212,
+    "residuo_medio": 1034,
+    "residuo_p25": 8,
+    "residuo_p75": 974,
+    "anni_attesi_ancora": 0.6,
+    "quota_su_dati_della_fascia": 0.62,
+    "stima_solida": true,
+    "prossimi_anni": [
+     {
+      "eta": 6,
+      "prob_attivo": 0.412,
+      "guadagno_mediano_anno": 248.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 7,
+      "prob_attivo": 0.142,
+      "guadagno_mediano_anno": 177.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 8,
+      "prob_attivo": 0.042,
+      "guadagno_mediano_anno": 100.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 9,
+      "prob_attivo": 0.027,
+      "guadagno_mediano_anno": 1790.0,
+      "su_dati_della_fascia": false
+     },
+     {
+      "eta": 10,
+      "prob_attivo": 0.015,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.006,
+      "prob_attivo": 0.007,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "6": {
-    "cumulato_tipico_a_questa_eta": 12988.0,
-    "quota_futura_tipica": 0.017,
-    "residuo_mediano": 229,
-    "residuo_medio": 1123,
-    "residuo_p25": 18,
-    "residuo_p75": 871,
-    "anni_attesi_ancora": 0.5,
-    "quota_su_dati_della_fascia": 0.21,
+    "cumulato_tipico_a_questa_eta": 12842.0,
+    "quota_futura_tipica": 0.02,
+    "residuo_mediano": 265,
+    "residuo_medio": 1451,
+    "residuo_p25": 19,
+    "residuo_p75": 1138,
+    "anni_attesi_ancora": 0.6,
+    "quota_su_dati_della_fascia": 0.27,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 7,
-      "prob_attivo": 0.303,
-      "guadagno_mediano_anno": 156.0,
+      "prob_attivo": 0.344,
+      "guadagno_mediano_anno": 177.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.095,
-      "guadagno_mediano_anno": 0.0,
+      "prob_attivo": 0.102,
+      "guadagno_mediano_anno": 100.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.061,
+      "prob_attivo": 0.065,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.034,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.036,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.015,
+      "prob_attivo": 0.016,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "7": {
-    "cumulato_tipico_a_questa_eta": 13139.0,
+    "cumulato_tipico_a_questa_eta": 13054.0,
     "quota_futura_tipica": 0.044,
-    "residuo_mediano": 601,
-    "residuo_medio": 2898,
-    "residuo_p25": 60,
-    "residuo_p75": 1945,
-    "anni_attesi_ancora": 0.7,
-    "quota_su_dati_della_fascia": 0.0,
+    "residuo_mediano": 594,
+    "residuo_medio": 2974,
+    "residuo_p25": 56,
+    "residuo_p75": 2195,
+    "anni_attesi_ancora": 0.6,
+    "quota_su_dati_della_fascia": 0.05,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 8,
-      "prob_attivo": 0.312,
-      "guadagno_mediano_anno": 0.0,
+      "prob_attivo": 0.296,
+      "guadagno_mediano_anno": 100.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.202,
+      "prob_attivo": 0.191,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.112,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.106,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.049,
+      "prob_attivo": 0.046,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "8": {
-    "cumulato_tipico_a_questa_eta": 13362.0,
+    "cumulato_tipico_a_questa_eta": 13250.0,
     "quota_futura_tipica": 0.126,
-    "residuo_mediano": 1923,
-    "residuo_medio": 8937,
-    "residuo_p25": 193,
-    "residuo_p75": 6101,
+    "residuo_mediano": 1908,
+    "residuo_medio": 8914,
+    "residuo_p25": 188,
+    "residuo_p75": 6088,
     "anni_attesi_ancora": 1.2,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 9,
-      "prob_attivo": 0.645,
+      "prob_attivo": 0.644,
       "guadagno_mediano_anno": 1790.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 10,
       "prob_attivo": 0.358,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.158,
+      "prob_attivo": 0.157,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "9": {
-    "cumulato_tipico_a_questa_eta": 13617.0,
+    "cumulato_tipico_a_questa_eta": 13490.0,
     "quota_futura_tipica": 0.08,
-    "residuo_mediano": 1189,
-    "residuo_medio": 3348,
-    "residuo_p25": 121,
-    "residuo_p75": 3753,
+    "residuo_mediano": 1171,
+    "residuo_medio": 3330,
+    "residuo_p25": 113,
+    "residuo_p75": 3745,
     "anni_attesi_ancora": 0.8,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
@@ -1380,38 +1350,38 @@
      {
       "eta": 10,
       "prob_attivo": 0.555,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.245,
+      "prob_attivo": 0.243,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "10": {
-    "cumulato_tipico_a_questa_eta": 13744.0,
+    "cumulato_tipico_a_questa_eta": 13636.0,
     "quota_futura_tipica": 0.02,
-    "residuo_mediano": 287,
-    "residuo_medio": 1159,
+    "residuo_mediano": 285,
+    "residuo_medio": 1149,
     "residuo_p25": 0,
-    "residuo_p75": 1727,
+    "residuo_p75": 1713,
     "anni_attesi_ancora": 0.4,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 11,
-      "prob_attivo": 0.442,
+      "prob_attivo": 0.438,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "11": {
-    "cumulato_tipico_a_questa_eta": 13958.0,
+    "cumulato_tipico_a_questa_eta": 13430.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
     "residuo_medio": 0,
@@ -1437,61 +1407,61 @@
   },
   "60-70": {
    "2": {
-    "cumulato_tipico_a_questa_eta": 2890.0,
-    "quota_futura_tipica": 0.862,
-    "residuo_mediano": 18068,
-    "residuo_medio": 21074,
-    "residuo_p25": 9689,
-    "residuo_p75": 28719,
+    "cumulato_tipico_a_questa_eta": 2878.0,
+    "quota_futura_tipica": 0.861,
+    "residuo_mediano": 17862,
+    "residuo_medio": 20773,
+    "residuo_p25": 9496,
+    "residuo_p75": 28472,
     "anni_attesi_ancora": 4.0,
-    "quota_su_dati_della_fascia": 0.99,
+    "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 3,
       "prob_attivo": 0.999,
-      "guadagno_mediano_anno": 8092.0,
+      "guadagno_mediano_anno": 8022.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 4,
       "prob_attivo": 0.987,
-      "guadagno_mediano_anno": 6635.0,
+      "guadagno_mediano_anno": 6565.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.886,
-      "guadagno_mediano_anno": 2841.0,
+      "prob_attivo": 0.885,
+      "guadagno_mediano_anno": 2764.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.616,
-      "guadagno_mediano_anno": 1110.0,
+      "prob_attivo": 0.611,
+      "guadagno_mediano_anno": 1088.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.313,
-      "guadagno_mediano_anno": 372.0,
+      "prob_attivo": 0.309,
+      "guadagno_mediano_anno": 393.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.126,
-      "guadagno_mediano_anno": 143.0,
+      "prob_attivo": 0.13,
+      "guadagno_mediano_anno": 158.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "3": {
-    "cumulato_tipico_a_questa_eta": 10557.0,
+    "cumulato_tipico_a_questa_eta": 10430.0,
     "quota_futura_tipica": 0.486,
-    "residuo_mediano": 10002,
-    "residuo_medio": 12448,
-    "residuo_p25": 4776,
-    "residuo_p75": 17176,
+    "residuo_mediano": 9865,
+    "residuo_medio": 12281,
+    "residuo_p25": 4694,
+    "residuo_p75": 17076,
     "anni_attesi_ancora": 3.0,
     "quota_su_dati_della_fascia": 0.99,
     "stima_solida": true,
@@ -1499,257 +1469,257 @@
      {
       "eta": 4,
       "prob_attivo": 0.988,
-      "guadagno_mediano_anno": 6635.0,
+      "guadagno_mediano_anno": 6565.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.887,
-      "guadagno_mediano_anno": 2841.0,
+      "prob_attivo": 0.886,
+      "guadagno_mediano_anno": 2764.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.617,
-      "guadagno_mediano_anno": 1110.0,
+      "prob_attivo": 0.612,
+      "guadagno_mediano_anno": 1088.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 7,
+      "prob_attivo": 0.31,
+      "guadagno_mediano_anno": 393.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 8,
+      "prob_attivo": 0.13,
+      "guadagno_mediano_anno": 158.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 9,
+      "prob_attivo": 0.045,
+      "guadagno_mediano_anno": 1527.0,
+      "su_dati_della_fascia": true
+     }
+    ]
+   },
+   "4": {
+    "cumulato_tipico_a_questa_eta": 17153.0,
+    "quota_futura_tipica": 0.166,
+    "residuo_mediano": 3419,
+    "residuo_medio": 5193,
+    "residuo_p25": 900,
+    "residuo_p75": 7527,
+    "anni_attesi_ancora": 2.0,
+    "quota_su_dati_della_fascia": 0.98,
+    "stima_solida": true,
+    "prossimi_anni": [
+     {
+      "eta": 5,
+      "prob_attivo": 0.896,
+      "guadagno_mediano_anno": 2764.0,
+      "su_dati_della_fascia": true
+     },
+     {
+      "eta": 6,
+      "prob_attivo": 0.619,
+      "guadagno_mediano_anno": 1088.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
       "prob_attivo": 0.313,
-      "guadagno_mediano_anno": 372.0,
+      "guadagno_mediano_anno": 393.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.126,
-      "guadagno_mediano_anno": 143.0,
+      "prob_attivo": 0.132,
+      "guadagno_mediano_anno": 158.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.035,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
-     }
-    ]
-   },
-   "4": {
-    "cumulato_tipico_a_questa_eta": 17238.0,
-    "quota_futura_tipica": 0.168,
-    "residuo_mediano": 3484,
-    "residuo_medio": 5368,
-    "residuo_p25": 936,
-    "residuo_p75": 7553,
-    "anni_attesi_ancora": 2.0,
-    "quota_su_dati_della_fascia": 0.97,
-    "stima_solida": true,
-    "prossimi_anni": [
-     {
-      "eta": 5,
-      "prob_attivo": 0.897,
-      "guadagno_mediano_anno": 2841.0,
+      "prob_attivo": 0.046,
+      "guadagno_mediano_anno": 1527.0,
       "su_dati_della_fascia": true
-     },
-     {
-      "eta": 6,
-      "prob_attivo": 0.624,
-      "guadagno_mediano_anno": 1110.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 7,
-      "prob_attivo": 0.317,
-      "guadagno_mediano_anno": 372.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 8,
-      "prob_attivo": 0.128,
-      "guadagno_mediano_anno": 143.0,
-      "su_dati_della_fascia": true
-     },
-     {
-      "eta": 9,
-      "prob_attivo": 0.035,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
      },
      {
       "eta": 10,
-      "prob_attivo": 0.02,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.025,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "5": {
-    "cumulato_tipico_a_questa_eta": 20792.0,
-    "quota_futura_tipica": 0.048,
-    "residuo_mediano": 1041,
-    "residuo_medio": 2459,
-    "residuo_p25": 105,
-    "residuo_p75": 3172,
+    "cumulato_tipico_a_questa_eta": 20577.0,
+    "quota_futura_tipica": 0.049,
+    "residuo_mediano": 1049,
+    "residuo_medio": 2322,
+    "residuo_p25": 88,
+    "residuo_p75": 3177,
     "anni_attesi_ancora": 1.3,
-    "quota_su_dati_della_fascia": 0.89,
+    "quota_su_dati_della_fascia": 0.94,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 6,
-      "prob_attivo": 0.695,
-      "guadagno_mediano_anno": 1110.0,
+      "prob_attivo": 0.691,
+      "guadagno_mediano_anno": 1088.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.353,
-      "guadagno_mediano_anno": 372.0,
+      "prob_attivo": 0.35,
+      "guadagno_mediano_anno": 393.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.142,
-      "guadagno_mediano_anno": 143.0,
+      "prob_attivo": 0.147,
+      "guadagno_mediano_anno": 158.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.039,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.051,
+      "guadagno_mediano_anno": 1527.0,
+      "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.022,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.028,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.01,
+      "prob_attivo": 0.012,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "6": {
-    "cumulato_tipico_a_questa_eta": 22146.0,
-    "quota_futura_tipica": 0.017,
-    "residuo_mediano": 387,
-    "residuo_medio": 1523,
-    "residuo_p25": 17,
-    "residuo_p75": 1523,
-    "anni_attesi_ancora": 0.8,
-    "quota_su_dati_della_fascia": 0.56,
-    "stima_solida": false,
+    "cumulato_tipico_a_questa_eta": 21807.0,
+    "quota_futura_tipica": 0.019,
+    "residuo_mediano": 432,
+    "residuo_medio": 1396,
+    "residuo_p25": 8,
+    "residuo_p75": 1632,
+    "anni_attesi_ancora": 0.9,
+    "quota_su_dati_della_fascia": 0.8,
+    "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 7,
-      "prob_attivo": 0.508,
-      "guadagno_mediano_anno": 372.0,
+      "prob_attivo": 0.506,
+      "guadagno_mediano_anno": 393.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.205,
-      "guadagno_mediano_anno": 143.0,
+      "prob_attivo": 0.213,
+      "guadagno_mediano_anno": 158.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.057,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.074,
+      "guadagno_mediano_anno": 1527.0,
+      "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.031,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.041,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.014,
+      "prob_attivo": 0.018,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "7": {
-    "cumulato_tipico_a_questa_eta": 22765.0,
-    "quota_futura_tipica": 0.017,
-    "residuo_mediano": 390,
-    "residuo_medio": 1814,
-    "residuo_p25": 33,
-    "residuo_p75": 1380,
-    "anni_attesi_ancora": 0.6,
-    "quota_su_dati_della_fascia": 0.15,
-    "stima_solida": false,
+    "cumulato_tipico_a_questa_eta": 22264.0,
+    "quota_futura_tipica": 0.02,
+    "residuo_mediano": 460,
+    "residuo_medio": 1422,
+    "residuo_p25": 17,
+    "residuo_p75": 1502,
+    "anni_attesi_ancora": 0.7,
+    "quota_su_dati_della_fascia": 0.63,
+    "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 8,
-      "prob_attivo": 0.403,
-      "guadagno_mediano_anno": 143.0,
+      "prob_attivo": 0.42,
+      "guadagno_mediano_anno": 158.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.112,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.146,
+      "guadagno_mediano_anno": 1527.0,
+      "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.062,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.081,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.027,
+      "prob_attivo": 0.035,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "8": {
-    "cumulato_tipico_a_questa_eta": 22924.0,
-    "quota_futura_tipica": 0.035,
-    "residuo_mediano": 825,
-    "residuo_medio": 3835,
-    "residuo_p25": 83,
-    "residuo_p75": 2618,
-    "anni_attesi_ancora": 0.5,
-    "quota_su_dati_della_fascia": 0.0,
+    "cumulato_tipico_a_questa_eta": 22412.0,
+    "quota_futura_tipica": 0.04,
+    "residuo_mediano": 937,
+    "residuo_medio": 2029,
+    "residuo_p25": 39,
+    "residuo_p75": 2437,
+    "anni_attesi_ancora": 0.6,
+    "quota_su_dati_della_fascia": 0.57,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 9,
-      "prob_attivo": 0.277,
-      "guadagno_mediano_anno": 1790.0,
-      "su_dati_della_fascia": false
+      "prob_attivo": 0.347,
+      "guadagno_mediano_anno": 1527.0,
+      "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.154,
-      "guadagno_mediano_anno": 1856.0,
+      "prob_attivo": 0.193,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.068,
+      "prob_attivo": 0.084,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "9": {
-    "cumulato_tipico_a_questa_eta": 23073.0,
+    "cumulato_tipico_a_questa_eta": 22844.0,
     "quota_futura_tipica": 0.049,
-    "residuo_mediano": 1189,
-    "residuo_medio": 3348,
-    "residuo_p25": 121,
-    "residuo_p75": 3753,
+    "residuo_mediano": 1171,
+    "residuo_medio": 3330,
+    "residuo_p25": 113,
+    "residuo_p75": 3745,
     "anni_attesi_ancora": 0.8,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
@@ -1757,38 +1727,38 @@
      {
       "eta": 10,
       "prob_attivo": 0.555,
-      "guadagno_mediano_anno": 1856.0,
+      "guadagno_mediano_anno": 1825.0,
       "su_dati_della_fascia": false
      },
      {
       "eta": 11,
-      "prob_attivo": 0.245,
+      "prob_attivo": 0.243,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "10": {
-    "cumulato_tipico_a_questa_eta": 23241.0,
+    "cumulato_tipico_a_questa_eta": 22915.0,
     "quota_futura_tipica": 0.012,
-    "residuo_mediano": 287,
-    "residuo_medio": 1159,
+    "residuo_mediano": 285,
+    "residuo_medio": 1149,
     "residuo_p25": 0,
-    "residuo_p75": 1727,
+    "residuo_p75": 1713,
     "anni_attesi_ancora": 0.4,
     "quota_su_dati_della_fascia": 0.0,
     "stima_solida": false,
     "prossimi_anni": [
      {
       "eta": 11,
-      "prob_attivo": 0.442,
+      "prob_attivo": 0.438,
       "guadagno_mediano_anno": 650.0,
       "su_dati_della_fascia": false
      }
     ]
    },
    "11": {
-    "cumulato_tipico_a_questa_eta": 24087.0,
+    "cumulato_tipico_a_questa_eta": 23832.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
     "residuo_medio": 0,
@@ -1814,12 +1784,12 @@
   },
   "70+": {
    "2": {
-    "cumulato_tipico_a_questa_eta": 4505.0,
-    "quota_futura_tipica": 0.911,
-    "residuo_mediano": 46380,
-    "residuo_medio": 88146,
-    "residuo_p25": 25427,
-    "residuo_p75": 77657,
+    "cumulato_tipico_a_questa_eta": 4453.0,
+    "quota_futura_tipica": 0.912,
+    "residuo_mediano": 46012,
+    "residuo_medio": 87240,
+    "residuo_p25": 25183,
+    "residuo_p75": 77166,
     "anni_attesi_ancora": 6.1,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
@@ -1827,48 +1797,48 @@
      {
       "eta": 3,
       "prob_attivo": 0.998,
-      "guadagno_mediano_anno": 12371.0,
+      "guadagno_mediano_anno": 12301.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 4,
       "prob_attivo": 0.996,
-      "guadagno_mediano_anno": 12176.0,
+      "guadagno_mediano_anno": 12075.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.98,
-      "guadagno_mediano_anno": 8815.0,
+      "prob_attivo": 0.979,
+      "guadagno_mediano_anno": 8748.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.927,
-      "guadagno_mediano_anno": 6344.0,
+      "prob_attivo": 0.924,
+      "guadagno_mediano_anno": 6291.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.807,
-      "guadagno_mediano_anno": 4704.0,
+      "prob_attivo": 0.803,
+      "guadagno_mediano_anno": 4700.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.62,
-      "guadagno_mediano_anno": 3378.0,
+      "prob_attivo": 0.614,
+      "guadagno_mediano_anno": 3370.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "3": {
-    "cumulato_tipico_a_questa_eta": 16567.0,
-    "quota_futura_tipica": 0.673,
-    "residuo_mediano": 34088,
-    "residuo_medio": 67345,
-    "residuo_p25": 17506,
-    "residuo_p75": 59330,
+    "cumulato_tipico_a_questa_eta": 16517.0,
+    "quota_futura_tipica": 0.672,
+    "residuo_mediano": 33789,
+    "residuo_medio": 66598,
+    "residuo_p25": 17296,
+    "residuo_p75": 58926,
     "anni_attesi_ancora": 5.1,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
@@ -1876,265 +1846,265 @@
      {
       "eta": 4,
       "prob_attivo": 0.998,
-      "guadagno_mediano_anno": 12176.0,
+      "guadagno_mediano_anno": 12075.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 5,
-      "prob_attivo": 0.981,
-      "guadagno_mediano_anno": 8815.0,
+      "prob_attivo": 0.98,
+      "guadagno_mediano_anno": 8748.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.928,
-      "guadagno_mediano_anno": 6344.0,
+      "prob_attivo": 0.925,
+      "guadagno_mediano_anno": 6291.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.808,
-      "guadagno_mediano_anno": 4704.0,
+      "prob_attivo": 0.804,
+      "guadagno_mediano_anno": 4700.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.621,
-      "guadagno_mediano_anno": 3378.0,
+      "prob_attivo": 0.615,
+      "guadagno_mediano_anno": 3370.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.431,
-      "guadagno_mediano_anno": 1999.0,
+      "prob_attivo": 0.425,
+      "guadagno_mediano_anno": 2003.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "4": {
-    "cumulato_tipico_a_questa_eta": 28484.0,
-    "quota_futura_tipica": 0.436,
-    "residuo_mediano": 21990,
-    "residuo_medio": 48400,
-    "residuo_p25": 10047,
-    "residuo_p75": 40832,
+    "cumulato_tipico_a_questa_eta": 28276.0,
+    "quota_futura_tipica": 0.435,
+    "residuo_mediano": 21788,
+    "residuo_medio": 47828,
+    "residuo_p25": 9932,
+    "residuo_p75": 40489,
     "anni_attesi_ancora": 4.1,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 5,
-      "prob_attivo": 0.984,
-      "guadagno_mediano_anno": 8815.0,
+      "prob_attivo": 0.983,
+      "guadagno_mediano_anno": 8748.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 6,
-      "prob_attivo": 0.93,
-      "guadagno_mediano_anno": 6344.0,
+      "prob_attivo": 0.927,
+      "guadagno_mediano_anno": 6291.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.81,
-      "guadagno_mediano_anno": 4704.0,
+      "prob_attivo": 0.806,
+      "guadagno_mediano_anno": 4700.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.622,
-      "guadagno_mediano_anno": 3378.0,
+      "prob_attivo": 0.617,
+      "guadagno_mediano_anno": 3370.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.432,
-      "guadagno_mediano_anno": 1999.0,
+      "prob_attivo": 0.426,
+      "guadagno_mediano_anno": 2003.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.252,
-      "guadagno_mediano_anno": 1912.0,
+      "prob_attivo": 0.249,
+      "guadagno_mediano_anno": 1940.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "5": {
-    "cumulato_tipico_a_questa_eta": 37517.0,
+    "cumulato_tipico_a_questa_eta": 37243.0,
     "quota_futura_tipica": 0.265,
-    "residuo_mediano": 13542,
-    "residuo_medio": 33978,
-    "residuo_p25": 5168,
-    "residuo_p75": 26704,
+    "residuo_mediano": 13426,
+    "residuo_medio": 33594,
+    "residuo_p25": 5130,
+    "residuo_p75": 26528,
     "anni_attesi_ancora": 3.2,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 6,
-      "prob_attivo": 0.946,
-      "guadagno_mediano_anno": 6344.0,
+      "prob_attivo": 0.944,
+      "guadagno_mediano_anno": 6291.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 7,
-      "prob_attivo": 0.824,
-      "guadagno_mediano_anno": 4704.0,
+      "prob_attivo": 0.82,
+      "guadagno_mediano_anno": 4700.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.633,
-      "guadagno_mediano_anno": 3378.0,
+      "prob_attivo": 0.628,
+      "guadagno_mediano_anno": 3370.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.439,
-      "guadagno_mediano_anno": 1999.0,
+      "prob_attivo": 0.433,
+      "guadagno_mediano_anno": 2003.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.257,
-      "guadagno_mediano_anno": 1912.0,
+      "prob_attivo": 0.253,
+      "guadagno_mediano_anno": 1940.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 11,
-      "prob_attivo": 0.111,
+      "prob_attivo": 0.109,
       "guadagno_mediano_anno": 1466.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "6": {
-    "cumulato_tipico_a_questa_eta": 43653.0,
-    "quota_futura_tipica": 0.154,
-    "residuo_mediano": 7974,
-    "residuo_medio": 22982,
-    "residuo_p25": 2265,
-    "residuo_p75": 16879,
+    "cumulato_tipico_a_questa_eta": 43299.0,
+    "quota_futura_tipica": 0.155,
+    "residuo_mediano": 7933,
+    "residuo_medio": 22744,
+    "residuo_p25": 2268,
+    "residuo_p75": 16768,
     "anni_attesi_ancora": 2.4,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 7,
-      "prob_attivo": 0.871,
-      "guadagno_mediano_anno": 4704.0,
+      "prob_attivo": 0.869,
+      "guadagno_mediano_anno": 4700.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 8,
-      "prob_attivo": 0.669,
-      "guadagno_mediano_anno": 3378.0,
+      "prob_attivo": 0.665,
+      "guadagno_mediano_anno": 3370.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.464,
-      "guadagno_mediano_anno": 1999.0,
+      "prob_attivo": 0.459,
+      "guadagno_mediano_anno": 2003.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.271,
-      "guadagno_mediano_anno": 1912.0,
+      "prob_attivo": 0.268,
+      "guadagno_mediano_anno": 1940.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 11,
-      "prob_attivo": 0.117,
+      "prob_attivo": 0.116,
       "guadagno_mediano_anno": 1466.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "7": {
-    "cumulato_tipico_a_questa_eta": 48100.0,
+    "cumulato_tipico_a_questa_eta": 47690.0,
     "quota_futura_tipica": 0.085,
-    "residuo_mediano": 4452,
-    "residuo_medio": 15447,
-    "residuo_p25": 894,
-    "residuo_p75": 10575,
+    "residuo_mediano": 4432,
+    "residuo_medio": 15284,
+    "residuo_p25": 907,
+    "residuo_p75": 10496,
     "anni_attesi_ancora": 1.7,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 8,
-      "prob_attivo": 0.768,
-      "guadagno_mediano_anno": 3378.0,
+      "prob_attivo": 0.765,
+      "guadagno_mediano_anno": 3370.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 9,
-      "prob_attivo": 0.533,
-      "guadagno_mediano_anno": 1999.0,
+      "prob_attivo": 0.529,
+      "guadagno_mediano_anno": 2003.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.312,
-      "guadagno_mediano_anno": 1912.0,
+      "prob_attivo": 0.309,
+      "guadagno_mediano_anno": 1940.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 11,
-      "prob_attivo": 0.135,
+      "prob_attivo": 0.133,
       "guadagno_mediano_anno": 1466.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "8": {
-    "cumulato_tipico_a_questa_eta": 50949.0,
-    "quota_futura_tipica": 0.045,
-    "residuo_mediano": 2420,
-    "residuo_medio": 10667,
-    "residuo_p25": 292,
-    "residuo_p75": 6993,
+    "cumulato_tipico_a_questa_eta": 50616.0,
+    "quota_futura_tipica": 0.046,
+    "residuo_mediano": 2422,
+    "residuo_medio": 10570,
+    "residuo_p25": 291,
+    "residuo_p75": 6974,
     "anni_attesi_ancora": 1.3,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 9,
-      "prob_attivo": 0.694,
-      "guadagno_mediano_anno": 1999.0,
+      "prob_attivo": 0.691,
+      "guadagno_mediano_anno": 2003.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 10,
-      "prob_attivo": 0.406,
-      "guadagno_mediano_anno": 1912.0,
+      "prob_attivo": 0.403,
+      "guadagno_mediano_anno": 1940.0,
       "su_dati_della_fascia": true
      },
      {
       "eta": 11,
-      "prob_attivo": 0.175,
+      "prob_attivo": 0.174,
       "guadagno_mediano_anno": 1466.0,
       "su_dati_della_fascia": true
      }
     ]
    },
    "9": {
-    "cumulato_tipico_a_questa_eta": 52310.0,
+    "cumulato_tipico_a_questa_eta": 51922.0,
     "quota_futura_tipica": 0.028,
-    "residuo_mediano": 1488,
-    "residuo_medio": 3723,
+    "residuo_mediano": 1503,
+    "residuo_medio": 3710,
     "residuo_p25": 157,
-    "residuo_p75": 4060,
+    "residuo_p75": 4057,
     "anni_attesi_ancora": 0.8,
     "quota_su_dati_della_fascia": 1.0,
     "stima_solida": true,
     "prossimi_anni": [
      {
       "eta": 10,
-      "prob_attivo": 0.585,
-      "guadagno_mediano_anno": 1912.0,
+      "prob_attivo": 0.584,
+      "guadagno_mediano_anno": 1940.0,
       "su_dati_della_fascia": true
      },
      {
@@ -2146,7 +2116,7 @@
     ]
    },
    "10": {
-    "cumulato_tipico_a_questa_eta": 54261.0,
+    "cumulato_tipico_a_questa_eta": 53936.0,
     "quota_futura_tipica": 0.012,
     "residuo_mediano": 634,
     "residuo_medio": 1277,
@@ -2165,7 +2135,7 @@
     ]
    },
    "11": {
-    "cumulato_tipico_a_questa_eta": 55895.0,
+    "cumulato_tipico_a_questa_eta": 55823.0,
     "quota_futura_tipica": 0.0,
     "residuo_mediano": 0,
     "residuo_medio": 0,
@@ -2198,118 +2168,118 @@
     "n_base": 0,
     "fonte_probabilita": "dato assente",
     "guadagno_mediano": 0.0,
-    "guadagno_medio": 254.0,
+    "guadagno_medio": 243.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 357.0,
-    "n_attivi": 1128,
+    "n_attivi": 1133,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 3,
-    "prob_corre_ancora": 0.781,
-    "n_base": 1032,
+    "prob_corre_ancora": 0.77,
+    "n_base": 1035,
     "fonte_probabilita": "fascia",
     "guadagno_mediano": 0.0,
-    "guadagno_medio": 255.0,
+    "guadagno_medio": 246.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 280.0,
-    "n_attivi": 2346,
+    "n_attivi": 2405,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 4,
-    "prob_corre_ancora": 0.3286,
-    "n_base": 2051,
+    "prob_corre_ancora": 0.3185,
+    "n_base": 2107,
     "fonte_probabilita": "fascia",
     "guadagno_mediano": 0.0,
-    "guadagno_medio": 141.0,
+    "guadagno_medio": 147.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 150.0,
-    "n_attivi": 821,
+    "guadagno_p75": 156.0,
+    "n_attivi": 862,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 5,
-    "prob_corre_ancora": 0.0813,
-    "n_base": 726,
+    "prob_corre_ancora": 0.0837,
+    "n_base": 765,
     "fonte_probabilita": "fascia",
     "guadagno_mediano": 0.0,
-    "guadagno_medio": 156.0,
+    "guadagno_medio": 182.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 0.0,
-    "n_attivi": 75,
+    "guadagno_p75": 105.0,
+    "n_attivi": 104,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 6,
-    "prob_corre_ancora": 0.1525,
-    "n_base": 59,
+    "prob_corre_ancora": 0.1818,
+    "n_base": 88,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 3512.0,
-    "guadagno_medio": 8497.0,
-    "guadagno_p25": 586.0,
-    "guadagno_p75": 7988.0,
-    "n_attivi": 16,
-    "fonte_guadagno": "tutte le fasce"
+    "guadagno_mediano": 0.0,
+    "guadagno_medio": 197.0,
+    "guadagno_p25": 0.0,
+    "guadagno_p75": 143.0,
+    "n_attivi": 48,
+    "fonte_guadagno": "fascia"
    },
    {
     "eta": 7,
-    "prob_corre_ancora": 0.6998,
-    "n_base": 14,
-    "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 3211.0,
-    "guadagno_medio": 8550.0,
-    "guadagno_p25": 524.0,
-    "guadagno_p75": 7239.0,
-    "n_attivi": 5,
-    "fonte_guadagno": "tutte le fasce"
+    "prob_corre_ancora": 0.1739,
+    "n_base": 46,
+    "fonte_probabilita": "fascia",
+    "guadagno_mediano": 0.0,
+    "guadagno_medio": 195.0,
+    "guadagno_p25": 0.0,
+    "guadagno_p75": 143.0,
+    "n_attivi": 32,
+    "fonte_guadagno": "fascia"
    },
    {
     "eta": 8,
-    "prob_corre_ancora": 0.6709,
-    "n_base": 5,
-    "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 2676.0,
-    "guadagno_medio": 8161.0,
+    "prob_corre_ancora": 0.1852,
+    "n_base": 27,
+    "fonte_probabilita": "fascia",
+    "guadagno_mediano": 2675.0,
+    "guadagno_medio": 8154.0,
     "guadagno_p25": 416.0,
     "guadagno_p75": 6044.0,
-    "n_attivi": 0,
+    "n_attivi": 14,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 9,
-    "prob_corre_ancora": 0.6453,
-    "n_base": 0,
+    "prob_corre_ancora": 0.6445,
+    "n_base": 10,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 1790.0,
     "guadagno_medio": 10501.0,
     "guadagno_p25": 178.0,
     "guadagno_p75": 5701.0,
-    "n_attivi": 0,
+    "n_attivi": 9,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 10,
     "prob_corre_ancora": 0.555,
-    "n_base": 0,
+    "n_base": 6,
     "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 1856.0,
-    "guadagno_medio": 4873.0,
-    "guadagno_p25": 218.0,
+    "guadagno_mediano": 1825.0,
+    "guadagno_medio": 4851.0,
+    "guadagno_p25": 204.0,
     "guadagno_p75": 5035.0,
-    "n_attivi": 0,
+    "n_attivi": 3,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 11,
-    "prob_corre_ancora": 0.4417,
-    "n_base": 0,
+    "prob_corre_ancora": 0.438,
+    "n_base": 1,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 650.0,
     "guadagno_medio": 2624.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 3910.0,
-    "n_attivi": 0,
+    "n_attivi": 2,
     "fonte_guadagno": "tutte le fasce"
    },
    {
@@ -2332,94 +2302,94 @@
     "n_base": 0,
     "fonte_probabilita": "dato assente",
     "guadagno_mediano": 476.0,
-    "guadagno_medio": 1021.0,
+    "guadagno_medio": 1008.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 1428.0,
-    "n_attivi": 837,
+    "n_attivi": 831,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 3,
-    "prob_corre_ancora": 0.9793,
-    "n_base": 724,
+    "prob_corre_ancora": 0.971,
+    "n_base": 723,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 1402.0,
-    "guadagno_medio": 1816.0,
+    "guadagno_mediano": 1394.0,
+    "guadagno_medio": 1784.0,
     "guadagno_p25": 544.0,
-    "guadagno_p75": 2746.0,
-    "n_attivi": 1281,
+    "guadagno_p75": 2712.0,
+    "n_attivi": 1286,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 4,
-    "prob_corre_ancora": 0.7005,
-    "n_base": 1102,
+    "prob_corre_ancora": 0.691,
+    "n_base": 1110,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 323.0,
-    "guadagno_medio": 795.0,
+    "guadagno_mediano": 330.0,
+    "guadagno_medio": 789.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 1216.0,
-    "n_attivi": 816,
+    "guadagno_p75": 1227.0,
+    "n_attivi": 825,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 5,
-    "prob_corre_ancora": 0.2142,
-    "n_base": 719,
+    "prob_corre_ancora": 0.2069,
+    "n_base": 725,
     "fonte_probabilita": "fascia",
     "guadagno_mediano": 0.0,
-    "guadagno_medio": 347.0,
+    "guadagno_medio": 449.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 286.0,
-    "n_attivi": 163,
+    "guadagno_p75": 316.0,
+    "n_attivi": 172,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 6,
-    "prob_corre_ancora": 0.2061,
-    "n_base": 131,
+    "prob_corre_ancora": 0.2429,
+    "n_base": 140,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 21.0,
-    "guadagno_medio": 491.0,
+    "guadagno_mediano": 207.0,
+    "guadagno_medio": 706.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 474.0,
-    "n_attivi": 36,
+    "guadagno_p75": 748.0,
+    "n_attivi": 50,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 7,
-    "prob_corre_ancora": 0.1852,
-    "n_base": 27,
+    "prob_corre_ancora": 0.2195,
+    "n_base": 41,
     "fonte_probabilita": "fascia",
     "guadagno_mediano": 3211.0,
-    "guadagno_medio": 8550.0,
+    "guadagno_medio": 8543.0,
     "guadagno_p25": 524.0,
     "guadagno_p75": 7239.0,
-    "n_attivi": 7,
+    "n_attivi": 22,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 8,
-    "prob_corre_ancora": 0.6709,
-    "n_base": 4,
+    "prob_corre_ancora": 0.6707,
+    "n_base": 16,
     "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 2676.0,
-    "guadagno_medio": 8161.0,
+    "guadagno_mediano": 2675.0,
+    "guadagno_medio": 8154.0,
     "guadagno_p25": 416.0,
     "guadagno_p75": 6044.0,
-    "n_attivi": 1,
+    "n_attivi": 8,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 9,
-    "prob_corre_ancora": 0.6453,
-    "n_base": 1,
+    "prob_corre_ancora": 0.6445,
+    "n_base": 6,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 1790.0,
     "guadagno_medio": 10501.0,
     "guadagno_p25": 178.0,
     "guadagno_p75": 5701.0,
-    "n_attivi": 3,
+    "n_attivi": 6,
     "fonte_guadagno": "tutte le fasce"
    },
    {
@@ -2427,16 +2397,16 @@
     "prob_corre_ancora": 0.555,
     "n_base": 3,
     "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 1856.0,
-    "guadagno_medio": 4873.0,
-    "guadagno_p25": 218.0,
+    "guadagno_mediano": 1825.0,
+    "guadagno_medio": 4851.0,
+    "guadagno_p25": 204.0,
     "guadagno_p75": 5035.0,
-    "n_attivi": 0,
+    "n_attivi": 1,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 11,
-    "prob_corre_ancora": 0.4417,
+    "prob_corre_ancora": 0.438,
     "n_base": 0,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 650.0,
@@ -2465,119 +2435,119 @@
     "prob_corre_ancora": 0.0,
     "n_base": 0,
     "fonte_probabilita": "dato assente",
-    "guadagno_mediano": 1003.0,
-    "guadagno_medio": 1962.0,
-    "guadagno_p25": 0.0,
-    "guadagno_p75": 3094.0,
-    "n_attivi": 1438,
+    "guadagno_mediano": 986.0,
+    "guadagno_medio": 1937.0,
+    "guadagno_p25": 238.0,
+    "guadagno_p75": 3026.0,
+    "n_attivi": 1318,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 3,
-    "prob_corre_ancora": 0.9634,
-    "n_base": 1148,
+    "prob_corre_ancora": 0.9904,
+    "n_base": 1040,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 3250.0,
-    "guadagno_medio": 3521.0,
-    "guadagno_p25": 1272.0,
-    "guadagno_p75": 5185.0,
-    "n_attivi": 1864,
+    "guadagno_mediano": 3383.0,
+    "guadagno_medio": 3567.0,
+    "guadagno_p25": 1467.0,
+    "guadagno_p75": 5108.0,
+    "n_attivi": 1624,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 4,
-    "prob_corre_ancora": 0.8269,
-    "n_base": 1577,
+    "prob_corre_ancora": 0.8687,
+    "n_base": 1371,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 1368.0,
-    "guadagno_medio": 2151.0,
-    "guadagno_p25": 235.0,
-    "guadagno_p75": 3264.0,
-    "n_attivi": 1432,
+    "guadagno_mediano": 1311.0,
+    "guadagno_medio": 1926.0,
+    "guadagno_p25": 255.0,
+    "guadagno_p75": 3096.0,
+    "n_attivi": 1225,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 5,
-    "prob_corre_ancora": 0.4278,
-    "n_base": 1218,
+    "prob_corre_ancora": 0.4317,
+    "n_base": 1054,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 105.0,
-    "guadagno_medio": 779.0,
+    "guadagno_mediano": 59.0,
+    "guadagno_medio": 475.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 796.0,
-    "n_attivi": 589,
+    "guadagno_p75": 481.0,
+    "n_attivi": 466,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 6,
-    "prob_corre_ancora": 0.303,
-    "n_base": 495,
+    "prob_corre_ancora": 0.2462,
+    "n_base": 390,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 229.0,
-    "guadagno_medio": 1970.0,
+    "guadagno_mediano": 143.0,
+    "guadagno_medio": 807.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 1955.0,
-    "n_attivi": 212,
+    "guadagno_p75": 840.0,
+    "n_attivi": 111,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 7,
-    "prob_corre_ancora": 0.3923,
-    "n_base": 181,
+    "prob_corre_ancora": 0.2812,
+    "n_base": 96,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 580.0,
-    "guadagno_medio": 2966.0,
+    "guadagno_mediano": 394.0,
+    "guadagno_medio": 1054.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 3114.0,
-    "n_attivi": 115,
+    "guadagno_p75": 1799.0,
+    "n_attivi": 35,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 8,
-    "prob_corre_ancora": 0.3793,
-    "n_base": 87,
+    "prob_corre_ancora": 0.3462,
+    "n_base": 26,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 734.0,
-    "guadagno_medio": 3107.0,
-    "guadagno_p25": 0.0,
-    "guadagno_p75": 4258.0,
-    "n_attivi": 53,
-    "fonte_guadagno": "fascia"
+    "guadagno_mediano": 2675.0,
+    "guadagno_medio": 8154.0,
+    "guadagno_p25": 416.0,
+    "guadagno_p75": 6044.0,
+    "n_attivi": 14,
+    "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 9,
-    "prob_corre_ancora": 0.5714,
-    "n_base": 42,
-    "fonte_probabilita": "fascia",
-    "guadagno_mediano": 1212.0,
-    "guadagno_medio": 3329.0,
-    "guadagno_p25": 156.0,
-    "guadagno_p75": 3694.0,
-    "n_attivi": 37,
-    "fonte_guadagno": "fascia"
+    "prob_corre_ancora": 0.6445,
+    "n_base": 9,
+    "fonte_probabilita": "tutte le fasce",
+    "guadagno_mediano": 1790.0,
+    "guadagno_medio": 10501.0,
+    "guadagno_p25": 178.0,
+    "guadagno_p75": 5701.0,
+    "n_attivi": 9,
+    "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 10,
     "prob_corre_ancora": 0.555,
-    "n_base": 21,
+    "n_base": 6,
     "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 1856.0,
-    "guadagno_medio": 4873.0,
-    "guadagno_p25": 218.0,
+    "guadagno_mediano": 1825.0,
+    "guadagno_medio": 4851.0,
+    "guadagno_p25": 204.0,
     "guadagno_p75": 5035.0,
-    "n_attivi": 13,
+    "n_attivi": 3,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 11,
-    "prob_corre_ancora": 0.4417,
-    "n_base": 6,
+    "prob_corre_ancora": 0.438,
+    "n_base": 1,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 650.0,
     "guadagno_medio": 2624.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 3910.0,
-    "n_attivi": 7,
+    "n_attivi": 1,
     "fonte_guadagno": "tutte le fasce"
    },
    {
@@ -2600,118 +2570,118 @@
     "n_base": 0,
     "fonte_probabilita": "dato assente",
     "guadagno_mediano": 1683.0,
-    "guadagno_medio": 2847.0,
+    "guadagno_medio": 2806.0,
     "guadagno_p25": 357.0,
-    "guadagno_p75": 4403.0,
-    "n_attivi": 1588,
+    "guadagno_p75": 4284.0,
+    "n_attivi": 1566,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 3,
-    "prob_corre_ancora": 0.9916,
-    "n_base": 1310,
+    "prob_corre_ancora": 0.9985,
+    "n_base": 1295,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 5556.0,
-    "guadagno_medio": 5954.0,
-    "guadagno_p25": 3114.0,
-    "guadagno_p75": 8425.0,
-    "n_attivi": 1935,
+    "guadagno_mediano": 5559.0,
+    "guadagno_medio": 5967.0,
+    "guadagno_p25": 3179.0,
+    "guadagno_p75": 8330.0,
+    "n_attivi": 1904,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 4,
-    "prob_corre_ancora": 0.947,
-    "n_base": 1584,
+    "prob_corre_ancora": 0.9609,
+    "n_base": 1562,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 3567.0,
-    "guadagno_medio": 4126.0,
-    "guadagno_p25": 1488.0,
-    "guadagno_p75": 6069.0,
-    "n_attivi": 1547,
+    "guadagno_mediano": 3485.0,
+    "guadagno_medio": 4033.0,
+    "guadagno_p25": 1486.0,
+    "guadagno_p75": 5916.0,
+    "n_attivi": 1531,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 5,
-    "prob_corre_ancora": 0.7022,
-    "n_base": 1313,
+    "prob_corre_ancora": 0.6931,
+    "n_base": 1300,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 644.0,
-    "guadagno_medio": 1332.0,
+    "guadagno_mediano": 581.0,
+    "guadagno_medio": 1242.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 1887.0,
-    "n_attivi": 943,
+    "guadagno_p75": 1792.0,
+    "n_attivi": 917,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 6,
-    "prob_corre_ancora": 0.4164,
-    "n_base": 795,
+    "prob_corre_ancora": 0.4124,
+    "n_base": 776,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 238.0,
-    "guadagno_medio": 889.0,
+    "guadagno_mediano": 248.0,
+    "guadagno_medio": 1056.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 1122.0,
-    "n_attivi": 343,
+    "guadagno_p75": 1224.0,
+    "n_attivi": 333,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 7,
-    "prob_corre_ancora": 0.303,
-    "n_base": 264,
+    "prob_corre_ancora": 0.3435,
+    "n_base": 262,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 156.0,
-    "guadagno_medio": 808.0,
+    "guadagno_mediano": 177.0,
+    "guadagno_medio": 1249.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 930.0,
-    "n_attivi": 88,
+    "guadagno_p75": 1118.0,
+    "n_attivi": 97,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 8,
-    "prob_corre_ancora": 0.3125,
-    "n_base": 64,
+    "prob_corre_ancora": 0.2958,
+    "n_base": 71,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 0.0,
-    "guadagno_medio": 337.0,
+    "guadagno_mediano": 100.0,
+    "guadagno_medio": 1141.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 123.0,
-    "n_attivi": 26,
+    "guadagno_p75": 1333.0,
+    "n_attivi": 27,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 9,
-    "prob_corre_ancora": 0.6453,
-    "n_base": 18,
+    "prob_corre_ancora": 0.6445,
+    "n_base": 21,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 1790.0,
     "guadagno_medio": 10501.0,
     "guadagno_p25": 178.0,
     "guadagno_p75": 5701.0,
-    "n_attivi": 7,
+    "n_attivi": 11,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 10,
     "prob_corre_ancora": 0.555,
-    "n_base": 6,
+    "n_base": 9,
     "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 1856.0,
-    "guadagno_medio": 4873.0,
-    "guadagno_p25": 218.0,
+    "guadagno_mediano": 1825.0,
+    "guadagno_medio": 4851.0,
+    "guadagno_p25": 204.0,
     "guadagno_p75": 5035.0,
-    "n_attivi": 0,
+    "n_attivi": 3,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 11,
-    "prob_corre_ancora": 0.4417,
-    "n_base": 0,
+    "prob_corre_ancora": 0.438,
+    "n_base": 2,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 650.0,
     "guadagno_medio": 2624.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 3910.0,
-    "n_attivi": 0,
+    "n_attivi": 2,
     "fonte_guadagno": "tutte le fasce"
    },
    {
@@ -2733,119 +2703,119 @@
     "prob_corre_ancora": 0.0,
     "n_base": 0,
     "fonte_probabilita": "dato assente",
-    "guadagno_mediano": 2890.0,
-    "guadagno_medio": 4323.0,
-    "guadagno_p25": 584.0,
-    "guadagno_p75": 5933.0,
-    "n_attivi": 1581,
+    "guadagno_mediano": 2878.0,
+    "guadagno_medio": 4276.0,
+    "guadagno_p25": 595.0,
+    "guadagno_p75": 5865.0,
+    "n_attivi": 1603,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 3,
     "prob_corre_ancora": 0.9986,
-    "n_base": 1426,
+    "n_base": 1441,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 8092.0,
-    "guadagno_medio": 8655.0,
-    "guadagno_p25": 4927.0,
-    "guadagno_p75": 11584.0,
-    "n_attivi": 1937,
+    "guadagno_mediano": 8022.0,
+    "guadagno_medio": 8521.0,
+    "guadagno_p25": 4816.0,
+    "guadagno_p75": 11436.0,
+    "n_attivi": 1977,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 4,
-    "prob_corre_ancora": 0.9884,
-    "n_base": 1644,
+    "prob_corre_ancora": 0.9881,
+    "n_base": 1679,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 6635.0,
-    "guadagno_medio": 7227.0,
-    "guadagno_p25": 3896.0,
-    "guadagno_p75": 9824.0,
-    "n_attivi": 1649,
+    "guadagno_mediano": 6565.0,
+    "guadagno_medio": 7236.0,
+    "guadagno_p25": 3850.0,
+    "guadagno_p75": 9755.0,
+    "n_attivi": 1687,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 5,
-    "prob_corre_ancora": 0.8975,
-    "n_base": 1356,
+    "prob_corre_ancora": 0.8965,
+    "n_base": 1391,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 2841.0,
-    "guadagno_medio": 3522.0,
-    "guadagno_p25": 938.0,
-    "guadagno_p75": 5244.0,
-    "n_attivi": 1223,
+    "guadagno_mediano": 2764.0,
+    "guadagno_medio": 3471.0,
+    "guadagno_p25": 916.0,
+    "guadagno_p75": 5219.0,
+    "n_attivi": 1256,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 6,
-    "prob_corre_ancora": 0.6954,
-    "n_base": 975,
+    "prob_corre_ancora": 0.6906,
+    "n_base": 1002,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 1110.0,
-    "guadagno_medio": 2013.0,
-    "guadagno_p25": 134.0,
-    "guadagno_p75": 3038.0,
-    "n_attivi": 688,
+    "guadagno_mediano": 1088.0,
+    "guadagno_medio": 1966.0,
+    "guadagno_p25": 119.0,
+    "guadagno_p75": 2968.0,
+    "n_attivi": 705,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 7,
-    "prob_corre_ancora": 0.508,
-    "n_base": 561,
+    "prob_corre_ancora": 0.5061,
+    "n_base": 577,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 372.0,
-    "guadagno_medio": 1183.0,
+    "guadagno_mediano": 393.0,
+    "guadagno_medio": 1337.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 1618.0,
-    "n_attivi": 287,
+    "guadagno_p75": 1723.0,
+    "n_attivi": 297,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 8,
-    "prob_corre_ancora": 0.4027,
-    "n_base": 226,
+    "prob_corre_ancora": 0.4199,
+    "n_base": 231,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 143.0,
-    "guadagno_medio": 670.0,
+    "guadagno_mediano": 158.0,
+    "guadagno_medio": 1356.0,
     "guadagno_p25": 0.0,
-    "guadagno_p75": 809.0,
-    "n_attivi": 94,
+    "guadagno_p75": 1140.0,
+    "n_attivi": 102,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 9,
-    "prob_corre_ancora": 0.2769,
-    "n_base": 65,
+    "prob_corre_ancora": 0.3472,
+    "n_base": 72,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 1790.0,
-    "guadagno_medio": 10501.0,
-    "guadagno_p25": 178.0,
-    "guadagno_p75": 5701.0,
-    "n_attivi": 20,
-    "fonte_guadagno": "tutte le fasce"
+    "guadagno_mediano": 1527.0,
+    "guadagno_medio": 2515.0,
+    "guadagno_p25": 0.0,
+    "guadagno_p75": 3274.0,
+    "n_attivi": 27,
+    "fonte_guadagno": "fascia"
    },
    {
     "eta": 10,
     "prob_corre_ancora": 0.555,
-    "n_base": 15,
+    "n_base": 19,
     "fonte_probabilita": "tutte le fasce",
-    "guadagno_mediano": 1856.0,
-    "guadagno_medio": 4873.0,
-    "guadagno_p25": 218.0,
+    "guadagno_mediano": 1825.0,
+    "guadagno_medio": 4851.0,
+    "guadagno_p25": 204.0,
     "guadagno_p75": 5035.0,
-    "n_attivi": 7,
+    "n_attivi": 10,
     "fonte_guadagno": "tutte le fasce"
    },
    {
     "eta": 11,
-    "prob_corre_ancora": 0.4417,
-    "n_base": 3,
+    "prob_corre_ancora": 0.438,
+    "n_base": 6,
     "fonte_probabilita": "tutte le fasce",
     "guadagno_mediano": 650.0,
     "guadagno_medio": 2624.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 3910.0,
-    "n_attivi": 1,
+    "n_attivi": 3,
     "fonte_guadagno": "tutte le fasce"
    },
    {
@@ -2867,107 +2837,107 @@
     "prob_corre_ancora": 0.0,
     "n_base": 0,
     "fonte_probabilita": "dato assente",
-    "guadagno_mediano": 4505.0,
-    "guadagno_medio": 8111.0,
-    "guadagno_p25": 1530.0,
-    "guadagno_p75": 8638.0,
-    "n_attivi": 2381,
+    "guadagno_mediano": 4453.0,
+    "guadagno_medio": 8058.0,
+    "guadagno_p25": 1496.0,
+    "guadagno_p75": 8636.0,
+    "n_attivi": 2420,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 3,
     "prob_corre_ancora": 0.9983,
-    "n_base": 2339,
+    "n_base": 2377,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 12371.0,
-    "guadagno_medio": 20952.0,
-    "guadagno_p25": 7964.0,
-    "guadagno_p75": 18459.0,
-    "n_attivi": 2840,
+    "guadagno_mediano": 12301.0,
+    "guadagno_medio": 20791.0,
+    "guadagno_p25": 7930.0,
+    "guadagno_p75": 18371.0,
+    "n_attivi": 2889,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 4,
-    "prob_corre_ancora": 0.9977,
-    "n_base": 2662,
+    "prob_corre_ancora": 0.9978,
+    "n_base": 2705,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 12176.0,
-    "guadagno_medio": 19100.0,
-    "guadagno_p25": 7500.0,
-    "guadagno_p75": 18635.0,
-    "n_attivi": 2677,
+    "guadagno_mediano": 12075.0,
+    "guadagno_medio": 18916.0,
+    "guadagno_p25": 7402.0,
+    "guadagno_p75": 18567.0,
+    "n_attivi": 2723,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 5,
-    "prob_corre_ancora": 0.9836,
-    "n_base": 2436,
+    "prob_corre_ancora": 0.9826,
+    "n_base": 2474,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 8815.0,
-    "guadagno_medio": 15229.0,
-    "guadagno_p25": 5046.0,
-    "guadagno_p75": 14809.0,
-    "n_attivi": 2401,
+    "guadagno_mediano": 8748.0,
+    "guadagno_medio": 15081.0,
+    "guadagno_p25": 4978.0,
+    "guadagno_p75": 14678.0,
+    "n_attivi": 2438,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 6,
-    "prob_corre_ancora": 0.9458,
-    "n_base": 2103,
+    "prob_corre_ancora": 0.9439,
+    "n_base": 2139,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 6344.0,
-    "guadagno_medio": 12943.0,
-    "guadagno_p25": 3199.0,
-    "guadagno_p75": 11355.0,
-    "n_attivi": 1996,
+    "guadagno_mediano": 6291.0,
+    "guadagno_medio": 12847.0,
+    "guadagno_p25": 3167.0,
+    "guadagno_p75": 11337.0,
+    "n_attivi": 2028,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 7,
-    "prob_corre_ancora": 0.8709,
-    "n_base": 1688,
+    "prob_corre_ancora": 0.8687,
+    "n_base": 1714,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 4704.0,
-    "guadagno_medio": 10942.0,
-    "guadagno_p25": 1707.0,
+    "guadagno_mediano": 4700.0,
+    "guadagno_medio": 10898.0,
+    "guadagno_p25": 1704.0,
     "guadagno_p75": 8806.0,
-    "n_attivi": 1475,
+    "n_attivi": 1496,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 8,
-    "prob_corre_ancora": 0.7679,
-    "n_base": 1176,
+    "prob_corre_ancora": 0.7653,
+    "n_base": 1193,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 3378.0,
-    "guadagno_medio": 9449.0,
-    "guadagno_p25": 872.0,
-    "guadagno_p75": 6778.0,
-    "n_attivi": 915,
+    "guadagno_mediano": 3370.0,
+    "guadagno_medio": 9401.0,
+    "guadagno_p25": 894.0,
+    "guadagno_p75": 6741.0,
+    "n_attivi": 925,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 9,
-    "prob_corre_ancora": 0.6939,
-    "n_base": 686,
+    "prob_corre_ancora": 0.6906,
+    "n_base": 695,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 1999.0,
-    "guadagno_medio": 11649.0,
+    "guadagno_mediano": 2003.0,
+    "guadagno_medio": 11595.0,
     "guadagno_p25": 264.0,
-    "guadagno_p75": 6018.0,
-    "n_attivi": 486,
+    "guadagno_p75": 6042.0,
+    "n_attivi": 491,
     "fonte_guadagno": "fascia"
    },
    {
     "eta": 10,
-    "prob_corre_ancora": 0.5846,
-    "n_base": 337,
+    "prob_corre_ancora": 0.5841,
+    "n_base": 339,
     "fonte_probabilita": "fascia",
-    "guadagno_mediano": 1912.0,
-    "guadagno_medio": 5091.0,
+    "guadagno_mediano": 1940.0,
+    "guadagno_medio": 5075.0,
     "guadagno_p25": 224.0,
     "guadagno_p75": 5156.0,
-    "n_attivi": 201,
+    "n_attivi": 202,
     "fonte_guadagno": "fascia"
    },
    {
