@@ -23,6 +23,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { lettera } from "../components/PotenzialeCavallo";
 import GradeBadge from "../components/GradeBadge";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import NameSelect from "../components/NameSelect";
@@ -92,6 +93,7 @@ interface AdvisorResult {
   candidates?: Candidate[];
   validazione?: {
     stato: string; sperimentale: boolean; riserva?: string | null;
+    potenziale_nascita?: { esito: string; motivo: string | null } | null;
     auc_buono: number | null; auc_solo_padre: number | null; n_prova: number;
   } | null;
 }
@@ -114,6 +116,7 @@ interface Candidate {
   value_index?: number | null;
   inbreeding_pct?: number | null;
   inbreeding_level?: string | null;
+  potenziale?: { p10: number; p50: number; p90: number; etichetta: { esito: string; motivo: string | null } | null } | null;
   monta_manuale?: boolean;
   antenato?: boolean;
 }
@@ -350,6 +353,11 @@ function Dettaglio({ c, mare, onClose }: { c: Candidate; mare: string; onClose?:
             <Cifra titolo="Voto atteso" colore={C.cyan}
               valore={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{num(c.expected_score, 1)}{c.expected_grade && <GradeBadge grade={c.expected_grade} size="sm" />}</span>}
               sotto={isNum(c.typical_low) && isNum(c.typical_high) ? `di solito ${num(c.typical_low)}–${num(c.typical_high)}` : "fra chi corre"} />
+            {c.potenziale && (
+              <Cifra titolo="Potenziale a 4 anni" colore="hsl(265 85% 76%)"
+                valore={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{num(c.potenziale.p50, 1)}<GradeBadge grade={lettera(c.potenziale.p50)} size="sm" /></span>}
+                sotto={`fra ${lettera(c.potenziale.p10)} e ${lettera(c.potenziale.p90)} · ${c.potenziale.etichetta?.esito ?? "in verifica"}`} />
+            )}
           </div>
         </div>
       </div>
@@ -655,11 +663,14 @@ export default function AdvisorPage() {
   }
 
   const val = data?.validazione;
+  // Dal novembre 2026 l'etichetta viene dalla verifica continua del potenziale
+  // dinamico allo stadio nascita (potenziale.py), non piu' da una data fissa.
+  const nascitaOk = val?.potenziale_nascita?.esito === "affidabile";
 
   return (
     <div className="page-shell">
       <style>{CSS}</style>
-      <IntestazionePagina icona={Sparkles} colore={C.viola} titolo="Advisor Allevatore" etichetta="sperimentale" margineSotto={18}
+      <IntestazionePagina icona={Sparkles} colore={C.viola} titolo="Advisor Allevatore" etichetta={nascitaOk ? "verificato alla nascita" : "in verifica"} margineSotto={18}
         sottotitolo="Scegli una fattrice: ti mostro gli stalloni compatibili in ordine di quanti puledri su 100 diventano buoni cavalli.">
         Per ogni stallone compatibile vedi quanti puledri su 100 di quella coppia
         diventano buoni cavalli e quanti arrivano alle corse, il voto atteso fra chi
@@ -762,7 +773,8 @@ export default function AdvisorPage() {
           <div className="adv-avviso" data-testid="advisor-avviso">
             <TriangleAlert size={16} style={{ color: "hsl(35 95% 62%)", flexShrink: 0, marginTop: 2 }} />
             <div style={{ minWidth: 0 }}>
-              <strong style={{ color: "hsl(35 95% 62%)" }}>Previsione sperimentale: indica una tendenza, non il destino del singolo puledro.</strong>{" "}
+              <strong style={{ color: "hsl(35 95% 62%)" }}>{nascitaOk ? "Previsione verificata alla nascita" : "Previsione in verifica"}: indica una tendenza, non il destino del singolo puledro.</strong>{" "}
+              {val?.potenziale_nascita?.motivo ? <>Perché è ancora in verifica: {val.potenziale_nascita.motivo}. </> : null}
               Un puledro qualsiasi diventa buono (fra il 25% migliore dei nati dell'anno) 25 volte su 100: la tacca bianca sulle barre.
               <Spiegazione titolo="Quanto ci si può fidare" compatta>
                 La previsione è stata provata su {num(val?.n_prova ?? 6000)} puledri nati fra il 2020 e

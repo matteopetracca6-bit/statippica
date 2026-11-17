@@ -1,0 +1,69 @@
+name: StatIppica — Potenziale, ricostruzione del registro (a mano)
+
+# Novembre 2026 (potenziale.py). Una volta, e poi ogni volta che cambia la
+# versione del potenziale: ricalcola a ritroso il potenziale dei nati dal 2017
+# (una formula per annata, allenata solo sulle annate di almeno cinque anni
+# prima, con i soli dati di quel giorno), lo scrive nel registro come righe
+# "ricostruita", aggiunge le stime di oggi e pubblica l'archivio.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova, senza pubblicare niente"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  ricostruisci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Installa dipendenze
+        run: pip install numpy pandas scikit-learn
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Ricostruisci il registro e scrivi le stime di oggi
+        env:
+          DB_PATH: data.db
+        run: |
+          python3 potenziale.py --ricostruisci
+          python3 potenziale.py
+          python3 - <<'PY'
+          import sqlite3
+          c = sqlite3.connect("data.db")
+          for r in c.execute("SELECT origine, COUNT(*), MIN(data), MAX(data) FROM potenziale_storico GROUP BY 1"):
+              print(r)
+          for r in c.execute("SELECT data, stadio, n_corse, potenziale, basso, alto, origine FROM potenziale_storico "
+                             "WHERE horse_name = 'CHICCA ROSS' ORDER BY data"):
+              print("CHICCA ROSS", r)
+          print("traguardo CHICCA ROSS:", c.execute("SELECT posizione FROM potenziale_traguardo WHERE horse_name='CHICCA ROSS'").fetchone())
+          PY
+      - name: Pubblica l'archivio aggiornato
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 300; echo

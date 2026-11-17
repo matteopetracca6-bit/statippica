@@ -17,6 +17,7 @@ import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import GradeBadge from "../components/GradeBadge";
+import { lettera } from "../components/PotenzialeCavallo";
 import { tempoKm } from "@/lib/record";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro, nomeBello } from "../components/DueColonne";
 
@@ -27,6 +28,7 @@ const PAGE = 30;
 interface Riga {
   nome: string; nato: number; sesso: string | null; padre: string | null; madre: string | null; nonno: string | null;
   corse: number; vittorie: number; primi_tre: number; vincite: number; breve: number | null; lunga: number | null; voto: string | null;
+  potenziale?: { potenziale: number; basso: number; alto: number; stadio: string } | null;
 }
 interface Risposta {
   anno: number; anno_riferimento: number; periodo: "carriera" | "stagione"; eta: string; nati: [number, number];
@@ -62,6 +64,8 @@ function Scheda({ r, d, onClose }: { r: Riga; d: Risposta; onClose?: () => void 
         <Cifra titolo="Vittorie" valore={num(r.vittorie)} sotto={`su ${num(r.corse)} corse · ${num(r.primi_tre)} volte nei primi tre`} />
         <Cifra titolo="Tempo breve" valore={tempoKm(r.breve)} sotto="il migliore sotto i 2000 m" />
         <Cifra titolo="Tempo lungo" valore={tempoKm(r.lunga)} sotto="il migliore da 2000 m in su" />
+        {r.potenziale && <Cifra titolo="Potenziale a 4 anni" valore={lettera(r.potenziale.potenziale)} colore="hsl(265 85% 76%)"
+          sotto={`fra ${lettera(r.potenziale.basso)} e ${lettera(r.potenziale.alto)} · ${r.potenziale.stadio}`} />}
       </div>
       <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Famiglia</div>
       <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: "5px 12px", fontSize: 13 }}>
@@ -144,6 +148,7 @@ export default function ClassificheEtaPage() {
           <button aria-pressed={ordine === "vittorie"} onClick={() => setOrdine("vittorie")}>Vittorie</button>
           <button aria-pressed={ordine === "breve"} onClick={() => setOrdine("breve")}>Tempo breve</button>
           <button aria-pressed={ordine === "lunga"} onClick={() => setOrdine("lunga")}>Tempo lungo</button>
+          {eta !== "anziani" && <button aria-pressed={ordine === "potenziale"} onClick={() => setOrdine("potenziale")} data-testid="ordina-potenziale">Potenziale</button>}
         </div>
         <button className="chip-filtro" aria-pressed={esteri} data-attivo={esteri} onClick={() => setEsteri(v => !v)}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, borderColor: esteri ? COLORE : undefined, color: esteri ? COLORE : undefined }}>
@@ -173,6 +178,12 @@ export default function ClassificheEtaPage() {
                         <span className="ed-nome" style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{r.nome}</span>
                           {r.voto && <GradeBadge grade={r.voto} size="sm" />}
+                          {r.potenziale && (
+                            <span title={`Potenziale a 4 anni: ${lettera(r.potenziale.potenziale)}, fra ${lettera(r.potenziale.basso)} e ${lettera(r.potenziale.alto)}`}
+                              style={{ fontSize: 10.5, fontWeight: 700, color: "hsl(265 85% 76%)", flexShrink: 0 }}>
+                              → {lettera(r.potenziale.potenziale)}
+                            </span>
+                          )}
                           {r.sesso && <span style={{ fontSize: 10.5, fontWeight: 700, color: r.sesso === "F" ? "hsl(330 70% 70%)" : "hsl(205 70% 68%)", flexShrink: 0 }}>{r.sesso === "F" ? "F" : r.sesso === "C" ? "C" : "M"}</span>}
                         </span>
                         {!tempo && <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={r.vincite} max={max} colore={COLORE} /></span>}
@@ -182,7 +193,8 @@ export default function ClassificheEtaPage() {
                       </span>
                       <span style={{ textAlign: "right" }}>
                         <span className="tabular" style={{ display: "block", fontSize: 16, fontWeight: 800, color: COLORE, whiteSpace: "nowrap" }}>
-                          {ordine === "breve" ? tempoKm(r.breve) : ordine === "lunga" ? tempoKm(r.lunga) : ordine === "vittorie" ? `${r.vittorie} vitt.` : euro(r.vincite)}
+                          {ordine === "breve" ? tempoKm(r.breve) : ordine === "lunga" ? tempoKm(r.lunga) : ordine === "vittorie" ? `${r.vittorie} vitt.`
+                            : ordine === "potenziale" && r.potenziale ? lettera(r.potenziale.potenziale) : euro(r.vincite)}
                         </span>
                         <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)", whiteSpace: "nowrap" }}>
                           {ordine === "vincite" ? `${r.vittorie} vitt. su ${r.corse}` : euro(r.vincite)}
@@ -213,7 +225,8 @@ export default function ClassificheEtaPage() {
           Di base si vedono solo i cavalli nati in Italia; «Anche i nati all'estero» aggiunge gli altri. «Maschi» comprende i castroni.
           Nella classifica in carriera degli anziani restano solo quelli che hanno corso nella stagione in corso. Il tempo «breve» è il
           migliore sotto i 2000 metri, quello «lungo» il migliore da 2000 metri in su, contando solo le corse in cui il cavallo è arrivato.
-          Si vedono i primi 200 di ogni classifica.
+          Si vedono i primi 200 di ogni classifica. La freccia viola è il potenziale: la lettera che il cavallo dovrebbe avere a fine
+          anno dei 4 anni contro tutti i nati del suo anno, aggiornata ogni notte con qualifiche e corse (dettagli nella scheda).
         </Spiegazione>
       </div>
       <CollegamentiCorrelati voci={[

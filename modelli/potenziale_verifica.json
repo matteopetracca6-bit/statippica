@@ -1,0 +1,364 @@
+{
+ "versione": "potenziale-v1",
+ "calcolato_il": "2026-11-17",
+ "traguardo": "posizione a fine anno dei 4 anni contro tutti i nati dell'anno (0-100)",
+ "regole": {
+  "A": "batte il riferimento con vantaggio sicuro (intervallo al 95% > 0)",
+  "B": "l'intervallo all'80% contiene il vero fra il 75% e l'85% delle volte",
+  "C": "A e B in ciascuna delle ultime due annate verificate"
+ },
+ "riferimento": {
+  "prima delle corse": "solo il padre (figli maturi, con richiamo)",
+  "dopo le corse": "voto attuale fra i coetanei che corrono, sulla scala di tutti i nati (quota di chi non corre mai presa dalle annate di allenamento)"
+ },
+ "note": [
+  "Prima prova (17/11/2026): il riferimento dopo le corse usava la quota di chi aveva gia' corso quel giorno, che a 2 anni metteva ogni debuttante vicino a 100 e gonfiava il vantaggio del modello. Sostituito con un riferimento piu' forte: la prova e' diventata piu' dura.",
+  "Prima prova: sklearn fermava da solo l'allenamento del quantile del 10% al primo giro (limite basso uguale per tutti). Corretto togliendo l'arresto automatico.",
+  "Prima prova: con un terzo dei nati a pari merito in fondo (chi non corre mai) il quantile del 10% restava incollato a quel valore per tutti. Corretto spostando di pochi decimi a caso, solo in allenamento, i traguardi a pari merito.",
+  "Seconda prova: corretti i due difetti, il modello batteva il riferimento in ogni stadio ma gli intervalli contenevano il vero solo 62-68 volte su 100. Aggiunta una taratura conforme: per ogni annata il fattore che allarga l'intervallo si misura sull'ultima annata matura, con una formula che non l'ha vista, e si applica poi all'annata da prevedere. La taratura e' venuta dopo aver visto la seconda prova: le etichette ricavate dalla ricostruzione sono provvisorie, quelle definitive verranno dal registro scritto ogni notte."
+ ],
+ "annate_verificate": [
+  2018,
+  2019,
+  2020,
+  2021
+ ],
+ "stadi": {
+  "nascita": {
+   "n": 59012,
+   "cavalli": 8334,
+   "errore_modello": 18.99,
+   "errore_riferimento": 27.75,
+   "vantaggio": 2.41,
+   "intervallo95": [
+    2.04,
+    2.76
+   ],
+   "copertura": 0.847,
+   "larghezza": 68.8,
+   "lettera_giusta_o_accanto": 0.671,
+   "lettera_giusta_o_accanto_rif": 0.398,
+   "A": true,
+   "B": true,
+   "C": false,
+   "per_anno": {
+    "2020": {
+     "n": 15003,
+     "cavalli": 2133,
+     "errore_modello": 18.45,
+     "errore_riferimento": 27.85,
+     "vantaggio": 3.33,
+     "intervallo95": [
+      2.66,
+      3.99
+     ],
+     "copertura": 0.8,
+     "larghezza": 53.8,
+     "lettera_giusta_o_accanto": 0.67,
+     "lettera_giusta_o_accanto_rif": 0.4,
+     "A": true,
+     "B": true
+    },
+    "2021": {
+     "n": 16208,
+     "cavalli": 2239,
+     "errore_modello": 18.18,
+     "errore_riferimento": 27.81,
+     "vantaggio": 3.97,
+     "intervallo95": [
+      3.39,
+      4.55
+     ],
+     "copertura": 0.854,
+     "larghezza": 56.2,
+     "lettera_giusta_o_accanto": 0.665,
+     "lettera_giusta_o_accanto_rif": 0.365,
+     "A": true,
+     "B": false
+    }
+   },
+   "esito": "in verifica",
+   "motivo": "non regge in ciascuna delle ultime due annate"
+  },
+  "qualifiche": {
+   "n": 3659,
+   "cavalli": 2646,
+   "errore_modello": 17.15,
+   "errore_riferimento": 22.7,
+   "vantaggio": 3.09,
+   "intervallo95": [
+    2.62,
+    3.54
+   ],
+   "copertura": 0.802,
+   "larghezza": 63.3,
+   "lettera_giusta_o_accanto": 0.725,
+   "lettera_giusta_o_accanto_rif": 0.564,
+   "A": true,
+   "B": true,
+   "C": false,
+   "per_anno": {
+    "2020": {
+     "n": 1025,
+     "cavalli": 717,
+     "errore_modello": 17.43,
+     "errore_riferimento": 22.49,
+     "vantaggio": 3.14,
+     "intervallo95": [
+      2.2,
+      4.06
+     ],
+     "copertura": 0.671,
+     "larghezza": 53.3,
+     "lettera_giusta_o_accanto": 0.715,
+     "lettera_giusta_o_accanto_rif": 0.584,
+     "A": true,
+     "B": false
+    },
+    "2021": {
+     "n": 1041,
+     "cavalli": 717,
+     "errore_modello": 15.92,
+     "errore_riferimento": 23.06,
+     "vantaggio": 3.46,
+     "intervallo95": [
+      2.53,
+      4.48
+     ],
+     "copertura": 0.854,
+     "larghezza": 58.5,
+     "lettera_giusta_o_accanto": 0.735,
+     "lettera_giusta_o_accanto_rif": 0.51,
+     "A": true,
+     "B": false
+    }
+   },
+   "esito": "in verifica",
+   "motivo": "non regge in ciascuna delle ultime due annate"
+  },
+  "corse 1-2": {
+   "n": 5897,
+   "cavalli": 3405,
+   "errore_modello": 11.81,
+   "errore_riferimento": 13.14,
+   "vantaggio": 1.95,
+   "intervallo95": [
+    1.66,
+    2.21
+   ],
+   "copertura": 0.833,
+   "larghezza": 53.0,
+   "lettera_giusta_o_accanto": 0.859,
+   "lettera_giusta_o_accanto_rif": 0.831,
+   "A": true,
+   "B": true,
+   "C": false,
+   "per_anno": {
+    "2020": {
+     "n": 1468,
+     "cavalli": 866,
+     "errore_modello": 11.33,
+     "errore_riferimento": 13.18,
+     "vantaggio": 2.38,
+     "intervallo95": [
+      1.76,
+      2.98
+     ],
+     "copertura": 0.768,
+     "larghezza": 35.2,
+     "lettera_giusta_o_accanto": 0.863,
+     "lettera_giusta_o_accanto_rif": 0.817,
+     "A": true,
+     "B": true
+    },
+    "2021": {
+     "n": 1774,
+     "cavalli": 935,
+     "errore_modello": 10.69,
+     "errore_riferimento": 11.23,
+     "vantaggio": 2.61,
+     "intervallo95": [
+      2.01,
+      3.29
+     ],
+     "copertura": 0.882,
+     "larghezza": 40.2,
+     "lettera_giusta_o_accanto": 0.87,
+     "lettera_giusta_o_accanto_rif": 0.833,
+     "A": true,
+     "B": false
+    }
+   },
+   "esito": "in verifica",
+   "motivo": "non regge in ciascuna delle ultime due annate"
+  },
+  "corse 3-5": {
+   "n": 7513,
+   "cavalli": 4300,
+   "errore_modello": 9.8,
+   "errore_riferimento": 10.44,
+   "vantaggio": 0.51,
+   "intervallo95": [
+    0.36,
+    0.64
+   ],
+   "copertura": 0.844,
+   "larghezza": 48.3,
+   "lettera_giusta_o_accanto": 0.888,
+   "lettera_giusta_o_accanto_rif": 0.879,
+   "A": true,
+   "B": true,
+   "C": false,
+   "per_anno": {
+    "2020": {
+     "n": 2008,
+     "cavalli": 1123,
+     "errore_modello": 9.32,
+     "errore_riferimento": 10.22,
+     "vantaggio": 0.72,
+     "intervallo95": [
+      0.45,
+      0.99
+     ],
+     "copertura": 0.773,
+     "larghezza": 29.0,
+     "lettera_giusta_o_accanto": 0.891,
+     "lettera_giusta_o_accanto_rif": 0.882,
+     "A": true,
+     "B": true
+    },
+    "2021": {
+     "n": 2097,
+     "cavalli": 1121,
+     "errore_modello": 8.82,
+     "errore_riferimento": 8.32,
+     "vantaggio": 0.42,
+     "intervallo95": [
+      0.12,
+      0.73
+     ],
+     "copertura": 0.879,
+     "larghezza": 33.6,
+     "lettera_giusta_o_accanto": 0.892,
+     "lettera_giusta_o_accanto_rif": 0.877,
+     "A": true,
+     "B": false
+    }
+   },
+   "esito": "in verifica",
+   "motivo": "non regge in ciascuna delle ultime due annate"
+  },
+  "corse 6-10": {
+   "n": 9750,
+   "cavalli": 4896,
+   "errore_modello": 7.89,
+   "errore_riferimento": 8.81,
+   "vantaggio": 0.35,
+   "intervallo95": [
+    0.25,
+    0.45
+   ],
+   "copertura": 0.834,
+   "larghezza": 41.6,
+   "lettera_giusta_o_accanto": 0.929,
+   "lettera_giusta_o_accanto_rif": 0.92,
+   "A": true,
+   "B": true,
+   "C": false,
+   "per_anno": {
+    "2020": {
+     "n": 2532,
+     "cavalli": 1269,
+     "errore_modello": 7.34,
+     "errore_riferimento": 8.47,
+     "vantaggio": 0.52,
+     "intervallo95": [
+      0.35,
+      0.69
+     ],
+     "copertura": 0.785,
+     "larghezza": 23.6,
+     "lettera_giusta_o_accanto": 0.936,
+     "lettera_giusta_o_accanto_rif": 0.926,
+     "A": true,
+     "B": true
+    },
+    "2021": {
+     "n": 2504,
+     "cavalli": 1216,
+     "errore_modello": 7.3,
+     "errore_riferimento": 6.99,
+     "vantaggio": -0.27,
+     "intervallo95": [
+      -0.45,
+      -0.09
+     ],
+     "copertura": 0.826,
+     "larghezza": 25.9,
+     "lettera_giusta_o_accanto": 0.924,
+     "lettera_giusta_o_accanto_rif": 0.925,
+     "A": false,
+     "B": true
+    }
+   },
+   "esito": "in verifica",
+   "motivo": "non regge in ciascuna delle ultime due annate"
+  },
+  "corse 11+": {
+   "n": 22511,
+   "cavalli": 4525,
+   "errore_modello": 4.77,
+   "errore_riferimento": 5.75,
+   "vantaggio": 0.86,
+   "intervallo95": [
+    0.78,
+    0.94
+   ],
+   "copertura": 0.858,
+   "larghezza": 28.4,
+   "lettera_giusta_o_accanto": 0.978,
+   "lettera_giusta_o_accanto_rif": 0.975,
+   "A": true,
+   "B": false,
+   "C": false,
+   "per_anno": {
+    "2020": {
+     "n": 5693,
+     "cavalli": 1155,
+     "errore_modello": 4.32,
+     "errore_riferimento": 5.33,
+     "vantaggio": 0.87,
+     "intervallo95": [
+      0.71,
+      1.03
+     ],
+     "copertura": 0.786,
+     "larghezza": 14.7,
+     "lettera_giusta_o_accanto": 0.977,
+     "lettera_giusta_o_accanto_rif": 0.977,
+     "A": true,
+     "B": true
+    },
+    "2021": {
+     "n": 5483,
+     "cavalli": 1120,
+     "errore_modello": 4.46,
+     "errore_riferimento": 4.38,
+     "vantaggio": -0.17,
+     "intervallo95": [
+      -0.31,
+      -0.03
+     ],
+     "copertura": 0.824,
+     "larghezza": 16.2,
+     "lettera_giusta_o_accanto": 0.971,
+     "lettera_giusta_o_accanto_rif": 0.976,
+     "A": false,
+     "B": true
+    }
+   },
+   "esito": "in verifica",
+   "motivo": "l'intervallo contiene il vero 86 volte su 100; non regge in ciascuna delle ultime due annate"
+  }
+ }
+}

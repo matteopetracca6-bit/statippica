@@ -5800,6 +5800,14 @@ def main():
         except Exception as e:
             print(f"[VOTO PREVISTO] errore: {e}", file=sys.stderr)
         phase_controllo_modelli(conn)  # FASE 3i: controllo mensile dei modelli
+        try:
+            # FASE 3i-bis: potenziale dinamico (potenziale.py). Dopo il controllo
+            # dei modelli, che ogni notte riscrive la sua tabella: cosi' la riga
+            # mensile del potenziale non si perde.
+            from potenziale import phase_potenziale
+            phase_potenziale(conn)
+        except Exception as e:
+            print(f"[POTENZIALE] errore: {e}", file=sys.stderr)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:

@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 
 // ──────────────────────────────────────────────────────────────────────────
 // Due popolazioni distinte (vedi ATHLETE_MIN_BIRTH_YEAR in nightly_update.py):
@@ -965,6 +966,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // da stallone o da fattrice, che ha figli, voto e statistiche. Appena un
       // riproduttore riceve una carriera (la ricerca notturna su UNIRE), la
       // scheda torna a mostrarsi.
+      horse.potenziale = potenzialeCavallo(db, name, horse.birth_year ?? null);
       horse.vai_a_pagina = null;
       if (!(horse.career_races > 0) && !(tot?.n > 0)) {
         const figliDa = (col: string) => (db.prepare(
@@ -2904,6 +2906,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // La prova del nove: quanto ci prende il modello su cavalli
   // che non ha mai visto in addestramento.
   // ──────────────────────────────────────────────
+  // Potenziale dinamico: esito della verifica per stadio (potenziale.py).
+  app.get("/api/potenziale/verifica", (_req, res) => {
+    const v = verificaPotenziale();
+    if (!v) return res.status(404).json({ error: "verifica non ancora calcolata" });
+    res.json(v);
+  });
+
   app.get("/api/advisor/validation", (_req, res) => {
     const bt = getAdvisorBacktest();
     if (!bt) {
@@ -3071,6 +3080,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         ORDER BY srs.avg_score DESC
       `).all() as any[];
 
+      const ctxMadre = contestoMadre(db, fattriceUpper);
       // Filter out inbreeding risk (ancestor in common) + budget
       const candidates = allStallions
         .filter((s: any) => {
@@ -3088,6 +3098,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
         .sort((a: any, b: any) => (b.pb - a.pb) || ((b.s.avg_score ?? 0) - (a.s.avg_score ?? 0)))
         .slice(0, 15)
         .map(({ s }: any) => {
+          // Potenziale dinamico allo stadio nascita (potenziale.py): lo stesso
+          // modello delle schede, per il puledro di questa coppia.
+          const potenziale = potenzialeNascita(db, s.name, ctxMadre);
           // Ogni candidato viene ora valutato SULLA FATTRICE scelta:
           // stesso stallone + fattrice diversa = risultato diverso.
           const p = predictPair(db, s.name, fattriceUpper);
@@ -3112,6 +3125,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
               : null,
             reasons: explain(p, inb, fee),
             score_rank: p.expected_score,
+            potenziale,
           };
         })
         // Ordine: probabilita' di un buon cavallo, la previsione verificata su
@@ -3136,6 +3150,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
         n_prova: ver.n_prova,
         anni_prova: ver.anni_prova,
         annata_di_conferma: ver.annata_di_conferma,
+        // Dal novembre 2026 l'etichetta che conta e' quella del potenziale
+        // dinamico allo stadio nascita: si accende o si spegne da sola con la
+        // verifica continua (potenziale.py).
+        potenziale_nascita: etichettaStadio("nascita"),
       } : null;
 
       res.json({
