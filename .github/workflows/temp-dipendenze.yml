@@ -1,0 +1,32 @@
+name: TEMPORANEO — togli dipendenze inutili
+
+on:
+  push:
+    branches: [pulizia/codice]
+
+permissions:
+  contents: write
+
+jobs:
+  togli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+      - name: Togli i pacchetti e aggiorna il package-lock
+        run: |
+          npm uninstall --package-lock-only --no-audit --no-fund \
+            @hookform/resolvers @jridgewell/trace-mapping @radix-ui/react-accordion @radix-ui/react-alert-dialog \
+            @radix-ui/react-aspect-ratio @radix-ui/react-avatar @radix-ui/react-checkbox @radix-ui/react-collapsible \
+            @radix-ui/react-context-menu @radix-ui/react-dropdown-menu @radix-ui/react-hover-card @radix-ui/react-menubar \
+            @radix-ui/react-navigation-menu @radix-ui/react-popover @radix-ui/react-progress @radix-ui/react-radio-group \
+            @radix-ui/react-scroll-area @radix-ui/react-select @radix-ui/react-slider @radix-ui/react-switch \
+            @radix-ui/react-tabs @radix-ui/react-toggle-group cmdk embla-carousel-react framer-motion input-otp \
+            next-themes react-hook-form react-icons react-resizable-panels tw-animate-css vaul @tailwindcss/vite drizzle-kit
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Dipendenze: tolti i pacchetti mai importati (package-lock aggiornato da npm)" || echo "niente da cambiare"
+          git push
