@@ -77,6 +77,16 @@ jobs:
               print("  tabelle non ancora create:", e)
           PY
 
+      - name: Ripara gare e schede doppie del recupero
+        # Novembre 2026 (scripts/ripara_recupero.py): se il recupero ha
+        # inserito una gara che l'archivio aveva gia' senza data, la riga di
+        # TrottoWeb prende la data e la copia si toglie; le schede di cavalli
+        # stranieri scritte senza parentesi ("X S") si uniscono a quelle con le
+        # parentesi ("X (S)"). Se non c'e' niente da riparare non cambia niente.
+        run: |
+          python3 scripts/ripara_recupero.py --db data.db \
+            || echo "::warning::riparazione dei doppioni non riuscita, si riprova la prossima notte"
+
       - name: Raccogli gli allenatori e calcola le schede
         # Il tempo per leggere e' quello che resta fino a 300 minuti dalla
         # partenza (l'attesa del turno compresa), con un minimo di 10: cosi'
