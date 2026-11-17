@@ -4,10 +4,12 @@ name: StatIppica — Misura la memoria del sito (a mano)
 # solo. Qui si avvia il sito come su Render (build + archivio vero), si chiedono
 # le pagine piu' pesanti una dopo l'altra e dopo ognuna si legge la memoria
 # del processo (RSS) e il suo massimo (HWM). Non pubblica niente.
+#
+# Prima misura (17/11/2026, archivio di 776.441 gare con il registro del
+# potenziale): 125 MB all'avvio, 183 MB dopo il riscaldamento, massimo 214 MB
+# (pagina stallone di MAHARAJAH). Da rilanciare quando l'archivio cresce.
 
 on:
-  push:
-    branches: [fix/memoria-numeri-corsa-puledri-m]   # TEMPORANEO: solo per la prima misura
   workflow_dispatch:
     inputs:
       opzioni_node:
