@@ -957,6 +957,26 @@ export function registerRoutes(httpServer: Server, app: Express) {
           }
         }
       }
+      // Scheda vuota di un riproduttore (novembre 2026): nessuna gara in
+      // archivio e nessun totale di carriera. Sono soprattutto stalloni che
+      // hanno corso solo all'estero (MAHARAJAH, 641 figli; LOVE YOU, 618): su
+      // UNIRE risultano con 0 corse in Italia e la scheda da cavallo
+      // resterebbe vuota per sempre. Chi la apre va direttamente alla pagina
+      // da stallone o da fattrice, che ha figli, voto e statistiche. Appena un
+      // riproduttore riceve una carriera (la ricerca notturna su UNIRE), la
+      // scheda torna a mostrarsi.
+      horse.vai_a_pagina = null;
+      if (!(horse.career_races > 0) && !(tot?.n > 0)) {
+        const figliDa = (col: string) => (db.prepare(
+          `SELECT COUNT(*) AS n FROM horses WHERE UPPER(TRIM(${col})) = UPPER(TRIM(?))`).get(name) as any)?.n ?? 0;
+        const haStatsStallone = !!db.prepare(
+          `SELECT 1 FROM stallion_rating_stats WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))`).get(name);
+        if (horse.sex !== "F" && (haStatsStallone || figliDa("sire") > 0)) {
+          horse.vai_a_pagina = `/stallion/${encodeURIComponent(name)}`;
+        } else if (horse.sex !== "M" && horse.sex !== "C" && (horse.come_fattrice || figliDa("dam") > 0)) {
+          horse.vai_a_pagina = `/fattrice/${encodeURIComponent(horse.come_fattrice?.nome ?? name)}`;
+        }
+      }
 
       // Last 20 races
       const races = db.prepare(`

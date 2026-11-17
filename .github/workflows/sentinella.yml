@@ -11,6 +11,9 @@ name: StatIppica — Sentinella (controlla sito, archivio e notturni)
 #  2. il sito: risponde con i dati? Se no, chiede a Render di ripartire;
 #  3. i notturni: l'ultimo riuscito e' di meno di due giorni fa?
 #  4. i buchi: ci sono giornate recenti quasi vuote nell'archivio?
+#  5. risultati in ritardo: rilancia il notturno dei risultati;
+#  6. i numeri: corse con due vincitori, schede doppie, copie della stessa
+#     gara, dati impossibili e correzioni automatiche sotto le loro soglie?
 #
 # Se qualcosa non va, il lavoro FALLISCE: GitHub manda allora un'email al
 # proprietario del progetto. E' l'allarme: un lavoro verde vuol dire che
@@ -32,7 +35,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
 
@@ -203,6 +206,21 @@ jobs:
           gh workflow run nightly-results.yml -f reason="recupero risultati in ritardo: $IN_ATTESA" \
             && echo "Giornate in attesa dei risultati: $IN_ATTESA. Ho rilanciato il notturno dei risultati." >> "$GITHUB_STEP_SUMMARY" \
             || echo "Giornate in attesa ($IN_ATTESA), ma non sono riuscito a rilanciare il notturno." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 6. I numeri dell'archivio sono sani?
+        # Novembre 2026 (scripts/controllo_numeri.py): le riparazioni notturne
+        # tengono a zero o quasi schede doppie, copie e dati impossibili. Se un
+        # numero supera la sua soglia, una fonte e' cambiata o una riparazione
+        # si e' rotta: meglio saperlo il giorno stesso.
+        run: |
+          set -uo pipefail
+          if python3 scripts/controllo_numeri.py /tmp/archivio.db > /tmp/numeri.txt; then
+            cat /tmp/numeri.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat /tmp/numeri.txt
+            { echo "ALLARME: un numero dell'archivio e' oltre la soglia."; cat /tmp/numeri.txt; } >> "$GITHUB_STEP_SUMMARY"
+            touch /tmp/allarme
+          fi
 
       - name: Esito
         run: |

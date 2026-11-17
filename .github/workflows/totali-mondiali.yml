@@ -31,14 +31,14 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Con questa chiave il push fa partire il deploy del sito; con quella
           # standard di GitHub i push non avviano altri lavori.
           token: ${{ secrets.GH_NIGHTLY_TOKEN }}
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 

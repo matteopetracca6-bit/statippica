@@ -544,6 +544,13 @@ export default function HorsePage() {
   useEffect(() => {
     if (vaiA) navigate(`/horse/${encodeURIComponent(vaiA.name)}/${vaiA.birth_year}`, { replace: true });
   }, [vaiA?.name, vaiA?.birth_year]);
+  // Riproduttore senza gare ne' carriera (stalloni che hanno corso solo
+  // all'estero, fattrici senza dati): la scheda sarebbe vuota, si va alla
+  // pagina da stallone o da fattrice.
+  const paginaRiproduttore = (horse as any)?.vai_a_pagina as string | null | undefined;
+  useEffect(() => {
+    if (paginaRiproduttore) navigate(paginaRiproduttore, { replace: true });
+  }, [paginaRiproduttore]);
 
   const { data: neighbors } = useQuery<Neighbors>({
     queryKey: ["/api/horse", name, year, "neighbors"],
