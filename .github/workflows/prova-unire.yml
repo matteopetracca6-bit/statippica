@@ -1,0 +1,40 @@
+name: StatIppica — Prova UNIRE (a mano)
+
+# Prova la ricerca di alcuni genitori sul registro ufficiale UNIRE e stampa
+# cosa risponde. Non scrive e non pubblica niente. I nomi si danno a mano;
+# sul ramo prova/unire parte anche a ogni push, con l'elenco qui sotto.
+
+on:
+  workflow_dispatch:
+    inputs:
+      nomi:
+        description: "Nomi dei genitori, separati da virgole"
+        required: true
+        default: "GELBISON"
+  push:
+    branches: [prova/unire]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prova:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Chiedi a UNIRE
+        env:
+          NOMI: ${{ inputs.nomi || 'GELBISON,OROPURO BAR,GALEA MACK,SETTENOTE CLUB,AMOR CARO,GADAMES,ROLLI GODDARD,LOVE YOU' }}
+        run: |
+          IFS=',' read -ra ELENCO <<< "$NOMI"
+          python3 scripts/prova_unire.py --db data.db "${ELENCO[@]}"
