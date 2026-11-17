@@ -751,7 +751,6 @@ export default function HorsePage() {
       <div className="scheda-corpo scheda-compatta">
       {eStorico && (
         <div className="blocco-storico">
-      {eStorico && (
           <div className="pannello" style={{ ...panelStyle, borderLeft: "3px solid hsl(51 70% 50%)" }}>
             <div style={panelTitle}>Voto storico, non confrontabile con i cavalli in gara</div>
             {/* L'avvertenza resta in chiaro: e' il punto, non un dettaglio. Il
@@ -779,7 +778,6 @@ export default function HorsePage() {
               ridistribuito sulle tre voci note, mantenendone le proporzioni.
             </Spiegazione>
           </div>
-      )}
         </div>
       )}
       {(horse as any).potenziale && <PotenzialeCavallo p={(horse as any).potenziale} style={panelStyle} />}

@@ -2589,25 +2589,6 @@ def _child_lookup_keys(conn: sqlite3.Connection, parent_name: str, role: str,
     """, (parent_name, quanti)).fetchall()
 
 
-def _child_lookup_key(conn: sqlite3.Connection, parent_name: str, role: str) -> Optional[tuple]:
-    """Un figlio (nome, sesso, anno) da cui raggiungere il genitore su UNIRE.
-
-    La ricerca UNIRE richiede nome+sesso+anno tutti e tre, e dell'anno di
-    nascita di una fattrice non sappiamo nulla: si parte quindi dal figlio,
-    di cui conosciamo tutto, e si segue il link della madre nella riga.
-    Scegliamo il figlio piu' vecchio con dati completi: i nati nell'ultimo anno
-    possono non essere ancora presenti nella banca dati (aggiornata al 2024).
-    """
-    col = "dam" if role == "dam" else "sire"
-    return conn.execute(f"""
-        SELECT name, sex, birth_year FROM horses
-        WHERE UPPER(TRIM({col})) = ?
-          AND birth_year IS NOT NULL AND sex IS NOT NULL AND TRIM(COALESCE(sex,'')) <> ''
-        ORDER BY birth_year ASC
-        LIMIT 1
-    """, (parent_name,)).fetchone()
-
-
 def phase_parents_coverage(conn: sqlite3.Connection,
                            batch_size: int = PARENT_COVERAGE_BATCH_SIZE) -> tuple[int, int]:
     """

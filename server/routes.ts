@@ -1250,9 +1250,6 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/stallion/:name
   // ──────────────────────────────────────────────
-   // ──────────────────────────────────────────────
-  // GET /api/stallion/:name
-  // ──────────────────────────────────────────────
   app.get("/api/stallion/:name", (req, res) => {
     const name = decodeURIComponent(req.params.name).toUpperCase();
     const db = getDb();
@@ -3152,11 +3149,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         .slice(0, 15);
 
       // Lo stato del modello viaggia con i consigli, non solo nella pagina che
-      // spiega il metodo. Chi apre l'Advisor vede voti attesi e guadagni
-      // stimati: se il modello che li produce e' sperimentale, deve leggerlo
-      // qui, accanto ai numeri, non altrove.
-      // Lo stato del modello viaggia con i consigli: chi apre l'Advisor deve
-      // leggere accanto ai numeri quanto sono affidabili, non altrove.
+      // spiega il metodo: chi apre l'Advisor deve leggere accanto ai numeri
+      // quanto sono affidabili, non altrove.
       const ver = getPuledriVerifica();
       const validazione = ver ? {
         stato: ver.stato,

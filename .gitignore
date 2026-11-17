@@ -2,7 +2,7 @@ node_modules/
 dist/
 .vite/
 
-# SQLite WAL temp files only (not main db — Railway needs data.db)
+# File temporanei di SQLite (WAL)
 data.db-shm
 data.db-wal
 data.db-journal
@@ -32,9 +32,6 @@ __pycache__/
 # automatici con scripts/ottieni_archivio.sh prima di lavorarci.
 data.db
 data.db.gz
-.gz); il file aperto viene
-# ricreato al momento del deploy e resta solo in locale.
-data.db
 
 # Segno lasciato da ottieni_archivio.sh: quante gare aveva l'archivio di partenza.
 .archivio_iniziale
