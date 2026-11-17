@@ -4022,10 +4022,20 @@ def _insert_races(conn: sqlite3.Connection, races: list[dict]) -> int:
             # Un cavallo non corre due volte lo stesso giorno: se esiste già una gara
             # per (cavallo, data) — anche con race_code diverso, perché arrivata da
             # un'altra fonte (hRis.php vs cavAn.php) — non duplichiamo.
-            already = conn.execute(
-                "SELECT id, COALESCE(prize_net, 0) FROM races WHERE horse_name=? AND race_date=?",
+            gia_oggi = conn.execute(
+                "SELECT id, COALESCE(prize_net, 0), race_code FROM races WHERE horse_name=? AND race_date=?",
                 (r.get("horse_name"), r.get("race_date"))
-            ).fetchone()
+            ).fetchall()
+            # Eccezione (novembre 2026): batteria e finale nello stesso giorno.
+            # Se la gara nuova e quelle gia' presenti vengono tutte dalle pagine
+            # ufficiali dei risultati (codice ..._R<numero>) con numeri diversi,
+            # sono due corse vere: la finale entra invece di sparire. Il solo
+            # numero di corsa non basta, perche' TrottoWeb a volte lo sbaglia.
+            m_nuova = re.search(r"_R(\d+)$", str(r.get("race_code") or ""))
+            if m_nuova and gia_oggi and all(re.search(r"_R(\d+)$", str(g[2] or "")) for g in gia_oggi):
+                gia_oggi = [g for g in gia_oggi
+                            if re.search(r"_R(\d+)$", str(g[2])).group(1) == m_nuova.group(1)]
+            already = (gia_oggi[0][0], gia_oggi[0][1]) if gia_oggi else None
             if already:
                 # Gara gia' presente: non si duplica, ma si correggono i premi
                 # rimasti a zero per l'errore di lettura degli importi da mille

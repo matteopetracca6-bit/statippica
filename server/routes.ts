@@ -187,7 +187,7 @@ function gradeColor(grade: string): string {
 // volta e si tengono per mezz'ora: sono qualche decina di migliaia di numeri.
 type MisureGare = { rendimento: number; classe: number | null; costanza: number; frequenza: number };
 type ListeRadar = { perAnno: Map<number, { rendimento: number[]; classe: number[]; costanza: number[]; frequenza: number[] }>;
-                    perCavallo: Map<string, MisureGare>; stalloni: number[]; fattrici: number[]; quando: number };
+                    perCavallo: Map<string, MisureGare>; stalloni: number[]; fattrici: number[]; quando: number; mtime: number };
 let listeRadar: ListeRadar | null = null;
 function ordinati(v: number[]) { return v.filter(x => x != null && isFinite(x)).sort((a, b) => a - b); }
 function percentileIn(lista: number[] | undefined, x: number | null | undefined): number | null {
@@ -202,7 +202,12 @@ function percentileIn(lista: number[] | undefined, x: number | null | undefined)
 // archivio c'e' solo il piazzato (succede spesso per le corse all'estero).
 const QUOTA_POSTO = `CASE placement WHEN 1 THEN 1.0 WHEN 2 THEN 0.475 WHEN 3 THEN 0.259 WHEN 4 THEN 0.13 WHEN 5 THEN 0.087 END`;
 function prendiListeRadar(db: any): ListeRadar {
-  if (listeRadar && Date.now() - listeRadar.quando < 30 * 60_000) return listeRadar;
+  // Novembre 2026: le liste dipendono solo dall'archivio, che cambia una volta
+  // a notte. Prima scadevano ogni 30 minuti e il primo visitatore dopo la
+  // scadenza aspettava circa 1,5 secondi (un giro su tutte le gare); ora si
+  // rifanno solo quando arriva l'archivio nuovo, e si preparano all'avvio.
+  const mt = mtimeDb();
+  if (listeRadar && listeRadar.mtime === mt) return listeRadar;
   const perAnno = new Map<number, { rendimento: number[]; classe: number[]; costanza: number[]; frequenza: number[] }>();
   const perCavallo = new Map<string, MisureGare>();
   // Per ogni cavallo con almeno 5 corse: premio medio per corsa (rendimento),
@@ -234,7 +239,7 @@ function prendiListeRadar(db: any): ListeRadar {
     perAnno, perCavallo,
     stalloni: colonna(`SELECT final_score v FROM stallion_rating_stats WHERE n_figli_corsi >= 5`),
     fattrici: colonna(`SELECT final_score v FROM dam_rating_stats WHERE n_valutati >= 2`),
-    quando: Date.now(),
+    quando: Date.now(), mtime: mt,
   };
   return listeRadar;
 }
@@ -287,6 +292,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
                      "/api/scuderia/esempio", "/api/controllo-a-posteriori"]) {
       try { await fetch(`http://127.0.0.1:${porta}${u}`); } catch { /* il sito funziona lo stesso */ }
     }
+    // Le liste del radar della scheda del cavallo (un giro su tutte le gare).
+    try { const db = getDb(); try { prendiListeRadar(db); } finally { db.close(); } } catch { /* si rifanno alla prima scheda */ }
   }, 25_000).unref?.();
 
   // ──────────────────────────────────────────────

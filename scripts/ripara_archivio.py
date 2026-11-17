@@ -269,9 +269,18 @@ def allinea_numeri_corsa(conn) -> int:
     for rid, h, d, t, n, codice, dist in righe:
         cod = pista_cod.get(t)
         s = uff.get((d, cod, _chiave(h))) if cod else None
-        if not s or len(s) != 1:
+        if not s:
             continue
-        giusto = next(iter(s))
+        m_r = re.search(r"_R(\d+)$", codice or "")
+        if len(s) > 1:
+            # Batteria e finale lo stesso giorno: due corse ufficiali. La riga
+            # col codice della pagina dei risultati (..._R2) appartiene a quella
+            # corsa; il numero di TrottoWeb (spesso quello della finale) no.
+            if not (m_r and int(m_r.group(1)) in s and n in s and int(m_r.group(1)) != n):
+                continue
+            giusto = int(m_r.group(1))
+        else:
+            giusto = next(iter(s))
         if giusto == n:
             continue
         m = re.search(r"_R?(\d+)$", codice or "")
