@@ -47,6 +47,15 @@ interface LeaderboardRow {
   gare_italia?: number | null; gare_estero?: number | null;
   vitt_italia?: number | null; vitt_estero?: number | null;
   guad_italia?: number | null; guad_estero?: number | null;
+  // Storici con la carriera parziale: l'archivio ha solo una parte delle
+  // gare (di solito dal 2016) e nessun totale ufficiale.
+  carriera_parziale?: number | null; parziale_dal?: string | null; parziale_al?: string | null;
+}
+
+const anno = (d?: string | null) => (d ? d.slice(0, 4) : "");
+function periodoParziale(r: LeaderboardRow) {
+  const a = anno(r.parziale_dal), b = anno(r.parziale_al);
+  return a && b ? (a === b ? `nel ${a}` : `dal ${a} al ${b}`) : "";
 }
 
 interface LeaderboardData {
@@ -65,7 +74,7 @@ const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWid
 const MODI: { v: string; l: string; sotto: string }[] = [
   { v: "performance", l: "In gara", sotto: "voto dalle corse" },
   { v: "pedigree", l: "Pedigree", sotto: "senza carriera, voto da padre e madre" },
-  { v: "storico", l: "Storici", sotto: "solo totali di carriera, scala a parte" },
+  { v: "storico", l: "Storici", sotto: "carriere concluse, scala a parte" },
 ];
 
 const MIN_RACES_SOLID = 4;
@@ -115,6 +124,12 @@ function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: st
         {onClose && <button className="ed-chiudi" onClick={onClose} aria-label="Chiudi"><X size={15} /></button>}
       </div>
 
+      {mode === "storico" && r.carriera_parziale ? (
+        <div style={{ marginTop: 10, fontSize: 12, color: "var(--ed-muto)", background: "hsl(220 30% 18% / .5)", border: "1px solid hsl(220 25% 30%)", borderRadius: 8, padding: "7px 10px" }}>
+          Carriera parziale: l&apos;archivio ha solo le {num(corse)} gare corse {periodoParziale(r)}, non i totali ufficiali.
+          Il voto è calcolato su queste gare, sulla stessa scala degli altri storici, e probabilmente sottostima il cavallo.
+        </div>
+      ) : null}
       {corse > 0 && corse < MIN_RACES_SOLID && mode !== "pedigree" && (
         <div style={{ marginTop: 10, fontSize: 12, color: "hsl(38 85% 62%)", background: "hsl(38 60% 18% / .5)", border: "1px solid hsl(38 50% 28%)", borderRadius: 8, padding: "7px 10px" }}>
           Voto calcolato su {corse} {corse === 1 ? "corsa" : "corse"}: poco affidabile.
@@ -275,7 +290,10 @@ export default function LeaderboardPage() {
             gare, perche&apos; per gli anni in cui hanno corso non esistono online. Sono
             confrontati solo fra loro, su guadagni, record e percentuale di vittorie: i loro
             voti non si possono paragonare a quelli dei cavalli in gara oggi, che correvano
-            in un&apos;altra epoca e con altri montepremi.
+            in un&apos;altra epoca e con altri montepremi. I cavalli segnati come
+            &laquo;carriera parziale&raquo; non hanno i totali ufficiali: il voto è calcolato
+            sulle sole gare presenti nell&apos;archivio (di solito dal 2016), sulla stessa
+            scala, quindi è probabilmente più basso di quello che meriterebbero.
           </Spiegazione>
         </div>
       )}
@@ -409,6 +427,12 @@ export default function LeaderboardPage() {
                               {corse} corse
                             </span>
                           )}
+                          {mode === "storico" && r.carriera_parziale ? (
+                            <span title={`Carriera parziale: solo le gare ${periodoParziale(r)} presenti nell'archivio`}
+                              style={{ fontSize: 10, fontWeight: 700, color: "hsl(210 70% 72%)", background: "hsl(215 40% 20%)", border: "1px solid hsl(215 35% 32%)", borderRadius: 5, padding: "1px 5px", flexShrink: 0 }}>
+                              parziale
+                            </span>
+                          ) : null}
                         </span>
                         <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={r.score} max={100} /></span>
                         <span className="ed-sotto" style={{ display: "block" }}>
