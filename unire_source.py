@@ -102,9 +102,20 @@ def find_parent_ids(name: str, sex: Optional[str], birth_year: int) -> Optional[
     assegnerebbe al cavallo i genitori di un altro.
     """
     target = _norm(name)
+    # Novembre 2026: con un apostrofo nel nome la ricerca di UNIRE risponde
+    # "0 cavalli" (TERRA DELL'OLMO, TROFAL D'ASTI, URRA' PER I LIONS), con o
+    # senza apostrofo, con lo spazio o con l'entita' HTML. Cercando solo il
+    # pezzo prima dell'apostrofo ("TERRA DELL") la riga giusta c'e': la
+    # ricerca e' "contiene" e il confronto esatto sul nome, qui sotto, scarta
+    # le altre (TERRA DELL'EST). Per anni migliaia di famiglie con un
+    # apostrofo nel nome dei figli sono rimaste senza madre e padre.
+    cerca = name
+    if "'" in name:
+        pezzi = [x.strip() for x in name.split("'") if x.strip()]
+        cerca = pezzi[0] if pezzi and len(pezzi[0]) >= 3 else max(pezzi, key=len, default=name)
     for code in _sex_codes(sex):
         resp = _get(UNIRE_LIST, method="POST",
-                    data={"name": name, "sex": code, "year": str(birth_year)})
+                    data={"name": cerca, "sex": code, "year": str(birth_year)})
         time.sleep(UNIRE_DELAY)
         soup = BeautifulSoup(resp.text, "html.parser")
         for tr in soup.find_all("tr"):
