@@ -27,14 +27,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install requests beautifulsoup4
+      - run: pip install requests beautifulsoup4 numpy pandas
       - name: Procura l'archivio
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
       - name: Chiedi a UNIRE
         env:
-          NOMI: ${{ inputs.nomi || 'GELBISON,AMOR CARO,GALEA MACK' }}
+          NOMI: ${{ inputs.nomi || 'GELBISON,AMOR CARO,GALEA MACK,OROPURO BAR' }}
         run: |
           IFS=',' read -ra ELENCO <<< "$NOMI"
           python3 scripts/prova_unire.py --db data.db "${ELENCO[@]}"
+      - name: Fase genitori su 25 cavalli (copia, niente pubblicato)
+        run: |
+          python3 - <<'PY2'
+          import sqlite3, nightly_update as nu
+          c = sqlite3.connect("data.db")
+          nu.init_db(c)
+          ordinati, tot = nu._parent_candidates(c)
+          print("genitori in coda dopo il reset:", tot)
+          print("ritorno:", nu.phase_parents_coverage(c, batch_size=25))
+          for r in c.execute("SELECT name, birth_year, career_races, career_earnings FROM horses WHERE name IN ('GELBISON','OROPURO BAR')"):
+              print(r)
+          PY2

@@ -43,7 +43,7 @@ def grezzo(nome, sesso, anno):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default="data.db")
-    ap.add_argument("--figli", type=int, default=3)
+    ap.add_argument("--figli", type=int, default=2)
     ap.add_argument("nomi", nargs="+")
     a = ap.parse_args()
     conn = sqlite3.connect(a.db)
