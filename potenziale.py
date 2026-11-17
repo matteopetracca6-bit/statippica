@@ -530,9 +530,12 @@ def phase_potenziale(conn) -> int:
     # novita': numero di corse o di qualifiche diverso dall'ultima riga scritta
     ultime = pd.read_sql_query("""
         SELECT horse_name AS cavallo, n_corse, stadio FROM potenziale_storico p
-        WHERE versione = ? AND data = (SELECT MAX(data) FROM potenziale_storico x
-                                       WHERE x.horse_name = p.horse_name AND x.versione = p.versione)""",
+        WHERE versione = ? AND origine = 'notte'
+          AND data = (SELECT MAX(data) FROM potenziale_storico x
+                      WHERE x.horse_name = p.horse_name AND x.versione = p.versione AND x.origine = 'notte')""",
                                conn, params=(VERSIONE,)).set_index("cavallo")
+    # Tutti il primo del mese (e la prima volta); gli altri giorni chi non ha
+    # ancora una riga di notte o ha corso / fatto una qualifica dall'ultima.
     primo_del_mese = oggi.day == 1 or ultime.empty
     if not primo_del_mese:
         prima = f["cavallo"].map(ultime["n_corse"])
