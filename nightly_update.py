@@ -151,6 +151,10 @@ PARENT_COVERAGE_BATCH_SIZE = int(os.environ.get("PARENT_COVERAGE_BATCH_SIZE", "1
 # Usato solo se in futuro si recuperassero le singole gare dei genitori: UNIRE
 # fornisce i totali di carriera gia' aggregati, non l'elenco delle corse.
 PARENT_MIN_RACE_DATE = os.environ.get("PARENT_MIN_RACE_DATE", "2000-01-01")
+# Genitori non trovati su UNIRE: dopo quanti giorni si riprova, e quanti figli
+# diversi si provano a ogni tentativo (dal piu' vecchio).
+PARENT_RIPROVA_GIORNI = int(os.environ.get("PARENT_RIPROVA_GIORNI", "180"))
+PARENT_FIGLI_DA_PROVARE = int(os.environ.get("PARENT_FIGLI_DA_PROVARE", "3"))
 
 # Backfill storico: quanti cavalli "mettere in pari" per ogni esecuzione notturna.
 # Il cron gira lun+gio, quindi con batch=250 ~22.000 cavalli vengono coperti in poche settimane.
@@ -562,6 +566,20 @@ def init_db(conn: sqlite3.Connection):
           AND COALESCE(career_races, 0) = 0
           AND parent_fetch_at IS NOT NULL
           AND parent_fetch_at < '2026-09-18'
+    """)
+
+    # Novembre 2026: tutti i genitori rimasti senza carriera tornano in coda per
+    # UNIRE. Fino a oggi la ricerca falliva con l'apostrofo nel nome del figlio
+    # (TERRA DELL'OLMO) e provava un solo figlio: GELBISON, madre di undici
+    # DELL'OLMO, e OROPURO BAR (23 corse, 161.000 euro) restavano vuoti per
+    # sempre. Si esaurisce da sola: il nuovo tentativo riscrive parent_fetch_at
+    # con una data successiva.
+    conn.execute("""
+        UPDATE horses SET parent_fetch_at = NULL
+        WHERE COALESCE(source_role, '') = 'parent_backfill'
+          AND COALESCE(career_races, 0) = 0
+          AND parent_fetch_at IS NOT NULL
+          AND parent_fetch_at < '2026-11-18'
     """)
 
     # Classificazione atleti / riproduttori: ricalcolata a ogni avvio, cosi'
@@ -2417,9 +2435,16 @@ def _parent_candidates(conn: sqlite3.Connection) -> tuple[list[tuple[str, str, i
     Ritorna (candidati ordinati per numero di figli, totale candidati).
     """
     known: dict[str, tuple[int, Optional[str]]] = {}
-    for name, races, fetched in conn.execute(
-        "SELECT name, COALESCE(career_races, 0), parent_fetch_at FROM horses"
+    # Chi non e' stato trovato su UNIRE (niente anno di nascita) si riprova
+    # dopo PARENT_RIPROVA_GIORNI: i figli nuovi danno nuove strade per
+    # arrivarci. Chi e' stato trovato e ha 0 corse in Italia (mai corso, o ha
+    # corso solo all'estero) non si riprova: la risposta non cambia.
+    riprova_dal = (datetime.utcnow() - timedelta(days=PARENT_RIPROVA_GIORNI)).isoformat()
+    for name, races, fetched, anno in conn.execute(
+        "SELECT name, COALESCE(career_races, 0), parent_fetch_at, birth_year FROM horses"
     ):
+        if fetched and anno is None and fetched < riprova_dal:
+            fetched = None
         key = _normalize_name(name)
         if not key:
             continue
@@ -2543,6 +2568,27 @@ def _upsert_unire_parent(conn: sqlite3.Connection, data: dict) -> bool:
     return True
 
 
+def _child_lookup_keys(conn: sqlite3.Connection, parent_name: str, role: str,
+                       quanti: int = PARENT_FIGLI_DA_PROVARE) -> list:
+    """I primi `quanti` figli (nome, sesso, anno) da cui raggiungere il genitore.
+
+    Novembre 2026: prima se ne provava uno solo, il piu' vecchio. Se quel figlio
+    non era su UNIRE (nome scritto diverso, registrazione mancante) il genitore
+    restava vuoto per sempre: OROPURO BAR si trova dal secondo figlio, LOVE YOU
+    dal quinto. I nati dopo il 2022 non si provano: la banca dati e' aggiornata
+    ad aprile 2024.
+    """
+    col = "dam" if role == "dam" else "sire"
+    return conn.execute(f"""
+        SELECT name, sex, birth_year FROM horses
+        WHERE UPPER(TRIM({col})) = ?
+          AND birth_year IS NOT NULL AND birth_year <= 2022
+          AND sex IS NOT NULL AND TRIM(COALESCE(sex,'')) <> ''
+        ORDER BY birth_year ASC, name
+        LIMIT ?
+    """, (parent_name, quanti)).fetchall()
+
+
 def _child_lookup_key(conn: sqlite3.Connection, parent_name: str, role: str) -> Optional[tuple]:
     """Un figlio (nome, sesso, anno) da cui raggiungere il genitore su UNIRE.
 
@@ -2601,8 +2647,8 @@ def phase_parents_coverage(conn: sqlite3.Connection,
     now_iso = datetime.utcnow().isoformat()
 
     for processed, (pname, role, n_figli) in enumerate(todo, 1):
-        child = _child_lookup_key(conn, pname, role)
-        if not child:
+        figli = _child_lookup_keys(conn, pname, role)
+        if not figli:
             # Nessun figlio con sesso+anno noti: non c'e' modo di interrogare UNIRE.
             _ensure_horse_in_db(conn, pname)
             conn.execute("UPDATE horses SET parent_fetch_at=?, source_role=COALESCE(source_role,'parent_backfill'), "
@@ -2611,18 +2657,22 @@ def phase_parents_coverage(conn: sqlite3.Connection,
             not_found += 1
             continue
 
-        child_name, child_sex, child_year = child
         parents = None
         data = None
+        scaduto = False
         try:
-            with _hard_timeout(180):
-                parents = unire_source.find_parent_ids(child_name, child_sex, child_year)
-                if parents:
-                    found_name, cid = parents.get(role, (None, None))
-                    # Guardia sull'omonimia/disallineamento: procediamo solo se il
-                    # nome del genitore su UNIRE coincide con quello che abbiamo.
-                    if cid and found_name == pname:
-                        data = unire_source.fetch_horse(cid)
+            # Si provano piu' figli, dal piu' vecchio, finche' uno porta al genitore.
+            for child_name, child_sex, child_year in figli:
+                with _hard_timeout(180):
+                    parents = unire_source.find_parent_ids(child_name, child_sex, child_year)
+                    if parents:
+                        found_name, cid = parents.get(role, (None, None))
+                        # Guardia sull'omonimia/disallineamento: procediamo solo se il
+                        # nome del genitore su UNIRE coincide con quello che abbiamo.
+                        if cid and found_name == pname:
+                            data = unire_source.fetch_horse(cid)
+                if data:
+                    break
         except unire_source.UnireUnavailable as e:
             # La fonte e' giu': interrompiamo la fase SENZA marcare i genitori
             # come gia' tentati, altrimenti un disservizio temporaneo li
@@ -2632,7 +2682,12 @@ def phase_parents_coverage(conn: sqlite3.Connection,
             unavailable = True
             break
         except _HardTimeout:
+            # Un blocco della fonte non dice niente sul cavallo: non lo si segna
+            # come tentato, cosi' torna in coda la notte dopo.
             print(f"  [TIMEOUT] UNIRE bloccata su {child_name}, salto.", file=sys.stderr)
+            scaduto = True
+        if scaduto and not data:
+            continue
 
         if data and _upsert_unire_parent(conn, data):
             recovered += 1
