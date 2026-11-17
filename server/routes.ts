@@ -331,6 +331,16 @@ export function registerRoutes(httpServer: Server, app: Express) {
                 : null;
             }
             dati.prezzo_massimo_ipotesi = { mensile, fattore_asta: FATTORE_ASTA };
+            // Potenziale dinamico allo stadio nascita (potenziale.py): i puledri
+            // M delle aste entrano nel registro di notte con padre e madre.
+            if (db.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='potenziale_storico'`).get()) {
+              const pot = db.prepare(`SELECT potenziale, basso, alto FROM potenziale_storico
+                                      WHERE horse_name = ? AND birth_year = 2025 ORDER BY data DESC LIMIT 1`);
+              for (const l of dati?.puledri_in_asta?.lotti_elenco ?? []) {
+                const r = l.puledro ? pot.get(String(l.puledro).toUpperCase()) as any : null;
+                l.potenziale = r ? { p50: r.potenziale, p10: r.basso, p90: r.alto, etichetta: etichettaStadio("nascita") } : null;
+              }
+            }
           } finally {
             db.close();
           }

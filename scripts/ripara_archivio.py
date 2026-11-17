@@ -37,6 +37,16 @@ vedere e annullare.
      corsa; se non lo e' (66esimo su 9) l'arrivo diventa sconosciuto e resta
      la scritta originale in placement_raw.
 
+3. NUMERI DI CORSA (novembre 2026). Quando il recupero dava la data a una gara
+   di TrottoWeb teneva il numero di corsa di TrottoWeb, anche se diverso da
+   quello ufficiale: 2.958 gare finivano nella corsa sbagliata, e 39 corse
+   risultavano con due vincitori. Le pagine ufficiali lette per gli allenatori
+   (allenatori_corse) danno il numero giusto di ogni cavallo in ogni giornata
+   dal 2016. Si corregge solo se e' sicuro: il cavallo compare in una sola
+   corsa quel giorno su quell'ippodromo, il codice della gara (se ha un
+   numero) e' d'accordo con la fonte ufficiale, e la distanza della gara e'
+   quella degli altri cavalli della corsa ufficiale (o la corsa e' vuota).
+
 Uso: python3 scripts/ripara_archivio.py --db data.db [--prova]
 """
 import argparse
@@ -234,6 +244,50 @@ def ripara_anomalie(conn) -> Counter:
     return fatti
 
 
+def _chiave(nome) -> str:
+    n = re.sub(r"\s*\([^)]*\)\s*$", "", str(nome or "").upper())
+    return re.sub(r"[^A-Z0-9]", "", n)
+
+
+def allinea_numeri_corsa(conn) -> int:
+    """Numero di corsa dalle pagine ufficiali (vedi punto 3 in testa)."""
+    tab = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if not {"allenatori_corse", "gare_ufficiali_mappa"} <= tab:
+        return 0
+    pista_cod = {a.split("|")[0]: u for u, a in conn.execute(
+        "SELECT ufficiale, archivio FROM gare_ufficiali_mappa WHERE tipo = 'ippodromo'")}
+    uff = defaultdict(set)
+    for d, cod, corsa, k in conn.execute("SELECT data, codice, corsa, chiave FROM allenatori_corse"):
+        uff[(d, cod, k)].add(corsa)
+    righe = conn.execute("""SELECT id, horse_name, race_date, track, race_number, race_code, distance
+                            FROM races WHERE race_date >= '2016-01-01' AND track <> 'ESTERO'
+                              AND race_number IS NOT NULL""").fetchall()
+    distanze = defaultdict(Counter)
+    for _, _, d, t, n, _, dist in righe:
+        distanze[(d, t, n)][dist] += 1
+    fatte = 0
+    for rid, h, d, t, n, codice, dist in righe:
+        cod = pista_cod.get(t)
+        s = uff.get((d, cod, _chiave(h))) if cod else None
+        if not s or len(s) != 1:
+            continue
+        giusto = next(iter(s))
+        if giusto == n:
+            continue
+        m = re.search(r"_R?(\d+)$", codice or "")
+        if m and re.match(r"\d{4}-\d\d-\d\d_", codice or "") and int(m.group(1)) != giusto:
+            continue
+        altri = distanze.get((d, t, giusto))
+        if altri and dist not in altri:
+            continue
+        conn.execute("UPDATE races SET race_number = ? WHERE id = ?", (giusto, rid))
+        registra(conn, rid, "race_number", n, giusto, "numero della corsa ufficiale")
+        distanze[(d, t, n)][dist] -= 1
+        distanze[(d, t, giusto)][dist] += 1
+        fatte += 1
+    return fatte
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Ripara schede doppie e dati impossibili")
     ap.add_argument("--db", default=os.environ.get("DB_PATH", "data.db"))
@@ -249,12 +303,13 @@ def main() -> int:
     prima = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
     unite = unisci_schede_doppie(conn)
     fatti = ripara_anomalie(conn)
+    numeri = allinea_numeri_corsa(conn)
     conn.commit()
     dopo = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
     log(f"[RIPARA-ARCHIVIO] schede doppie unite: {len(unite)}"
         + (f" ({', '.join(f'{x} -> {y}' for x, y in unite[:10])})" if unite else "")
         + f"; distanze: {fatti['distanze']}; tempi tolti: {fatti['tempi']}; "
-        f"partenti: {fatti['partenti']}; arrivi tolti: {fatti['arrivi']}; "
+        f"partenti: {fatti['partenti']}; arrivi tolti: {fatti['arrivi']}; numeri di corsa: {numeri}; "
         f"gare in archivio: {prima} -> {dopo}"
         + ("  [PROVA: niente e' stato salvato]" if a.prova else ""))
     conn.close()

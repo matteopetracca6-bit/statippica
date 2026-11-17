@@ -744,7 +744,7 @@ def inserisci(conn: sqlite3.Connection, atleti: bool = False, genitori: bool = F
                 if len(candidate) == 1:
                     conn.execute("""
                         UPDATE races SET race_date = ?,
-                               race_number = COALESCE(race_number, ?),
+                               race_number = ?,  -- il numero ufficiale vince su quello di TrottoWeb
                                start_pos = COALESCE(start_pos, ?),
                                total_starters = COALESCE(total_starters, ?)
                         WHERE id = ?""", (data, corsa, numero, partenti, candidate[0][0]))

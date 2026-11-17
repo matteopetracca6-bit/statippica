@@ -23,6 +23,7 @@ import Sagoma from "../components/Sagoma";
 import NameSelect from "../components/NameSelect";
 import VendereOCorrere, { MercatoStalloni } from "../components/VendereOCorrere";
 import { Spiegazione } from "../components/Spiegazione";
+import { lettera } from "../components/PotenzialeCavallo";
 import IntestazionePagina from "../components/IntestazionePagina";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import AggiungiScuderia from "../components/AggiungiScuderia";
@@ -283,6 +284,8 @@ function SchedaLotto({ l, onConto, onClose }: { l: any; onConto: () => void; onC
           colore={!pm ? ROSSO : l.venduto && pm >= l.prezzo ? VERDE : ORO} sotto="in carriera, a 1.200 € al mese" />
         <Cifra titolo="Si ripaga" valore={l.venduto ? pct(l.ripaga_entro_3_anni) : "—"} colore={coloreRipaga(l.ripaga_entro_3_anni)} sotto="entro i 3 anni" />
         <Cifra titolo="In pari sotto" valore={!l.venduto ? "—" : l.mensile_di_pareggio ? euro(l.mensile_di_pareggio) : "mai"} sotto="di costo al mese" />
+        {l.potenziale && <Cifra titolo="Potenziale a 4 anni" valore={lettera(l.potenziale.p50)} colore="hsl(265 85% 76%)"
+          sotto={`fra ${lettera(l.potenziale.p10)} e ${lettera(l.potenziale.p90)} · dai genitori · ${l.potenziale.etichetta?.esito ?? "in verifica"}`} />}
       </div>
 
       <div className="ed-etich" style={{ margin: "16px 0 8px" }}>Premi a 2 e 3 anni, nelle simulazioni</div>
@@ -414,7 +417,9 @@ function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
                   <button className="ed-riga" data-attiva={att} onClick={() => setAperto(att && !desktop ? null : k)} data-testid={`row-lotto-${i}`}>
                     <span className="ed-pos">{(p - 1) * PER_PAGINA + i + 1}</span>
                     <span style={{ minWidth: 0 }}>
-                      <span className="ed-nome" style={{ display: "block" }}>{l.puledro} <span style={{ color: "var(--ed-fioco)", fontWeight: 600, fontSize: 11 }}>{l.sesso}</span></span>
+                      <span className="ed-nome" style={{ display: "block" }}>{l.puledro} <span style={{ color: "var(--ed-fioco)", fontWeight: 600, fontSize: 11 }}>{l.sesso}</span>
+                        {l.potenziale && <span title={`Potenziale a 4 anni: ${lettera(l.potenziale.p50)}, fra ${lettera(l.potenziale.p10)} e ${lettera(l.potenziale.p90)}`}
+                          style={{ color: "hsl(265 85% 76%)", fontWeight: 700, fontSize: 11, marginLeft: 6 }}>→ {lettera(l.potenziale.p50)}</span>}</span>
                       <span className="ed-sotto" style={{ display: "block" }}>{titolo(l.padre)} × {l.madre ? titolo(l.madre) : "—"}</span>
                       <span style={{ display: "block", marginTop: 5 }}><Barretta valore={l.venduto ? l.prezzo : 0} max={maxPrezzo} colore="hsl(210 10% 55%)" alta={4} /></span>
                       <span className="ed-sotto" style={{ display: "block" }}>{NOME_ASTA[l.asta] ?? l.asta} · lotto {l.lotto} · {l.venduto ? euro(l.prezzo) : "ricomprato"}</span>

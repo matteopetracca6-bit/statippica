@@ -165,7 +165,7 @@ def ripara_doppioni(conn: sqlite3.Connection) -> int:
                                               (c[7] or "") != (guid or ""), c[0]))
             conn.execute("""
                 UPDATE races SET race_date = ?,
-                       race_number = COALESCE(race_number, ?),
+                       race_number = ?,  -- il numero ufficiale vince su quello di TrottoWeb
                        start_pos = COALESCE(start_pos, ?),
                        total_starters = COALESCE(total_starters, ?),
                        trainer = COALESCE(trainer, ?),

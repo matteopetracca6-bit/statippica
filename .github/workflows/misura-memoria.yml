@@ -1,0 +1,110 @@
+name: StatIppica — Misura la memoria del sito (a mano)
+
+# Novembre 2026. Render gratuito da' 512 MB: se il sito li supera, riparte da
+# solo. Qui si avvia il sito come su Render (build + archivio vero), si chiedono
+# le pagine piu' pesanti una dopo l'altra e dopo ognuna si legge la memoria
+# del processo (RSS) e il suo massimo (HWM). Non pubblica niente.
+
+on:
+  push:
+    branches: [fix/memoria-numeri-corsa-puledri-m]   # TEMPORANEO: solo per la prima misura
+  workflow_dispatch:
+    inputs:
+      opzioni_node:
+        description: "NODE_OPTIONS da provare (vuoto = come su Render)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  misura:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Avvia il sito e misura
+        env:
+          NODE_ENV: production
+          PORT: "5000"
+          NODE_OPTIONS: ${{ inputs.opzioni_node }}
+        run: |
+          set -u
+          node dist/index.cjs > server.log 2>&1 &
+          PID=$!
+          for i in $(seq 1 90); do curl -sf -o /dev/null http://127.0.0.1:5000/api/stats && break; sleep 2; done
+          mem() { awk '/VmRSS|VmHWM/{printf "%s %d MB  ", $1, $2/1024}' /proc/$PID/status; }
+          echo "avvio: $(mem)"
+          # Il server, 25 secondi dopo l'avvio, si chiede da solo le pagine lente.
+          sleep 40
+          echo "dopo il riscaldamento: $(mem)"
+          printf '%-70s %6s %8s  %s\n' "pagina" "esito" "secondi" "memoria"
+          while read -r U; do
+            [ -z "$U" ] && continue
+            R=$(curl -s -o /dev/null -m 120 -w '%{http_code} %{time_total}' "http://127.0.0.1:5000$U")
+            printf '%-70s %6s %8s  %s\n' "$U" ${R% *} ${R#* } "$(mem)"
+          done <<'ELENCO'
+          /api/stats
+          /api/trends
+          /api/top-races
+          /api/stallions
+          /api/rating-voti
+          /api/momento
+          /api/calendar/verifica
+          /api/calendar
+          /api/pronostico/verifica
+          /api/pronostico/confronto-quote
+          /api/controllo-a-posteriori
+          /api/controllo-modelli
+          /api/pareggio/stalloni
+          /api/pareggio/mercato
+          /api/scuderia/esempio
+          /api/generazione-m
+          /api/leaderboard?mode=performance&limit=50
+          /api/leaderboard?mode=storico&limit=50
+          /api/leaderboard?mode=pedigree&limit=50
+          /api/classifiche/eta?eta=3&periodo=carriera&ordine=vincite
+          /api/classifiche/eta?eta=2&periodo=carriera&ordine=potenziale
+          /api/classifiche/stalloni
+          /api/classifiche/allevatori
+          /api/classifiche/nipoti
+          /api/stalloni/albero
+          /api/mares
+          /api/drivers
+          /api/allenatori
+          /api/proprietari
+          /api/allevatori
+          /api/tracks
+          /api/qualifiche
+          /api/qualifiche/stats
+          /api/rotture
+          /api/stud-farms
+          /api/advisor/validation
+          /api/potenziale/verifica
+          /api/horse/CHICCA%20ROSS/2018
+          /api/horse/CHICCA%20ROSS/2018/stats
+          /api/horse/CHICCA%20ROSS/2018/previsioni
+          /api/horse/VARENNE/1995
+          /api/stallion/MAHARAJAH
+          /api/stallion/MAHARAJAH/stats
+          /api/mare/GELBISON
+          /api/pedigree/CHICCA%20ROSS
+          /api/linea-materna/CHICCA%20ROSS
+          /api/advisor/compare?fattrice=GELBISON
+          /api/search/all?q=CHI
+          ELENCO
+          echo "fine: $(mem)"
+          echo "--- ultime righe del server ---"; tail -n 30 server.log
+          kill $PID || true
