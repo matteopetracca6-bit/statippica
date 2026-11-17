@@ -14,12 +14,36 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unire_source  # noqa: E402
+import re  # noqa: E402
+from bs4 import BeautifulSoup  # noqa: E402
+
+
+def grezzo(nome, sesso, anno):
+    """Cosa risponde la ricerca, riga per riga (prime 5 righe), per varianti del nome."""
+    varianti = [nome, nome.replace("'", " "), nome.replace("'", ""), nome.split("'")[0].strip(),
+                nome.replace("'", "&#39;"), nome.replace("'", "`")]
+    visti = set()
+    for v in varianti:
+        if not v or v in visti:
+            continue
+        visti.add(v)
+        for code in unire_source._sex_codes(sesso):
+            r = unire_source._get(unire_source.UNIRE_LIST, method="POST",
+                                  data={"name": v, "sex": code, "year": str(anno)})
+            soup = BeautifulSoup(r.text, "html.parser")
+            righe = [[td.get_text(" ", strip=True) for td in tr.find_all("td")] for tr in soup.find_all("tr")]
+            righe = [x for x in righe if len(x) >= 7]
+            m = re.search(r"Ho trovato\s+(\d+)", soup.get_text(" "))
+            print(f"      cerca {v!r} {code} {anno}: trovati {m.group(1) if m else '?'}; "
+                  f"righe {[x[0] for x in righe[:5]]}")
+            if righe:
+                break
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default="data.db")
-    ap.add_argument("--figli", type=int, default=6)
+    ap.add_argument("--figli", type=int, default=3)
     ap.add_argument("nomi", nargs="+")
     a = ap.parse_args()
     conn = sqlite3.connect(a.db)
@@ -43,6 +67,7 @@ def main() -> int:
                 continue
             if not r:
                 print(f"  {figlio} ({sesso} {anno}): figlio NON trovato su UNIRE")
+                grezzo(figlio, sesso, anno)
                 continue
             trovato, cid = r.get(ruolo, (None, None))
             print(f"  {figlio} ({sesso} {anno}): {ruolo} su UNIRE = {trovato!r} id={cid}"

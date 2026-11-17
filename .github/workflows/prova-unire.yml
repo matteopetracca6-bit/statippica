@@ -34,7 +34,7 @@ jobs:
         run: bash scripts/ottieni_archivio.sh
       - name: Chiedi a UNIRE
         env:
-          NOMI: ${{ inputs.nomi || 'GELBISON,OROPURO BAR,GALEA MACK,SETTENOTE CLUB,AMOR CARO,GADAMES,ROLLI GODDARD,LOVE YOU' }}
+          NOMI: ${{ inputs.nomi || 'GELBISON,AMOR CARO,GALEA MACK' }}
         run: |
           IFS=',' read -ra ELENCO <<< "$NOMI"
           python3 scripts/prova_unire.py --db data.db "${ELENCO[@]}"
