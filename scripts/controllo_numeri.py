@@ -42,11 +42,20 @@ controlli = [
      20, "li toglie ripara_archivio.py ogni notte"),
     ("Distanze sotto i 1000 metri in Italia", uno(f"SELECT COUNT(*) FROM races WHERE {IT} AND distance > 0 AND distance < 1000"),
      30, "le corregge ripara_archivio.py ogni notte"),
+    # Le correzioni una tantum (le prime 386 e i 2.951 numeri di corsa del
+    # 17/11/2026) non contano: si guarda da dopo, quando restano quelle di ogni notte.
     ("Correzioni automatiche nelle ultime 24 ore", uno(
         "SELECT COUNT(*) FROM anomalie_corrette WHERE quando >= ?",
-        (d.datetime.now(d.timezone.utc) - d.timedelta(days=1)).strftime("%Y-%m-%d %H:%M")),
+        max((d.datetime.now(d.timezone.utc) - d.timedelta(days=1)).strftime("%Y-%m-%d %H:%M"), "2026-11-18 00:30")),
      600, "la prima volta furono 386; tante correzioni in un giorno vogliono dire che una fonte e' cambiata"),
 ]
+# Il registro del potenziale (potenziale.py) riceve righe ogni notte: se
+# l'ultima ha piu' di tre giorni, la fase notturna si e' fermata.
+giorni_pot = uno("""SELECT CAST(julianday('now') - julianday(MAX(data)) AS INTEGER) FROM potenziale_storico
+                    WHERE origine = 'notte'""")
+if c.execute("SELECT 1 FROM sqlite_master WHERE name = 'potenziale_storico'").fetchone():
+    controlli.append(("Giorni dall'ultima stima notturna del potenziale", giorni_pot, 3,
+                      "il registro riceve righe ogni notte"))
 allarmi = 0
 print("Numeri dell'archivio:")
 for nome, val, soglia, perche in controlli:
