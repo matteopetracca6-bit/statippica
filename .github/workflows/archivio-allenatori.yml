@@ -86,6 +86,13 @@ jobs:
         run: |
           python3 scripts/ripara_recupero.py --db data.db \
             || echo "::warning::riparazione dei doppioni non riuscita, si riprova la prossima notte"
+          # Novembre 2026 (scripts/ripara_archivio.py): schede doppie dello
+          # stesso cavallo (stesso anno e stessi genitori, come MAYOR SISU e
+          # MAYOR SISU (S)) e dati impossibili nelle corse in Italia (tempi
+          # sotto 1'08"5, distanze di 0 o 200 metri, arrivi oltre i partenti).
+          # Ogni correzione resta scritta nella tabella anomalie_corrette.
+          python3 scripts/ripara_archivio.py --db data.db \
+            || echo "::warning::riparazione dell'archivio non riuscita, si riprova la prossima notte"
 
       - name: Raccogli gli allenatori e calcola le schede
         # Il tempo per leggere e' quello che resta fino a 300 minuti dalla
