@@ -696,6 +696,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "ECHALOTE|2001": {
+   "nome": "ECHALOTE",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-17"
+  },
   "ECHO' DEI VELTRI|2001": {
    "nome": "ECHO' DEI VELTRI",
    "anno": 2001,
@@ -2521,6 +2527,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
   },
+  "OLYMPIAN WARNING|2008": {
+   "nome": "OLYMPIAN WARNING",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-17"
+  },
   "OMERA WIN SM|2008": {
    "nome": "OMERA WIN SM",
    "anno": 2008,
@@ -2577,6 +2589,12 @@
    "anno": 2008,
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
+  },
+  "ORKIDEA DVS|2008": {
+   "nome": "ORKIDEA DVS",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-17"
   },
   "ORLEANS OM|2008": {
    "nome": "ORLEANS OM",
@@ -3482,6 +3500,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
   },
+  "TEQUILA TRIO|1993": {
+   "nome": "TEQUILA TRIO",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-17"
+  },
   "THUNDER KRONOS|1993": {
    "nome": "THUNDER KRONOS",
    "anno": 1993,
@@ -3520,6 +3544,12 @@
      "url": "https://sv.wikipedia.org/wiki/Timoko"
     }
    ]
+  },
+  "TIRADE|1993": {
+   "nome": "TIRADE",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-17"
   },
   "TISFATTISTA|1993": {
    "nome": "TISFATTISTA",
@@ -3984,5 +4014,5 @@
    "letto_il": "2026-11-06"
   }
  },
- "aggiornato_il": "2026-11-16"
+ "aggiornato_il": "2026-11-17"
 }
