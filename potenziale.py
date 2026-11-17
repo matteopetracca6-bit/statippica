@@ -509,6 +509,37 @@ def _carica_modello():
     return m
 
 
+def puledri_asta(conn, h: pd.DataFrame) -> pd.DataFrame:
+    """Puledri della generazione M (nati 2025) passati alle aste yearling del
+    2026 (aste_yearling.csv) e non ancora nell'archivio: padre e madre sono
+    noti, quindi hanno il potenziale allo stadio nascita."""
+    import csv
+    f = Path(__file__).resolve().parent / "aste_yearling.csv"
+    try:
+        lotti = [r for r in csv.DictReader(open(f, encoding="utf-8")) if (r.get("generazione") or "").strip() == "M"]
+    except Exception:
+        return pd.DataFrame(columns=h.columns)
+    noti = set(h["cavallo"])
+    madri = {r[0]: r[1:] for r in conn.execute(
+        "SELECT UPPER(TRIM(name)), birth_year, UPPER(TRIM(sire)), COALESCE(career_races, 0), "
+        "COALESCE(career_earnings, 0) FROM horses")}
+    righe, visti = [], set()
+    for l in lotti:
+        nome = (l.get("puledro") or "").strip().upper()
+        padre = (l.get("padre") or "").strip().upper()
+        if not nome or not padre or nome in noti or nome in visti:
+            continue
+        visti.add(nome)
+        madre = (l.get("madre") or "").strip().upper() or None
+        anno_m, pm, corse, premi = madri.get(madre, (None, None, 0, 0)) if madre else (None, None, 0, 0)
+        pm = pm or ((l.get("nonno_materno") or "").strip().upper() or None)
+        sesso = (l.get("sesso") or "").strip().upper()[:1] or None
+        righe.append({"cavallo": nome, "nato": 2025, "sex": sesso, "padre": padre, "madre": madre,
+                      "padre_madre": pm, "anno_madre": anno_m, "madre_corse": corse, "madre_premi": premi,
+                      "femmina": 1.0 if sesso == "F" else 0.0, "k": chiave(nome)})
+    return pd.DataFrame(righe)
+
+
 def phase_potenziale(conn) -> int:
     """Di notte. Il primo del mese scrive il potenziale di tutti i nati che non
     hanno ancora raggiunto il traguardo; gli altri giorni solo di chi ha avuto
@@ -523,8 +554,10 @@ def phase_potenziale(conn) -> int:
     y = traguardi(r, h)
     oggi = pd.Timestamp(date.today())
     giorno = min(oggi, r["d"].max())
-    anni = [a for a in h["nato"].unique() if a + 4 >= oggi.year and a <= oggi.year]
-    f = foto(r, h, q, y, giorno, anni)
+    asta = puledri_asta(conn, h)
+    hh = pd.concat([h, asta], ignore_index=True) if not asta.empty else h
+    anni = [a for a in hh["nato"].unique() if a + 4 >= oggi.year and a <= oggi.year]
+    f = foto(r, hh, q, y, giorno, anni)
     if f.empty:
         return 0
     # novita': numero di corse o di qualifiche diverso dall'ultima riga scritta
@@ -551,7 +584,8 @@ def phase_potenziale(conn) -> int:
     conn.commit()
     scrivi_traguardi(conn, h, y)
     controlla(conn, y)
-    log(f"[POTENZIALE] {n} righe nel registro ({'tutti' if primo_del_mese else 'solo le novita'})")
+    log(f"[POTENZIALE] {n} righe nel registro ({'tutti' if primo_del_mese else 'solo le novita'}; "
+        f"puledri M delle aste: {len(asta)})")
     return n
 
 

@@ -26,7 +26,8 @@ controlli = [
           WHERE placement = 1 AND race_number IS NOT NULL AND {IT}
           GROUP BY 1, 2, 3 HAVING COUNT(*) > 1
              AND COUNT(DISTINCT COALESCE(time_km, -1) || '|' || COALESCE(prize_net, -1)) > 1)"""),
-     80, "a novembre 2026 erano 56, quasi tutte due corse diverse con lo stesso numero"),
+     40, "a novembre 2026, dopo l'allineamento ai numeri ufficiali, erano 19: quasi tutti arrivi ex aequo "
+         "registrati con premi diversi"),
     ("Stesso cavallo due volte nella stessa corsa", uno(f"""
         SELECT COUNT(*) FROM (SELECT 1 FROM races WHERE race_number IS NOT NULL AND {IT}
           GROUP BY horse_name, race_date, track, race_number HAVING COUNT(*) > 1)"""),
