@@ -594,7 +594,7 @@ export default function HorsePage() {
   const parziale = (horse as any).carriera_parziale as { n: number; dal: string; al: string; premi_stimati: number } | null;
   const MODE_LABEL =
     horse.rating_mode === "performance" ? "Gare"
-      : horse.rating_mode === "storico" ? "Storico"
+      : horse.rating_mode === "storico" ? (parziale ? "Storico · carriera parziale" : "Storico")
         : parziale ? "Carriera parziale"
           : "Pedigree";
   const eStorico = horse.rating_mode === "storico";
@@ -720,13 +720,15 @@ export default function HorsePage() {
             valore={horse.career_earnings != null ? `€ ${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
           <Cifra titolo="Record al km" valore={horse.record_career ? formatRecord(horse.record_career) : "—"} colore="hsl(183 70% 60%)" />
         </>}
-        avviso={eStorico ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
+        avviso={eStorico && !parziale ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
           : parziale ? (
             <div data-testid="nota-carriera-parziale" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(45 85% 70%)",
                  border: "1px solid hsl(45 70% 45% / .45)", background: "hsl(45 60% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
               Carriera parziale: questi numeri contano solo le {parziale.n} gare che abbiamo
               (dal {parziale.dal.slice(8, 10)}/{parziale.dal.slice(5, 7)}/{parziale.dal.slice(0, 4)}), lette dai risultati ufficiali.
-              La carriera completa non è disponibile, quindi il cavallo non ha un voto.
+              {eStorico
+                ? <> La carriera completa non è disponibile: il voto storico è calcolato su queste gare, sulla stessa scala degli altri storici, e per una carriera iniziata prima del 2016 o corsa in parte all&apos;estero probabilmente sottostima il cavallo.</>
+                : <> La carriera completa non è disponibile, quindi il cavallo non ha un voto.</>}
               {parziale.premi_stimati > 0 && <> In {parziale.premi_stimati} gare il premio è stimato dalla tabella del regolamento.</>}
             </div>
           ) : undefined}
@@ -751,9 +753,17 @@ export default function HorsePage() {
               di vittorie.
             </div>
             <Spiegazione titolo="Perché ha una scala a parte">
-              Di questo cavallo l&apos;archivio conosce i totali di carriera presi
-              dall&apos;anagrafe ufficiale, ma non le singole gare: per gli anni in cui ha corso
-              non esistono online. Confrontarlo con i cavalli di oggi sarebbe doppiamente
+              {parziale ? <>
+                Di questo cavallo l&apos;archivio non ha i totali ufficiali di carriera, solo le
+                gare corse dal 2016 in poi (quelle precedenti non esistono online): il voto è
+                calcolato su quelle, con le stesse soglie degli altri storici, quindi non sposta
+                la scala ma può essere più basso di quanto il cavallo meriterebbe.
+              </> : <>
+                Di questo cavallo l&apos;archivio conosce i totali di carriera presi
+                dall&apos;anagrafe ufficiale, ma non le singole gare: per gli anni in cui ha corso
+                non esistono online.
+              </>}
+              {" "}Confrontarlo con i cavalli di oggi sarebbe doppiamente
               sbagliato, perche&apos; correvano in un&apos;altra epoca e con altri montepremi.
               <br />
               La tenuta, che per i cavalli in attivita&apos; vale un quarto del voto, qui non

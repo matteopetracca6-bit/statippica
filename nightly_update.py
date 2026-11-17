@@ -3079,6 +3079,62 @@ def phase_historic_ratings(conn: sqlite3.Connection):
                 return g
         return "F"
 
+    # Carriere parziali (novembre 2026). Riproduttori senza totali di carriera
+    # ma con gare in archivio: quasi tutti recuperati dai risultati ufficiali,
+    # che partono dal 2016 (es. MAN DI CASEI, POP HEART). Entrano fra gli
+    # storici con il punteggio calcolato sulle gare che abbiamo, letto sulla
+    # scala dei cavalli con la carriera completa: guadagni, record e vittorie
+    # si confrontano con i loro, e le soglie delle lettere restano quelle.
+    # Cosi' non spostano i voti degli altri: messi dentro la scala ne avrebbero
+    # cambiati circa un terzo (1.997 su 5.815 alla prova del 17/11/2026). Il
+    # voto e' segnato come parziale, perche' chi ha corso molto prima del 2016
+    # o all'estero risulta sottostimato. Le gare si contano da due anni dopo
+    # la nascita, come nella scheda, per non prendere quelle di un omonimo
+    # piu' anziano.
+    colonne_hr = {r[1] for r in conn.execute("PRAGMA table_info(horse_ratings)")}
+    for colonna, tipo in (("carriera_parziale", "INTEGER"), ("parziale_dal", "TEXT"),
+                          ("parziale_al", "TEXT")):
+        if colonna not in colonne_hr:
+            conn.execute(f"ALTER TABLE horse_ratings ADD COLUMN {colonna} {tipo}")
+    parziali = []
+    for name, birth_year, sire, corse, vitt, euro, tempo, dal, al in conn.execute(f"""
+        SELECT h.name, h.birth_year, h.sire, COUNT(*),
+               SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END),
+               SUM(COALESCE(r.prize_net, 0)),
+               MIN(CASE WHEN r.time_km > 0 THEN r.time_km END),
+               MIN(r.race_date), MAX(r.race_date)
+        FROM horses h JOIN races r ON r.horse_name = h.name
+        WHERE h.horse_class = '{CLASS_BREEDER}'
+          AND COALESCE(h.career_races, 0) = 0
+          -- Solo i nati prima del 2012: i piu' giovani hanno la carriera
+          -- intera nell'archivio, e se non hanno totali sono riproduttori
+          -- senza scheda TrottoWeb, non cavalli storici.
+          AND h.birth_year < 2012
+          AND r.race_date >= (h.birth_year + 2) || '-01-01'
+        GROUP BY h.name, h.birth_year
+    """).fetchall():
+        rec = f"{tempo:.1f}" if tempo else None
+        pg = pct_guadagni(euro or 0)
+        pr = pct_record(rec)
+        tasso = ((vitt or 0) + RICHIAMO_VITTORIE * media_vittorie / 100) \
+            / ((corse or 0) + RICHIAMO_VITTORIE) * 100
+        if pr is None:
+            quota = PESO_ST_GUADAGNI + PESO_ST_VITTORIE
+            punteggio = (pg * (PESO_ST_GUADAGNI / quota)
+                         + tasso * (PESO_ST_VITTORIE / quota))
+        else:
+            punteggio = (pg * PESO_ST_GUADAGNI
+                         + pr * PESO_ST_RECORD
+                         + tasso * PESO_ST_VITTORIE)
+        parziali.append({
+            "name": name, "birth_year": birth_year, "sire": sire,
+            "score": round(min(punteggio, 100.0), 2),
+            "pct_guadagni": pg, "pct_record": pr,
+            "win_rate": round((vitt or 0) / corse * 100, 2) if corse else 0.0,
+            "corse": corse, "vitt": vitt, "euro": round(euro or 0, 2), "rec": rec,
+            "dal": dal, "al": al,
+        })
+
     ora = datetime.utcnow().isoformat()
     conn.execute("DELETE FROM horse_ratings WHERE rating_mode = 'storico'")
     for c in calcolati:
@@ -3094,6 +3150,20 @@ def phase_historic_ratings(conn: sqlite3.Connection):
               c["pct_guadagni"], c["pct_record"], c["win_rate"],
               c["corse"], c["vitt"], c["euro"], c["rec"],
               CLASS_BREEDER, ora))
+    for c in parziali:
+        conn.execute("""
+            INSERT INTO horse_ratings
+                (name, birth_year, sire, grade, score,
+                 earn_percentile, time_percentile, win_rate,
+                 career_races, career_wins, career_earnings, record_career,
+                 rating_mode, horse_class, last_updated,
+                 carriera_parziale, parziale_dal, parziale_al)
+            VALUES (?,?,?,?,?, ?,?,?, ?,?,?,?, 'storico', ?, ?, 1, ?, ?)
+        """, (c["name"], c["birth_year"], _normalize_name(c["sire"]) if c["sire"] else None,
+              grado(c["score"]), c["score"],
+              c["pct_guadagni"], c["pct_record"], c["win_rate"],
+              c["corse"], c["vitt"], c["euro"], c["rec"],
+              CLASS_BREEDER, ora, c["dal"], c["al"]))
 
     # Il vecchio voto sulla scala atleti va rimosso, altrimenti la scheda del
     # cavallo continuerebbe a mostrarlo accanto a quello nuovo.
@@ -3104,7 +3174,8 @@ def phase_historic_ratings(conn: sqlite3.Connection):
     conn.commit()
 
     migliori = sorted(calcolati, key=lambda x: -x["score"])[:3]
-    print(f"[RATINGS] Classifica storica: {len(calcolati)} cavalli "
+    print(f"[RATINGS] Classifica storica: {len(calcolati)} cavalli con la carriera completa "
+          f"e {len(parziali)} con la carriera parziale "
           f"({eliminati} vecchi voti sulla scala atleti rimossi). "
           f"Primi: " + ", ".join(f"{m['name']} {m['score']}" for m in migliori),
           file=sys.stderr)

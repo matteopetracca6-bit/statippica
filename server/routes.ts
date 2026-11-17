@@ -1529,12 +1529,18 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const total = (db.prepare(`SELECT COUNT(*) as cnt ${fromClause} WHERE ${where}`)
         .get(...params) as any).cnt;
 
+      // Carriere parziali fra gli storici (novembre 2026): le colonne nascono
+      // con il primo lavoro notturno che le calcola, quindi si chiedono solo
+      // se ci sono gia'.
+      const conParziale = (db.prepare("PRAGMA table_info(horse_ratings)").all() as any[])
+        .some(c => c.name === "carriera_parziale");
       const rows = db.prepare(`
         SELECT hr.name, hr.birth_year, hr.sire, hr.grade, hr.score, hr.earn_percentile, hr.time_percentile,
                hr.sire_percentile, hr.career_races, hr.career_wins, hr.career_earnings, hr.record_career, hr.win_rate,
                hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
                hr.guad_italia, hr.guad_estero,
                hr.grade_annata, hr.pos_annata, hr.tot_annata,
+               ${conParziale ? "hr.carriera_parziale, hr.parziale_dal, hr.parziale_al," : ""}
                h.country, h.sex,
                CASE WHEN h.name IS NULL THEN 1 ELSE 0 END AS fuori_archivio
         ${fromClause}
