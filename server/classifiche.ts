@@ -69,7 +69,7 @@ export function leadersEta(db: Database.Database, q: { eta?: unknown; periodo?: 
   const natiDa = anno - amax, natiA = anno - amin;
   const sesso = q.sesso === "F" ? "F" : q.sesso === "M" ? "M" : null;
   const soloIta = q.naz !== "tutti";
-  const ordine = ["vincite", "vittorie", "breve", "lunga"].includes(String(q.ordine)) ? String(q.ordine) : "vincite";
+  const ordine = ["vincite", "vittorie", "breve", "lunga", "potenziale"].includes(String(q.ordine)) ? String(q.ordine) : "vincite";
 
   const filtri: string[] = ["h.birth_year BETWEEN @natiDa AND @natiA"];
   if (soloIta) filtri.push("h.country = 'ITA'");
@@ -103,9 +103,26 @@ export function leadersEta(db: Database.Database, q: { eta?: unknown; periodo?: 
   const cmp = ordine === "vittorie" ? (a: RigaLeader, b: RigaLeader) => b.vittorie - a.vittorie || b.vincite - a.vincite
     : ordine === "breve" ? perTempo("breve") : ordine === "lunga" ? perTempo("lunga")
     : (a: RigaLeader, b: RigaLeader) => b.vincite - a.vincite || b.vittorie - a.vittorie;
-  const righe = tutte.filter(r => ordine === "breve" ? r.breve != null : ordine === "lunga" ? r.lunga != null : r.corse > 0)
-    .sort(cmp).slice(0, 200)
-    .map(r => ({ ...r, vincite: Math.round(r.vincite || 0), sesso: r.sesso || null }));
+  // Potenziale dinamico (novembre 2026, potenziale.py): l'ultima stima del
+  // registro per i cavalli che non hanno ancora raggiunto il traguardo dei 4
+  // anni. Si puo' anche ordinare per potenziale.
+  const pot = new Map<string, { potenziale: number; basso: number; alto: number; stadio: string }>();
+  if (db.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='potenziale_storico'`).get()) {
+    for (const p of db.prepare(`
+        SELECT p.horse_name, p.potenziale, p.basso, p.alto, p.stadio FROM potenziale_storico p
+        JOIN (SELECT horse_name, MAX(data) d FROM potenziale_storico
+              WHERE origine = 'notte' AND birth_year BETWEEN ? AND ? GROUP BY horse_name) u
+          ON u.horse_name = p.horse_name AND u.d = p.data AND p.origine = 'notte'`).all(natiDa, natiA) as any[]) {
+      pot.set(p.horse_name, { potenziale: p.potenziale, basso: p.basso, alto: p.alto, stadio: p.stadio });
+    }
+  }
+  const cmpPot = (a: RigaLeader, b: RigaLeader) =>
+    (pot.get(b.nome.toUpperCase())?.potenziale ?? -1) - (pot.get(a.nome.toUpperCase())?.potenziale ?? -1) || b.vincite - a.vincite;
+  const righe = tutte.filter(r => ordine === "breve" ? r.breve != null : ordine === "lunga" ? r.lunga != null
+                                  : ordine === "potenziale" ? pot.has(r.nome.toUpperCase()) : r.corse > 0)
+    .sort(ordine === "potenziale" ? cmpPot : cmp).slice(0, 200)
+    .map(r => ({ ...r, vincite: Math.round(r.vincite || 0), sesso: r.sesso || null,
+                 potenziale: pot.get(r.nome.toUpperCase()) ?? null }));
   return {
     anno, anno_riferimento: rif, periodo: stagione ? "stagione" : "carriera", eta, nati: [natiDa, natiA],
     totale_cavalli: tutte.length, totale_vincite: Math.round(tot), righe, anni: anniDisponibili(db),

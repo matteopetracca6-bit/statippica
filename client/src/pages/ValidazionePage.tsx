@@ -165,6 +165,54 @@ function ScatterPlot({ points }: { points: { pred: number; actual: number }[] })
   );
 }
 
+
+/* Potenziale dinamico (novembre 2026, potenziale.py): la verifica continua per
+   stadio, sulle righe ricostruite del registro. Ogni stadio si accende
+   ("affidabile") solo se supera le regole A, B e C fissate prima. */
+function VerificaPotenziale() {
+  const { data } = useQuery<any>({
+    queryKey: ["/api/potenziale/verifica"],
+    queryFn: () => apiRequest("GET", "/api/potenziale/verifica").then(r => (r.ok ? r.json() : null)),
+    staleTime: 600000,
+  });
+  if (!data?.stadi) return null;
+  const righe = Object.entries(data.stadi) as [string, any][];
+  const cella: React.CSSProperties = { padding: "7px 8px", borderBottom: "1px solid hsl(220 10% 20%)", fontSize: "12.5px", color: TEXT, textAlign: "right", whiteSpace: "nowrap" };
+  return (
+    <Section title="Il potenziale dinamico, stadio per stadio" icon={<Target size={17} />}
+      sub={`Annate verificate: ${data.annate_verificate.join(", ")}. Errore = distanza media dalla posizione vera a 4 anni, su 100.`}>
+      <div className="pannello" style={{ padding: "12px 14px", overflowX: "auto", marginBottom: "14px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>{["Stadio", "Casi", "Errore", "Riferimento", "Vantaggio (95%)", "Intervallo giusto", "Esito"].map((t, i) => (
+              <th key={t} style={{ ...cella, color: MUTED, fontWeight: 700, textAlign: i === 0 || i === 6 ? "left" : "right" }}>{t}</th>))}</tr>
+          </thead>
+          <tbody>
+            {righe.map(([k, v]) => (
+              <tr key={k} title={v.motivo ?? undefined}>
+                <td style={{ ...cella, textAlign: "left", fontWeight: 700 }}>{k}</td>
+                <td style={cella}>{v.n?.toLocaleString("it-IT")}</td>
+                <td style={cella}>{v.errore_modello ?? "—"}</td>
+                <td style={cella}>{v.errore_riferimento ?? "—"}</td>
+                <td style={cella}>{v.vantaggio != null ? `${v.vantaggio} (${v.intervallo95[0]} / ${v.intervallo95[1]})` : "—"}</td>
+                <td style={cella}>{v.copertura != null ? `${Math.round(v.copertura * 100)}%` : "—"}</td>
+                <td style={{ ...cella, textAlign: "left", fontWeight: 700, color: v.esito === "affidabile" ? "hsl(145 60% 62%)" : "hsl(38 85% 62%)" }}>{v.esito}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Spiegazione titolo="Come si legge" compatta>
+        Per ogni stadio (alla nascita, dopo la qualifica, dopo un certo numero di corse) il potenziale scritto nel registro si
+        confronta con dove il cavallo è arrivato davvero a fine anno dei 4 anni. Il riferimento è il confronto semplice: il solo
+        padre prima delle corse, il voto attuale fra i coetanei dopo. Uno stadio è «affidabile» se batte il riferimento con
+        vantaggio sicuro (A), se l'intervallo contiene il vero fra 75 e 85 volte su 100 (B) e se regge in ciascuna delle ultime due
+        annate (C). Le regole sono fissate prima di guardare e il controllo si ripete da solo ogni mese.
+      </Spiegazione>
+    </Section>
+  );
+}
+
 export default function ValidazionePage() {
   const { data, isLoading } = useQuery<Validation>({
     queryKey: ["/api/advisor/validation"],
@@ -209,6 +257,8 @@ export default function ValidazionePage() {
           <VerificaPuledri v={data.puledri} />
         </Section>
       )}
+
+      <VerificaPotenziale />
 
       <h2 style={{ fontSize: "13px", fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 14px" }}>
         Il voto atteso, solo fra chi corre
