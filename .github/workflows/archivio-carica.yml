@@ -31,7 +31,7 @@ jobs:
     name: Carica data.db.gz nel rilascio
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Serve tutta la cronologia: se il rilascio va perso, l'ultima
           # copia dell'archivio si recupera dai vecchi commit, che la
