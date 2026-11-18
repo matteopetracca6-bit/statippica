@@ -364,9 +364,10 @@ def togli_date_dei_ritirati(conn) -> int:
             # (..._R3) hanno la data da TrottoWeb stesso e restano.
             if not (len(codice or "") <= 3 or codice == f"{d}_{sigla}_{corsa}"):
                 continue
-            # Anche l'allenatore: era stato abbinato con quella data sbagliata.
+            # Anche allenatore e proprietario: erano stati abbinati con quella
+            # data sbagliata.
             conn.execute("""UPDATE races SET race_date = NULL, race_number = NULL, start_pos = NULL,
-                            total_starters = NULL, trainer = NULL WHERE id = ?""", (rid,))
+                            total_starters = NULL, trainer = NULL, owner = NULL WHERE id = ?""", (rid,))
             registra(conn, rid, "race_date", d, None, "data presa da un cavallo ritirato prima del via")
             fatte += 1
         conn.execute("""UPDATE gare_ufficiali_attesa SET stato = 'saltata', motivo = 'non_partito'

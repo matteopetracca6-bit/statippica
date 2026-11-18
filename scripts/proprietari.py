@@ -144,7 +144,7 @@ def calcola(conn: sqlite3.Connection) -> int:
     for o, h, d, tr, dr, t, p, pr in conn.execute("""
         SELECT owner, horse_name, race_date, track, driver, trainer, placement,
                COALESCE(prize_net, 0)
-        FROM races WHERE owner IS NOT NULL"""):
+        FROM races WHERE owner IS NOT NULL AND race_date IS NOT NULL"""):
         a = acc[o]
         a["n"] += 1
         a["cav"].add(h)
