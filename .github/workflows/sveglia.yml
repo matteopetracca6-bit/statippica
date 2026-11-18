@@ -21,8 +21,8 @@ name: StatIppica — Sveglia (tiene acceso il sito)
 # programmato resta solo come riserva.
 #
 # La sveglia fa anche da orologio per la regia notturna
-# (scripts/regia_notturna.sh): fra l'una e le sei di notte, ora italiana,
-# lancia i lavori notturni se stanotte non sono ancora partiti.
+# (scripts/regia_notturna.sh): dall'una di notte, ora italiana, lancia i
+# lavori notturni che non sono ancora partiti, finche' non partono tutti.
 #
 # Costi: il progetto e' pubblico, quindi i minuti di GitHub sono gratuiti.
 # Render concede 750 ore al mese di servizio gratuito: un sito sempre acceso
