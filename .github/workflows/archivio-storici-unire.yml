@@ -26,8 +26,14 @@ permissions:
 jobs:
   storici:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    # Il limite conta anche l'attesa del turno dietro gli altri lavori: il
+    # 18/11/2026 un giro ha aspettato 71 minuti, poi ha lavorato i suoi 220 ed
+    # e' stato interrotto al limite di 240 prima di pubblicare, perdendo tutto.
+    # Ora i minuti di lavoro si calcolano su quanto resta (vedi sotto).
+    timeout-minutes: 355
     steps:
+      - name: Segna l'ora di partenza
+        run: echo "PARTENZA=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
@@ -51,6 +57,11 @@ jobs:
             RESTANO=$(( (FINE - $(date +%s)) / 60 ))
             [ "$RESTANO" -lt "$MINUTI" ] && MINUTI=$RESTANO
           fi
+          # Si lascia sempre il tempo per pubblicare prima del limite del
+          # lavoro (355 minuti dalla partenza, attesa del turno compresa).
+          PASSATI=$(( ($(date +%s) - PARTENZA) / 60 ))
+          MARGINE=$(( 335 - PASSATI ))
+          [ "$MARGINE" -lt "$MINUTI" ] && MINUTI=$MARGINE
           # Anche se arriva tardi non salta: lavora almeno un quarto d'ora.
           [ "$MINUTI" -lt 15 ] && MINUTI=15
           echo "Lavoro per $MINUTI minuti."
