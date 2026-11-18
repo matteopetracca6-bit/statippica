@@ -12,12 +12,15 @@ name: StatIppica — Deploy al push su main
 on:
   push:
     branches: [main]
-    # Le modifiche ai soli lavori di GitHub non cambiano il sito: niente
-    # deploy, cosi' il sito non riparte di giorno senza motivo.
-    paths-ignore:
-      - ".github/**"
-      - "scripts/regia_notturna.sh"
-      - "scripts/aspetta_turno.sh"
+    # Le modifiche ai soli lavori di GitHub e agli script che girano li'
+    # non cambiano il sito: niente deploy, cosi' il sito non riparte di giorno
+    # senza motivo. Fa eccezione prepara_archivio.sh, che Render usa per
+    # costruire il sito (render.yaml). Le righe dopo vincono sulle prime.
+    paths:
+      - "**"
+      - "!.github/**"
+      - "!scripts/**"
+      - "scripts/prepara_archivio.sh"
   workflow_dispatch:
 
 concurrency:
