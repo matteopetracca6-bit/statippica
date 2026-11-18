@@ -16,14 +16,9 @@ def cerca(nome, sesso, anno):
             righe.append((tds[0].get_text(" ", strip=True), a["href"] if a else None))
     return int(m.group(1)) if m else -1, righe
 
-print("GIL DEL ROERO:", u.fetch_horse("365154"))
-for nome in ("XAUR", "EXAUR", "EXAU", "ESAURO", "EX AURO"):
-    for anno in (2001, 1981, 2021):
-        for s in ("M", "F", "C"):
-            n, righe = cerca(nome, s, anno)
-            if n > 0:
-                print(nome, anno, s, n, righe[:5])
-# soglia dell'elenco: ricerche via via piu' strette
-for nome in ("ER", "ERO", "ROS", "EGO", "EL", "EN", "EST"):
-    n, righe = cerca(nome, "M", 2001)
-    print(f"soglia: {nome!r} M 2001 -> dice {n}, mostra {len(righe)}")
+print("EX AURO:", u.fetch_horse("357204"))
+for nome in ("EST", "ERI", "EGA", "ERA", "ENT", "ELL", "EAR", "EST", "ESS", "EDI"):
+    for s_ in ("M", "F"):
+        n, righe = cerca(nome, s_, 2001)
+        print(f"soglia: {nome!r} {s_} 2001 -> dice {n}, mostra {len(righe)}")
+print("totale nati 2001:", {s_: cerca("", s_, 2001)[0] for s_ in ("M", "F", "C")})
