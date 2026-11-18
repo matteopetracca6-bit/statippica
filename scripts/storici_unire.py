@@ -167,6 +167,11 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
         return "errore"
     corse = int(d.get("career_races") or 0)
     nome = d.get("name") or nome_elenco
+    # Una carriera parziale cercata per nome resta sulla sua scheda, anche se
+    # UNIRE scrive il nome in un altro modo: niente doppioni.
+    if conn.execute("SELECT 1 FROM storici_unire_parziali WHERE nome = ? AND stato = 'trovato'",
+                    (nome_elenco,)).fetchone():
+        nome = nome_elenco
     if corse <= 0:
         return "mai_corso"
     anno_d = d.get("birth_year") or anno
