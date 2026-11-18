@@ -17,8 +17,10 @@ risultati sono piu' di 100 si aggiunge una lettera ("EAA", ...), finche'
 l'elenco si vede. Poi, per ogni cavallo dell'elenco, la scheda con i totali.
 
 QUALI ENTRANO. Solo chi ha corso (carriera completa nel registro). Chi c'e'
-gia' con una carriera non si tocca; chi c'e' come scheda vuota (per esempio un
-genitore non trovato) riceve i totali. Un omonimo di un altro anno non si puo'
+gia' con una carriera non si tocca; chi c'e' come scheda vuota (un genitore non
+trovato, uno storico con le sole gare dal 2016) riceve i totali. Ogni scheda
+toccata da qui ha source = 'unire_blocco': la scala storica non la usa per le
+soglie (vedi phase_historic_ratings). Un omonimo di un altro anno non si puo'
 aggiungere (nell'archivio il nome e' unico): si salta e si annota.
 
 QUANTO. Si lavora una notte alla volta per CHI_MINUTI minuti, a una richiesta
@@ -149,7 +151,7 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
                             country = COALESCE(country, ?), sire = COALESCE(NULLIF(sire, ''), ?),
                             dam = COALESCE(NULLIF(dam, ''), ?), career_races = ?, career_wins = ?,
                             career_places = ?, career_earnings = ?, record_career = COALESCE(record_career, ?),
-                            source_role = 'unire_storici', horse_class = 'breeder', last_updated = ?
+                            source = 'unire_blocco', horse_class = 'breeder', last_updated = ?
                         WHERE name = ?""",
                      (anno_d, valori["sex"], valori["country"], valori["sire"], valori["dam"], corse,
                       valori["career_wins"], valori["career_places"], valori["career_earnings"],
@@ -158,7 +160,7 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
     conn.execute("""INSERT INTO horses (name, birth_year, sex, country, sire, dam, career_races, career_wins,
                         career_places, career_earnings, record_career, source, source_role, horse_class,
                         backfill_status, tw_found, last_updated)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?, 'unire', 'unire_storici', 'breeder', 'done', 0, ?)""",
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?, 'unire_blocco', 'unire_storici', 'breeder', 'done', 0, ?)""",
                  (nome, anno_d, valori["sex"], valori["country"], valori["sire"], valori["dam"], corse,
                   valori["career_wins"], valori["career_places"], valori["career_earnings"],
                   valori["record_career"], adesso()))
@@ -228,15 +230,15 @@ def main() -> int:
         conn.close()
         conn = copia
     crea_tabelle(conn)
-    prima = conn.execute("SELECT COUNT(*) FROM horses WHERE source_role = 'unire_storici'").fetchone()[0]
+    prima = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
     esito = lavora(conn, a.minuti, a.massimo)
-    dopo = conn.execute("SELECT COUNT(*) FROM horses WHERE source_role = 'unire_storici'").fetchone()[0]
+    dopo = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
     log(f"[STORICI-UNIRE] {esito}; storici dal registro: {prima} -> {dopo}"
         + ("  [PROVA: niente e' stato salvato]" if a.prova else ""))
     log(rapporto(conn))
     if a.prova:
         for r in conn.execute("""SELECT name, birth_year, sex, sire, dam, career_races, career_wins, career_earnings,
-                                        record_career FROM horses WHERE source_role = 'unire_storici' LIMIT 8"""):
+                                        record_career FROM horses WHERE source = 'unire_blocco' LIMIT 8"""):
             log("   ", r)
     conn.close()
     return 0

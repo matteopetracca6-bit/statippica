@@ -3043,7 +3043,7 @@ def phase_historic_ratings(conn: sqlite3.Connection):
 
     tutte = conn.execute(f"""
         SELECT name, birth_year, sire, career_races, career_wins,
-               career_earnings, record_career, COALESCE(source_role, '')
+               career_earnings, record_career, COALESCE(source, '')
         FROM horses
         WHERE horse_class = '{CLASS_BREEDER}'
           AND career_races > 0
@@ -3054,12 +3054,12 @@ def phase_historic_ratings(conn: sqlite3.Connection):
         return
 
     # Novembre 2026: gli storici recuperati in blocco dal registro UNIRE
-    # (scripts/storici_unire.py, source_role 'unire_storici') si valutano sulla
+    # (scripts/storici_unire.py, source 'unire_blocco') si valutano sulla
     # scala di prima. Percentili, media delle vittorie e soglie delle lettere
     # vengono solo dal gruppo di riferimento (gli altri storici), come per le
     # carriere parziali: i voti gia' pubblicati non si spostano.
-    righe = [r[:7] for r in tutte if r[7] != "unire_storici"] or [r[:7] for r in tutte]
-    nuovi = {(r[0], r[1]) for r in tutte if r[7] == "unire_storici"}
+    righe = [r[:7] for r in tutte if r[7] != "unire_blocco"] or [r[:7] for r in tutte]
+    nuovi = {(r[0], r[1]) for r in tutte if r[7] == "unire_blocco"}
 
     guadagni = sorted(r[5] for r in righe if r[5])
 
