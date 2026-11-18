@@ -11,9 +11,11 @@ name: StatIppica — Totali mondiali dei campioni storici (ogni notte)
 # turno degli altri lavori. Il file aggiornato va su main e il sito si
 # ripubblica con il deploy al push.
 
+#
+# Lo lancia la regia notturna (scripts/regia_notturna.sh): il deploy cade di
+# notte e non mentre il sito e' in uso.
+
 on:
-  schedule:
-    - cron: "40 4 * * *"
   workflow_dispatch:
     inputs:
       quanti:

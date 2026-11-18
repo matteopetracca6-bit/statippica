@@ -13,6 +13,17 @@ name: StatIppica — Sveglia (tiene acceso il sito)
 # il nuovo aspetta in fila e parte appena il primo finisce. Basta quindi che
 # GitHub faccia partire almeno un giro ogni sei ore perche' non ci siano buchi.
 #
+# Novembre 2026: non bastava. Nella settimana dall'11 al 18/11 GitHub ha
+# lasciato buchi fino a 4 ore (il 16/11 dalle 17:26 alle 21:29 italiane) e il
+# sito si addormentava di giorno. Ora ogni giro, appena parte, chiede subito
+# il giro seguente con un lancio a mano, che GitHub non ritarda: aspetta in
+# fila e parte appena questo finisce. La catena non si interrompe; l'orario
+# programmato resta solo come riserva.
+#
+# La sveglia fa anche da orologio per la regia notturna
+# (scripts/regia_notturna.sh): fra l'una e le sei di notte, ora italiana,
+# lancia i lavori notturni se stanotte non sono ancora partiti.
+#
 # Costi: il progetto e' pubblico, quindi i minuti di GitHub sono gratuiti.
 # Render concede 750 ore al mese di servizio gratuito: un sito sempre acceso
 # ne usa al massimo 744 (mese di 31 giorni), quindi ci sta.
@@ -21,6 +32,10 @@ on:
   schedule:
     - cron: "17 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write  # chiedere il giro seguente e far partire i lavori notturni
 
 concurrency:
   group: sveglia
@@ -31,7 +46,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 355
     steps:
-      - name: Bussa al sito ogni 4 minuti per quasi sei ore
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Chiedi subito il giro seguente
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run sveglia.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            && echo "Giro seguente chiesto: partira' quando finisce questo." \
+            || echo "::warning::Non sono riuscito a chiedere il giro seguente: resta l'orario programmato."
+      - name: Bussa al sito ogni 4 minuti per quasi sei ore (e fa da orologio alla regia)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           inizio=$(date +%s)
           colpi=0; lenti=0
@@ -42,6 +69,7 @@ jobs:
             # Un colpo lento vuol dire che il sito stava dormendo: si annota.
             if [ "${tempo%%.*}" -ge 10 ] 2>/dev/null; then lenti=$((lenti+1)); fi
             echo "$(date -u '+%H:%M') colpo $colpi: risposta $codice in ${tempo}s"
+            bash scripts/regia_notturna.sh || true
             sleep 240
           done
           echo "Fine giro: $colpi colpi, $lenti risvegli lenti."

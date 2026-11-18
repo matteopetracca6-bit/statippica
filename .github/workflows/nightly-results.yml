@@ -1,8 +1,8 @@
 name: StatIppica — Nightly Results (gare mancanti + cavalli nuovi)
 on:
-  # Ogni notte alle 00:30 UTC
-  schedule:
-    - cron: "30 0 * * *"
+  # Niente orario programmato (GitHub lo faceva partire con 6-9 ore di
+  # ritardo, in pieno giorno): lo lancia la regia notturna dopo l'una di
+  # notte, ora italiana (scripts/regia_notturna.sh).
   workflow_dispatch:
     inputs:
       reason:
