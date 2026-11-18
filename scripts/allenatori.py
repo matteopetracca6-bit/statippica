@@ -357,7 +357,9 @@ def calcola(conn: sqlite3.Connection) -> int:
     righe = conn.execute("""
         SELECT trainer, horse_name, race_date, track, driver, placement,
                total_starters, COALESCE(prize_net, 0)
-        FROM races WHERE trainer IS NOT NULL""").fetchall()
+        FROM races WHERE trainer IS NOT NULL AND race_date IS NOT NULL""").fetchall()
+    # Le gare senza data (18/11/2026: quelle a cui la riparazione ha tolto la
+    # data presa da un cavallo ritirato) non si possono mettere nel tempo.
 
     # Rendimento a parita' di cavallo: media di ogni cavallo sulle corse con
     # allenatore noto, solo per i cavalli passati per almeno due allenatori.
