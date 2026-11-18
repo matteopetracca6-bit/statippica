@@ -51,15 +51,11 @@ jobs:
             RESTANO=$(( (FINE - $(date +%s)) / 60 ))
             [ "$RESTANO" -lt "$MINUTI" ] && MINUTI=$RESTANO
           fi
-          if [ "$MINUTI" -lt 10 ]; then
-            echo "Troppo tardi per lavorare stanotte ($MINUTI minuti prima delle 8): riprendo la notte prossima."
-            echo "salta=1" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          # Anche se arriva tardi non salta: lavora almeno un quarto d'ora.
+          [ "$MINUTI" -lt 15 ] && MINUTI=15
           echo "Lavoro per $MINUTI minuti."
           python3 scripts/storici_unire.py --db data.db --minuti "$MINUTI"
       - name: Pubblica l'archivio aggiornato
-        if: steps.storici.outputs.salta != '1'
         env:
           GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
         run: |
