@@ -9,14 +9,13 @@ name: StatIppica — Genealogia stalloni esteri
 # attuale, senza nessun errore da nessuna parte. Nessuno se ne sarebbe accorto
 # perche' la pagina funziona lo stesso: mostra solo dati piu' vecchi.
 #
-# Ora gira ogni lunedi' alle 03:40 UTC, subito dopo il catalogo stalloni delle
-# 03:10, cosi' se il catalogo ha aggiunto stalloni nuovi la genealogia li
-# prende nello stesso giro. I valori predefiniti sono quelli veri (300 record,
-# salvataggio attivo) e non piu' quelli da prova.
+# Gira nella notte fra domenica e lunedi', lanciato dalla regia notturna
+# (scripts/regia_notturna.sh) subito dopo il catalogo stalloni, cosi' se il
+# catalogo ha aggiunto stalloni nuovi la genealogia li prende nello stesso
+# giro. I valori predefiniti sono quelli veri (300 record, salvataggio attivo)
+# e non piu' quelli da prova.
 
 on:
-  schedule:
-    - cron: "40 3 * * 1"
   workflow_dispatch:
     inputs:
       limit:

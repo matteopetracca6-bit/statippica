@@ -12,6 +12,12 @@ name: StatIppica — Deploy al push su main
 on:
   push:
     branches: [main]
+    # Le modifiche ai soli lavori di GitHub non cambiano il sito: niente
+    # deploy, cosi' il sito non riparte di giorno senza motivo.
+    paths-ignore:
+      - ".github/**"
+      - "scripts/regia_notturna.sh"
+      - "scripts/aspetta_turno.sh"
   workflow_dispatch:
 
 concurrency:

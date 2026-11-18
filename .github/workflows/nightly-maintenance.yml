@@ -1,8 +1,8 @@
 name: StatIppica — Nightly Maintenance (aggiorna e colma buchi cavalli esistenti)
 on:
-  # Ogni notte alle 01:30 UTC — un'ora dopo il job "Results", per non litigare sul push
-  schedule:
-    - cron: "30 1 * * *"
+  # Niente orario programmato (GitHub lo faceva partire con 6-9 ore di
+  # ritardo, in pieno giorno): lo lancia, subito dopo i risultati, la regia notturna dopo l'una di
+  # notte, ora italiana (scripts/regia_notturna.sh).
   workflow_dispatch:
     inputs:
       reason:

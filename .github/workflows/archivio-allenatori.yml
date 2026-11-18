@@ -13,13 +13,11 @@ name: StatIppica — Allenatori (ogni notte)
 # minuti. Se dovesse servire piu' tempo del previsto, si ferma prima del limite
 # di GitHub, salva quello che ha letto e riprende la notte dopo.
 #
-# Parte alle 03:15 UTC, dopo il lavoro notturno dei risultati (00:30 UTC):
-# cosi' trova gia' le corse del giorno prima. Se quel lavoro non ha ancora
-# finito, lo aspetta (aspetta_turno.sh) e parte dalla sua copia.
+# Lo lancia la regia notturna (scripts/regia_notturna.sh) subito dopo il
+# lavoro dei risultati: aspetta che finisca (aspetta_turno.sh) e parte dalla
+# sua copia, cosi' trova gia' le corse del giorno prima.
 
 on:
-  schedule:
-    - cron: "15 3 * * *"
   workflow_dispatch:
     inputs:
       prova:

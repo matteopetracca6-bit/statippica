@@ -1,9 +1,8 @@
 name: StatIppica — Weekly Stallion Catalog (tasse di monta e allevamenti)
 on:
-  # Ogni lunedi' alle 03:10 UTC. Settimanale e non notturno: il catalogo monte
-  # cambia poche volte a stagione, e le 152 schede si leggono in pochi minuti.
-  schedule:
-    - cron: "10 3 * * 1"
+  # Settimanale e non notturno: il catalogo monte cambia poche volte a
+  # stagione, e le 152 schede si leggono in pochi minuti. Lo lancia la regia
+  # notturna nella notte fra domenica e lunedi' (scripts/regia_notturna.sh).
   workflow_dispatch: {}
 permissions:
   contents: write # serve per caricare l'archivio nel rilascio

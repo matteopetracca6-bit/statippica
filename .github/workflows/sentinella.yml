@@ -11,9 +11,13 @@ name: StatIppica — Sentinella (controlla sito, archivio e notturni)
 #  2. il sito: risponde con i dati? Se no, chiede a Render di ripartire;
 #  3. i notturni: l'ultimo riuscito e' di meno di due giorni fa?
 #  4. i buchi: ci sono giornate recenti quasi vuote nell'archivio?
-#  5. risultati in ritardo: rilancia il notturno dei risultati;
+#  5. risultati in ritardo: rilancia il notturno dei risultati (solo di
+#     notte, fra l'una e le sei, perche' il sito resti tranquillo di giorno);
 #  6. i numeri: corse con due vincitori, schede doppie, copie della stessa
 #     gara, dati impossibili e correzioni automatiche sotto le loro soglie?
+#
+# Fa anche da riserva alla sveglia come orologio della regia notturna
+# (scripts/regia_notturna.sh), che lancia i lavori della notte.
 #
 # Se qualcosa non va, il lavoro FALLISCE: GitHub manda allora un'email al
 # proprietario del progetto. E' l'allarme: un lavoro verde vuol dire che
@@ -38,6 +42,11 @@ jobs:
         uses: actions/checkout@v5
         with:
           persist-credentials: false
+
+      - name: Regia notturna (riserva della sveglia)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/regia_notturna.sh || true
 
       - name: 1. L'archivio pubblicato e' buono?
         env:
@@ -162,8 +171,8 @@ jobs:
           PY
 
       - name: 5. Risultati pubblicati in ritardo? Rilancia il notturno
-        # PERCHE'. Il notturno dei risultati parte alle 2:30 circa (ma GitHub
-        # a volte lo fa partire ore dopo). Se Trottoweb pubblica una giornata
+        # PERCHE'. Il notturno dei risultati parte dopo l'una di notte
+        # (regia notturna). Se Trottoweb pubblica una giornata
         # piu' tardi, quella giornata restava vuota fino alla notte seguente:
         # domenica 25/10/2026 Bologna, Montegiorgio e Padova mancavano ancora
         # lunedi' pomeriggio. Ora, se negli ultimi tre giorni c'e' una giornata
@@ -193,6 +202,13 @@ jobs:
           )
           if [ -z "$IN_ATTESA" ]; then
             echo "OK: nessuna giornata recente in attesa dei risultati" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Di giorno non si rilancia: il notturno finisce con un deploy e il
+          # sito ripartirebbe mentre e' in uso. Ci pensa la regia stanotte.
+          ORA=$(TZ=Europe/Rome date +%H%M)
+          if [ "$((10#$ORA))" -lt 100 ] || [ "$((10#$ORA))" -ge 600 ]; then
+            echo "Giornate in attesa dei risultati: $IN_ATTESA. Le recupera il notturno di stanotte (di giorno non lo rilancio)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           ULTIMO=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/nightly-results.yml/runs?per_page=5" \
