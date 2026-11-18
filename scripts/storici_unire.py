@@ -23,6 +23,13 @@ toccata da qui ha source = 'unire_blocco': la scala storica non la usa per le
 soglie (vedi phase_historic_ratings). Un omonimo di un altro anno non si puo'
 aggiungere (nell'archivio il nome e' unico): si salta e si annota.
 
+PRIMA I PARZIALI (18/11/2026). Gli storici con la "carriera parziale" (scheda
+senza totali ma con le gare dal 2016 nell'archivio, es. POP HEART e MAN DI
+CASEI) si cercano per primi, uno per uno, per nome esatto, sesso e anno: anche
+quelli il cui nome non comincia con la lettera dell'annata. Trovati, ricevono
+i totali e perdono l'avviso di carriera parziale. Ogni tentativo resta segnato
+in storici_unire_parziali (trovato / non_trovato).
+
 QUANTO. Si lavora una notte alla volta per CHI_MINUTI minuti, a una richiesta
 al secondo come il resto della ricerca su UNIRE; tutto il lavoro fatto resta
 segnato nelle tabelle storici_unire_ricerche e storici_unire_cavalli, quindi la
@@ -69,6 +76,8 @@ def crea_tabelle(conn):
     conn.execute("""CREATE TABLE IF NOT EXISTS storici_unire_cavalli (
         id_cav TEXT PRIMARY KEY, nome TEXT, sesso TEXT, anno INTEGER, padre TEXT, madre TEXT,
         stato TEXT, corse INTEGER, quando TEXT)""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS storici_unire_parziali (
+        nome TEXT PRIMARY KEY, anno INTEGER, stato TEXT, quando TEXT)""")
     for anno in ANNI:
         for s in SESSI:
             if not conn.execute("SELECT 1 FROM storici_unire_ricerche WHERE anno = ? AND sesso = ? LIMIT 1",
@@ -116,6 +125,35 @@ def fai_ricerca(conn, anno, sesso, testo) -> int:
     conn.execute("UPDATE storici_unire_ricerche SET stato = ?, trovati = ?, quando = ? "
                  "WHERE anno = ? AND sesso = ? AND testo = ?", (stato, n, adesso(), anno, sesso, testo))
     return len(righe) if stato == "fatta" else 0
+
+
+def prossimo_parziale(conn):
+    """Il prossimo storico con la carriera parziale da cercare (come la
+    scheda del sito: nessun totale, gare dall'anno dopo i due di eta')."""
+    return conn.execute("""
+        SELECT h.name, h.birth_year, h.sex FROM horses h
+        WHERE COALESCE(h.career_races, 0) = 0 AND h.birth_year IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM storici_unire_parziali p WHERE p.nome = h.name)
+          AND EXISTS (SELECT 1 FROM races r WHERE r.horse_name = h.name
+                      AND r.race_date >= (h.birth_year + 2) || '-01-01')
+        ORDER BY h.birth_year DESC, h.name LIMIT 1""").fetchone()
+
+
+def cerca_parziale(conn, nome, anno, sesso) -> str:
+    """Cerca il cavallo per nome esatto; se c'e', la sua scheda va in lettura."""
+    testo = nome
+    if "'" in nome:
+        # Con l'apostrofo UNIRE non trova niente: si cerca il pezzo piu' lungo.
+        pezzi = [x.strip() for x in nome.split("'") if x.strip()]
+        testo = pezzi[0] if pezzi and len(pezzi[0]) >= 3 else max(pezzi, key=len, default=nome)
+    for codice in u._sex_codes(sesso):
+        _, righe = cerca(testo, codice, int(anno))
+        for cid, n, p, m in righe:
+            if n == u._norm(nome):
+                conn.execute("INSERT OR REPLACE INTO storici_unire_cavalli VALUES (?,?,?,?,?,?,?,?,?)",
+                             (cid, nome, codice, int(anno), p, m, "da_leggere", None, None))
+                return "trovato"
+    return "non_trovato"
 
 
 PAESI = {"ITALIA": "ITA", "FRANCIA": "FRA", "SVEZIA": "SWE", "STATI UNITI": "USA", "U.S.A.": "USA",
@@ -183,6 +221,12 @@ def lavora(conn, minuti: float, massimo: int | None = None) -> dict:
                              (esito, adesso(), c[0]))
                 esiti[esito] = esiti.get(esito, 0) + 1
                 fatti["schede"] += 1
+            elif (pz := prossimo_parziale(conn)):
+                esito = cerca_parziale(conn, *pz)
+                conn.execute("INSERT OR REPLACE INTO storici_unire_parziali VALUES (?,?,?,?)",
+                             (pz[0], pz[1], esito, adesso()))
+                esiti["parziale_" + esito] = esiti.get("parziale_" + esito, 0) + 1
+                fatti["ricerche"] += 1
             else:
                 r = conn.execute("""SELECT anno, sesso, testo FROM storici_unire_ricerche WHERE stato = 'da_fare'
                                     ORDER BY anno DESC, sesso, testo LIMIT 1""").fetchone()
@@ -236,6 +280,13 @@ def main() -> int:
     log(f"[STORICI-UNIRE] {esito}; storici dal registro: {prima} -> {dopo}"
         + ("  [PROVA: niente e' stato salvato]" if a.prova else ""))
     log(rapporto(conn))
+    restano = conn.execute("""SELECT COUNT(*) FROM horses h WHERE COALESCE(h.career_races, 0) = 0
+        AND h.birth_year IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM storici_unire_parziali p WHERE p.nome = h.name)
+        AND EXISTS (SELECT 1 FROM races r WHERE r.horse_name = h.name
+                    AND r.race_date >= (h.birth_year + 2) || '-01-01')""").fetchone()[0]
+    pz = dict(conn.execute("SELECT stato, COUNT(*) FROM storici_unire_parziali GROUP BY 1").fetchall())
+    log(f"[STORICI-UNIRE] carriere parziali: cercate {pz}, da cercare ancora {restano}")
     if a.prova:
         for r in conn.execute("""SELECT name, birth_year, sex, sire, dam, career_races, career_wins, career_earnings,
                                         record_career FROM horses WHERE source = 'unire_blocco' LIMIT 8"""):
