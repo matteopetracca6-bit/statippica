@@ -42,11 +42,12 @@ controlli = [
      20, "li toglie ripara_archivio.py ogni notte"),
     ("Distanze sotto i 1000 metri in Italia", uno(f"SELECT COUNT(*) FROM races WHERE {IT} AND distance > 0 AND distance < 1000"),
      30, "le corregge ripara_archivio.py ogni notte"),
-    # Le correzioni una tantum (le prime 386 e i 2.951 numeri di corsa del
-    # 17/11/2026) non contano: si guarda da dopo, quando restano quelle di ogni notte.
+    # Le correzioni una tantum (le prime 386, i 2.951 numeri di corsa e i circa
+    # 19.000 non partiti del 17-18/11/2026) non contano: si guarda da dopo,
+    # quando restano quelle di ogni notte.
     ("Correzioni automatiche nelle ultime 24 ore", uno(
         "SELECT COUNT(*) FROM anomalie_corrette WHERE quando >= ?",
-        max((d.datetime.now(d.timezone.utc) - d.timedelta(days=1)).strftime("%Y-%m-%d %H:%M"), "2026-11-18 00:30")),
+        max((d.datetime.now(d.timezone.utc) - d.timedelta(days=1)).strftime("%Y-%m-%d %H:%M"), "2026-11-18 06:00")),
      600, "la prima volta furono 386; tante correzioni in un giorno vogliono dire che una fonte e' cambiata"),
 ]
 # Il registro del potenziale (potenziale.py) riceve righe ogni notte: se

@@ -181,6 +181,8 @@ ORIGINE = "gare_ufficiali"
 # Esiti: la traduzione si impara dalle righe che concordano; questi sono i
 # due sicuri, per le prime pagine. Gli altri (RC, RI, ...) solo se imparati.
 ESITI_NOTI = {"RP": "r.p.", "RA": "r.a."}
+# Guidatore che in realta' dice che il cavallo e' stato ritirato prima del via.
+RE_RITIRATO = re.compile(r"^\s*(rit\.|ritirat)", re.IGNORECASE)
 
 
 def log(*a):
@@ -707,6 +709,13 @@ def inserisci(conn: sqlite3.Connection, atleti: bool = False, genitori: bool = F
 
         if (k, data) in datate:
             segna(riga, "saltata", "gia_presente")
+            continue
+        # Ritirato prima del via: al posto del guidatore la pagina scrive l'ora
+        # del ritiro ("rit. alle 09:30:00", l'ora limite dei ritiri) oppure
+        # "Ritirato Sul Campo". Non ha corso: non e' una gara (novembre 2026,
+        # prima entravano come "r.p." con guidatore "A.rit. 09:30:00").
+        if RE_RITIRATO.match(guid_uff or ""):
+            segna(riga, "saltata", "non_partito")
             continue
         if k in doppi:
             segna(riga, "saltata", "nome_di_due_schede")
