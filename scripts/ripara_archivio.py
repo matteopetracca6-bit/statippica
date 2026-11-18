@@ -55,6 +55,15 @@ vedere e annullare.
    dei non partiti (partenti_ritirati, la stessa di TrottoWeb) e si tolgono
    dalle gare, solo se senza arrivo e senza tempo.
 
+5. DATE DATE DAI RITIRATI (novembre 2026). Il recupero dava la data di un
+   cavallo ritirato prima del via a una sua gara di TrottoWeb senza data
+   (stesso ippodromo e distanza, nessun arrivo): ma quella gara, con il suo
+   guidatore, e' un'altra corsa. La gara torna senza data, com'era prima.
+   (Nota: i partenti NON si correggono. Nell'archivio "partenti" sono gli
+   iscritti al via, ritirati compresi, come li conta TrottoWeb: in 16.645
+   corse su 16.836 il totale di TrottoWeb e' quello della pagina ufficiale
+   con i ritirati.)
+
 Uso: python3 scripts/ripara_archivio.py --db data.db [--prova]
 """
 import argparse
@@ -323,6 +332,47 @@ def togli_non_partiti(conn) -> int:
     return len(righe)
 
 
+def _ritirati_ufficiali(conn) -> list:
+    """Righe ufficiali dei cavalli ritirati prima del via, con l'ippodromo e la
+    sigla dell'archivio."""
+    tab = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if not {"gare_ufficiali_attesa", "gare_ufficiali_mappa"} <= tab:
+        return []
+    piste = {u: a.split("|") for u, a in conn.execute(
+        "SELECT ufficiale, archivio FROM gare_ufficiali_mappa WHERE tipo = 'ippodromo'")}
+    out = []
+    for d, cod, corsa, cav, stato, partenti in conn.execute("""
+            SELECT data, codice, corsa, cavallo, stato, partenti FROM gare_ufficiali_attesa
+            WHERE guidatore LIKE 'rit.%' OR guidatore LIKE 'Ritirat%'"""):
+        if cod in piste and len(piste[cod]) == 2:
+            out.append((d, cod, corsa, cav, stato, partenti, piste[cod][0], piste[cod][1]))
+    return out
+
+
+def togli_date_dei_ritirati(conn) -> int:
+    """Gare di TrottoWeb che avevano preso la data di un ritirato (punto 5)."""
+    fatte = 0
+    for d, cod, corsa, cav, stato, _, pista, sigla in _ritirati_ufficiali(conn):
+        if stato != "data_assegnata":
+            continue
+        for rid, codice, guid in conn.execute("""
+                SELECT id, race_code, driver FROM races
+                WHERE race_date = ? AND UPPER(horse_name) = UPPER(?) AND track = ?
+                  AND placement IS NULL AND time_km IS NULL""", (d, cav, pista)).fetchall():
+            # Solo le righe di TrottoWeb senza data alla fonte (codice corto) o
+            # con il codice dato dal recupero; quelle della pagina del giorno
+            # (..._R3) hanno la data da TrottoWeb stesso e restano.
+            if not (len(codice or "") <= 3 or codice == f"{d}_{sigla}_{corsa}"):
+                continue
+            conn.execute("""UPDATE races SET race_date = NULL, race_number = NULL, start_pos = NULL,
+                            total_starters = NULL WHERE id = ?""", (rid,))
+            registra(conn, rid, "race_date", d, None, "data presa da un cavallo ritirato prima del via")
+            fatte += 1
+        conn.execute("""UPDATE gare_ufficiali_attesa SET stato = 'saltata', motivo = 'non_partito'
+                        WHERE data = ? AND codice = ? AND corsa = ? AND cavallo = ?""", (d, cod, corsa, cav))
+    return fatte
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Ripara schede doppie e dati impossibili")
     ap.add_argument("--db", default=os.environ.get("DB_PATH", "data.db"))
@@ -340,12 +390,13 @@ def main() -> int:
     fatti = ripara_anomalie(conn)
     numeri = allinea_numeri_corsa(conn)
     non_partiti = togli_non_partiti(conn)
+    date_tolte = togli_date_dei_ritirati(conn)
     conn.commit()
     dopo = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
     log(f"[RIPARA-ARCHIVIO] schede doppie unite: {len(unite)}"
         + (f" ({', '.join(f'{x} -> {y}' for x, y in unite[:10])})" if unite else "")
         + f"; distanze: {fatti['distanze']}; tempi tolti: {fatti['tempi']}; "
-        f"partenti: {fatti['partenti']}; arrivi tolti: {fatti['arrivi']}; numeri di corsa: {numeri}; non partiti tolti: {non_partiti}; "
+        f"partenti: {fatti['partenti']}; arrivi tolti: {fatti['arrivi']}; numeri di corsa: {numeri}; non partiti tolti: {non_partiti}; date tolte: {date_tolte}; "
         f"gare in archivio: {prima} -> {dopo}"
         + ("  [PROVA: niente e' stato salvato]" if a.prova else ""))
     conn.close()
