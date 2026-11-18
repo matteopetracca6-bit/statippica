@@ -135,10 +135,19 @@ def analizza_flussi() -> dict[str, dict]:
     risultato: dict[str, dict] = {}
     if not FLUSSI.exists():
         return risultato
+    # Novembre 2026: i lavori notturni non hanno piu' un orario di GitHub (lo
+    # rispettava con 6-9 ore di ritardo): li lancia ogni notte la regia
+    # (scripts/regia_notturna.sh). Contano come programmati.
+    regia = RADICE / "scripts" / "regia_notturna.sh"
+    dalla_regia: set[str] = set()
+    if regia.exists():
+        dalla_regia = set(re.findall(r"^\s*lancia\s+([\w.-]+\.yml)", regia.read_text(encoding="utf-8"), re.M))
     for f in sorted(FLUSSI.glob("*.yml")):
         testo = f.read_text(encoding="utf-8", errors="ignore")
         # Si guarda l'orario solo nella parte "on:", non nei commenti.
         orari = re.findall(r"^\s*-?\s*cron:\s*[\"']([^\"']+)[\"']", testo, re.M)
+        if f.name in dalla_regia:
+            orari.append("regia notturna")
         script = set(re.findall(r"python3?\s+([\w/]+\.py)", testo))
         risultato[f.name] = {
             "programmato": bool(orari),
