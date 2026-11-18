@@ -1,0 +1,17 @@
+name: PROVA — UNIRE storici
+on:
+  push:
+    branches: [prova/unire-storici]
+permissions:
+  contents: read
+jobs:
+  prova:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4
+      - run: python3 scripts/prova_unire_storici.py
