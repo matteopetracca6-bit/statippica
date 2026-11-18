@@ -3041,17 +3041,25 @@ PESO_ST_VITTORIE = 0.20
 def phase_historic_ratings(conn: sqlite3.Connection):
     print("[RATINGS] Calcolo classifica storica...", file=sys.stderr)
 
-    righe = conn.execute(f"""
+    tutte = conn.execute(f"""
         SELECT name, birth_year, sire, career_races, career_wins,
-               career_earnings, record_career
+               career_earnings, record_career, COALESCE(source, '')
         FROM horses
         WHERE horse_class = '{CLASS_BREEDER}'
           AND career_races > 0
     """).fetchall()
 
-    if not righe:
+    if not tutte:
         print("[RATINGS] Nessun cavallo storico da valutare.", file=sys.stderr)
         return
+
+    # Novembre 2026: gli storici recuperati in blocco dal registro UNIRE
+    # (scripts/storici_unire.py, source 'unire_blocco') si valutano sulla
+    # scala di prima. Percentili, media delle vittorie e soglie delle lettere
+    # vengono solo dal gruppo di riferimento (gli altri storici), come per le
+    # carriere parziali: i voti gia' pubblicati non si spostano.
+    righe = [r[:7] for r in tutte if r[7] != "unire_blocco"] or [r[:7] for r in tutte]
+    nuovi = {(r[0], r[1]) for r in tutte if r[7] == "unire_blocco"}
 
     guadagni = sorted(r[5] for r in righe if r[5])
 
@@ -3080,7 +3088,7 @@ def phase_historic_ratings(conn: sqlite3.Connection):
         return round((len(tempi) - bisect.bisect_left(tempi, t)) / len(tempi) * 100, 2)
 
     calcolati = []
-    for name, birth_year, sire, corse, vitt, euro, rec in righe:
+    for name, birth_year, sire, corse, vitt, euro, rec, _ in tutte:
         pg = pct_guadagni(euro or 0)
         pr = pct_record(rec)
         tasso = ((vitt or 0) + RICHIAMO_VITTORIE * media_vittorie / 100) \
@@ -3107,7 +3115,8 @@ def phase_historic_ratings(conn: sqlite3.Connection):
             "corse": corse, "vitt": vitt, "euro": euro, "rec": rec,
         })
 
-    soglie = _build_percentile_thresholds([c["score"] for c in calcolati])
+    soglie = _build_percentile_thresholds([c["score"] for c in calcolati
+                                           if (c["name"], c["birth_year"]) not in nuovi])
 
     def grado(s: float) -> str:
         for limite, g in soglie:
@@ -3211,6 +3220,7 @@ def phase_historic_ratings(conn: sqlite3.Connection):
 
     migliori = sorted(calcolati, key=lambda x: -x["score"])[:3]
     print(f"[RATINGS] Classifica storica: {len(calcolati)} cavalli con la carriera completa "
+          f"(di cui {len(nuovi)} dal registro UNIRE, sulla scala degli altri) "
           f"e {len(parziali)} con la carriera parziale "
           f"({eliminati} vecchi voti sulla scala atleti rimossi). "
           f"Primi: " + ", ".join(f"{m['name']} {m['score']}" for m in migliori),
