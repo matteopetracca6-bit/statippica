@@ -1,0 +1,47 @@
+name: StatIppica — Storici dal registro UNIRE (ogni giorno)
+
+# Novembre 2026 (scripts/storici_unire.py). Recupera a tappe tutti i trottatori
+# nati dal 1990 al 2011 che hanno corso, con anagrafica e totali di carriera dal
+# registro ufficiale UNIRE: entrano fra gli storici, valutati sulla scala di
+# prima (nightly_update.phase_historic_ratings). Ogni giorno lavora per al
+# massimo 150 minuti a una richiesta al secondo e riprende il giorno dopo dal
+# punto esatto. Parte di giorno, lontano dai lavori notturni; se uno di loro
+# sta lavorando sull'archivio, lo aspetta (aspetta_turno.sh).
+
+on:
+  schedule:
+    - cron: "40 9 * * *"
+  workflow_dispatch:
+    inputs:
+      minuti:
+        description: "Minuti di lavoro"
+        required: false
+        default: "150"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  storici:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Recupera gli storici
+        run: python3 scripts/storici_unire.py --db data.db --minuti "${{ inputs.minuti || '150' }}"
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
