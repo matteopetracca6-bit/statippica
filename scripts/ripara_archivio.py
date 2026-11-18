@@ -47,6 +47,14 @@ vedere e annullare.
    numero) e' d'accordo con la fonte ufficiale, e la distanza della gara e'
    quella degli altri cavalli della corsa ufficiale (o la corsa e' vuota).
 
+4. NON PARTITI (novembre 2026). Il recupero dalle pagine ufficiali inseriva
+   come gare galoppate ("r.p.") i cavalli ritirati prima del via: al posto del
+   guidatore la pagina scrive l'ora del ritiro ("rit. alle 09:30:00") e il
+   recupero la trasformava in un nome ("A.rit. 09:30:00"). Circa 19.000 righe:
+   corse in piu' e galoppi in piu' per quei cavalli. Si spostano nella tabella
+   dei non partiti (partenti_ritirati, la stessa di TrottoWeb) e si tolgono
+   dalle gare, solo se senza arrivo e senza tempo.
+
 Uso: python3 scripts/ripara_archivio.py --db data.db [--prova]
 """
 import argparse
@@ -297,6 +305,24 @@ def allinea_numeri_corsa(conn) -> int:
     return fatte
 
 
+def togli_non_partiti(conn) -> int:
+    """Righe di cavalli ritirati prima del via (vedi punto 4 in testa)."""
+    righe = conn.execute("""
+        SELECT id, horse_name, race_date, track, race_code, driver FROM races
+        WHERE (driver LIKE 'A.rit.%' OR driver = 'S.Ritirato Campo' OR driver = 'Ritirato')
+          AND placement IS NULL AND time_km IS NULL""").fetchall()
+    if not righe:
+        return 0
+    conn.execute("""CREATE TABLE IF NOT EXISTS partenti_ritirati (
+        race_date TEXT, track TEXT, horse_name TEXT, race_code TEXT)""")
+    for rid, h, d, t, codice, guid in righe:
+        conn.execute("INSERT OR IGNORE INTO partenti_ritirati (race_date, track, horse_name, race_code) "
+                     "VALUES (?,?,?,?)", (d, t, h, codice))
+        registra(conn, rid, "riga", guid, "non partito", "ritirato prima del via: non e' una gara")
+        conn.execute("DELETE FROM races WHERE id = ?", (rid,))
+    return len(righe)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Ripara schede doppie e dati impossibili")
     ap.add_argument("--db", default=os.environ.get("DB_PATH", "data.db"))
@@ -313,12 +339,13 @@ def main() -> int:
     unite = unisci_schede_doppie(conn)
     fatti = ripara_anomalie(conn)
     numeri = allinea_numeri_corsa(conn)
+    non_partiti = togli_non_partiti(conn)
     conn.commit()
     dopo = conn.execute("SELECT COUNT(*) FROM races").fetchone()[0]
     log(f"[RIPARA-ARCHIVIO] schede doppie unite: {len(unite)}"
         + (f" ({', '.join(f'{x} -> {y}' for x, y in unite[:10])})" if unite else "")
         + f"; distanze: {fatti['distanze']}; tempi tolti: {fatti['tempi']}; "
-        f"partenti: {fatti['partenti']}; arrivi tolti: {fatti['arrivi']}; numeri di corsa: {numeri}; "
+        f"partenti: {fatti['partenti']}; arrivi tolti: {fatti['arrivi']}; numeri di corsa: {numeri}; non partiti tolti: {non_partiti}; "
         f"gare in archivio: {prima} -> {dopo}"
         + ("  [PROVA: niente e' stato salvato]" if a.prova else ""))
     conn.close()
