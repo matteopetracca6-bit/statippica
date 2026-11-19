@@ -10,10 +10,11 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Aspetta il deploy e leggi la scheda
+        shell: bash {0}
         run: |
           for i in $(seq 1 40); do
             R=$(curl -s -m 90 "https://statippica.onrender.com/api/horse/CHICCA%20ROSS/2018")
-            echo "$R" | python3 -c "import json,sys;d=json.load(sys.stdin);h=d.get('horse',d);f=h.get('forza');print('forza' , json.dumps(f)[:1500] if f else None);sys.exit(0 if f else 1)" && break
+            echo "$R" | python3 -c "import json,sys;d=json.load(sys.stdin);h=d.get('horse',d);f=h.get('forza');print('forza' , json.dumps(f)[:1500] if f else None);sys.exit(0 if f else 1)" 2>/dev/null && break
             sleep 30
           done
       - name: Fotografa la pagina
