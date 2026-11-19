@@ -42,7 +42,9 @@ RULES={
  "carena":(r"CARENA",None),
  "orlandi":(r"RENZO ORLANDI",None),
 }
-MINIMO={k:50000 for k in ("nazionale","nazionale_filly","napoli","napoli_filly","duomo","europeo","biasuzzi",
+# Le edizioni con montepremi ridotto (Covid, tagli) entrano lo stesso,
+# per non lasciare buchi nell'albo: basta il nome della corsa (19/11/2026).
+MINIMO={k:10000 for k in ("nazionale","nazionale_filly","napoli","napoli_filly","duomo","europeo","biasuzzi",
                           "duemari","sicilia","torino","cacciari","firenze","carena","orlandi")}
 EXC=r"CONSOLAZ|BATT|SELEZ|ROAD TO|PRESENTAZ|QUALIF|PROVA|ELIMIN|CORSA [AB]\b|GENTLEMEN|AMATORI|ALLIEVI|SFIDA"
 out={}

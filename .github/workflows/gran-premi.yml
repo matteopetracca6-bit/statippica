@@ -54,7 +54,7 @@ jobs:
           (cd /tmp/gp && python3 raccogli.py)
           (cd /tmp/gp && python3 "$GITHUB_WORKSPACE/scripts/gran_premi/2_cerca_mancanti.py")
           (cd /tmp/gp && python3 "$GITHUB_WORKSPACE/scripts/gran_premi/3_riconosci_gare.py" > /tmp/gp/candidati.txt)
-          awk '/^===== /{p=0} /^===== (carena|duemari|cacciari|orlandi|firenze|sicilia|duomo)$/{p=1} p' /tmp/gp/candidati.txt || true
+          awk '/^===== /{p=0} /^===== (nazionale|nazionale_filly|napoli|napoli_filly|biasuzzi|europeo|carena|duemari|cacciari|orlandi|firenze|sicilia|duomo|torino)$/{p=1} p' /tmp/gp/candidati.txt || true
           (cd /tmp/gp && python3 "$GITHUB_WORKSPACE/scripts/gran_premi/4_albo_finale.py")
           python3 scripts/gran_premi/5_scrivi_ts.py
           python3 - <<'PY'
