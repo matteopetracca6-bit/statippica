@@ -1,0 +1,99 @@
+name: StatIppica — Albo d'oro dei Gran Premi (ogni settimana)
+
+# 19/11/2026. L'albo d'oro dei 15 grandi premi (client/src/data/granPremi.ts)
+# si rifaceva a mano con scripts/gran_premi/ ed era fermo all'11/10/2026
+# (mancavano Turilli, Mangelli e Nazioni 2026). Ora lo rifa' questo lavoro:
+# lo lancia la regia notturna nella notte fra domenica e lunedi'
+# (scripts/regia_notturna.sh), o a mano. Legge l'archivio senza modificarlo
+# e i risultati ufficiali della Grande Ippica Italiana; se l'albo cambia lo
+# pubblica su main e il sito si ripubblica.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova: mostra cosa cambierebbe, senza pubblicare"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  albo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GH_NIGHTLY_TOKEN }}   # il push fa partire il deploy
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Pagine ufficiali gia' lette (cache)
+        uses: actions/cache@v4
+        with:
+          path: /tmp/gp/cache
+          key: gran-premi-${{ github.run_id }}
+          restore-keys: gran-premi-
+      - name: Rifai l'albo d'oro
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/gp /tmp/gendir
+          cp data.db /tmp/gendir/data.db
+          cp scripts/gran_premi/1_raccogli_giornate.py /tmp/gp/raccogli.py
+          cp scripts/gran_premi/keys.json /tmp/gp/keys.json
+          # Le pagine delle giornate recenti si rileggono: i risultati possono
+          # arrivare o correggersi nei giorni successivi.
+          find /tmp/gp/cache -name "*$(date -u +%Y)-1[0-2]-*" -mtime -40 -delete 2>/dev/null || true
+          (cd /tmp/gp && python3 raccogli.py)
+          (cd /tmp/gp && python3 "$GITHUB_WORKSPACE/scripts/gran_premi/2_cerca_mancanti.py")
+          (cd /tmp/gp && python3 "$GITHUB_WORKSPACE/scripts/gran_premi/3_riconosci_gare.py" > /tmp/gp/candidati.txt)
+          (cd /tmp/gp && python3 "$GITHUB_WORKSPACE/scripts/gran_premi/4_albo_finale.py")
+          python3 scripts/gran_premi/5_scrivi_ts.py
+          python3 - <<'PY'
+          import json, collections
+          d = json.load(open('/tmp/gp/granPremi.json'))
+          c = collections.Counter(v['anno'] for v in d['vincitori'])
+          print("vincitori per anno:", sorted(c.items()))
+          for v in sorted(d['vincitori'], key=lambda v: v.get('data') or '')[-6:]:
+              print("  ", v.get('data'), v['gara'], v['vincitore'])
+          PY
+      - name: Pubblica l'albo se e' cambiato
+        run: |
+          git config user.email "nightly@statippica.bot"
+          git config user.name "StatIppica Nightly"
+          git add client/src/data/granPremi.ts
+          if git diff --cached --quiet; then
+            echo "Albo d'oro invariato."
+            exit 0
+          fi
+          git diff --cached --stat
+          python3 - <<'PY'
+          import json, subprocess
+          def righe(testo):
+              i = testo.index("export const VITTORIE_GP"); j = testo.index("= [", i) + 2
+              return {(v['gara'], v['anno'], v.get('divisione')): v for v in json.JSONDecoder().raw_decode(testo[j:])[0]}
+          vecchio = righe(subprocess.run(["git", "show", "HEAD:client/src/data/granPremi.ts"], capture_output=True, text=True).stdout)
+          nuovo = righe(open("client/src/data/granPremi.ts").read())
+          for k in sorted(set(nuovo) - set(vecchio)): print("NUOVO   ", k, nuovo[k]['vincitore'], nuovo[k].get('data'))
+          for k in sorted(set(vecchio) - set(nuovo)): print("TOLTO   ", k, vecchio[k]['vincitore'])
+          for k in sorted(set(vecchio) & set(nuovo)):
+              diff = {c: (vecchio[k].get(c), nuovo[k].get(c)) for c in nuovo[k] if vecchio[k].get(c) != nuovo[k].get(c)}
+              if diff: print("CAMBIATO", k, diff)
+          PY
+          if [ "${{ inputs.prova }}" = "true" ]; then echo "Prova: non pubblico."; exit 0; fi
+          git commit -q -m "Albo d'oro dei Gran Premi $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3; do
+            if git pull -q --rebase origin main && git push -q origin main; then
+              echo "Albo pubblicato."; exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::non sono riuscito a pubblicare l'albo d'oro"
+          exit 1

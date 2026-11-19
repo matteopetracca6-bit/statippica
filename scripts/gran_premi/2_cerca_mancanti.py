@@ -1,4 +1,5 @@
 import json,re,datetime as dt,sys
+OGGI=dt.date.today(); FINE=OGGI.year+1   # fino a oggi (19/11/2026: prima era fisso al 26/10/2026)
 sys.path.insert(0,'/tmp/gp')
 exec(open('/tmp/gp/raccogli.py').read().split("db=sqlite3")[0])  # get(), imports
 R=json.load(open('/tmp/gp/corse.json'))
@@ -12,16 +13,16 @@ have={(k,int(r['data'][:4])) for k in KEYS for r in R if finale(k,r)}
 want=set()
 for k in KEYS:
     mds=sorted({r['data'][5:] for r in R if finale(k,r)})
-    for y in range(2016,2027):
+    for y in range(2016,FINE):
         if (k,y) in have: continue
         for md in mds:
             base=dt.date(y,int(md[:2]),int(md[3:]))
             for o in range(-6,7):
                 d=base+dt.timedelta(o)
-                if d<=dt.date(2026,10,26): want.add(d.isoformat())
+                if d<=OGGI: want.add(d.isoformat())
 done={r['data'] for r in R}
 days=sorted(want-set())
-print("missing",sorted(set((k,y) for k in KEYS for y in range(2016,2027))-have))
+print("missing",sorted(set((k,y) for k in KEYS for y in range(2016,FINE))-have))
 print("days",len(days))
 import concurrent.futures as cf
 def giornate(d):
@@ -36,4 +37,4 @@ exec(src[src.index("def leggi"):src.index("with cf.ThreadPoolExecutor(6) as ex:\
 with cf.ThreadPoolExecutor(6) as ex: new=[r for x in ex.map(leggi,pairs) for r in x]
 R+=new; json.dump(R,open('/tmp/gp/corse.json','w'),ensure_ascii=False)
 have={(k,int(r['data'][:4])) for k in KEYS for r in R if finale(k,r)}
-print("still missing",sorted(set((k,y) for k in KEYS for y in range(2016,2027))-have))
+print("still missing",sorted(set((k,y) for k in KEYS for y in range(2016,FINE))-have))
