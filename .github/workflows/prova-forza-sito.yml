@@ -1,61 +1,39 @@
-name: PROVA — corse ricche non ancora nell'albo
+name: PROVA — foto scheda
 on:
   push:
     branches: [prova/forza-sito]
 permissions:
-  contents: read
-  actions: read
+  contents: write
 jobs:
-  elenco:
+  foto:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 25
     steps:
+      - name: Aspetta il deploy nuovo
+        shell: bash {0}
+        run: |
+          sleep 240
+          for i in $(seq 1 30); do
+            curl -s -m 60 https://statippica.onrender.com/ | grep -q "assets" && break; sleep 20
+          done
+      - name: Fotografa
+        run: |
+          i=0
+          for u in "horse/CHICCA%20ROSS/2018" "horse/GHEMON%20COL/2022"; do
+            i=$((i+1))
+            timeout 120 google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1400,3000 --virtual-time-budget=30000 \
+              --screenshot="$PWD/foto$i.png" "https://statippica.onrender.com/#/$u" || true
+          done
+          ls -la foto*.png
       - uses: actions/checkout@v5
         with:
-          ref: main
-      - name: Procura l'archivio
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ottieni_archivio.sh
-      - uses: actions/cache/restore@v4
-        with:
-          path: /tmp/gp/cache
-          key: gran-premi-x
-          restore-keys: gran-premi-
-      - name: Elenco
+          path: repo
+      - name: Salva
         run: |
-          mkdir -p /tmp/gp /tmp/gendir; cp data.db /tmp/gendir/data.db
-          cp scripts/gran_premi/1_raccogli_giornate.py /tmp/gp/raccogli.py
-          (cd /tmp/gp && python3 raccogli.py)
-          python3 - <<'PY'
-          import json, re, collections
-          R = json.load(open('/tmp/gp/corse.json'))
-          seen=set(); U=[]
-          for r in R:
-              k=(r['data'],r['codice'],r['corsa'])
-              if k in seen: continue
-              seen.add(k); U.append(r)
-          GIA = r"DERBY|LOTTERIA|MANGELLI|PAOLO E O|NAZIONI|COSTA AZZURRA|CONTINENTALE|TRIOSSI|UNIONE EURO|EUROPA|OAKS|TURILLI|GIOVANARDI|MARANGONI|GRAN PREMIO ITALIA|GP ITALIA|G\.P\. ITALIA|MONTECA|ALLEVATORI|MIPAAF|MASAF|ANACT"
-          def mp(r): return float(r['montepremi'].replace('.',''))
-          def chiave(n):
-              n = n.upper()
-              n = re.sub(r"^PREMIO\s+", "", n)
-              n = re.sub(r"\b(19|20)\d\d\b", "", n)
-              n = re.sub(r"\b(MEM\.?|MEMORIAL|TROFEO|TR\.)\b.*$", "", n)
-              n = re.sub(r"[^A-Z' ]", " ", n)
-              return re.sub(r"\s+", " ", n).strip()[:40]
-          g = collections.defaultdict(list)
-          for r in U:
-              if mp(r) < 50000: continue
-              n = r['nome'].upper()
-              if re.search(GIA, n): continue
-              if re.search(r"BATT|CONSOLAZ|QUALIF|SELEZ|ELIMIN|PROVA", n) and "FINALE" not in n: continue
-              g[chiave(n)].append(r)
-          righe = []
-          for k, rs in g.items():
-              anni = sorted({r['data'][:4] for r in rs})
-              righe.append((len(anni), max(mp(r) for r in rs), k, anni, rs[-1]))
-          for n_anni, mx, k, anni, ult in sorted(righe, key=lambda x: (-x[0], -x[1])):
-              if n_anni < 3: continue
-              print(f"{n_anni:2} anni | max {int(mx):>7} | {k:40} | {ult['pista'][:12]:12} {ult['data']} {ult['metri']}m | {ult['nome'][:70]} | {ult['vincitore']} {ult['sesso_eta']}")
-          PY
+          cd repo
+          git checkout -q --orphan prova/forza-foto
+          git rm -rq . || true
+          cp ../foto*.png .
+          git add foto*.png
+          git -c user.name=prova -c user.email=prova@example.com commit -qm foto
+          git push -qf origin prova/forza-foto
