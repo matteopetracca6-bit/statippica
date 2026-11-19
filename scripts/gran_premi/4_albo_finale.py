@@ -8,8 +8,14 @@ def pista(p):
         if p.startswith(k): return v
     return p.upper()
 def mp(r): return float(r['montepremi'].replace('.',''))
-def extra(name,date,testo):
-    row=db.execute("select driver,time_km,track from races where horse_name=? and race_date=? and placement=1",(name,date)).fetchone()
+def extra(name,date,testo,corsa=None):
+    # Solo la riga della corsa giusta: lo stesso giorno il vincitore puo' aver
+    # vinto anche la batteria (19/11/2026: RINGOSTARR TREB, Montecatini 2016,
+    # prendeva il tempo della batteria, 1.13.0, invece di quello della finale).
+    if corsa is not None:
+        row=db.execute("select driver,time_km,track from races where horse_name=? and race_date=? and placement=1 and race_number=?",(name,date,corsa)).fetchone()
+    else:
+        row=db.execute("select driver,time_km,track from races where horse_name=? and race_date=? and placement=1",(name,date)).fetchone()
     drv=tm=None
     if row: drv,tm=row[0],row[1]
     m=re.search(r' 1 \d+ '+re.escape(name)+r' [mfc][a-z]{0,2}\d{1,2} \d{3,4} (?:[A-Z] )?(\d{2}\.\d) [\d,]+ (\S+) (\S+) (\S+)',testo or '')
@@ -50,7 +56,7 @@ for k,xs in C.items():
             se=r['sesso_eta'] or ''
             eta=int(re.sub(r'\D','',se)) if re.search(r'\d',se) else None
             sesso={'m':'M','f':'F','c':'C'}.get(se[:1])
-            drv,t=extra(r['vincitore'],d,r['testo'])
+            drv,t=extra(r['vincitore'],d,r['testo'],r.get('corsa'))
             nota=None
             if k=='ue' and d<'2018': nota="allora Gran Premio d'Europa"
             if k=='allevatori' and d<'2018' and div=='Femmine': nota="Gran Premio Allevatori Filly"
