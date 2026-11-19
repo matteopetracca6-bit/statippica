@@ -81,12 +81,19 @@ jobs:
               return {(v['gara'], v['anno'], v.get('divisione')): v for v in json.JSONDecoder().raw_decode(testo[j:])[0]}
           vecchio = righe(subprocess.run(["git", "show", "HEAD:client/src/data/granPremi.ts"], capture_output=True, text=True).stdout)
           nuovo = righe(open("client/src/data/granPremi.ts").read())
-          for k in sorted(set(nuovo) - set(vecchio)): print("NUOVO   ", k, nuovo[k]['vincitore'], nuovo[k].get('data'))
-          for k in sorted(set(vecchio) - set(nuovo)): print("TOLTO   ", k, vecchio[k]['vincitore'])
-          for k in sorted(set(vecchio) & set(nuovo)):
+          ordina = lambda ks: sorted(ks, key=lambda k: tuple(str(x) for x in k))
+          for k in ordina(set(nuovo) - set(vecchio)): print("NUOVO   ", k, nuovo[k]['vincitore'], nuovo[k].get('data'))
+          tolti = ordina(set(vecchio) - set(nuovo))
+          for k in tolti: print("TOLTO   ", k, vecchio[k]['vincitore'])
+          for k in ordina(set(vecchio) & set(nuovo)):
               diff = {c: (vecchio[k].get(c), nuovo[k].get(c)) for c in nuovo[k] if vecchio[k].get(c) != nuovo[k].get(c)}
               if diff: print("CAMBIATO", k, diff)
+          # Un'edizione che sparisce dall'albo e' quasi sempre una pagina
+          # ufficiale che non ha risposto: meglio non pubblicare.
+          if tolti:
+              open("/tmp/gp/non_pubblicare", "w").write("tolti")
           PY
+          if [ -f /tmp/gp/non_pubblicare ]; then echo "::error::l'albo nuovo perde delle edizioni: non lo pubblico."; exit 1; fi
           if [ "${{ inputs.prova }}" = "true" ]; then echo "Prova: non pubblico."; exit 0; fi
           git commit -q -m "Albo d'oro dei Gran Premi $(date -u '+%Y-%m-%d')"
           for i in 1 2 3; do
