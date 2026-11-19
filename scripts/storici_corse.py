@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 RADICE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(RADICE))   # nightly_update importa i moduli che stanno nella radice
 
 
 def log(*a):
