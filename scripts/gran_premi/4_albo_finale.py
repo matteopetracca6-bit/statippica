@@ -34,8 +34,8 @@ def nato(name,anno,eta):
         for y in ys:
             if abs((anno-y)-eta)<=0: return y
     return ys[0] if len(ys)==1 else (anno-eta if eta is not None else None)
-NOMI={"derby":"Derby Italiano del Trotto","lotteria":"Gran Premio Lotteria di Agnano","mangelli":"Gran Premio Orsi Mangelli","nazioni":"Gran Premio delle Nazioni","costa":"Gran Premio Costa Azzurra","continentale":"Gran Premio Continentale","triossi":"Gran Premio Tino Triossi","ue":"Gran Premio Unione Europea","oaks":"Oaks del Trotto","turilli":"Gran Premio Turilli","giovanardi":"Gran Premio Giovanardi","marangoni":"Gran Premio Marangoni","italia":"Gran Premio Italia","montecatini":"Gran Premio Città di Montecatini","allevatori":"Gran Premio Allevatori – MASAF"}
-DIV={"italia","allevatori"}
+NOMI={"derby":"Derby Italiano del Trotto","lotteria":"Gran Premio Lotteria di Agnano","mangelli":"Gran Premio Orsi Mangelli","nazioni":"Gran Premio delle Nazioni","costa":"Gran Premio Costa Azzurra","continentale":"Gran Premio Continentale","triossi":"Gran Premio Tino Triossi","ue":"Gran Premio Unione Europea","oaks":"Oaks del Trotto","turilli":"Gran Premio Turilli","giovanardi":"Gran Premio Giovanardi","marangoni":"Gran Premio Marangoni","italia":"Gran Premio Italia","montecatini":"Gran Premio Città di Montecatini","allevatori":"Gran Premio Allevatori – MASAF","anact":"Gran Premio ANACT Stakes Plus"}
+DIV={"italia","allevatori","anact"}
 FONTE_UFF="https://database.grandeippicaitaliana.it/risultati/giornata/T/{c}/{d}"
 out=[]
 extra_rows={"mangelli":[('2018-11-01','IT44',8)],"nazioni":[('2018-11-01','IT44',7)],"ue":[('2020-11-15','IT34',5)]}
@@ -53,6 +53,10 @@ for k,xs in C.items():
             if k in DIV and len(rs)>1:
                 div="Femmine" if re.search(r"FILL|FEMMIN",n) else ("Maschi" if "MASCHI" in n else None)
             if k=='allevatori' and len(rs)==1: div=None
+            # ANACT: le due finali possono cadere in giorni diversi (2024: la
+            # maschile rinviata al lunedi' per la nebbia), quindi la divisione
+            # si legge sempre dal nome.
+            if k=='anact': div="Femmine" if re.search(r"FILL|FEMMIN",n) else "Maschi"
             se=r['sesso_eta'] or ''
             eta=int(re.sub(r'\D','',se)) if re.search(r'\d',se) else None
             sesso={'m':'M','f':'F','c':'C'}.get(se[:1])
@@ -78,7 +82,7 @@ W={"https://fr.wikipedia.org/wiki/Derby_italien_du_trot":[("derby",2014,"SUGAR R
  "https://fr.wikipedia.org/wiki/Grand_Prix_de_la_Ville_de_Montecatini":[("montecatini",2014,"MACK GRACE SM","2014-08-15","MONTECATINI"),("montecatini",2015,"ORSIA","2015-08-15","MONTECATINI")],
  "https://sv.wikipedia.org/wiki/Gran_Premio_Allevatori":[("allevatori",2014,"THEODOR GRIF","2014-12-26","ROMA"),("allevatori",2015,"URLO DEI VENTI","2015-12-26","ROMA")],
 }
-ETA={"derby":3,"oaks":3,"mangelli":3,"giovanardi":3,"marangoni":3,"italia":3,"continentale":4,"triossi":4,"ue":4,"allevatori":2}
+ETA={"anact":2,"derby":3,"oaks":3,"mangelli":3,"giovanardi":3,"marangoni":3,"italia":3,"continentale":4,"triossi":4,"ue":4,"allevatori":2}
 for fonte,rows in W.items():
     for k,a,v,d,p in rows:
         drv=t=None; met=None

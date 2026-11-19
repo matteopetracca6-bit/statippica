@@ -22,6 +22,9 @@ RULES={
  "italia":(r"GRAN PREMIO ITALIA|GP ITALIA|G\.P\. ITALIA",None),
  "montecatini":(r"MONTECA",None),
  "allevatori":(r"ALLEVATORI|MIPAAF|MASAF|ALLEVAMENTO",None),
+ # 19/11/2026: ANACT Stakes Plus, 2 anni, finale maschi e finale femmine
+ # (Vinovo, novembre). Non la versione dei 4 anni.
+ "anact":(r"ANACT",r"4 ANNI|4 YEARS|QUATTRO|ANACT STAKES PLUS 4"),
 }
 EXC=r"CONSOLAZ|BATT|SELEZ|ROAD TO|PRESENTAZ|QUALIF|PROVA|ELIMIN|CORSA [AB]\b|GENTLEMEN|AMATORI|ALLIEVI|SFIDA"
 out={}
