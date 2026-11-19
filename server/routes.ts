@@ -988,8 +988,20 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Forza e curva di carriera (forza.py): nella scheda prendono il posto
       // del potenziale ai 4 anni.
       horse.forza = forzaCavallo(db, name);
+      // E' uno stallone del sito (ha il voto da stallone)? Stemma verde e
+      // collegamento alla pagina da stallone. Per gli stalloni nati o
+      // cresciuti all'estero il voto da cavallo conta solo le corse in Italia:
+      // non e' confrontabile con quello degli altri (19/11/2026).
+      {
+        const nomeStallone = horse.stallone_come ?? name;
+        const st = db.prepare(`SELECT sire, n_figli_totali, grade FROM stallion_rating_stats
+                               WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))`).get(nomeStallone) as any;
+        horse.stallone = st ? { nome: st.sire, n_figli: st.n_figli_totali, voto: st.grade } : null;
+        const paese = String(horse.country ?? "").toUpperCase();
+        horse.voto_non_comparabile = !!st && !!paese && paese !== "ITA" && paese !== "IT";
+      }
       horse.vai_a_pagina = null;
-      if (!(horse.career_races > 0) && !(tot?.n > 0)) {
+      if (!(horse.career_races > 0) && !(tot?.n > 0) && !horse.stallone) {
         const figliDa = (col: string) => (db.prepare(
           `SELECT COUNT(*) AS n FROM horses WHERE UPPER(TRIM(${col})) = UPPER(TRIM(?))`).get(name) as any)?.n ?? 0;
         const haStatsStallone = !!db.prepare(
@@ -1455,6 +1467,14 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // Flag utili
         no_offspring_data,
         has_offspring_data: !!stats,
+        // La sua scheda da cavallo (carriera), se c'e' con l'anno di nascita.
+        scheda_cavallo: (() => {
+          const al = vpTableExists(db, "cavalli_alias")
+            ? (db.prepare(`SELECT nome, anno FROM cavalli_alias WHERE alias = ?`).get(name) as any) : null;
+          if (al) return { name: al.nome, birth_year: al.anno };
+          const h = db.prepare(`SELECT name, birth_year FROM horses WHERE name = ? AND birth_year IS NOT NULL`).get(name) as any;
+          return h ? { name: h.name, birth_year: h.birth_year } : null;
+        })(),
       };
 
       res.json(payload);

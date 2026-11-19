@@ -1,0 +1,78 @@
+name: StatIppica — Schede da cavallo degli stalloni (a mano)
+
+# 19/11/2026 (scripts/stalloni_schede.py). Cerca su UNIRE anno, paese e corse
+# in Italia degli stalloni del sito senza scheda da cavallo o senza anno, poi
+# ricalcola voti (con la regola: fino al 2011 storici, dal 2012 atleti) e
+# forza, pubblica l'archivio e ripubblica il sito.
+
+on:
+  workflow_dispatch:
+    inputs:
+      minuti:
+        description: "Minuti di ricerca su UNIRE"
+        required: false
+        default: "100"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  stalloni:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4 numpy pandas scikit-learn
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Schede degli stalloni da UNIRE
+        run: python3 scripts/stalloni_schede.py --db data.db --minuti "${{ inputs.minuti || '100' }}"
+      - name: Ricalcola classi, voti e forza
+        env:
+          DB_PATH: data.db
+        run: |
+          python3 - <<'PY'
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          nu.init_db(conn)                  # classi: fino al 2011 storici, dal 2012 atleti
+          conn.commit()
+          nu.phase_ratings(conn)
+          nu.phase_historic_ratings(conn)
+          nu.phase_stallion_ratings(conn)
+          nu.phase_dam_ratings(conn)
+          conn.commit()
+          import forza
+          forza.calcola(conn)
+          print("storici nati dal 2012:", conn.execute("SELECT COUNT(*) FROM horse_ratings WHERE rating_mode='storico' AND birth_year >= 2012").fetchone()[0])
+          print("riproduttori nati dal 2012:", conn.execute("SELECT COUNT(*) FROM horses WHERE horse_class='breeder' AND birth_year >= 2012").fetchone()[0])
+          for n in ("DIJON", "COKSTILE", "ODESSA SANTANA", "MAHARAJAH"):
+              print(n, conn.execute("SELECT h.birth_year, h.country, h.career_races, h.horse_class, r.rating_mode, r.grade FROM horses h LEFT JOIN horse_ratings r ON r.name = h.name AND r.rating_mode IN ('performance','storico') WHERE h.name = ?", (n,)).fetchone())
+          tot = conn.execute("""SELECT COUNT(*), SUM(h.birth_year IS NOT NULL) FROM stallion_rating_stats s
+                                LEFT JOIN horses h ON h.name = s.sire""").fetchone()
+          print(f"stalloni: {tot[0]}, con scheda da cavallo apribile: {tot[1]}")
+          conn.close()
+          PY
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
+      - name: Chiedi a Render di ripubblicare il sito
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 300; echo

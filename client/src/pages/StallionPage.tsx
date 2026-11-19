@@ -492,6 +492,15 @@ export default function StallionPage() {
                       {stallion.pedigree.sire}{stallion.pedigree.dam ? <> × {stallion.pedigree.dam}</> : null}
                     </span>
                   )}
+                  {(stallion as any).scheda_cavallo && (
+                    <span style={{ display: "block", marginTop: 6 }}>
+                      <Link href={`/horse/${encodeURIComponent((stallion as any).scheda_cavallo.name)}/${(stallion as any).scheda_cavallo.birth_year}`}>
+                        <a data-testid="link-carriera-stallone" style={{ color: "hsl(145 60% 62%)", textDecoration: "none" }}>
+                          Vedi la sua carriera da cavallo →
+                        </a>
+                      </Link>
+                    </span>
+                  )}
                   {stallion.no_offspring_data && (
                     <span style={{ display: "block", color: "hsl(40 60% 55%)", marginTop: 2 }}>Dati dei figli non ancora disponibili</span>
                   )}

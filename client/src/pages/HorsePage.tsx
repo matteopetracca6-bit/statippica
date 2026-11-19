@@ -671,13 +671,27 @@ export default function HorsePage() {
               {horse.pedigree.sire}{horse.pedigree.dam ? <> × {horse.pedigree.dam}</> : null}
             </span>
           )}
-          {(horse as any).stallone_come && (
-            <span style={{ display: "block", marginTop: 4 }}>
-              <Link href={`/stallion/${encodeURIComponent((horse as any).stallone_come)}`}>
-                <a style={{ color: "hsl(183 60% 55%)", textDecoration: "none" }}>
-                  Corre ancora ed è anche stallone da monta: vedi figli e statistiche da stallone →
-                </a>
-              </Link>
+          {(horse as any).stallone && (() => {
+            const st = (horse as any).stallone as { nome: string; n_figli: number | null; voto: string | null };
+            return (
+              <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                <Link href={`/stallion/${encodeURIComponent(st.nome)}`}>
+                  <a data-testid="stemma-stallone" title="Vai alla pagina da stallone: figli, voto da stallone e statistiche"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
+                      letterSpacing: "0.04em", textTransform: "uppercase", textDecoration: "none", borderRadius: 999,
+                      padding: "3px 11px", color: "hsl(145 65% 64%)", background: "hsl(145 45% 15%)",
+                      border: "1px solid hsl(145 45% 34%)" }}>
+                    ♞ Stallone{st.voto ? ` · voto ${st.voto}` : ""}{st.n_figli ? ` · ${st.n_figli} figli` : ""} →
+                  </a>
+                </Link>
+              </span>
+            );
+          })()}
+          {(horse as any).voto_non_comparabile && (
+            <span data-testid="nota-voto-estero" style={{ display: "block", marginTop: 6, fontSize: 12.5, lineHeight: 1.45,
+              color: "hsl(45 85% 70%)" }}>
+              Voto non confrontabile: ha corso soprattutto all'estero, e qui contano solo le corse in Italia
+              {(horse.career_races ?? 0) > 0 ? ` (${horse.career_races})` : " (nessuna)"}.
             </span>
           )}
           {(horse as any).come_fattrice && (() => {
