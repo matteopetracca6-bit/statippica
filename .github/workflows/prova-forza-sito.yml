@@ -7,23 +7,37 @@ permissions:
 jobs:
   foto:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
-      - name: Aspetta il deploy nuovo
-        shell: bash {0}
+      - name: Prepara
+        run: pip install playwright && python -m playwright install --with-deps chromium
+      - name: Aspetta il deploy nuovo e fotografa
         run: |
-          sleep 240
-          for i in $(seq 1 30); do
-            curl -s -m 60 https://statippica.onrender.com/ | grep -q "assets" && break; sleep 20
-          done
-      - name: Fotografa
-        run: |
-          i=0
-          for u in "horse/CHICCA%20ROSS/2018" "horse/GHEMON%20COL/2022"; do
-            i=$((i+1))
-            timeout 120 google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1400,3000 --virtual-time-budget=30000 \
-              --screenshot="$PWD/foto$i.png" "https://statippica.onrender.com/#/$u" || true
-          done
+          cat > foto.py <<'PY'
+          import time
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              pg = b.new_page(viewport={"width": 1400, "height": 1000})
+              for i in range(40):
+                  pg.goto("https://statippica.onrender.com/#/horse/CHICCA%20ROSS/2018", timeout=120000)
+                  pg.evaluate("localStorage.setItem('scheda-cavallo-sezione-famiglia','1')")
+                  pg.reload(timeout=120000)
+                  try:
+                      pg.wait_for_selector("text=Bisnonni", timeout=40000)
+                      break
+                  except Exception:
+                      print("non ancora", i); time.sleep(30)
+              time.sleep(4)
+              el = pg.locator("#sez-genealogia")
+              el.scroll_into_view_if_needed()
+              el.screenshot(path="foto1.png")
+              pg.set_viewport_size({"width": 390, "height": 900})
+              time.sleep(2)
+              el.screenshot(path="foto2.png")
+              b.close()
+          PY
+          python foto.py
           ls -la foto*.png
       - uses: actions/checkout@v5
         with:
@@ -32,7 +46,7 @@ jobs:
         run: |
           cd repo
           git checkout -q --orphan prova/forza-foto
-          git rm -rq . || true
+          git rm -rqf . || true
           cp ../foto*.png .
           git add foto*.png
           git -c user.name=prova -c user.email=prova@example.com commit -qm foto
