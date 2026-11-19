@@ -1,4 +1,4 @@
-name: PROVA — forza sul sito
+name: PROVA — scheda UNIRE anno per anno
 on:
   push:
     branches: [prova/forza-sito]
@@ -7,40 +7,30 @@ permissions:
 jobs:
   guarda:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 10
     steps:
-      - name: Aspetta il deploy e leggi la scheda
-        shell: bash {0}
+      - name: Scarica due schede UNIRE
         run: |
-          for i in $(seq 1 40); do
-            R=$(curl -s -m 90 "https://statippica.onrender.com/api/horse/TROI%20HOLZ/2012")
-            echo "$R" | python3 -c "import json,sys;h=json.load(sys.stdin);f=h.get('forza');sys.exit(0 if f and f.get('soglie') else 1)" 2>/dev/null && break
-            sleep 30
+          for id in 607458 625679; do
+            curl -s -m 60 "https://www.unire.it/index.php/ita/trotto/list?id_cav=$id" -o scheda_$id.html
+            sleep 2
+            python3 - "$id" <<'PY'
+          import re, sys, html
+          t = open(f"scheda_{sys.argv[1]}.html", encoding="utf-8", errors="ignore").read()
+          testo = re.sub(r"<[^>]+>", " ", t); testo = html.unescape(re.sub(r"\s+", " ", testo))
+          i = testo.find("La scheda")
+          print(testo[i:i+3000])
+          PY
           done
-          for u in "TROI%20HOLZ/2012" "DIJON/2013" "CHICCA%20ROSS/2018"; do
-            curl -s -m 90 "https://statippica.onrender.com/api/horse/$u" | python3 -c "
-          import json,sys;h=json.load(sys.stdin);f=h.get('forza') or {}
-          print(h.get('name'),'grade',h.get('grade'),h.get('score'),'stallone',h.get('stallone'),'non_comp',h.get('voto_non_comparabile'),'vai',h.get('vai_a_pagina'))
-          print('  pot',f.get('potenziale'),f.get('potenziale_eta'),'ferma',f.get('ferma'),'stag',[(s['eta'],s['voto']) for s in f.get('stagioni',[])][-4:],'curva',len(f.get('curva',[])))"
-          done
-      - name: Fotografa la pagina
-        run: |
-          i=0
-          for u in "horse/TROI%20HOLZ/2012" "horse/DIJON/2013" "horse/GHEMON%20COL/2022"; do
-            i=$((i+1))
-            timeout 120 google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1280,5200 --virtual-time-budget=30000 \
-              --screenshot="$PWD/foto$i.png" "https://statippica.onrender.com/#/$u" || true
-          done
-          ls -la foto*.png
       - uses: actions/checkout@v5
         with:
           path: repo
-      - name: Salva le foto su un ramo
+      - name: Salva su un ramo
         run: |
           cd repo
           git checkout -q --orphan prova/forza-foto
           git rm -rq . || true
-          cp ../foto*.png .
-          git add foto*.png
-          git -c user.name=prova -c user.email=prova@example.com commit -qm foto
+          cp ../scheda_*.html .
+          git add scheda_*.html
+          git -c user.name=prova -c user.email=prova@example.com commit -qm schede
           git push -qf origin prova/forza-foto
