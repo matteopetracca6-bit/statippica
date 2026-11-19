@@ -60,7 +60,16 @@ function Curva({ f, lettera }: { f: Forza; lettera: (v: number) => string }) {
   const n = e1 - e0 + 1;
   const W = 640, H = 230, L = 40, R = 26, T = 16, B = 34;
   const X = (e: number) => L + ((e - e0) / Math.max(1, e1 - e0)) * (W - L - R);
-  const Y = (v: number) => T + (1 - v / 100) * (H - T - B);
+  // Scala a fasce: ogni lettera ha la stessa altezza (sulla scala 0-100 le
+  // soglie di SSS, SS e S sono a pochi punti l'una dall'altra e si
+  // accavallavano). Dentro la fascia la posizione resta proporzionale.
+  const nodi = [0, ...[...f.soglie].filter(s => s.grado !== "F").map(s => s.soglia).sort((a, b) => a - b), 100];
+  const Y = (v: number) => {
+    let i = 0;
+    while (i < nodi.length - 2 && v >= nodi[i + 1]) i++;
+    const q = (i + Math.min(1, Math.max(0, (v - nodi[i]) / Math.max(1e-6, nodi[i + 1] - nodi[i])))) / (nodi.length - 1);
+    return T + (1 - q) * (H - T - B);
+  };
   // Con tante eta' le etichette si accavallano sul telefono: una si', una no.
   const passo = n > 9 ? 2 : 1;
   const ultimaVera = vere.length ? vere[vere.length - 1] : null;
@@ -72,12 +81,16 @@ function Curva({ f, lettera }: { f: Forza; lettera: (v: number) => string }) {
   const soglie = [...f.soglie].filter(s => s.grado !== "F").sort((a, b) => b.soglia - a.soglia);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Voto di carriera anno per anno, vero e previsto" style={{ width: "100%", height: "auto", display: "block" }}>
-      {soglie.map(s => (
-        <g key={s.grado}>
-          <line x1={L} x2={W - R} y1={Y(s.soglia)} y2={Y(s.soglia)} stroke="hsl(220 10% 30% / .45)" strokeDasharray="2 4" />
-          <text x={L - 6} y={Y(s.soglia) + 4} textAnchor="end" fontSize="11" fill="hsl(210 8% 55%)">{s.grado}</text>
-        </g>
-      ))}
+      {soglie.map((s, i) => {
+        const sopra = i === 0 ? 100 : soglie[i - 1].soglia;
+        return (
+          <g key={s.grado}>
+            <line x1={L} x2={W - R} y1={Y(s.soglia)} y2={Y(s.soglia)} stroke="hsl(220 10% 30% / .45)" strokeDasharray="2 4" />
+            <text x={L - 6} y={(Y(s.soglia) + Y(sopra)) / 2 + 4} textAnchor="end" fontSize="11" fill="hsl(210 8% 55%)">{s.grado}</text>
+          </g>
+        );
+      })}
+      <text x={L - 6} y={(Y(0) + Y(soglie.length ? soglie[soglie.length - 1].soglia : 0)) / 2 + 4} textAnchor="end" fontSize="11" fill="hsl(210 8% 55%)">F</text>
       {Array.from({ length: n }, (_, i) => e0 + i).map((e, i) => (
         <g key={e}>
           <line x1={X(e)} x2={X(e)} y1={T} y2={H - B} stroke="hsl(220 10% 30% / .35)" />
