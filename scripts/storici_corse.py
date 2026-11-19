@@ -108,6 +108,24 @@ def aggiorna_totali(conn, anno: int) -> dict:
     return esito
 
 
+def ripristina(conn, fino_al: int) -> int:
+    """Annulla i cambi di totale per i nati fino a fino_al: torna il valore di
+    prima (UNIRE), registrato in storici_totali_cambi."""
+    try:
+        cambi = conn.execute("""SELECT c.rowid, c.nome, c.campo, c.prima FROM storici_totali_cambi c
+                                JOIN horses h ON h.name = c.nome WHERE h.birth_year <= ?
+                                ORDER BY c.rowid DESC""", (fino_al,)).fetchall()
+    except sqlite3.OperationalError:
+        return 0
+    for rid, nome, campo, prima in cambi:
+        if campo not in ("career_races", "career_wins", "career_places", "career_earnings", "record_career"):
+            continue
+        conn.execute(f"UPDATE horses SET {campo} = ? WHERE name = ?", (prima, nome))
+        conn.execute("DELETE FROM storici_totali_cambi WHERE rowid = ?", (rid,))
+    conn.commit()
+    return len(cambi)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=os.environ.get("DB_PATH", "data.db"))
@@ -115,7 +133,9 @@ def main() -> int:
     ap.add_argument("--minuti", type=float, default=150)
     ap.add_argument("--massimo", type=int, default=None)
     ap.add_argument("--prova", action="store_true", help="lavora su una copia in memoria")
-    ap.add_argument("--totali", action="store_true", help="alla fine aggiorna i totali di carriera")
+    ap.add_argument("--totali", action="store_true", help="alla fine aggiorna i totali di carriera (solo 2011)")
+    ap.add_argument("--ripristina", type=int, default=None,
+                    help="rimette i totali UNIRE ai nati fino a quest'anno (annulla storici_totali_cambi)")
     a = ap.parse_args()
     nu = carica_nu()
     conn = sqlite3.connect(a.db)
@@ -180,8 +200,14 @@ def main() -> int:
         if (i + 1) % 100 == 0:
             log(f"  ... {i + 1}/{len(cavalli)} cavalli, {nuove} corse nuove")
     log(f"[STORICI-CORSE] questo giro: {esiti}, corse nuove {nuove}")
+    if a.ripristina:
+        log(f"[STORICI-CORSE] totali rimessi come da UNIRE (nati fino al {a.ripristina}): {ripristina(conn, a.ripristina)}")
     if a.totali:
-        for x in anni:
+        # Totali dalle corse solo per il 2011, l'ultima annata con la carriera
+        # intera in archivio (TrottoWeb + UNIRE per quel che manca). Dal 2010
+        # in giu' le corse partono da meta' 2013: i totali restano quelli
+        # UNIRE (decisione del 19/11/2026).
+        for x in [y for y in anni if y >= 2011]:
             log(f"[STORICI-CORSE] totali di carriera {x} aggiornati (voci cambiate): {aggiorna_totali(conn, x)}")
     for riga in copertura(conn, anni):
         log(f"[STORICI-CORSE] dopo: nati {riga[0]}: corse ufficiali {riga[1]}, in archivio {riga[2]} "

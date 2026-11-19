@@ -17,6 +17,10 @@ on:
         description: "Minuti di lettura"
         required: false
         default: "150"
+      ripristina:
+        description: "Rimetti i totali UNIRE ai nati fino a quest'anno (vuoto = no)"
+        required: false
+        default: ""
       prova:
         description: "Solo prova su 20 cavalli, senza pubblicare"
         type: boolean
@@ -46,7 +50,7 @@ jobs:
           if [ "${{ inputs.prova }}" = "true" ]; then
             python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --massimo 20 --prova
           else
-            python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --minuti "${{ inputs.minuti }}" --totali
+            python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --minuti "${{ inputs.minuti }}" --totali ${{ inputs.ripristina && format('--ripristina {0}', inputs.ripristina) || '' }}
           fi
       - name: Ricalcola voti e forza
         if: ${{ inputs.prova != true }}
