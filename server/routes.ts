@@ -2629,6 +2629,49 @@ export function registerRoutes(httpServer: Server, app: Express) {
     return { tree, vp, MAX_GEN };
   }
 
+  /**
+   * Voti di ogni casella dell'albero (20/11/2026): voto da atleta (dalle sue
+   * corse) e voto da stallone o da fattrice (dai figli). Si leggono a ogni
+   * richiesta dalle tabelle che la notte ricalcola, quindi quando un
+   * antenato riceve nuovi figli con voto (LEMON DRA, dai recuperi degli
+   * storici) il suo voto da stallone nell'albero cambia da solo.
+   */
+  function aggiungiVotiAlbero(db: any, tree: any) {
+    const nodi: any[] = [];
+    (function giro(n: any) { if (!n) return; nodi.push(n); giro(n.sire); giro(n.dam); })(tree);
+    const nomi = Array.from(new Set(nodi.map(n => String(n.name || "").trim().toUpperCase()).filter(Boolean)));
+    if (!nomi.length) return;
+    const atleti = new Map<string, any[]>();
+    const stalloni = new Map<string, string>();
+    const fattrici = new Map<string, string>();
+    for (let i = 0; i < nomi.length; i += 400) {
+      const pezzo = nomi.slice(i, i + 400);
+      const q = pezzo.map(() => "?").join(",");
+      for (const r of db.prepare(`SELECT name, birth_year, grade, rating_mode FROM horse_ratings
+                                  WHERE name IN (${q}) AND grade IS NOT NULL AND grade != 'N/A'`).all(...pezzo) as any[]) {
+        const k = String(r.name).toUpperCase();
+        if (!atleti.has(k)) atleti.set(k, []);
+        atleti.get(k)!.push(r);
+      }
+      for (const r of db.prepare(`SELECT sire, grade FROM stallion_rating_stats
+                                  WHERE sire IN (${q}) AND grade IS NOT NULL AND grade != 'N/A'`).all(...pezzo) as any[])
+        stalloni.set(String(r.sire).toUpperCase(), r.grade);
+      for (const r of db.prepare(`SELECT dam, grade FROM dam_rating_stats
+                                  WHERE dam IN (${q}) AND grade IS NOT NULL AND grade != 'N/A'`).all(...pezzo) as any[])
+        fattrici.set(String(r.dam).toUpperCase(), r.grade);
+    }
+    for (const n of nodi) {
+      const k = String(n.name || "").trim().toUpperCase();
+      const righe = (atleti.get(k) || []).filter((r: any) => !n.birth_year || !r.birth_year || r.birth_year === n.birth_year);
+      const atl = righe.find((r: any) => r.rating_mode === "performance") || righe[0];
+      n.voti = {
+        atleta: atl?.grade ?? null,
+        stallone: n.sex === "F" ? null : (stalloni.get(k) ?? null),
+        fattrice: n.sex === "M" ? null : (fattrici.get(k) ?? null),
+      };
+    }
+  }
+
   /** Chiede alla fonte la genealogia del cavallo e dei genitori, se manca. */
   async function completaGenealogia(db: any, name: string) {
     try {
@@ -2657,6 +2700,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       if (!tree) {
         return res.status(404).json({ error: "Cavallo non trovato" });
       }
+      aggiungiVotiAlbero(db, tree);
 
       // Compute inbreeding coefficient (Wright's formula)
       // Walk sire side and dam side separately, collecting ancestors with generation depth

@@ -32,6 +32,7 @@ import { formatRecord, tempoKm } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
 import CurvaVoto, { curvaPronta } from "../components/CurvaVoto";
+import { AlberoPedigreeCavallo } from "../components/AlberoPedigree";
 import { Spiegazione } from "../components/Spiegazione";
 import NomePista from "../components/NomePista";
 import { nomePista } from "@/lib/piste";
@@ -397,49 +398,6 @@ function NavArrow({ direction, neighbor, onClick }: {
   );
 }
 
-function HorsePedigreeNode({ label, name, isStallion, highlight }: {
-  label: string; name: string | null; isStallion: boolean; highlight?: boolean;
-}) {
-  const [, navigate] = useLocation();
-  if (!name) {
-    return (
-      <div style={{ padding: "10px 14px", borderRadius: "8px", background: "hsl(220 12% 9%)", border: "1px dashed hsl(220 10% 18%)" }}>
-        <div style={{ fontSize: "10px", color: "hsl(210 8% 35%)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>{label}</div>
-        <div style={{ fontSize: "12px", color: "hsl(210 8% 38%)", fontStyle: "italic" }}>—</div>
-      </div>
-    );
-  }
-  const handleClick = () => {
-    if (isStallion) navigate(`/stallion/${encodeURIComponent(name)}`);
-    else navigate(`/horse/${encodeURIComponent(name)}/0`);
-  };
-  return (
-    <div
-      onClick={handleClick}
-      style={{
-        padding: "10px 14px", borderRadius: "8px", textAlign: "left", width: "100%",
-        cursor: "pointer",
-        background: highlight
-          ? (isStallion ? "hsl(183 30% 10%)" : "hsl(320 15% 10%)")
-          : "hsl(220 12% 11%)",
-        border: highlight
-          ? (isStallion ? "1px solid hsl(183 40% 25%)" : "1px solid hsl(320 20% 22%)")
-          : "1px solid hsl(220 10% 18%)",
-        transition: "background 0.15s, border-color 0.15s",
-      }}
-      onMouseEnter={(e: any) => { e.currentTarget.style.background = highlight ? "hsl(183 30% 14%)" : "hsl(220 12% 15%)"; }}
-      onMouseLeave={(e: any) => { e.currentTarget.style.background = highlight ? (isStallion ? "hsl(183 30% 10%)" : "hsl(320 15% 10%)") : "hsl(220 12% 11%)"; }}
-    >
-      <div style={{ fontSize: "10px", color: "hsl(210 8% 45%)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>{label}</div>
-      <div style={{
-        fontSize: highlight ? "13px" : "12px",
-        fontWeight: highlight ? 700 : 600,
-        color: highlight ? (isStallion ? "hsl(183 70% 65%)" : "hsl(320 50% 75%)") : "hsl(210 8% 75%)",
-        letterSpacing: "0.03em",
-      }}>{name}</div>
-    </div>
-  );
-}
 
 // Lingue di Wikipedia, per dire da dove viene il dato.
 const LINGUA_WIKI: Record<string, string> = { fr: "francese", sv: "svedese", en: "inglese", it: "italiana" };
@@ -1182,45 +1140,14 @@ export default function HorsePage() {
 
       <SezioneScheda id="famiglia" titolo="Famiglia"
         riassunto={horse.pedigree?.sire ? `${horse.pedigree.sire}${horse.pedigree.dam ? ` × ${horse.pedigree.dam}` : ""} · genealogia, linea materna, fratellastri` : "Genealogia, linea materna, fratellastri"}>
+        {/* 20/11/2026: albero fino a 5 generazioni, cavallo compreso, con
+            contorno blu/rosa e voti da atleta e da riproduttore. */}
+        <div id="sez-genealogia" className="pannello" style={{ ...panelStyle, marginBottom: 16 }}>
+          <div style={panelTitle}>Pedigree</div>
+          <AlberoPedigreeCavallo nome={horse.name} />
+        </div>
         <div className="sez-colonne">
           <div className="sez-col">
-      {horse.pedigree && (horse.pedigree.sire || horse.pedigree.dam) && (
-        <div id="sez-genealogia" className="pannello" style={{ ...panelStyle, display: "flex", flexDirection: "column" }}>
-          <div style={panelTitle}>Genealogia (clicca per navigare)</div>
-          <div className="genealogia-griglia" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
-              <HorsePedigreeNode label="Nonno pat." name={horse.pedigree.sire_sire} isStallion />
-              <HorsePedigreeNode label="Nonna pat." name={horse.pedigree.sire_dam} isStallion={false} />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "0 20px" }}>
-              <HorsePedigreeNode label="Padre (Sire)" name={horse.pedigree.sire} isStallion highlight />
-              <HorsePedigreeNode label="Madre (Dam)" name={horse.pedigree.dam} isStallion={false} highlight />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "16px" }}>
-              <HorsePedigreeNode label="Nonno mat." name={horse.pedigree.dam_sire} isStallion />
-              <HorsePedigreeNode label="Nonna mat." name={horse.pedigree.dam_dam} isStallion={false} />
-            </div>
-          </div>
-          {horse.sire && (
-        <div style={{ marginTop: "auto", paddingTop: "16px" }}>
-          <Link href={`/stallion/${encodeURIComponent(horse.sire)}`}>
-            <a style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              padding: "10px 16px", borderRadius: "10px",
-              background: "hsl(183 30% 10%)", border: "1px solid hsl(183 40% 25%)",
-              color: "hsl(183 70% 65%)", textDecoration: "none", fontSize: "13px", fontWeight: 600,
-              transition: "background 0.15s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = "hsl(183 30% 14%)"}
-              onMouseLeave={e => e.currentTarget.style.background = "hsl(183 30% 10%)"}
-            >
-              Vedi scheda stallone: {horse.sire} →
-            </a>
-          </Link>
-        </div>
-      )}
-        </div>
-      )}
             <InbreedingPanel horseName={horse.name} />
         {horse.siblings?.length ? (
         <div className="pannello" style={panelStyle}>
