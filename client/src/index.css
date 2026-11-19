@@ -1275,6 +1275,8 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .in-breve-griglia { display: grid; gap: 18px 26px; grid-template-columns: 1fr; }
 @media (min-width: 900px) { .in-breve-griglia { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); } }
 .in-breve-parte { min-width: 0; }
+/* 19/11/2026: "Il voto" con la curva del voto di carriera prende due terzi della riga. */
+@media (min-width: 900px) { .in-breve-griglia:has(.in-breve-larga) { grid-template-columns: 2fr 1fr; } }
 .in-breve-parte + .in-breve-parte { border-top: 1px solid hsl(220 10% 16%); padding-top: 14px; }
 @media (min-width: 900px) { .in-breve-parte + .in-breve-parte { border-top: none; padding-top: 0; border-left: 1px solid hsl(220 10% 16%); padding-left: 22px; } }
 .in-breve-titolo { font-size: 11px; font-weight: 600; color: hsl(210 8% 50%); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 10px; }

@@ -31,7 +31,7 @@ const CUORI: Record<string, string> = {
 import { formatRecord, tempoKm } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
-import FormaPotenziale from "../components/FormaPotenziale";
+import CurvaVoto, { curvaPronta } from "../components/CurvaVoto";
 import { Spiegazione } from "../components/Spiegazione";
 import NomePista from "../components/NomePista";
 import { nomePista } from "@/lib/piste";
@@ -794,16 +794,15 @@ export default function HorsePage() {
           </div>
         </div>
       )}
-      {(horse as any).forza && <FormaPotenziale f={(horse as any).forza} style={panelStyle} />}
       <section id="sez-palmares"><Palmares nome={horse.name} anno={horse.birth_year} /></section>
 
-      {((horse.rating_mode === "performance" && (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto))
-        || (stats?.bestRaces?.length ?? 0) > 0 || (horse.career_earnings ?? 0) > 0 || ultimeCorse.length > 0) && (
+      {((horse.rating_mode === "performance" && (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto || curvaPronta((horse as any).forza)))
+        || (horse.career_earnings ?? 0) > 0) && (
       <div className="pannello in-breve" style={panelStyle}>
         <div style={panelTitle}>In breve</div>
         <div className="in-breve-griglia">
-          {horse.rating_mode === "performance" && (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto) && (
-            <div className="in-breve-parte">
+          {horse.rating_mode === "performance" && (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto || curvaPronta((horse as any).forza)) && (
+            <div className="in-breve-parte in-breve-larga">
               <div className="in-breve-titolo">Il voto</div>
             <div style={{
               display: "grid",
@@ -863,7 +862,7 @@ export default function HorsePage() {
               {/* Voto previsto a fine carriera (XGBoost, sperimentale): solo dai
                   2 ai 4 anni, le eta' in cui la prova sul passato ha battuto la
                   regola "resta com'e' oggi". */}
-              {horse.voto_previsto && (
+              {horse.voto_previsto && !curvaPronta((horse as any).forza) && (
                 <div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>
                     A fine carriera (stima sperimentale)
@@ -879,42 +878,9 @@ export default function HorsePage() {
                 </div>
               )}
             </div>
-            </div>
-          )}
-          {ultimeCorse.length > 0 && (
-            <div className="in-breve-parte" data-testid="ultime-corse">
-              <div className="in-breve-titolo">Ultime {ultimeCorse.length} corse</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                {ultimeCorse.map((r, i) => {
-                  const pos = r.placement;
-                  const fuori = pos == null || pos <= 0;
-                  const sfondo = pos === 1 ? "color-mix(in srgb, var(--colore-pannello, hsl(51 80% 55%)) 28%, transparent)"
-                    : pos != null && pos <= 3 ? "hsl(220 10% 20%)" : "hsl(220 10% 13%)";
-                  return (
-                    <span key={i} title={`${r.race_date ?? ""} · ${nomePista(r.track) ?? r.track ?? ""}${r.distance ? ` · ${r.distance} m` : ""}`}
-                          className="tabular" style={{ minWidth: 34, textAlign: "center", padding: "5px 7px", borderRadius: 7, fontSize: 13, fontWeight: 800,
-                            background: sfondo, color: fuori ? "hsl(0 55% 62%)" : pos! <= 3 ? "hsl(210 10% 92%)" : "hsl(210 8% 55%)",
-                            border: "1px solid hsl(220 10% 20%)" }}>
-                      {fuori ? (r.placement_raw || "—") : `${pos}°`}
-                    </span>
-                  );
-                })}
-              </div>
-              <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
-                dalla più vecchia alla più recente · ultima {ultimeCorse[ultimeCorse.length - 1].race_date ?? ""}
-              </div>
-            </div>
-          )}
-          {stats && stats.bestRaces.length > 0 && (
-            <div className="in-breve-parte">
-              <div className="in-breve-titolo">Le 3 gare migliori</div>
-              {stats.bestRaces.slice(0, 3).map((r, i) => (
-                <div key={i} className="in-breve-gara">
-                  <span className={`in-breve-pos${r.placement === 1 ? " primo" : ""}`}>{r.placement_raw ?? r.placement ?? "—"}</span>
-                  <span className="in-breve-dove"><LinkPista codice={r.track} /> {r.race_date ? `· ${r.race_date}` : ""}</span>
-                  <span className="tabular in-breve-euro">€{r.prize_net?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</span>
-                </div>
-              ))}
+            {curvaPronta((horse as any).forza) && (
+              <CurvaVoto f={(horse as any).forza} colore={COLORE_SCHEDA_VOTO[horse.grade ?? ""] ?? "hsl(183 70% 50%)"} />
+            )}
             </div>
           )}
           <div className="in-breve-parte">
