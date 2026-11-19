@@ -13,20 +13,7 @@ const COLORE_PED = coloreScheda("/pedigree");
 import NameSelect from "../components/NameSelect";
 import InbreedingPanel from "../components/InbreedingPanel";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
-
-interface PedigreeNode {
-  name: string;
-  birth_year: number | null;
-  sex: string | null;
-  country: string | null;
-  career_earnings: number | null;
-  career_wins: number | null;
-  career_races: number | null;
-  sire: PedigreeNode | null;
-  dam: PedigreeNode | null;
-  missing?: boolean;
-  from_source?: boolean;
-}
+import AlberoPedigree, { type PedigreeNode } from "../components/AlberoPedigree";
 
 interface PedigreeData {
   horse: PedigreeNode;
@@ -37,134 +24,6 @@ interface PedigreeData {
   has_source_pedigree?: boolean;
   figli?: number;
   affidabilita?: { livello?: "provvisorio" | "in_via_di_conferma" | "consolidato" } | null;
-}
-
-// Render a pedigree node as a small card
-function PedNode({ node, gen, maxGen, hovered, onHover, etichettaRadice }: { node: PedigreeNode | null; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void; etichettaRadice?: string }) {
-  // Piu' si va indietro nelle generazioni, piu' le caselle sono strette:
-  // nella quinta ce ne sono trentadue in colonna.
-  const compact = gen >= 4;
-  const nameSize = gen >= 4 ? "10px" : gen === 3 ? "11px" : "12px";
-
-  if (!node || gen > maxGen) {
-    return gen <= maxGen
-      ? <div style={{ flex: 1, minHeight: compact ? "22px" : "34px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "hsl(210 8% 24%)" }}>—</div>
-      : null;
-  }
-
-  const isStallion = node.sex === "M";
-  const isHighlighted = hovered && node.name && node.name.toUpperCase() === hovered.toUpperCase();
-
-  return (
-    <div
-      onMouseEnter={() => node.name && onHover(node.name)}
-      onMouseLeave={() => onHover(null)}
-      style={{
-        width: "100%",
-        padding: compact ? "3px 6px" : "7px 9px",
-        borderRadius: "8px",
-        background: node.missing ? "hsl(220 10% 8%)" : isHighlighted ? "hsl(183 60% 15%)" : "hsl(220 12% 12%)",
-        border: `1.5px solid ${
-          isHighlighted ? "hsl(183 100% 55%)" :
-          node.missing ? "hsl(220 10% 14%)" :
-          isStallion ? "hsl(183 60% 25%)" : "hsl(300 40% 25%)"
-        }`,
-        textAlign: "center",
-        transition: "all 0.2s ease",
-        transform: isHighlighted ? "scale(1.06)" : "scale(1)",
-        boxShadow: isHighlighted ? "0 2px 12px hsl(183 100% 55% / 0.3)" : "none",
-        cursor: node.missing ? "default" : "pointer",
-        position: "relative",
-      }}
-    >
-      {node.name && !node.missing ? (
-        <Link href={isStallion ? `/stallion/${encodeURIComponent(node.name)}` : `/horse/${encodeURIComponent(node.name)}/0`}>
-          <a style={{
-            fontSize: nameSize, fontWeight: 700, color: "hsl(210 10% 85%)", textDecoration: "none",
-            display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}
-            onMouseEnter={e => e.currentTarget.style.color = "hsl(183 80% 62%)"}
-            onMouseLeave={e => e.currentTarget.style.color = "hsl(210 10% 85%)"}
-          >
-            {node.name}
-          </a>
-        </Link>
-      ) : (
-        <span style={{ fontSize: nameSize, fontWeight: 600, color: "hsl(210 8% 58%)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.name || "—"}</span>
-      )}
-      {node.birth_year && !compact && (
-        <div style={{ fontSize: "10px", color: "hsl(210 8% 42%)", marginTop: "2px" }}>
-          <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto /> {node.birth_year}
-        </div>
-      )}
-      {node.career_earnings != null && node.career_earnings > 0 && !compact && (
-        <div className="tabular" style={{ fontSize: "10px", color: "hsl(51 70% 50%)", marginTop: "2px" }}>
-          €{(node.career_earnings / 1000).toFixed(0)}k
-        </div>
-      )}
-      {node.sex && !compact && (
-        <div style={{
-          fontSize: "9px", marginTop: "3px", fontWeight: 700,
-          color: node.sex === "M" ? "hsl(183 60% 55%)" : "hsl(300 40% 60%)",
-        }}>
-          {gen === 0 && etichettaRadice ? etichettaRadice : node.sex === "M" ? "♂ Stallone" : "♀ Fattrice"}
-        </div>
-      )}
-      {/* Highlight indicator for common ancestors */}
-      {isHighlighted && (
-        <div style={{
-          position: "absolute", top: "-6px", right: "-6px",
-          width: "10px", height: "10px", borderRadius: "50%",
-          background: "hsl(25 80% 55%)", border: "1.5px solid hsl(220 14% 8%)",
-        }} />
-      )}
-    </div>
-  );
-}
-
-/**
- * Una generazione = una colonna. Le caselle si dividono l'altezza in parti
- * uguali, cosi' il padre sta all'altezza dei suoi due genitori: e' il modo in
- * cui i pedigree si leggono di solito, e regge anche le trentadue caselle
- * della quinta generazione senza diventare una striscia illeggibile.
- */
-function GenColumn({ nodes, gen, maxGen, hovered, onHover, title, etichettaRadice }: { nodes: (PedigreeNode | null)[]; gen: number; maxGen: number; hovered: string | null; onHover: (name: string | null) => void; title: string; etichettaRadice?: string }) {
-  return (
-    <div style={{ flex: gen === 0 ? "0 0 150px" : gen >= 4 ? "1 1 105px" : "1 1 125px", display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div style={{
-        fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em",
-        color: "hsl(210 8% 38%)", textAlign: "center", marginBottom: "8px", whiteSpace: "nowrap",
-        overflow: "hidden", textOverflow: "ellipsis",
-      }}>{title}</div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: gen >= 4 ? "2px" : "4px" }}>
-        {nodes.map((node, i) => (
-          <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", minHeight: 0 }}>
-            <PedNode node={node} gen={gen} maxGen={maxGen} hovered={hovered} onHover={onHover} etichettaRadice={etichettaRadice} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const GEN_TITLES = ["Soggetto", "Genitori", "Nonni", "Bisnonni", "Trisavoli", "5ª generazione"];
-
-// Flatten tree into generation rows
-function getGenerationRows(root: PedigreeNode, maxGen: number): (PedigreeNode | null)[][] {
-  const rows: (PedigreeNode | null)[][] = [];
-  let current: (PedigreeNode | null)[] = [root];
-  for (let g = 0; g <= maxGen; g++) {
-    rows.push(current);
-    if (g < maxGen) {
-      const next: (PedigreeNode | null)[] = [];
-      for (const n of current) {
-        next.push(n?.sire ?? null);
-        next.push(n?.dam ?? null);
-      }
-      current = next;
-    }
-  }
-  return rows;
 }
 
 function sessoSoggetto(d: PedigreeData) {
@@ -190,8 +49,6 @@ export default function PedigreePage() {
     staleTime: 120000,
   });
 
-  const maxGen = gens;
-  const genRows = useMemo(() => data ? getGenerationRows(data.horse, maxGen) : [], [data]);
 
   // Collect all ancestor names for highlighting
   const allNames = useMemo(() => {
@@ -401,42 +258,8 @@ export default function PedigreePage() {
           </div>
 
           {/* Albero genealogico */}
-          <div className="pannello" style={{ padding: "20px 16px", overflowX: "auto" }}>
-            <div style={{
-              display: "flex", gap: "8px", alignItems: "stretch",
-              minWidth: gens >= 5 ? "820px" : gens === 4 ? "700px" : "560px",
-              height: `${Math.max(360, Math.pow(2, gens) * (gens >= 5 ? 26 : 34))}px`,
-            }}>
-              {genRows.map((col, i) => (
-                <GenColumn
-                  key={i}
-                  nodes={col}
-                  gen={i}
-                  etichettaRadice={i === 0 ? sessoSoggetto(data) : undefined}
-                  maxGen={maxGen}
-                  title={GEN_TITLES[i] || `${i}ª gen.`}
-                  hovered={hoveredAncestor}
-                  onHover={setHoveredAncestor}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div style={{
-            display: "flex", gap: "16px", marginTop: "12px",
-            fontSize: "11px", color: "hsl(210 8% 42%)", flexWrap: "wrap",
-          }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "hsl(183 60% 25%)", border: "1px solid hsl(183 60% 25%)" }} /> Linea paterna
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "hsl(300 40% 25%)", border: "1px solid hsl(300 40% 25%)" }} /> Linea materna
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "hsl(25 80% 55%)" }} /> Antenato comune
-            </span>
-            <span>Clicca su un nome per andare alla scheda</span>
+          <div className="pannello" style={{ padding: "20px 16px" }}>
+            <AlberoPedigree root={data.horse} generazioni={gens} hovered={hoveredAncestor} onHover={setHoveredAncestor} />
           </div>
 
           {/* Consanguineita' e genealogia estesa della seconda fonte */}
