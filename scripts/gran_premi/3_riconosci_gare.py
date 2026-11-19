@@ -32,7 +32,7 @@ RULES={
  "napoli":(r"CITTA'? DI NAPOLI",r"FILLY|FEMMIN"),
  "napoli_filly":(r"CITTA'? DI NAPOLI (FILLY|FEMMIN)",None),
  "duomo":(r"\bDUOMO\b",None),
- "europeo":(r"CAMPIONATO EUROPEO",None),
+ "europeo":(r"CAMPIONATO EUROPEO",r"CALCIO"),   # 2016: una corsa per 2 anni dedicata agli Europei di calcio
  "biasuzzi":(r"BIASUZZI",None),
  "duemari":(r"DUE MARI",None),
  "sicilia":(r"REGIONE SICILIA",None),
