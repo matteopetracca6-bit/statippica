@@ -22,7 +22,7 @@ jobs:
           i=0
           for u in "horse/CHICCA%20ROSS/2018" "horse/GHEMON%20COL/2022"; do
             i=$((i+1))
-            google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1280,5200 --virtual-time-budget=30000 \
+            timeout 120 google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1280,5200 --virtual-time-budget=30000 \
               --screenshot="$PWD/foto$i.png" "https://statippica.onrender.com/#/$u" || true
           done
           ls -la foto*.png
