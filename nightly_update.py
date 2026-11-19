@@ -5817,6 +5817,14 @@ def main():
             phase_potenziale(conn)
         except Exception as e:
             print(f"[POTENZIALE] errore: {e}", file=sys.stderr)
+        try:
+            # FASE 3i-ter: forza e curva di carriera (forza.py), nella scheda
+            # al posto del potenziale ai 4 anni. Il primo del mese rifa' anche
+            # la verifica (modelli/forza_verifica.json nell'archivio di lavoro).
+            from forza import calcola as phase_forza
+            phase_forza(conn, con_verifica=False)
+        except Exception as e:
+            print(f"[FORZA] errore: {e}", file=sys.stderr)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:
