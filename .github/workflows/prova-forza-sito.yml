@@ -1,36 +1,61 @@
-name: PROVA — scheda UNIRE anno per anno
+name: PROVA — corse ricche non ancora nell'albo
 on:
   push:
     branches: [prova/forza-sito]
 permissions:
-  contents: write
+  contents: read
+  actions: read
 jobs:
-  guarda:
+  elenco:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 60
     steps:
-      - name: Scarica due schede UNIRE
-        run: |
-          for id in 607458 625679; do
-            curl -s -m 60 "https://www.unire.it/index.php/ita/trotto/list?id_cav=$id" -o scheda_$id.html
-            sleep 2
-            python3 - "$id" <<'PY'
-          import re, sys, html
-          t = open(f"scheda_{sys.argv[1]}.html", encoding="utf-8", errors="ignore").read()
-          testo = re.sub(r"<[^>]+>", " ", t); testo = html.unescape(re.sub(r"\s+", " ", testo))
-          i = testo.find("La scheda")
-          print(testo[i:i+3000])
-          PY
-          done
       - uses: actions/checkout@v5
         with:
-          path: repo
-      - name: Salva su un ramo
+          ref: main
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - uses: actions/cache/restore@v4
+        with:
+          path: /tmp/gp/cache
+          key: gran-premi-x
+          restore-keys: gran-premi-
+      - name: Elenco
         run: |
-          cd repo
-          git checkout -q --orphan prova/forza-foto
-          git rm -rq . || true
-          cp ../scheda_*.html .
-          git add scheda_*.html
-          git -c user.name=prova -c user.email=prova@example.com commit -qm schede
-          git push -qf origin prova/forza-foto
+          mkdir -p /tmp/gp /tmp/gendir; cp data.db /tmp/gendir/data.db
+          cp scripts/gran_premi/1_raccogli_giornate.py /tmp/gp/raccogli.py
+          (cd /tmp/gp && python3 raccogli.py)
+          python3 - <<'PY'
+          import json, re, collections
+          R = json.load(open('/tmp/gp/corse.json'))
+          seen=set(); U=[]
+          for r in R:
+              k=(r['data'],r['codice'],r['corsa'])
+              if k in seen: continue
+              seen.add(k); U.append(r)
+          GIA = r"DERBY|LOTTERIA|MANGELLI|PAOLO E O|NAZIONI|COSTA AZZURRA|CONTINENTALE|TRIOSSI|UNIONE EURO|EUROPA|OAKS|TURILLI|GIOVANARDI|MARANGONI|GRAN PREMIO ITALIA|GP ITALIA|G\.P\. ITALIA|MONTECA|ALLEVATORI|MIPAAF|MASAF|ANACT"
+          def mp(r): return float(r['montepremi'].replace('.',''))
+          def chiave(n):
+              n = n.upper()
+              n = re.sub(r"^PREMIO\s+", "", n)
+              n = re.sub(r"\b(19|20)\d\d\b", "", n)
+              n = re.sub(r"\b(MEM\.?|MEMORIAL|TROFEO|TR\.)\b.*$", "", n)
+              n = re.sub(r"[^A-Z' ]", " ", n)
+              return re.sub(r"\s+", " ", n).strip()[:40]
+          g = collections.defaultdict(list)
+          for r in U:
+              if mp(r) < 50000: continue
+              n = r['nome'].upper()
+              if re.search(GIA, n): continue
+              if re.search(r"BATT|CONSOLAZ|QUALIF|SELEZ|ELIMIN|PROVA", n) and "FINALE" not in n: continue
+              g[chiave(n)].append(r)
+          righe = []
+          for k, rs in g.items():
+              anni = sorted({r['data'][:4] for r in rs})
+              righe.append((len(anni), max(mp(r) for r in rs), k, anni, rs[-1]))
+          for n_anni, mx, k, anni, ult in sorted(righe, key=lambda x: (-x[0], -x[1])):
+              if n_anni < 3: continue
+              print(f"{n_anni:2} anni | max {int(mx):>7} | {k:40} | {ult['pista'][:12]:12} {ult['data']} {ult['metri']}m | {ult['nome'][:70]} | {ult['vincitore']} {ult['sesso_eta']}")
+          PY
