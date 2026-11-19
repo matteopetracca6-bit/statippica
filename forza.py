@@ -297,7 +297,7 @@ SCHEMA = [
         potenziale REAL, potenziale_basso REAL, potenziale_alto REAL, potenziale_eta INTEGER,
         picco REAL, picco_eta INTEGER, versione TEXT, calcolato_il TEXT)""",
     """CREATE TABLE IF NOT EXISTS forza_stagioni (horse_name TEXT, eta INTEGER, anno INTEGER,
-        forza REAL, corse INTEGER, PRIMARY KEY (horse_name, eta))""",
+        forza REAL, corse INTEGER, ultimi_12_mesi INTEGER, PRIMARY KEY (horse_name, eta))""",
     """CREATE TABLE IF NOT EXISTS curva_carriera (horse_name TEXT, eta INTEGER, mediana REAL,
         basso REAL, alto REAL, PRIMARY KEY (horse_name, eta))""",
 ]
@@ -342,6 +342,9 @@ def calcola(conn, con_verifica: bool = False) -> dict:
                           "FROM horses WHERE birth_year IS NOT NULL", conn)
     h = h[h["nato"] >= anno_ora - 24]
     per_cav = {c: g.set_index("eta") for c, g in s[s["anno"] < anno_ora].groupby("cavallo")}
+    # Anno in corso per anno solare: per le carriere ferme la stagione di
+    # quest'anno e' quella vera (come nella tabella "anno per anno").
+    anno_in_corso = {c: g.set_index("eta") for c, g in s[s["anno"] == anno_ora].groupby("cavallo")}
     fc, curve, stag = [], [], []
     ora = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
     righe_prev = []
@@ -354,18 +357,27 @@ def calcola(conn, con_verifica: bool = False) -> dict:
         passato = (passato[["v", "corse_anno", "anno"]].copy() if passato is not None
                    else pd.DataFrame(columns=["v", "corse_anno", "anno"]))
         f = righe_f.get(cav)
-        if f is not None and not np.isnan(f[0]):
-            passato.loc[a, ["v", "corse_anno", "anno"]] = [float(in_scala(f[0], punti)), f[2], anno_ora]
-        passato = passato.astype(float)
         u = ultima.get(cav)
         ferma = bool(u is not None and (oggi - u).days > FERMO_GIORNI) or a > ETA_MAX + 2
+        dodici = False
+        if ferma:
+            g = anno_in_corso.get(cav)
+            if g is not None and a in g.index:
+                passato.loc[a, ["v", "corse_anno", "anno"]] = [float(g.loc[a, "v"]), g.loc[a, "corse_anno"], anno_ora]
+        elif f is not None and not np.isnan(f[0]):
+            # In attivita': la stagione di quest'anno e' la forza degli ultimi
+            # 12 mesi, da cui parte la previsione.
+            passato.loc[a, ["v", "corse_anno", "anno"]] = [float(in_scala(f[0], punti)), f[2], anno_ora]
+            dodici = True
+        passato = passato.astype(float)
         mai_corso = cav not in ultima.index
         if mai_corso and a > 4:
             continue        # mai corso dopo i 4 anni: niente forza e niente curva
         for eta, row in passato.iterrows():
             if eta <= a and eta >= 2:
                 stag.append((cav, int(eta), int(row["anno"]), round(float(row["v"]), 1),
-                             int(row["corse_anno"]) if row["corse_anno"] == row["corse_anno"] else None))
+                             int(row["corse_anno"]) if row["corse_anno"] == row["corse_anno"] else None,
+                             int(dodici and eta == a)))
         if not ferma and a < ETA_MAX:
             sit = situazione(a, passato, sesso, padre, padri) if len(passato) or a >= 1 else None
             if sit is not None:
@@ -401,13 +413,14 @@ def calcola(conn, con_verifica: bool = False) -> dict:
         righe_fc.append((cav, nato, forza_ora, tend, f[2] if f is not None else 0,
                          u.strftime("%Y-%m-%d") if u is not None else None, int(ferma),
                          pot[0], pot[1], pot[2], pot[3], picco, picco_eta, VERSIONE, ora))
+    conn.execute("DROP TABLE IF EXISTS forza_stagioni")   # schema con ultimi_12_mesi (19/11/2026)
     for q in SCHEMA:
         conn.execute(q)
     conn.execute("DELETE FROM forza_cavallo")
     conn.execute("DELETE FROM forza_stagioni")
     conn.execute("DELETE FROM curva_carriera")
     conn.executemany("INSERT OR REPLACE INTO forza_cavallo VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", righe_fc)
-    conn.executemany("INSERT OR REPLACE INTO forza_stagioni VALUES (?,?,?,?,?)", stag)
+    conn.executemany("INSERT OR REPLACE INTO forza_stagioni VALUES (?,?,?,?,?,?)", stag)
     conn.executemany("INSERT OR REPLACE INTO curva_carriera VALUES (?,?,?,?,?)", curve)
     conn.commit()
     esito = {"cavalli": len(righe_fc), "stagioni": len(stag), "curve": len(curve)}

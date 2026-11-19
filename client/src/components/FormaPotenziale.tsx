@@ -17,7 +17,7 @@ export interface Forza {
   ultima_corsa: string | null; ferma: boolean;
   potenziale: number | null; potenziale_basso: number | null; potenziale_alto: number | null;
   potenziale_eta: number | null; picco: number | null; picco_eta: number | null; nato: number | null;
-  stagioni: { eta: number; anno: number; forza: number; corse: number | null }[];
+  stagioni: { eta: number; anno: number; forza: number; corse: number | null; ultimi_12_mesi?: number }[];
   curva: { eta: number; mediana: number; basso: number; alto: number }[];
   verifica: {
     forza: { esito: string; ordine_giusto: number; corse: number } | null;
@@ -44,7 +44,7 @@ function Curva({ f }: { f: Forza }) {
   const future = f.curva;
   const eta = [...vere.map(s => s.eta), ...future.map(c => c.eta)];
   const e0 = Math.min(2, ...eta), e1 = Math.max(8, ...eta);
-  const W = 640, H = 220, L = 44, R = 16, T = 16, B = 30;
+  const W = 640, H = 220, L = 44, R = 42, T = 16, B = 30;
   const X = (e: number) => L + ((e - e0) / Math.max(1, e1 - e0)) * (W - L - R);
   const Y = (v: number) => T + (1 - v / 100) * (H - T - B);
   // La previsione parte dall'ultima stagione vera, cosi' le due linee si toccano.
@@ -82,7 +82,7 @@ function Curva({ f }: { f: Forza }) {
       )}
       {vere.map(s => (
         <circle key={`v${s.eta}`} cx={X(s.eta)} cy={Y(s.forza)} r="3.5" fill={VIOLA} stroke={VIOLA} strokeWidth="1.25">
-          <title>{`${s.eta} anni (${s.anno}): ${lettera(s.forza)} (${num(s.forza)})${s.corse ? ` · ${s.corse} corse` : ""}`}</title>
+          <title>{`${s.eta} anni (${s.ultimi_12_mesi ? "ultimi 12 mesi" : s.anno}): ${lettera(s.forza)} (${num(s.forza)})${s.corse ? ` · ${s.corse} corse` : ""}`}</title>
         </circle>
       ))}
       {future.map(c => (
@@ -163,7 +163,7 @@ export default function FormaPotenziale({ f, style }: { f: Forza; style?: React.
       </div>
       <div style={{ marginTop: 12 }}><Curva f={f} /></div>
       <div style={{ fontSize: 11.5, color: "hsl(210 8% 55%)", marginTop: 4 }}>
-        Linea piena: le stagioni corse (forza a fine anno). Tratteggio e banda: le stagioni previste, con la forbice che
+        Linea piena: le stagioni corse (forza a fine anno; per l'anno in corso, gli ultimi 12 mesi). Tratteggio e banda: le stagioni previste, con la forbice che
         dovrebbe contenere il vero 8 volte su 10. Il cerchio verde è il potenziale.
       </div>
       <Spiegazione titolo="Come si calcola e quanto fidarsi" compatta>

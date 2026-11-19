@@ -30,7 +30,7 @@ export function forzaCavallo(db: Database.Database, nome: string) {
   if (!tabella(db, "forza_cavallo")) return null;
   const f = db.prepare(`SELECT * FROM forza_cavallo WHERE horse_name = ?`).get(nome) as any;
   if (!f) return null;
-  const stagioni = db.prepare(`SELECT eta, anno, forza, corse FROM forza_stagioni
+  const stagioni = db.prepare(`SELECT * FROM forza_stagioni
                                WHERE horse_name = ? ORDER BY eta`).all(nome) as any[];
   const curva = db.prepare(`SELECT eta, mediana, basso, alto FROM curva_carriera
                             WHERE horse_name = ? ORDER BY eta`).all(nome) as any[];
