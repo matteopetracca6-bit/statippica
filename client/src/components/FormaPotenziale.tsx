@@ -114,6 +114,8 @@ function Curva({ f, lettera }: { f: Forza; lettera: (v: number) => string }) {
 }
 
 export default function FormaPotenziale({ f, style }: { f: Forza; style?: React.CSSProperties }) {
+  // Archivio non ancora ricalcolato con la curva del voto: niente pannello.
+  if (!f.soglie?.length || (f.stagioni.length > 0 && typeof f.stagioni[0].voto !== "number")) return null;
   const lettera = letteraDa(f.soglie ?? []);
   const vf = f.verifica?.forza, vc = f.verifica?.curva;
   const tend = f.tendenza;
