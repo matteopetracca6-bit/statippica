@@ -5790,6 +5790,13 @@ def main():
         phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
         phase_correggi_genealogie_stalloni(conn)  # FASE 2g-bis: genealogie web -> registro UNIRE
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi
+        try:
+            # Omonimi (omonimi.py): i figli nuovi arrivano con il nome del
+            # genitore senza anno; si rimettono al genitore giusto.
+            from omonimi import riassegna as phase_omonimi
+            print(f"[OMONIMI] {phase_omonimi(conn)}", file=sys.stderr)
+        except Exception as e:
+            print(f"[OMONIMI] errore: {e}", file=sys.stderr)
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
         phase_pulisci_voti_pedigree(conn)  # FASE 3a-ter: via dal pedigree chi ha corso

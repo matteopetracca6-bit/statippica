@@ -22,8 +22,9 @@ nella classifica pedigree e collega le famiglie delle fattrici. Chi c'e'
 gia' con una carriera non si tocca; chi c'e' come scheda vuota (un genitore non
 trovato, uno storico con le sole gare dal 2016) riceve i totali. Ogni scheda
 toccata da qui ha source = 'unire_blocco': la scala storica non la usa per le
-soglie (vedi phase_historic_ratings). Un omonimo di un altro anno non si puo'
-aggiungere (nell'archivio il nome e' unico): si salta e si annota.
+soglie (vedi phase_historic_ratings). Un omonimo di un altro anno entra con
+l'anno nel nome ("SALSA PICCANTE (2011)") e i figli vanno al genitore giusto
+(omonimi.py).
 
 PRIMA I PARZIALI (18/11/2026). Gli storici con la "carriera parziale" (scheda
 senza totali ma con le gare dal 2016 nell'archivio, es. POP HEART e MAN DI
@@ -49,6 +50,7 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unire_source as u  # noqa: E402
+import omonimi  # noqa: E402
 
 ANNI = range(2011, 1989, -1)
 SESSI = ("M", "F", "C")
@@ -170,9 +172,14 @@ def inserisci_mai_corso(conn, nome, sesso, anno, padre, madre, paese=None) -> st
     if not nome or not anno:
         return "saltato"
     gia = conn.execute("SELECT birth_year FROM horses WHERE name = ?", (nome,)).fetchone()
-    if gia:
-        if gia[0] is not None and int(gia[0]) != int(anno):
+    if gia and gia[0] is not None and int(gia[0]) != int(anno):
+        nome_om = omonimi.nome_con_anno(nome, anno)
+        omonimi.registra(conn, nome, gia[0], nome_om, anno)
+        nome = nome_om
+        gia = conn.execute("SELECT birth_year FROM horses WHERE name = ?", (nome,)).fetchone()
+        if gia:
             return "omonimo"
+    if gia:
         conn.execute("""UPDATE horses SET sire = COALESCE(NULLIF(sire, ''), ?), dam = COALESCE(NULLIF(dam, ''), ?),
                             sex = COALESCE(NULLIF(sex, ''), ?), birth_year = COALESCE(birth_year, ?)
                         WHERE name = ?""", (padre, madre, sesso, int(anno), nome))
@@ -225,9 +232,15 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
                   career_places=int(d.get("career_places") or 0),
                   career_earnings=float(d.get("career_earnings") or 0.0),
                   record_career=d.get("record_career"))
-    if gia:
-        if gia[0] is not None and int(gia[0]) != int(anno_d):
+    if gia and gia[0] is not None and int(gia[0]) != int(anno_d):
+        # Omonimo di un altro anno: entra con l'anno nel nome e la coppia si
+        # registra, cosi' i figli vanno al genitore giusto (omonimi.py).
+        nome_om = omonimi.nome_con_anno(nome, anno_d)
+        omonimi.registra(conn, nome, gia[0], nome_om, anno_d)
+        if conn.execute("SELECT 1 FROM horses WHERE name = ?", (nome_om,)).fetchone():
             return "omonimo"
+        nome, gia = nome_om, None
+    if gia:
         if gia[1] > 0:
             return "gia_presente"
         # Scheda vuota dello stesso cavallo (per esempio un genitore non
@@ -322,9 +335,13 @@ def main() -> int:
         conn.close()
         conn = copia
     crea_tabelle(conn)
+    # 19/11/2026: gli omonimi saltati nei giri precedenti si rileggono ed
+    # entrano con l'anno nel nome.
+    conn.execute("UPDATE storici_unire_cavalli SET stato = 'da_leggere' WHERE stato = 'omonimo'")
     log(f"[STORICI-UNIRE] mai corsi dei giri precedenti: {aggiungi_mai_corsi(conn)}")
     prima = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
     esito = lavora(conn, a.minuti, a.massimo)
+    log(f"[STORICI-UNIRE] omonimi, figli al genitore giusto: {omonimi.riassegna(conn)}")
     dopo = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
     log(f"[STORICI-UNIRE] {esito}; storici dal registro: {prima} -> {dopo}"
         + ("  [PROVA: niente e' stato salvato]" if a.prova else ""))
