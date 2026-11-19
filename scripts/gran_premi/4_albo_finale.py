@@ -34,7 +34,7 @@ def nato(name,anno,eta):
         for y in ys:
             if abs((anno-y)-eta)<=0: return y
     return ys[0] if len(ys)==1 else (anno-eta if eta is not None else None)
-NOMI={"derby":"Derby Italiano del Trotto","lotteria":"Gran Premio Lotteria di Agnano","mangelli":"Gran Premio Orsi Mangelli","nazioni":"Gran Premio delle Nazioni","costa":"Gran Premio Costa Azzurra","continentale":"Gran Premio Continentale","triossi":"Gran Premio Tino Triossi","ue":"Gran Premio Unione Europea","oaks":"Oaks del Trotto","turilli":"Gran Premio Turilli","giovanardi":"Gran Premio Giovanardi","marangoni":"Gran Premio Marangoni","italia":"Gran Premio Italia","montecatini":"Gran Premio Città di Montecatini","allevatori":"Gran Premio Allevatori – MASAF","anact":"Gran Premio ANACT Stakes Plus"}
+NOMI={"derby":"Derby Italiano del Trotto","lotteria":"Gran Premio Lotteria di Agnano","mangelli":"Gran Premio Orsi Mangelli","nazioni":"Gran Premio delle Nazioni","costa":"Gran Premio Costa Azzurra","continentale":"Gran Premio Continentale","triossi":"Gran Premio Tino Triossi","ue":"Gran Premio Unione Europea","oaks":"Oaks del Trotto","turilli":"Gran Premio Turilli","giovanardi":"Gran Premio Giovanardi","marangoni":"Gran Premio Marangoni","italia":"Gran Premio Italia","montecatini":"Gran Premio Città di Montecatini","allevatori":"Gran Premio Allevatori – MASAF","anact":"Gran Premio ANACT – ANACT Stakes Plus"}
 DIV={"italia","allevatori","anact"}
 FONTE_UFF="https://database.grandeippicaitaliana.it/risultati/giornata/T/{c}/{d}"
 out=[]
@@ -56,7 +56,11 @@ for k,xs in C.items():
             # ANACT: le due finali possono cadere in giorni diversi (2024: la
             # maschile rinviata al lunedi' per la nebbia), quindi la divisione
             # si legge sempre dal nome.
-            if k=='anact': div="Femmine" if re.search(r"FILL|FEMMIN",n) else "Maschi"
+            if k=='anact':
+                # Nel 2017 e 2018 il nome non dice quale delle due finali: si
+                # guarda il sesso del vincitore.
+                div=("Femmine" if re.search(r"FILL|FEMMIN",n) else "Maschi" if re.search(r"MASCH",n)
+                     else "Femmine" if (r['sesso_eta'] or '')[:1]=='f' else "Maschi")
             se=r['sesso_eta'] or ''
             eta=int(re.sub(r'\D','',se)) if re.search(r'\d',se) else None
             sesso={'m':'M','f':'F','c':'C'}.get(se[:1])
