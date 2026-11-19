@@ -64,7 +64,9 @@ for k,(inc,exc) in RULES.items():
         if re.search(EXC,n) and not re.search("FINALE",n): continue
         if re.search(r"BATT|CONSOLAZ",n): continue
         if mp(r)<MINIMO.get(k,25000): continue
-        if k in PISTA and not re.search(PISTA[k],(r['pista'] or '').upper()): continue
+        # Il controllo della pista vale per le edizioni ridotte: quelle piene
+        # a volte cambiano ippodromo (Nazionale Filly 2022 e 2024, Biasuzzi 2026).
+        if k in PISTA and mp(r)<50000 and not re.search(PISTA[k],(r['pista'] or '').upper()): continue
         xs.append(r)
     if k in UNA_L_ANNO:
         migliori={}
