@@ -2590,14 +2590,21 @@ export function registerRoutes(httpServer: Server, app: Express) {
      * usa quella: cosi' l'albero si completa anche quando del soggetto di
      * partenza non sappiamo nulla ma di suo nonno si'.
      */
-    function buildTree(n: string, depth: number, chain: string, srcName: string, srcChain: string, annoFiglio: number | null = null): any {
+    function buildTree(n: string, depth: number, chain: string, srcName: string, srcChain: string, annoFiglio: number | null = null, annoMaxFiglio: number | null = null): any {
       if (depth > MAX_GEN || !n) return null;
       let h = getHorse(n);
       if (!h) return null;
       // Omonimo troppo giovane per essere il genitore: in archivio c'e' un
       // altro cavallo con lo stesso nome, quindi di lui si tiene solo il nome
       // e i suoi antenati si leggono dalla fonte del figlio.
-      const omonimo = !!(annoFiglio && h.birth_year && h.birth_year > annoFiglio - 2);
+      // 20/11/2026: se l'anno del figlio non si sa si usa il limite che
+      // scende dalla generazione sotto (ogni genitore almeno 2 anni piu'
+      // vecchio del figlio). CHICCA ROSS: ROSEMARY del 2010 risultava fra i
+      // suoi antenati dalla parte di GARLAND LOBELL (1981), LEMON DRA (1986)
+      // padre di un antenato di DANEA (1974). Sono omonimi: resta il nome,
+      // senza anno ne' voti.
+      const annoMax = annoFiglio ? annoFiglio - 2 : (annoMaxFiglio ? annoMaxFiglio - 2 : null);
+      const omonimo = !!(annoMax && h.birth_year && h.birth_year > annoMax);
       if (omonimo) h = { name: h.name, birth_year: null, sire: null, dam: null, missing: true };
 
       const own = omonimo ? new Map<string, string>() : mapOf(h.name || n);
@@ -2615,8 +2622,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
         career_earnings: h.career_earnings,
         career_wins: h.career_wins,
         career_races: h.career_races,
-        sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p", h.birth_year ?? null) : null,
-        dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m", h.birth_year ?? null) : null,
+        sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p", h.birth_year ?? null, annoMax) : null,
+        dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m", h.birth_year ?? null, annoMax) : null,
+        anno_max: h.birth_year ? null : annoMax,
+        omonimo,
         missing: h.missing || false,
         from_source: !!h.missing,
       };
@@ -2662,7 +2671,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
     }
     for (const n of nodi) {
       const k = String(n.name || "").trim().toUpperCase();
-      const righe = (atleti.get(k) || []).filter((r: any) => !n.birth_year || !r.birth_year || r.birth_year === n.birth_year);
+      // Omonimo riconosciuto dall'eta' (vedi buildTree): solo il riquadro.
+      if (n.omonimo) { n.voti = { atleta: null, stallone: null, fattrice: null }; continue; }
+      const righe = (atleti.get(k) || []).filter((r: any) => n.birth_year
+        ? (!r.birth_year || r.birth_year === n.birth_year)
+        : (!n.anno_max || !r.birth_year || r.birth_year <= n.anno_max));
       const atl = righe.find((r: any) => r.rating_mode === "performance") || righe[0];
       n.voti = {
         atleta: atl?.grade ?? null,
