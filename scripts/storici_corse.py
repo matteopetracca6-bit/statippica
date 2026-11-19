@@ -111,7 +111,7 @@ def aggiorna_totali(conn, anno: int) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=os.environ.get("DB_PATH", "data.db"))
-    ap.add_argument("--anno", type=int, default=2011)
+    ap.add_argument("--anno", default="2011", help="un'annata (2011) o un intervallo (2010-2003)")
     ap.add_argument("--minuti", type=float, default=150)
     ap.add_argument("--massimo", type=int, default=None)
     ap.add_argument("--prova", action="store_true", help="lavora su una copia in memoria")
@@ -126,16 +126,22 @@ def main() -> int:
         conn = copia
     conn.execute("""CREATE TABLE IF NOT EXISTS storici_corse (nome TEXT PRIMARY KEY, anno INTEGER,
                     stato TEXT, corse_nuove INTEGER, quando TEXT)""")
-    for riga in copertura(conn, [a.anno]):
+    if "-" in str(a.anno):
+        x, y = (int(v) for v in str(a.anno).split("-"))
+        anni = list(range(max(x, y), min(x, y) - 1, -1))
+    else:
+        anni = [int(a.anno)]
+    anni = [x for x in anni if x <= 2011]          # solo storici: gli atleti li legge la notte
+    for riga in copertura(conn, anni):
         log(f"[STORICI-CORSE] prima: nati {riga[0]}: corse ufficiali {riga[1]}, in archivio {riga[2]} {riga[3]}")
-    cavalli = conn.execute("""
-        SELECT name FROM horses h WHERE birth_year = ? AND career_races > 0
+    cavalli = conn.execute(f"""
+        SELECT name, birth_year FROM horses h WHERE birth_year IN ({",".join("?" * len(anni))}) AND career_races > 0
           AND NOT EXISTS (SELECT 1 FROM storici_corse s WHERE s.nome = h.name)
-        ORDER BY career_races DESC""", (a.anno,)).fetchall()
+        ORDER BY birth_year DESC, career_races DESC""", anni).fetchall()
     log(f"[STORICI-CORSE] da leggere: {len(cavalli)}")
     fine = time.monotonic() + a.minuti * 60
     esiti, nuove, errori = {}, 0, 0
-    for i, (nome,) in enumerate(cavalli):
+    for i, (nome, anno_cav) in enumerate(cavalli):
         if time.monotonic() > fine or (a.massimo and i >= a.massimo):
             log("[STORICI-CORSE] tempo finito: riprendo la prossima volta")
             break
@@ -155,7 +161,7 @@ def main() -> int:
                 break
             continue
         errori = 0
-        if d.get("birth_year") and int(d["birth_year"]) != a.anno:
+        if d.get("birth_year") and int(d["birth_year"]) != int(anno_cav):
             stato, n = "omonimo", 0
         elif not d.get("races"):
             stato, n = "senza_corse", 0
@@ -167,7 +173,7 @@ def main() -> int:
             n = nu._insert_races(conn, corse)
             stato = "letto"
         conn.execute("INSERT OR REPLACE INTO storici_corse VALUES (?,?,?,?,?)",
-                     (nome, a.anno, stato, n, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")))
+                     (nome, int(anno_cav), stato, n, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")))
         conn.commit()
         esiti[stato] = esiti.get(stato, 0) + 1
         nuove += n
@@ -175,8 +181,9 @@ def main() -> int:
             log(f"  ... {i + 1}/{len(cavalli)} cavalli, {nuove} corse nuove")
     log(f"[STORICI-CORSE] questo giro: {esiti}, corse nuove {nuove}")
     if a.totali:
-        log(f"[STORICI-CORSE] totali di carriera aggiornati (voci cambiate): {aggiorna_totali(conn, a.anno)}")
-    for riga in copertura(conn, [a.anno]):
+        for x in anni:
+            log(f"[STORICI-CORSE] totali di carriera {x} aggiornati (voci cambiate): {aggiorna_totali(conn, x)}")
+    for riga in copertura(conn, anni):
         log(f"[STORICI-CORSE] dopo: nati {riga[0]}: corse ufficiali {riga[1]}, in archivio {riga[2]} "
             f"({100 * riga[2] / max(1, riga[1]):.0f}%) {riga[3]}")
     conn.close()

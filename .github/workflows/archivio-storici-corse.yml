@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       anno:
-        description: "Annata di nascita"
+        description: "Annata di nascita (2011) o intervallo (2010-2003)"
         required: false
         default: "2011"
       minuti:
