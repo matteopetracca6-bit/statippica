@@ -3331,11 +3331,20 @@ def phase_voti_pedigree(conn: sqlite3.Connection):
     # Fino ai nati dell'anno scorso: i puledri della generazione M (2025) che
     # sono gia' nell'archivio entrano qui; gli altri arrivano dalle aste.
     ultimo_anno = datetime.utcnow().year - 1
+    # 19/11/2026: anche i nati fino al 2011 che non hanno mai corso, con il
+    # "mai corso" confermato dal registro UNIRE degli storici: stanno solo
+    # nella classifica pedigree e servono a collegare le famiglie delle
+    # fattrici.
     righe = conn.execute(f"""
         SELECT h.name, h.birth_year, h.sire, h.dam FROM horses h
-         WHERE h.birth_year BETWEEN 2012 AND ?
+         WHERE h.birth_year <= ?
            AND COALESCE(h.career_races, 0) = 0
-           AND COALESCE(h.horse_class, '{CLASS_ATHLETE}') = '{CLASS_ATHLETE}'
+           AND ((h.birth_year >= 2012 AND COALESCE(h.horse_class, '{CLASS_ATHLETE}') = '{CLASS_ATHLETE}')
+                OR (h.birth_year BETWEEN 1990 AND 2011 AND COALESCE(h.source, '') = 'unire_blocco'
+                    -- Non gli stalloni: per UNIRE "0 corse" vuol dire 0 corse
+                    -- in Italia (FATHER PATRICK, TRIXTON hanno corso all'estero).
+                    AND NOT EXISTS (SELECT 1 FROM stallion_rating_stats st
+                                    WHERE UPPER(TRIM(st.sire)) = UPPER(TRIM(h.name)))))
            AND h.sire IS NOT NULL AND TRIM(h.sire) <> ''
            -- "Mai partito" vuol dire senza gare: i cavalli recuperati dai
            -- risultati ufficiali che TrottoWeb non trova hanno gare ma non i

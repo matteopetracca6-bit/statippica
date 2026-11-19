@@ -16,7 +16,9 @@ cerca la lettera dell'anno seguita da una lettera ("EA", "EB", ...): se i
 risultati sono piu' di 100 si aggiunge una lettera ("EAA", ...), finche'
 l'elenco si vede. Poi, per ogni cavallo dell'elenco, la scheda con i totali.
 
-QUALI ENTRANO. Solo chi ha corso (carriera completa nel registro). Chi c'e'
+QUALI ENTRANO. Chi ha corso, con la carriera completa del registro. Dal
+19/11/2026 anche chi non ha mai corso, con anagrafica e genitori: sta solo
+nella classifica pedigree e collega le famiglie delle fattrici. Chi c'e'
 gia' con una carriera non si tocca; chi c'e' come scheda vuota (un genitore non
 trovato, uno storico con le sole gare dal 2016) riceve i totali. Ogni scheda
 toccata da qui ha source = 'unire_blocco': la scala storica non la usa per le
@@ -161,6 +163,41 @@ PAESI = {"ITALIA": "ITA", "FRANCIA": "FRA", "SVEZIA": "SWE", "STATI UNITI": "USA
          "OLANDA": "NED", "BELGIO": "BEL", "AUSTRIA": "AUT", "SVIZZERA": "SUI"}
 
 
+def inserisci_mai_corso(conn, nome, sesso, anno, padre, madre, paese=None) -> str:
+    """Un cavallo registrato su UNIRE che non ha mai corso: anagrafica e
+    genitori, nessuna carriera. Non tocca chi c'e' gia' (completa solo i
+    genitori mancanti dello stesso cavallo); salta gli omonimi."""
+    if not nome or not anno:
+        return "saltato"
+    gia = conn.execute("SELECT birth_year FROM horses WHERE name = ?", (nome,)).fetchone()
+    if gia:
+        if gia[0] is not None and int(gia[0]) != int(anno):
+            return "omonimo"
+        conn.execute("""UPDATE horses SET sire = COALESCE(NULLIF(sire, ''), ?), dam = COALESCE(NULLIF(dam, ''), ?),
+                            sex = COALESCE(NULLIF(sex, ''), ?), birth_year = COALESCE(birth_year, ?)
+                        WHERE name = ?""", (padre, madre, sesso, int(anno), nome))
+        return "gia_presente"
+    conn.execute("""INSERT INTO horses (name, birth_year, sex, country, sire, dam, career_races, career_wins,
+                        career_places, career_earnings, source, source_role, horse_class, backfill_status,
+                        tw_found, last_updated)
+                    VALUES (?,?,?,?,?,?, 0, 0, 0, 0, 'unire_blocco', 'unire_storici', ?, 'done', 0, ?)""",
+                 (nome, int(anno), sesso, paese, padre, madre,
+                  "breeder" if int(anno) < 2012 else "athlete", adesso()))
+    return "inserito"
+
+
+def aggiungi_mai_corsi(conn) -> dict:
+    """I mai corsi gia' letti nei giri precedenti (prima del 19/11/2026 non si
+    inserivano): nome, sesso, anno e genitori sono gia' in storici_unire_cavalli."""
+    esiti: dict = {}
+    for nome, sesso, anno, padre, madre in conn.execute(
+            "SELECT nome, sesso, anno, padre, madre FROM storici_unire_cavalli WHERE stato = 'mai_corso'").fetchall():
+        e = inserisci_mai_corso(conn, nome, sesso, anno, padre, madre)
+        esiti[e] = esiti.get(e, 0) + 1
+    conn.commit()
+    return esiti
+
+
 def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
     d = u.fetch_horse(cid)
     if not d:
@@ -173,6 +210,11 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
                     (nome_elenco,)).fetchone():
         nome = nome_elenco
     if corse <= 0:
+        # Mai corso: entra lo stesso, con anagrafica e genitori, solo per la
+        # classifica pedigree e per collegare le famiglie (19/11/2026).
+        inserisci_mai_corso(conn, nome, d.get("sex") or sesso, d.get("birth_year") or anno,
+                            d.get("sire") or padre, d.get("dam") or madre,
+                            PAESI.get((d.get("country") or "").upper()))
         return "mai_corso"
     anno_d = d.get("birth_year") or anno
     gia = conn.execute("SELECT birth_year, COALESCE(career_races, 0) FROM horses WHERE name = ?",
@@ -280,6 +322,7 @@ def main() -> int:
         conn.close()
         conn = copia
     crea_tabelle(conn)
+    log(f"[STORICI-UNIRE] mai corsi dei giri precedenti: {aggiungi_mai_corsi(conn)}")
     prima = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
     esito = lavora(conn, a.minuti, a.massimo)
     dopo = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
