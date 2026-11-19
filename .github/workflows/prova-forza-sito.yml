@@ -1,0 +1,31 @@
+name: PROVA — forza sul sito
+on:
+  push:
+    branches: [prova/forza-sito]
+permissions:
+  contents: read
+jobs:
+  guarda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Aspetta il deploy e leggi la scheda
+        run: |
+          for i in $(seq 1 40); do
+            R=$(curl -s -m 90 "https://statippica.onrender.com/api/horse/CHICCA%20ROSS/2018")
+            echo "$R" | python3 -c "import json,sys;d=json.load(sys.stdin);h=d.get('horse',d);f=h.get('forza');print('forza' , json.dumps(f)[:1500] if f else None);sys.exit(0 if f else 1)" && break
+            sleep 30
+          done
+      - name: Fotografa la pagina
+        run: |
+          i=0
+          for u in "horse/CHICCA%20ROSS/2018" "horse/GHEMON%20COL/2022"; do
+            i=$((i+1))
+            google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1280,5200 --virtual-time-budget=30000 \
+              --screenshot="$GITHUB_WORKSPACE/foto$i.png" "https://statippica.onrender.com/#/$u" || true
+          done
+          ls -la $GITHUB_WORKSPACE/*.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foto
+          path: "*.png"
