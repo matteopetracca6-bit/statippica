@@ -1,0 +1,44 @@
+{
+ "versione": "forza-v1",
+ "calcolato_il": "2026-11-19",
+ "forza": {
+  "corse": 5051,
+  "coppie": 122751,
+  "ordine_giusto": 0.626,
+  "esito": "affidabile"
+ },
+ "curva": {
+  "taratura": 1.08,
+  "esempi_prova": 13353,
+  "errore_modello": 18.48,
+  "errore_resta_com_e": 25.06,
+  "copertura_80": 0.795,
+  "per_anni_avanti": {
+   "1": {
+    "n": 4816,
+    "errore_modello": 15.19,
+    "errore_resta_com_e": 23.74,
+    "copertura_80": 0.794
+   },
+   "2": {
+    "n": 4056,
+    "errore_modello": 20.11,
+    "errore_resta_com_e": 25.48,
+    "copertura_80": 0.802
+   },
+   "3": {
+    "n": 2752,
+    "errore_modello": 20.99,
+    "errore_resta_com_e": 26.16,
+    "copertura_80": 0.785
+   },
+   "4": {
+    "n": 1729,
+    "errore_modello": 19.86,
+    "errore_resta_com_e": 26.0,
+    "copertura_80": 0.798
+   }
+  },
+  "esito": "affidabile"
+ }
+}

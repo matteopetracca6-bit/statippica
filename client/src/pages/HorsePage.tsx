@@ -31,7 +31,7 @@ const CUORI: Record<string, string> = {
 import { formatRecord, tempoKm } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
-import PotenzialeCavallo from "../components/PotenzialeCavallo";
+import FormaPotenziale from "../components/FormaPotenziale";
 import { Spiegazione } from "../components/Spiegazione";
 import NomePista from "../components/NomePista";
 import { nomePista } from "@/lib/piste";
@@ -780,7 +780,7 @@ export default function HorsePage() {
           </div>
         </div>
       )}
-      {(horse as any).potenziale && <PotenzialeCavallo p={(horse as any).potenziale} style={panelStyle} />}
+      {(horse as any).forza && <FormaPotenziale f={(horse as any).forza} style={panelStyle} />}
       <section id="sez-palmares"><Palmares nome={horse.name} anno={horse.birth_year} /></section>
 
       {((horse.rating_mode === "performance" && (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto))

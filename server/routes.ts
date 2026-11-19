@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
+import { forzaCavallo } from "./forza";
 
 // ──────────────────────────────────────────────────────────────────────────
 // Due popolazioni distinte (vedi ATHLETE_MIN_BIRTH_YEAR in nightly_update.py):
@@ -984,6 +985,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // riproduttore riceve una carriera (la ricerca notturna su UNIRE), la
       // scheda torna a mostrarsi.
       horse.potenziale = potenzialeCavallo(db, name, horse.birth_year ?? null);
+      // Forza e curva di carriera (forza.py): nella scheda prendono il posto
+      // del potenziale ai 4 anni.
+      horse.forza = forzaCavallo(db, name);
       horse.vai_a_pagina = null;
       if (!(horse.career_races > 0) && !(tot?.n > 0)) {
         const figliDa = (col: string) => (db.prepare(

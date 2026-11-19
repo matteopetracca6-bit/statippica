@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Installa dipendenze
-        run: pip install requests beautifulsoup4 numpy pandas  # numpy e pandas: pronostico dei primi tre
+        run: pip install requests beautifulsoup4 numpy pandas scikit-learn  # numpy e pandas: pronostico dei primi tre; scikit-learn: forza (forza.py)
       - name: Procura l'archivio
         # Lo scarica dal rilascio e verifica il numero di gare. Se non torna,
         # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e
