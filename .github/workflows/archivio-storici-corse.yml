@@ -1,0 +1,67 @@
+name: StatIppica — Corse degli storici da TrottoWeb (a mano)
+
+# 19/11/2026 (scripts/storici_corse.py). Aggiunge le corse una per una che
+# mancano agli storici di un'annata (prima: i nati nel 2011, a cui manca
+# quasi meta' carriera, soprattutto il 2014-2015), leggendo la scheda
+# TrottoWeb. Non tocca totali di carriera ne' voti. Poi pubblica l'archivio e
+# ripubblica il sito.
+
+on:
+  workflow_dispatch:
+    inputs:
+      anno:
+        description: "Annata di nascita"
+        required: false
+        default: "2011"
+      minuti:
+        description: "Minuti di lettura"
+        required: false
+        default: "150"
+      prova:
+        description: "Solo prova su 20 cavalli, senza pubblicare"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  corse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4 numpy pandas
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Leggi le schede TrottoWeb
+        run: |
+          if [ "${{ inputs.prova }}" = "true" ]; then
+            python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --massimo 20 --prova
+          else
+            python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --minuti "${{ inputs.minuti }}"
+          fi
+      - name: Pubblica l'archivio aggiornato
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 300; echo
