@@ -20,21 +20,27 @@ jobs:
               b = p.chromium.launch()
               pg = b.new_page(viewport={"width": 1400, "height": 1000})
               for i in range(40):
-                  pg.goto("https://statippica.onrender.com/#/horse/CHICCA%20ROSS/2018", timeout=120000)
-                  pg.evaluate("localStorage.setItem('scheda-cavallo-sezione-famiglia','1')")
-                  pg.reload(timeout=120000)
+                  pg.goto("https://statippica.onrender.com/#/pedigree", timeout=120000)
                   try:
-                      pg.wait_for_selector("text=Bisnonni", timeout=40000)
+                      pg.wait_for_selector("text=Trisavoli", timeout=40000)
                       break
                   except Exception:
                       print("non ancora", i); time.sleep(30)
+              pg.get_by_text("Scegli un cavallo dall'elenco").first.click()
+              pg.keyboard.type("CHICCA ROSS", delay=60)
+              time.sleep(4)
+              pg.locator("li, button, [role=option]").filter(has_text="CHICCA ROSS").first.click()
+              pg.wait_for_selector("text=Bisnonni", timeout=120000)
+              time.sleep(5)
+              pg.screenshot(path="foto2.png", full_page=True)
+              pg.goto("https://statippica.onrender.com/#/horse/CHICCA%20ROSS/2018", timeout=120000)
+              pg.evaluate("localStorage.setItem('scheda-cavallo-sezione-famiglia','1')")
+              pg.reload(timeout=120000)
+              pg.wait_for_selector("#sez-genealogia >> text=Nonni", timeout=120000)
               time.sleep(4)
               el = pg.locator("#sez-genealogia")
               el.scroll_into_view_if_needed()
               el.screenshot(path="foto1.png")
-              pg.set_viewport_size({"width": 390, "height": 900})
-              time.sleep(2)
-              el.screenshot(path="foto2.png")
               b.close()
           PY
           python foto.py
