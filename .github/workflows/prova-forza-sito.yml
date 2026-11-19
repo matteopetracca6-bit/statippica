@@ -13,14 +13,20 @@ jobs:
         shell: bash {0}
         run: |
           for i in $(seq 1 40); do
-            R=$(curl -s -m 90 "https://statippica.onrender.com/api/horse/CHICCA%20ROSS/2018")
-            echo "$R" | python3 -c "import json,sys;d=json.load(sys.stdin);h=d.get('horse',d);f=h.get('forza');print('forza' , json.dumps(f)[:1500] if f else None);sys.exit(0 if f and 'ultimi_12_mesi' in f['stagioni'][0] else 1)" 2>/dev/null && break
+            R=$(curl -s -m 90 "https://statippica.onrender.com/api/horse/TROI%20HOLZ/2012")
+            echo "$R" | python3 -c "import json,sys;h=json.load(sys.stdin);f=h.get('forza');sys.exit(0 if f and f.get('soglie') else 1)" 2>/dev/null && break
             sleep 30
+          done
+          for u in "TROI%20HOLZ/2012" "DIJON/2013" "CHICCA%20ROSS/2018"; do
+            curl -s -m 90 "https://statippica.onrender.com/api/horse/$u" | python3 -c "
+          import json,sys;h=json.load(sys.stdin);f=h.get('forza') or {}
+          print(h.get('name'),'grade',h.get('grade'),h.get('score'),'stallone',h.get('stallone'),'non_comp',h.get('voto_non_comparabile'),'vai',h.get('vai_a_pagina'))
+          print('  pot',f.get('potenziale'),f.get('potenziale_eta'),'ferma',f.get('ferma'),'stag',[(s['eta'],s['voto']) for s in f.get('stagioni',[])][-4:],'curva',len(f.get('curva',[])))"
           done
       - name: Fotografa la pagina
         run: |
           i=0
-          for u in "horse/CHICCA%20ROSS/2018" "horse/GHEMON%20COL/2022"; do
+          for u in "horse/TROI%20HOLZ/2012" "horse/DIJON/2013" "horse/GHEMON%20COL/2022"; do
             i=$((i+1))
             timeout 120 google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1280,5200 --virtual-time-budget=30000 \
               --screenshot="$PWD/foto$i.png" "https://statippica.onrender.com/#/$u" || true
