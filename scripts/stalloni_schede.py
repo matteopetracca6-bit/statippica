@@ -6,7 +6,7 @@ PERCHE'. Dei 711 stalloni con il voto da stallone, 152 non avevano nessuna
 scheda da cavallo (stalloni piccoli, quasi tutti esteri: ODESSA SANTANA,
 GUSTAV DIAMANT...) e 244 non avevano l'anno di nascita, senza il quale la
 scheda non si apre. Qui, per ognuno, si cerca il cavallo su UNIRE per nome
-esatto, sesso maschile e anno: l'anno non si sa, quindi si provano gli anni
+esatto, sesso maschile (gli stalloni non sono castroni) e anno: l'anno non si sa, quindi si provano gli anni
 da 3 a 12 prima del primo figlio in archivio, dal piu' probabile. Trovato, la
 scheda riceve anno, paese, genitori e totali delle corse in Italia (quasi
 sempre pochi o nessuno: hanno corso all'estero).
@@ -56,7 +56,7 @@ def cerca_anno(nome, primo_figlio):
         testo = pezzi[0] if pezzi and len(pezzi[0]) >= 3 else max(pezzi, key=len, default=nome)
     anni = [primo_figlio - d for d in (4, 5, 3, 6, 7, 8, 9, 10, 11, 12)] if primo_figlio else []
     for anno in anni:
-        for sesso in ("M", "C"):
+        for sesso in ("M",):
             _, righe = su.cerca(testo, sesso, int(anno))
             for cid, n, p, m in righe:
                 if n == u._norm(nome):
@@ -74,15 +74,26 @@ def main() -> int:
                     anno INTEGER, corse INTEGER, quando TEXT)""")
     fine = time.monotonic() + a.minuti * 60
     esiti: dict = {}
+    errori = 0
     for nome, primo, c_e in da_fare(conn):
         if time.monotonic() > fine:
             log("[STALLONI] tempo finito: riprendo la prossima volta")
             break
         try:
             t = cerca_anno(nome, primo)
+            errori = 0
         except u.UnireUnavailable as e:
-            log(f"  UNIRE non risponde ({e}): mi fermo")
-            break
+            # Una risposta lenta non ferma il giro (19/11/2026: un solo
+            # ReadTimeout aveva chiuso il lavoro dopo 38 stalloni su 244):
+            # si salta lo stallone, che resta da fare, e ci si ferma solo dopo
+            # 8 errori di fila.
+            errori += 1
+            log(f"  UNIRE non risponde ({e}) su {nome}: lo riprovo la prossima volta")
+            if errori >= 8:
+                log("[STALLONI] la fonte non risponde: mi fermo")
+                break
+            time.sleep(15)
+            continue
         if not t:
             stato, anno, corse = "non_trovato", None, None
         else:

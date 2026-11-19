@@ -43,6 +43,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
+      - name: Schede da cavallo degli stalloni (al massimo 30 minuti)
+        run: python3 scripts/stalloni_schede.py --db data.db --minuti 30 || true
       - name: Recupera gli storici
         id: storici
         env:
