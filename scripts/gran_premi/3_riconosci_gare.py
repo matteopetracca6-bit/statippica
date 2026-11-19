@@ -25,7 +25,25 @@ RULES={
  # 19/11/2026: ANACT Stakes Plus, 2 anni, finale maschi e finale femmine
  # (Vinovo, novembre). Non la versione dei 4 anni.
  "anact":(r"ANACT",r"4 ANNI|4 YEARS|QUATTRO|ANACT STAKES PLUS 4|ASTE|TROFEO"),
+ # 19/11/2026: le altre corse con piu' di 25.000 euro al vincitore che si
+ # corrono da almeno 3 anni (montepremi minimo 50.000, vedi MINIMO).
+ "nazionale":(r"GRAN PREMIO NAZIONALE|G\.? ?P\.? NAZIONALE",r"FILLY|FEMMIN"),
+ "nazionale_filly":(r"NAZIONALE (FILLY|FEMMIN)",None),
+ "napoli":(r"CITTA'? DI NAPOLI",r"FILLY|FEMMIN"),
+ "napoli_filly":(r"CITTA'? DI NAPOLI (FILLY|FEMMIN)",None),
+ "duomo":(r"\bDUOMO\b",None),
+ "europeo":(r"CAMPIONATO EUROPEO",None),
+ "biasuzzi":(r"BIASUZZI",None),
+ "duemari":(r"DUE MARI",None),
+ "sicilia":(r"REGIONE SICILIA",None),
+ "torino":(r"CITTA'? DI TORINO",None),
+ "cacciari":(r"CACCIARI",None),
+ "firenze":(r"^(PREMIO )?FIRENZE\b",None),
+ "carena":(r"CARENA",None),
+ "orlandi":(r"RENZO ORLANDI",None),
 }
+MINIMO={k:50000 for k in ("nazionale","nazionale_filly","napoli","napoli_filly","duomo","europeo","biasuzzi",
+                          "duemari","sicilia","torino","cacciari","firenze","carena","orlandi")}
 EXC=r"CONSOLAZ|BATT|SELEZ|ROAD TO|PRESENTAZ|QUALIF|PROVA|ELIMIN|CORSA [AB]\b|GENTLEMEN|AMATORI|ALLIEVI|SFIDA"
 out={}
 for k,(inc,exc) in RULES.items():
@@ -36,7 +54,7 @@ for k,(inc,exc) in RULES.items():
         if exc and re.search(exc,n): continue
         if re.search(EXC,n) and not re.search("FINALE",n): continue
         if re.search(r"BATT|CONSOLAZ",n): continue
-        if mp(r)<25000: continue
+        if mp(r)<MINIMO.get(k,25000): continue
         xs.append(r)
     out[k]=sorted(xs,key=lambda r:r['data'])
 json.dump(out,open('cand.json','w'),ensure_ascii=False)

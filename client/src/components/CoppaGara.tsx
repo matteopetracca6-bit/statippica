@@ -1,5 +1,5 @@
 /**
- * COPPA GARA: una coppa stilizzata diversa per ognuno dei quindici Gran Premi.
+ * COPPA GARA: una coppa stilizzata diversa per ognuno dei Gran Premi dell'albo d'oro.
  * Stesso stile delle icone del sito (tratto sottile, angoli arrotondati), con
  * la parte della coppa appena riempita d'oro. Ogni corsa combina una forma di
  * coppa, dei manici, uno stelo, una base e un piccolo simbolo diversi.
@@ -73,6 +73,22 @@ export const COPPE_GARA: Record<string, Spec> = {
   italia:       { coppa: "tonda",    manici: "anse",      stelo: "affusolato", base: "gradini",  cima: "corona",    simbolo: "uno" },
   montecatini:  { coppa: "svasata",  manici: "orecchie",  stelo: "dritto",     base: "cupola",   simbolo: "fascia" },
   allevatori:   { coppa: "calice",   manici: "ali",       stelo: "nodo",       base: "gradini",  cima: "coperchio", simbolo: "ferro" },
+  // 19/11/2026: le corse aggiunte all'albo.
+  anact:        { coppa: "tulipano", manici: "ali",       stelo: "dritto",     base: "trapezio", cima: "stella" },
+  nazionale:    { coppa: "anfora",   manici: "squadrati", stelo: "nodo",       base: "gradini",  cima: "corona" },
+  nazionale_filly: { coppa: "anfora", manici: "orecchie", stelo: "nodo",       base: "piatta",   simbolo: "fiore" },
+  napoli:       { coppa: "tonda",    manici: "alti",      stelo: "affusolato", base: "cupola",   simbolo: "onda" },
+  napoli_filly: { coppa: "tulipano", manici: "orecchie",  stelo: "affusolato", base: "cupola",   simbolo: "fiore" },
+  duomo:        { coppa: "cilindro", manici: "squadrati", stelo: "nodo",       base: "gradini",  cima: "coperchio" },
+  europeo:      { coppa: "svasata",  manici: "anse",      stelo: "affusolato", base: "trapezio", simbolo: "stelle" },
+  biasuzzi:     { coppa: "calice",   manici: "alti",      stelo: "dritto",     base: "cupola",   simbolo: "alloro" },
+  duemari:      { coppa: "cono",     manici: "anse",      stelo: "dritto",     base: "piatta",   simbolo: "onda" },
+  sicilia:      { coppa: "tonda",    manici: "orecchie",  stelo: "nodo",       base: "trapezio", cima: "stella" },
+  torino:       { coppa: "svasata",  manici: "squadrati", stelo: "dritto",     base: "gradini",  simbolo: "fascia" },
+  cacciari:     { coppa: "tulipano", manici: "anse",      stelo: "nodo",       base: "trapezio", simbolo: "fiore" },
+  firenze:      { coppa: "calice",   manici: "orecchie",  stelo: "affusolato", base: "gradini",  simbolo: "fiore" },
+  carena:       { coppa: "cono",     manici: "alti",      stelo: "affusolato", base: "cupola",   cima: "corona" },
+  orlandi:      { coppa: "cilindro", manici: "anse",      stelo: "dritto",     base: "trapezio", simbolo: "uno" },
 };
 
 export function CoppaGara({ gara, size = 24, color = "hsl(45 90% 58%)", title }: {
