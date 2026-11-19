@@ -46,6 +46,13 @@ RULES={
 # per non lasciare buchi nell'albo: basta il nome della corsa (19/11/2026).
 MINIMO={k:10000 for k in ("nazionale","nazionale_filly","napoli","napoli_filly","duomo","europeo","biasuzzi",
                           "duemari","sicilia","torino","cacciari","firenze","carena","orlandi")}
+# Corse legate a un ippodromo: con il montepremi ridotto il solo nome non
+# basta (a Modena c'e' anche un "Premio Duomo" da 10.000 euro).
+PISTA={"duomo":r"FIRENZE","firenze":r"FIRENZE","duemari":r"TARANTO","sicilia":r"PALERMO","cacciari":r"MODENA",
+       "orlandi":r"MODENA","biasuzzi":r"TREVISO","europeo":r"CESENA","torino":r"TORINO","napoli":r"NAPOLI|COSMA",
+       "napoli_filly":r"NAPOLI|COSMA","nazionale":r"MILANO","nazionale_filly":r"MILANO"}
+# Una sola edizione l'anno (la piu' ricca) per le corse senza divisioni.
+UNA_L_ANNO=set(MINIMO)-{"torino"}
 EXC=r"CONSOLAZ|BATT|SELEZ|ROAD TO|PRESENTAZ|QUALIF|PROVA|ELIMIN|CORSA [AB]\b|GENTLEMEN|AMATORI|ALLIEVI|SFIDA"
 out={}
 for k,(inc,exc) in RULES.items():
@@ -57,7 +64,14 @@ for k,(inc,exc) in RULES.items():
         if re.search(EXC,n) and not re.search("FINALE",n): continue
         if re.search(r"BATT|CONSOLAZ",n): continue
         if mp(r)<MINIMO.get(k,25000): continue
+        if k in PISTA and not re.search(PISTA[k],(r['pista'] or '').upper()): continue
         xs.append(r)
+    if k in UNA_L_ANNO:
+        migliori={}
+        for r in xs:
+            a=r['data'][:4]
+            if a not in migliori or mp(r)>mp(migliori[a]): migliori[a]=r
+        xs=list(migliori.values())
     out[k]=sorted(xs,key=lambda r:r['data'])
 json.dump(out,open('cand.json','w'),ensure_ascii=False)
 for k,xs in out.items():
