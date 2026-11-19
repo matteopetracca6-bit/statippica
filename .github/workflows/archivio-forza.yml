@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Installa dipendenze
-        run: pip install numpy pandas scikit-learn
+        run: pip install requests beautifulsoup4 numpy pandas scikit-learn  # forza.py legge le formule del voto da nightly_update.py
       - name: Procura l'archivio
         env:
           GH_TOKEN: ${{ github.token }}
