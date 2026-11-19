@@ -134,14 +134,14 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
 }) {
   const righe = righeGenerazioni(root, generazioni);
   // Altezza di una riga dell'ultima colonna: deve contenere nome e voti.
-  const riga = generazioni >= 5 ? 34 : generazioni === 4 ? 44 : 62;
+  const riga = generazioni >= 5 ? 34 : generazioni === 4 ? 40 : generazioni === 3 ? 56 : 80;
   return (
     <div>
       <div style={{ overflowX: "auto" }}>
         <div style={{
           display: "flex", gap: 8, alignItems: "stretch",
-          minWidth: generazioni >= 5 ? 980 : generazioni === 4 ? 800 : 620,
-          height: Math.max(380, Math.pow(2, generazioni) * riga),
+          minWidth: generazioni >= 5 ? 980 : generazioni === 4 ? 860 : generazioni === 3 ? 680 : 520,
+          height: Math.max(generazioni <= 2 ? 300 : 380, Math.pow(2, generazioni) * riga),
         }}>
           {righe.map((col, g) => (
             <div key={g} style={{ flex: g === 0 ? "0 0 165px" : g >= 4 ? "1 1 125px" : "1 1 150px", display: "flex", flexDirection: "column", minWidth: 0 }}>

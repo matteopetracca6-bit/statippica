@@ -1140,11 +1140,11 @@ export default function HorsePage() {
 
       <SezioneScheda id="famiglia" titolo="Famiglia"
         riassunto={horse.pedigree?.sire ? `${horse.pedigree.sire}${horse.pedigree.dam ? ` × ${horse.pedigree.dam}` : ""} · genealogia, linea materna, fratellastri` : "Genealogia, linea materna, fratellastri"}>
-        {/* 20/11/2026: albero fino a 5 generazioni, cavallo compreso, con
+        {/* 20/11/2026: albero fino ai nonni, cavallo compreso, con
             contorno blu/rosa e voti da atleta e da riproduttore. */}
         <div id="sez-genealogia" className="pannello" style={{ ...panelStyle, marginBottom: 16 }}>
           <div style={panelTitle}>Pedigree</div>
-          <AlberoPedigreeCavallo nome={horse.name} />
+          <AlberoPedigreeCavallo nome={horse.name} generazioni={2} />
         </div>
         <div className="sez-colonne">
           <div className="sez-col">
