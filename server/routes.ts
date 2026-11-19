@@ -219,11 +219,24 @@ function prendiListeRadar(db: any): ListeRadar {
   const righe = db.prepare(`
     WITH liv AS (SELECT race_date d, track t, race_number n, MAX(prize_net / ${QUOTA_POSTO}) l
                  FROM races WHERE placement BETWEEN 1 AND 5 AND prize_net > 0 AND race_number IS NOT NULL
+                   AND track <> 'ESTERO'
                  GROUP BY 1, 2, 3),
-         g AS (SELECT r.horse_name h, COUNT(*) c, SUM(COALESCE(r.prize_net, 0)) p, AVG(liv.l) cl, COUNT(liv.l) nl,
+         -- All'estero la pista e' sempre "ESTERO" e il codice "ES" vuol dire
+         -- estero, non Spagna: corse di paesi diversi con lo stesso numero
+         -- nello stesso giorno finivano nello stesso gruppo. APPARIZIONE MAIL,
+         -- che corre alle Baleari per 200 euro a vittoria, prendeva il
+         -- livello delle corse svedesi o francesi di quel giorno (classe 96,
+         -- 19/11/2026). Per le corse estere si stima il livello solo dal suo
+         -- premio e dal suo piazzamento.
+         lv AS (SELECT r.*, CASE WHEN r.track = 'ESTERO'
+                                 THEN CASE WHEN r.placement BETWEEN 1 AND 5 AND r.prize_net > 0
+                                           THEN r.prize_net / ${QUOTA_POSTO.replace(/placement/g, "r.placement")} END
+                                 ELSE liv.l END AS l
+                FROM races r LEFT JOIN liv ON liv.d = r.race_date AND liv.t = r.track AND liv.n = r.race_number),
+         g AS (SELECT r.horse_name h, COUNT(*) c, SUM(COALESCE(r.prize_net, 0)) p, AVG(r.l) cl, COUNT(r.l) nl,
                       SUM(CASE WHEN r.placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) t3,
                       COUNT(DISTINCT substr(r.race_date, 1, 4)) st
-               FROM races r LEFT JOIN liv ON liv.d = r.race_date AND liv.t = r.track AND liv.n = r.race_number
+               FROM lv r
                GROUP BY r.horse_name HAVING COUNT(*) >= 5)
     SELECT g.*, hr.birth_year y FROM g JOIN horse_ratings hr ON hr.name = g.h AND hr.rating_mode = 'performance'`).all() as any[];
   for (const r of righe) {
