@@ -3,8 +3,8 @@ name: StatIppica — Corse degli storici da TrottoWeb (a mano)
 # 19/11/2026 (scripts/storici_corse.py). Aggiunge le corse una per una che
 # mancano agli storici di un'annata (prima: i nati nel 2011, a cui manca
 # quasi meta' carriera, soprattutto il 2014-2015), leggendo la scheda
-# TrottoWeb. Non tocca totali di carriera ne' voti. Poi pubblica l'archivio e
-# ripubblica il sito.
+# TrottoWeb; poi aggiorna i totali di carriera (mai piu' bassi di quelli
+# ufficiali), ricalcola voti e forza, pubblica l'archivio e ripubblica il sito.
 
 on:
   workflow_dispatch:
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - run: pip install requests beautifulsoup4 numpy pandas
+      - run: pip install requests beautifulsoup4 numpy pandas scikit-learn
       - name: Procura l'archivio
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,8 +46,30 @@ jobs:
           if [ "${{ inputs.prova }}" = "true" ]; then
             python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --massimo 20 --prova
           else
-            python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --minuti "${{ inputs.minuti }}"
+            python3 scripts/storici_corse.py --db data.db --anno "${{ inputs.anno }}" --minuti "${{ inputs.minuti }}" --totali
           fi
+      - name: Ricalcola voti e forza
+        if: ${{ inputs.prova != true }}
+        env:
+          DB_PATH: data.db
+        run: |
+          python3 - <<'PY'
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          nu.init_db(conn)
+          conn.commit()
+          nu.phase_ratings(conn)
+          nu.phase_historic_ratings(conn)
+          nu.phase_stallion_ratings(conn)
+          nu.phase_dam_ratings(conn)
+          conn.commit()
+          import forza
+          forza.calcola(conn)
+          conn.close()
+          PY
       - name: Pubblica l'archivio aggiornato
         if: ${{ inputs.prova != true }}
         env:

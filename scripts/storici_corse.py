@@ -14,8 +14,10 @@ COSA FA. Per ogni cavallo dell'annata con una carriera: legge la scheda
 TrottoWeb, controlla che l'anno di nascita sia quello giusto (omonimi), data
 le righe gia' presenti e aggiunge le corse che mancano, con le stesse regole
 del recupero notturno (niente doppioni per stesso cavallo e stesso giorno).
-NON tocca i totali di carriera, il voto, l'anagrafica ne' tw_found. Ogni
-cavallo letto resta segnato in storici_corse (si riprende dal punto esatto).
+Con --totali, alla fine aggiorna i totali di carriera tenendo per ogni voce
+il piu' completo fra ufficiale e corse in archivio (mai piu' basso). Non
+tocca anagrafica ne' tw_found. Ogni cavallo letto resta segnato in
+storici_corse (si riprende dal punto esatto).
 
 Uso: python3 scripts/storici_corse.py --db data.db --anno 2011 [--minuti 150] [--massimo N] [--prova]
 """
@@ -57,6 +59,55 @@ def copertura(conn, anni) -> list:
     return out
 
 
+def aggiorna_totali(conn, anno: int) -> dict:
+    """Totali di carriera degli storici dell'annata, dopo il recupero delle
+    corse: per ogni voce si tiene il piu' completo fra il totale ufficiale e
+    il conto delle corse in archivio (mai un numero piu' basso di quello che
+    c'era). Il record resta quello ufficiale: i tempi al km dei piazzati in
+    archivio sono a volte stimati e lo batterebbero di qualche decimo senza
+    che sia vero. Ogni cambio resta in storici_totali_cambi, con il valore di
+    prima."""
+    # Tabella a parte: anomalie_corrette la conta la sentinella (soglia di
+    # correzioni automatiche al giorno) e questo e' un recupero una tantum.
+    conn.execute("""CREATE TABLE IF NOT EXISTS storici_totali_cambi (nome TEXT, campo TEXT, prima TEXT,
+                    dopo TEXT, quando TEXT)""")
+    ora = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+    righe = conn.execute("""
+        SELECT h.name, COALESCE(h.career_races, 0), COALESCE(h.career_wins, 0), COALESCE(h.career_places, 0),
+               COALESCE(h.career_earnings, 0), h.record_career,
+               COUNT(r.id), SUM(CASE WHEN r.placement = 1 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN r.placement IN (2, 3) THEN 1 ELSE 0 END), SUM(COALESCE(r.prize_net, 0)),
+               MIN(CASE WHEN r.time_km > 9 AND r.time_km < 25 THEN r.time_km END)
+        FROM horses h JOIN races r ON r.horse_name = h.name
+        WHERE h.birth_year = ? AND r.race_date >= (h.birth_year + 2) || '-01-01'
+        GROUP BY h.name""", (anno,)).fetchall()
+    esito = {"cavalli": len(righe), "corse": 0, "vittorie": 0, "piazzamenti": 0, "guadagni": 0, "record": 0}
+    for (nome, cr, cw, cp, ce, rec, ar, aw, ap_, ae, at) in righe:
+        nuovo = {}
+        if cr == 0:
+            # Senza totale ufficiale (non trovato su UNIRE, quasi sempre nato
+            # all'estero): resta "carriera parziale", calcolata dalle corse.
+            continue
+        if ar > cr:
+            nuovo["career_races"] = ar
+        if (aw or 0) > cw:
+            nuovo["career_wins"] = aw
+        if (ap_ or 0) > cp:
+            nuovo["career_places"] = ap_
+        if (ae or 0) > ce + 1:
+            nuovo["career_earnings"] = round(ae, 2)
+        for campo, valore in nuovo.items():
+            prima = {"career_races": cr, "career_wins": cw, "career_places": cp,
+                     "career_earnings": ce, "record_career": rec}[campo]
+            conn.execute(f"UPDATE horses SET {campo} = ? WHERE name = ?", (valore, nome))
+            conn.execute("INSERT INTO storici_totali_cambi VALUES (?, ?, ?, ?, ?)",
+                         (nome, campo, None if prima is None else str(prima), str(valore), ora))
+            esito[{"career_races": "corse", "career_wins": "vittorie", "career_places": "piazzamenti",
+                   "career_earnings": "guadagni", "record_career": "record"}[campo]] += 1
+    conn.commit()
+    return esito
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=os.environ.get("DB_PATH", "data.db"))
@@ -64,6 +115,7 @@ def main() -> int:
     ap.add_argument("--minuti", type=float, default=150)
     ap.add_argument("--massimo", type=int, default=None)
     ap.add_argument("--prova", action="store_true", help="lavora su una copia in memoria")
+    ap.add_argument("--totali", action="store_true", help="alla fine aggiorna i totali di carriera")
     a = ap.parse_args()
     nu = carica_nu()
     conn = sqlite3.connect(a.db)
@@ -122,6 +174,8 @@ def main() -> int:
         if (i + 1) % 100 == 0:
             log(f"  ... {i + 1}/{len(cavalli)} cavalli, {nuove} corse nuove")
     log(f"[STORICI-CORSE] questo giro: {esiti}, corse nuove {nuove}")
+    if a.totali:
+        log(f"[STORICI-CORSE] totali di carriera aggiornati (voci cambiate): {aggiorna_totali(conn, a.anno)}")
     for riga in copertura(conn, [a.anno]):
         log(f"[STORICI-CORSE] dopo: nati {riga[0]}: corse ufficiali {riga[1]}, in archivio {riga[2]} "
             f"({100 * riga[2] / max(1, riga[1]):.0f}%) {riga[3]}")
