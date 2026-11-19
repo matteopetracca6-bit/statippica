@@ -127,12 +127,16 @@ CLASS_BREEDER = "breeder"
 
 
 def horse_class_of(birth_year, source_role: Optional[str] = None) -> str:
-    """Classifica un cavallo. Anno ignoto -> atleta: sono 67 soggetti che hanno
-    gare nel DB, escluderli nasconderebbe dati veri; il caso va semmai risolto
-    recuperando l'anno."""
+    """Classifica un cavallo: decide l'anno di nascita. Storici (riproduttori)
+    i nati nel 2011 o prima, atleti i nati dal 2012 in poi, anche se sono
+    entrati nell'archivio come genitori di un altro cavallo (19/11/2026: 498
+    nati dal 2012 erano rimasti fra i riproduttori, 36 di loro con le corse,
+    ed erano esclusi da voto atleti e potenziale). Anno ignoto: riproduttore
+    se e' entrato come genitore, altrimenti atleta (sono soggetti con gare
+    nel DB: escluderli nasconderebbe dati veri)."""
+    if birth_year is not None:
+        return CLASS_BREEDER if int(birth_year) < ATHLETE_MIN_BIRTH_YEAR else CLASS_ATHLETE
     if (source_role or "") == "parent_backfill":
-        return CLASS_BREEDER
-    if birth_year is not None and int(birth_year) < ATHLETE_MIN_BIRTH_YEAR:
         return CLASS_BREEDER
     return CLASS_ATHLETE
 
@@ -582,18 +586,20 @@ def init_db(conn: sqlite3.Connection):
           AND parent_fetch_at < '2026-11-18'
     """)
 
-    # Classificazione atleti / riproduttori: ricalcolata a ogni avvio, cosi'
-    # un cavallo che acquisisce l'anno di nascita finisce subito nel gruppo
-    # giusto. E' un UPDATE su due colonne indicizzabili, costa millisecondi.
+    # Classificazione atleti / riproduttori (vedi horse_class_of): ricalcolata
+    # a ogni avvio, cosi' un cavallo che acquisisce l'anno di nascita finisce
+    # subito nel gruppo giusto. E' un UPDATE su due colonne indicizzabili, costa millisecondi.
     conn.execute(f"""
         UPDATE horses SET horse_class = CASE
-            WHEN COALESCE(source_role, '') = 'parent_backfill' THEN '{CLASS_BREEDER}'
             WHEN birth_year IS NOT NULL AND birth_year < {ATHLETE_MIN_BIRTH_YEAR} THEN '{CLASS_BREEDER}'
+            WHEN birth_year IS NOT NULL THEN '{CLASS_ATHLETE}'
+            WHEN COALESCE(source_role, '') = 'parent_backfill' THEN '{CLASS_BREEDER}'
             ELSE '{CLASS_ATHLETE}'
         END
         WHERE horse_class IS NULL OR horse_class <> CASE
-            WHEN COALESCE(source_role, '') = 'parent_backfill' THEN '{CLASS_BREEDER}'
             WHEN birth_year IS NOT NULL AND birth_year < {ATHLETE_MIN_BIRTH_YEAR} THEN '{CLASS_BREEDER}'
+            WHEN birth_year IS NOT NULL THEN '{CLASS_ATHLETE}'
+            WHEN COALESCE(source_role, '') = 'parent_backfill' THEN '{CLASS_BREEDER}'
             ELSE '{CLASS_ATHLETE}'
         END
     """)
@@ -2528,7 +2534,7 @@ def _upsert_unire_parent(conn: sqlite3.Connection, data: dict) -> bool:
     if not name:
         return False
     now_iso = datetime.utcnow().isoformat()
-    exists = conn.execute("SELECT 1 FROM horses WHERE name=?", (name,)).fetchone()
+    exists = conn.execute("SELECT 1, birth_year FROM horses WHERE name=?", (name,)).fetchone()
     if exists:
         conn.execute("""
             UPDATE horses SET
@@ -2543,7 +2549,7 @@ def _upsert_unire_parent(conn: sqlite3.Connection, data: dict) -> bool:
                 career_earnings = ?,
                 record_career   = COALESCE(?, record_career),
                 source_role     = COALESCE(source_role, 'parent_backfill'),
-                horse_class     = 'breeder',
+                horse_class     = ?,
                 backfill_status = 'done',
                 last_updated    = ?
             WHERE name = ?
@@ -2551,19 +2557,21 @@ def _upsert_unire_parent(conn: sqlite3.Connection, data: dict) -> bool:
               _normalize_name(data.get("sire")), _normalize_name(data.get("dam")),
               data.get("career_races", 0), data.get("career_wins", 0),
               data.get("career_places", 0), data.get("career_earnings", 0.0),
-              data.get("record_career"), now_iso, name))
+              data.get("record_career"),
+              horse_class_of(data.get("birth_year") or (exists[1] if len(exists) > 1 else None), "parent_backfill"),
+              now_iso, name))
     else:
         conn.execute("""
             INSERT INTO horses
                 (name, birth_year, sex, country, sire, dam,
                  career_races, career_wins, career_places, career_earnings,
                  record_career, source_role, horse_class, backfill_status, last_updated)
-            VALUES (?,?,?,?,?,?, ?,?,?,?, ?, 'parent_backfill', 'breeder', 'done', ?)
+            VALUES (?,?,?,?,?,?, ?,?,?,?, ?, 'parent_backfill', ?, 'done', ?)
         """, (name, data.get("birth_year"), data.get("sex"), data.get("country"),
               _normalize_name(data.get("sire")), _normalize_name(data.get("dam")),
               data.get("career_races", 0), data.get("career_wins", 0),
               data.get("career_places", 0), data.get("career_earnings", 0.0),
-              data.get("record_career"), now_iso))
+              data.get("record_career"), horse_class_of(data.get("birth_year"), "parent_backfill"), now_iso))
     conn.commit()
     return True
 

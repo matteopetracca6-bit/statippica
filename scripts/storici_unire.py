@@ -194,19 +194,20 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
                             country = COALESCE(country, ?), sire = COALESCE(NULLIF(sire, ''), ?),
                             dam = COALESCE(NULLIF(dam, ''), ?), career_races = ?, career_wins = ?,
                             career_places = ?, career_earnings = ?, record_career = COALESCE(record_career, ?),
-                            source = 'unire_blocco', horse_class = 'breeder', last_updated = ?
+                            source = 'unire_blocco', last_updated = ?,
+                            horse_class = CASE WHEN COALESCE(birth_year, ?) < 2012 THEN 'breeder' ELSE 'athlete' END
                         WHERE name = ?""",
                      (anno_d, valori["sex"], valori["country"], valori["sire"], valori["dam"], corse,
                       valori["career_wins"], valori["career_places"], valori["career_earnings"],
-                      valori["record_career"], adesso(), nome))
+                      valori["record_career"], adesso(), anno_d, nome))
         return "aggiornato"
     conn.execute("""INSERT INTO horses (name, birth_year, sex, country, sire, dam, career_races, career_wins,
                         career_places, career_earnings, record_career, source, source_role, horse_class,
                         backfill_status, tw_found, last_updated)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?, 'unire_blocco', 'unire_storici', 'breeder', 'done', 0, ?)""",
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?, 'unire_blocco', 'unire_storici', ?, 'done', 0, ?)""",
                  (nome, anno_d, valori["sex"], valori["country"], valori["sire"], valori["dam"], corse,
                   valori["career_wins"], valori["career_places"], valori["career_earnings"],
-                  valori["record_career"], adesso()))
+                  valori["record_career"], "breeder" if int(anno_d) < 2012 else "athlete", adesso()))
     return "inserito"
 
 
