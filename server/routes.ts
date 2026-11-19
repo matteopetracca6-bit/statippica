@@ -1280,14 +1280,25 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // GET /api/stallion/:name
   // ──────────────────────────────────────────────
   app.get("/api/stallion/:name", (req, res) => {
-    const name = decodeURIComponent(req.params.name).toUpperCase();
+    let name = decodeURIComponent(req.params.name).toUpperCase();
     const db = getDb();
     try {
       // Stats aggregate (may be null for stallions without offspring data yet)
-      const stats = db.prepare(`
+      const statsDi = (n: string) => db.prepare(`
         SELECT * FROM stallion_rating_stats
         WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))
-      `).get(name) as any;
+      `).get(n) as any;
+      let stats = statsDi(name);
+      // Omonimi (omonimi.py): lo stallone puo' stare sotto il nome con l'anno
+      // ("BRILLANTISSIME (2011)") mentre il nome semplice e' di un altro
+      // cavallo. Chi arriva dal catalogo con il nome semplice va ai figli giusti.
+      if (!stats && vpTableExists(db, "omonimi")) {
+        for (const o of db.prepare(`SELECT nome_omonimo FROM omonimi WHERE nome = ?`).all(name) as any[]) {
+          const st = statsDi(o.nome_omonimo);
+          if (st) { name = String(o.nome_omonimo).toUpperCase(); stats = st; break; }
+        }
+      }
+      const nomeCatalogo = name.replace(/ \(\d{4}\)$/, "");
 
       // From stallions table (stud fee, farm, status, etc.)
       const stud = db.prepare(`
@@ -1301,7 +1312,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         WHERE UPPER(TRIM(name)) = UPPER(TRIM(?))
         ORDER BY stud_fee_eur DESC
         LIMIT 1
-      `).get(name) as any;
+      `).get(nomeCatalogo) as any;
 
       // Top children (performance only) - empty if no offspring data
       const children = db.prepare(`
