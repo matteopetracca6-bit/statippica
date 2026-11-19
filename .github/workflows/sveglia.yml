@@ -1,0 +1,76 @@
+name: StatIppica — Sveglia (tiene acceso il sito)
+
+# PERCHE' ESISTE. Il piano gratuito di Render addormenta il sito dopo un
+# quarto d'ora senza visite, e il primo visitatore dopo una pausa aspetta il
+# risveglio.
+#
+# PERCHE' COSI'. La prima versione partiva ogni 10 minuti e bussava due volte.
+# Ma GitHub non rispetta gli orari dei lavori programmati: la notte del 25
+# ottobre 2026 l'ha fatta partire solo alle 23:29, 01:28 e 06:34 (ora UTC),
+# con buchi di due ore e piu', e il sito si e' addormentato.
+# Ora ogni giro resta acceso quasi sei ore (il massimo concesso) e bussa ogni
+# 4 minuti. Un giro nuovo viene chiesto ogni ora: se uno e' gia' in corso,
+# il nuovo aspetta in fila e parte appena il primo finisce. Basta quindi che
+# GitHub faccia partire almeno un giro ogni sei ore perche' non ci siano buchi.
+#
+# Novembre 2026: non bastava. Nella settimana dall'11 al 18/11 GitHub ha
+# lasciato buchi fino a 4 ore (il 16/11 dalle 17:26 alle 21:29 italiane) e il
+# sito si addormentava di giorno. Ora ogni giro, appena parte, chiede subito
+# il giro seguente con un lancio a mano, che GitHub non ritarda: aspetta in
+# fila e parte appena questo finisce. La catena non si interrompe; l'orario
+# programmato resta solo come riserva.
+#
+# La sveglia fa anche da orologio per la regia notturna
+# (scripts/regia_notturna.sh): dall'una di notte, ora italiana, lancia i
+# lavori notturni che non sono ancora partiti, finche' non partono tutti.
+#
+# Costi: il progetto e' pubblico, quindi i minuti di GitHub sono gratuiti.
+# Render concede 750 ore al mese di servizio gratuito: un sito sempre acceso
+# ne usa al massimo 744 (mese di 31 giorni), quindi ci sta.
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write  # chiedere il giro seguente e far partire i lavori notturni
+
+concurrency:
+  group: sveglia
+  cancel-in-progress: false
+
+jobs:
+  bussa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Chiedi subito il giro seguente
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run sveglia.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            && echo "Giro seguente chiesto: partira' quando finisce questo." \
+            || echo "::warning::Non sono riuscito a chiedere il giro seguente: resta l'orario programmato."
+      - name: Bussa al sito ogni 4 minuti per quasi sei ore (e fa da orologio alla regia)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          inizio=$(date +%s)
+          colpi=0; lenti=0
+          while [ $(( $(date +%s) - inizio )) -lt $(( 345 * 60 )) ]; do
+            T=$(curl -s -m 120 -o /dev/null -w '%{http_code} %{time_total}' https://statippica.onrender.com/api/stats || echo "000 0")
+            colpi=$((colpi+1))
+            codice=${T%% *}; tempo=${T##* }
+            # Un colpo lento vuol dire che il sito stava dormendo: si annota.
+            if [ "${tempo%%.*}" -ge 10 ] 2>/dev/null; then lenti=$((lenti+1)); fi
+            echo "$(date -u '+%H:%M') colpo $colpi: risposta $codice in ${tempo}s"
+            bash scripts/regia_notturna.sh || true
+            sleep 240
+          done
+          echo "Fine giro: $colpi colpi, $lenti risvegli lenti."
+          exit 0

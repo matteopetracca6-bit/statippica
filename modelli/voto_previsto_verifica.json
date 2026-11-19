@@ -1,0 +1,193 @@
+{
+ "periodo_allenamento": "nati 2012-2014",
+ "periodo_prova": "nati 2015-2016",
+ "alberi": {
+  "10": 215,
+  "50": 470,
+  "90": 1397
+ },
+ "regola": {
+  "per_ogni_eta": "errore medio in lettere piu' basso del voto attuale E lettera giusta o accanto almeno altrettanto spesso",
+  "copertura_intervallo": [
+   0.75,
+   0.85
+  ]
+ },
+ "tutte": {
+  "n": 38828,
+  "cavalli": 2421,
+  "voto_attuale": {
+   "lettera_giusta": 0.6251,
+   "giusta_o_accanto": 0.9087,
+   "errore_lettere": 0.5073
+  },
+  "modello": {
+   "lettera_giusta": 0.6568,
+   "giusta_o_accanto": 0.9221,
+   "errore_lettere": 0.4454
+  },
+  "copertura_intervallo": 0.8465,
+  "larghezza_lettere": 1.51
+ },
+ "per_eta": {
+  "2": {
+   "n": 1540,
+   "cavalli": 1172,
+   "voto_attuale": {
+    "lettera_giusta": 0.1942,
+    "giusta_o_accanto": 0.5727,
+    "errore_lettere": 1.5396
+   },
+   "modello": {
+    "lettera_giusta": 0.2409,
+    "giusta_o_accanto": 0.6429,
+    "errore_lettere": 1.2344
+   },
+   "copertura_intervallo": 0.7656,
+   "larghezza_lettere": 3.82,
+   "supera": true
+  },
+  "3": {
+   "n": 8358,
+   "cavalli": 2338,
+   "voto_attuale": {
+    "lettera_giusta": 0.3356,
+    "giusta_o_accanto": 0.7674,
+    "errore_lettere": 1.0043
+   },
+   "modello": {
+    "lettera_giusta": 0.3453,
+    "giusta_o_accanto": 0.8111,
+    "errore_lettere": 0.9089
+   },
+   "copertura_intervallo": 0.8025,
+   "larghezza_lettere": 2.91,
+   "supera": true
+  },
+  "4": {
+   "n": 9585,
+   "cavalli": 2411,
+   "voto_attuale": {
+    "lettera_giusta": 0.5767,
+    "giusta_o_accanto": 0.924,
+    "errore_lettere": 0.5207
+   },
+   "modello": {
+    "lettera_giusta": 0.6193,
+    "giusta_o_accanto": 0.9299,
+    "errore_lettere": 0.4708
+   },
+   "copertura_intervallo": 0.8531,
+   "larghezza_lettere": 1.47,
+   "supera": true
+  },
+  "5": {
+   "n": 9662,
+   "cavalli": 2418,
+   "voto_attuale": {
+    "lettera_giusta": 0.7563,
+    "giusta_o_accanto": 0.9811,
+    "errore_lettere": 0.2645
+   },
+   "modello": {
+    "lettera_giusta": 0.7965,
+    "giusta_o_accanto": 0.9802,
+    "errore_lettere": 0.2252
+   },
+   "copertura_intervallo": 0.8657,
+   "larghezza_lettere": 0.84,
+   "supera": false
+  },
+  "6": {
+   "n": 9683,
+   "cavalli": 2421,
+   "voto_attuale": {
+    "lettera_giusta": 0.8607,
+    "giusta_o_accanto": 0.9967,
+    "errore_lettere": 0.1429
+   },
+   "modello": {
+    "lettera_giusta": 0.8897,
+    "giusta_o_accanto": 0.9965,
+    "errore_lettere": 0.1142
+   },
+   "copertura_intervallo": 0.8715,
+   "larghezza_lettere": 0.66,
+   "supera": false
+  }
+ },
+ "per_voto_2_3_anni": {
+  "SSS": {
+   "n": 103,
+   "resta": 0.252,
+   "lettera_media_vera": 1.31,
+   "lettera_media_modello": 0.86,
+   "modello_giusta": 0.437
+  },
+  "SS": {
+   "n": 397,
+   "resta": 0.285,
+   "lettera_media_vera": 2.12,
+   "lettera_media_modello": 1.98,
+   "modello_giusta": 0.378
+  },
+  "S": {
+   "n": 495,
+   "resta": 0.156,
+   "lettera_media_vera": 2.75,
+   "lettera_media_modello": 2.95,
+   "modello_giusta": 0.364
+  },
+  "A": {
+   "n": 1483,
+   "resta": 0.332,
+   "lettera_media_vera": 3.48,
+   "lettera_media_modello": 3.59,
+   "modello_giusta": 0.359
+  },
+  "B": {
+   "n": 1486,
+   "resta": 0.24,
+   "lettera_media_vera": 4.0,
+   "lettera_media_modello": 4.16,
+   "modello_giusta": 0.303
+  },
+  "C": {
+   "n": 1981,
+   "resta": 0.288,
+   "lettera_media_vera": 4.75,
+   "lettera_media_modello": 4.93,
+   "modello_giusta": 0.316
+  },
+  "D": {
+   "n": 1553,
+   "resta": 0.252,
+   "lettera_media_vera": 5.46,
+   "lettera_media_modello": 5.58,
+   "modello_giusta": 0.296
+  },
+  "E": {
+   "n": 1455,
+   "resta": 0.434,
+   "lettera_media_vera": 6.27,
+   "lettera_media_modello": 6.35,
+   "modello_giusta": 0.359
+  },
+  "F": {
+   "n": 945,
+   "resta": 0.471,
+   "lettera_media_vera": 6.68,
+   "lettera_media_modello": 6.89,
+   "modello_giusta": 0.309
+  }
+ },
+ "eta_adottate": [
+  2,
+  3,
+  4
+ ],
+ "adottato": true,
+ "nome": "voto-previsto-xgb-v1",
+ "allenato_il": "2026-10-31",
+ "allenato_su": "nati 2012-2016, fotografie trimestrali dai 2 ai 6 anni"
+}

@@ -1,0 +1,406 @@
+import { colorePista, colorePistaTenue } from "@/lib/piste";
+import { coloreScheda } from "@/lib/sezioni";
+import { useState, useEffect } from "react";
+import { Spiegazione } from "../components/Spiegazione";
+import IntestazionePagina from "../components/IntestazionePagina";
+import { CSS_DUE_COLONNE, Cifra } from "../components/DueColonne";
+import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import GradeBadge from "../components/GradeBadge";
+import BandieraCavallo from "../components/BandieraCavallo";
+import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle, Medal } from "lucide-react";
+import VerificaPronostico from "../components/VerificaPronostico";
+import VerificaGare from "../components/VerificaGare";
+import DettaglioPronostico from "../components/DettaglioPronostico";
+
+interface CalendarEntry {
+  horse_name: string;
+  driver: string | null;
+  start_pos: number | null;
+  distance: number | null;
+  grade: string | null;
+  score: number | null;
+  career_earnings: number | null;
+  win_rate: number | null;
+  career_races: number | null;
+  career_wins: number | null;
+  country: string | null;
+  birth_year: number | null;
+  sire: string | null;
+  dam: string | null;
+  win_estimate: number;
+  /** Probabilita' di arrivare nei primi tre (modello XGBoost). */
+  top3?: { prob: number; affidabile: boolean; n_corse: number; motivi: { testo: string; pro: boolean }[] };
+  /** Rischio di squalifica per galoppo (modello provato sulle corse 2025–2026). */
+  galoppo?: { prob: number; fascia: "basso" | "medio" | "alto"; n_corse: number; rotture: number };
+}
+
+interface RaceEvent {
+  track: string;
+  race_date: string;
+  race_time: string;
+  n_runners: number;
+  entries: CalendarEntry[];
+}
+
+interface CalendarResponse {
+  races: RaceEvent[];
+  total: number;
+  note?: string;
+  pronostico?: { verificato: boolean; nome: string } | null;
+  galoppo?: { supera: boolean; partenze: number; quota: number; fasce: Record<string, { quota_partenze: number; prevista: number; vera: number }> } | null;
+}
+
+/** Il numero da mostrare: la probabilita' dei primi tre se c'e', altrimenti la stima vecchia. */
+const stima = (e: CalendarEntry) => (e.top3 ? e.top3.prob : e.win_estimate);
+
+function formatDate(isoDate: string): string {
+  const d = new Date(isoDate + "T00:00:00");
+  const days = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const months = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function formatTime(time: string): string {
+  if (!time) return "—";
+  return time.substring(0, 5);
+}
+
+const TRACK_NAMES: Record<string, string> = {
+  BO: "Bologna", MI: "Milano", RM: "Roma", TO: "Torino",
+  NA: "Napoli", CE: "Cesena", SR: "Siracusa", TV: "Treviso",
+  MT: "Montecatini", CS: "Casarano", PA: "Palermo", PC: "Pontecagnano", MO: "Modena",
+  FI: "Firenze", BA: "Bari", VA: "Varese", GA: "Garigliano",
+  PD: "Padova", VI: "Villanova", CT: "Castelluccio", AN: "Ancona",
+  TS: "Trieste", FR: "Frosinone", SS: "San Severo",
+  MG: "Montegiorgio", AV: "Aversa", TA: "Taranto", FO: "Follonica", CV: "Civitanova", FE: "Ferrara",
+  MON: "Montegiorgio",
+};
+
+export default function CalendarPage() {
+  const [data, setData] = useState<CalendarResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedRace, setExpandedRace] = useState<string | null>(null);
+  // Prossime gare oppure verifica delle gare gia' corse.
+  const [scheda, setScheda] = useState<"prossime" | "verifica">("prossime");
+
+  // Era `useState(() => ...)`: funzionava per caso, perche' React esegue quella
+  // funzione una volta sola per calcolare il valore iniziale. Il posto giusto
+  // per una chiamata di rete e' useEffect.
+  useEffect(() => {
+    apiRequest("GET", "/api/calendar?limit=100")
+      .then(r => r.json())
+      .then(d => {
+        setData(d);
+        setLoading(false);
+        // Auto-expand the first race
+        if (d.races && d.races.length > 0) {
+          setExpandedRace(`${d.races[0].track}-${d.races[0].race_date}-${d.races[0].race_time}`);
+        }
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const raceKey = (r: RaceEvent) => `${r.track}-${r.race_date}-${r.race_time}`;
+
+  return (
+    <div className="page-shell ed" style={{ ["--ed-acc" as any]: coloreScheda("/calendario") }}>
+      <style>{CSS_DUE_COLONNE}</style>
+      <IntestazionePagina icona={Calendar} colore={coloreScheda("/calendario")} titolo="Calendario gare" margineSotto={16}
+        sottotitolo="Le prossime corse con gli iscritti e il loro voto, e come è andato il pronostico delle gare già corse." />
+
+      {data && data.total > 0 && scheda === "prossime" && (
+        <div className="ed-cifre" style={{ marginBottom: 16 }}>
+          <Cifra titolo="Corse in programma" valore={data.total.toLocaleString("it-IT")} colore={coloreScheda("/calendario")} />
+          <Cifra titolo="Partenti" valore={data.races.reduce((t, r) => t + r.n_runners, 0).toLocaleString("it-IT")} />
+          <Cifra titolo="Ippodromi" valore={new Set(data.races.map(r => r.track)).size} />
+        </div>
+      )}
+
+      <div className="ed-linguette" role="tablist">
+        <button className="ed-linguetta" role="tab" aria-selected={scheda === "prossime"} onClick={() => setScheda("prossime")} data-testid="tab-prossime">
+          <span><b>Prossime gare</b><small>iscritti e voti</small></span>
+        </button>
+        <button className="ed-linguetta" role="tab" aria-selected={scheda === "verifica"} onClick={() => setScheda("verifica")} data-testid="tab-verifica">
+          <span><b>Com'è andato il pronostico</b><small>le gare già corse</small></span>
+        </button>
+      </div>
+
+      {scheda === "verifica" ? <VerificaGare /> : loading ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "12px" }} />
+          ))}
+        </div>
+      ) : !data || data.races.length === 0 ? (
+        <div className="pannello" style={{ padding: "48px 24px", textAlign: "center" }}>
+          <AlertCircle size={32} style={{ color: "hsl(210 8% 40%)", marginBottom: "12px" }} />
+          <p style={{ fontSize: "15px", color: "hsl(210 8% 55%)", margin: "0 0 8px" }}>
+            {data?.note || "Nessuna gara in calendario."}
+          </p>
+          <p style={{ fontSize: "12px", color: "hsl(210 8% 40%)", margin: 0 }}>
+            Le gare future vengono aggiornate automaticamente ogni notte.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {data.races.map((race, i) => {
+            const key = raceKey(race);
+            const expanded = expandedRace === key;
+            const top3 = race.entries.slice(0, 3);
+            const trackName = TRACK_NAMES[race.track] || (race.track.charAt(0) + race.track.slice(1).toLowerCase());
+            return (
+              <div key={key} className="pannello" style={{ overflow: "hidden", ["--colore-pannello" as any]: colorePista(race.track) }}>
+                {/* Race header */}
+                <div
+                  onClick={() => setExpandedRace(expanded ? null : key)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "16px",
+                    padding: "16px 20px", cursor: "pointer", minWidth: 0,
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 13%)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  {/* Date badge */}
+                  <div style={{
+                    minWidth: "64px", textAlign: "center",
+                    background: colorePistaTenue(race.track, 0.1), border: `1px solid ${colorePistaTenue(race.track, 0.3)}`,
+                    borderRadius: "10px", padding: "8px 10px",
+                  }}>
+                    <div style={{ fontSize: "11px", color: "hsl(210 8% 50%)", textTransform: "uppercase" }}>
+                      {formatDate(race.race_date).split(" ")[0]}
+                    </div>
+                    <div className="tabular" style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>
+                      {formatDate(race.race_date).split(" ")[1]}
+                    </div>
+                    <div style={{ fontSize: "10px", color: "hsl(210 8% 45%)", textTransform: "uppercase" }}>
+                      {formatDate(race.race_date).split(" ")[2]}
+                    </div>
+                  </div>
+
+                  {/* Track + time */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <MapPin size={14} style={{ color: colorePista(race.track) }} />
+                      <span style={{ fontSize: "15px", fontWeight: 700, color: colorePista(race.track) }}>
+                        {trackName}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                      <Clock size={12} style={{ color: "hsl(210 8% 45%)" }} />
+                      <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 55%)" }}>
+                        {formatTime(race.race_time)}
+                      </span>
+                      <span style={{ fontSize: "12px", color: "hsl(210 8% 40%)", marginLeft: "8px" }}>
+                        {race.n_runners} partenti
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Podium preview */}
+                  {top3.length >= 3 && (
+                    <div className="podio-anteprima" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {top3.map((e, idx) => (
+                        <div key={idx} style={{
+                          display: "flex", alignItems: "center", gap: "4px",
+                          padding: "4px 8px", borderRadius: "6px",
+                          background: idx === 0 ? "hsl(51 80% 50% / 0.1)" : idx === 1 ? "hsl(0 0% 70% / 0.08)" : "hsl(30 70% 50% / 0.08)",
+                        }}>
+                          <Medal size={12} style={{ color: idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : "hsl(30 70% 50%)" }} />
+                          <Link href={`/horse/${encodeURIComponent(e.horse_name)}/${e.birth_year || 0}`}>
+                            <a style={{ fontSize: "11px", color: "hsl(210 10% 80%)", textDecoration: "none", fontWeight: 600 }} onClick={ev => ev.stopPropagation()}>
+                              <BandieraCavallo nome={e.horse_name} paese={e.country} solo_estero /> {e.horse_name}
+                            </a>
+                          </Link>
+                          {(e.top3 || !data.pronostico) && (<span className="tabular" style={{ fontSize: "10px", color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 50%)", fontWeight: 700 }}>
+                            {stima(e).toFixed(0)}%
+                          </span>)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <ChevronDown
+                    size={18}
+                    style={{
+                      color: "hsl(210 8% 45%)",
+                      transform: expanded ? "rotate(180deg)" : "none",
+                      transition: "transform 0.2s",
+                    }}
+                  />
+                </div>
+
+                {/* Expanded entries */}
+                {expanded && (
+                  <div style={{ borderTop: "1px solid hsl(220 10% 16%)" }}>
+                    {/* Podium header */}
+                    <div style={{ padding: "12px 20px 8px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Trophy size={14} style={{ color: "hsl(51 80% 55%)" }} />
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        {data.pronostico ? "Probabilità di arrivare nei primi tre" : "Podio stimato"}
+                      </span>
+                      {data.pronostico && !data.pronostico.verificato && (
+                        <span style={{ fontSize: "10.5px", fontWeight: 700, color: "hsl(40 70% 55%)", border: "1px solid hsl(40 60% 40%)", borderRadius: "5px", padding: "1px 6px" }}>
+                          sperimentale
+                        </span>
+                      )}
+                    </div>
+
+                    {data.galoppo?.supera && (
+                      <div className="nota-galoppo">
+                        <span className="chip-galoppo medio" aria-hidden>galoppo</span>
+                        Sotto ogni cavallo, la probabilità che venga squalificato per galoppo. Provata su {data.galoppo.partenze.toLocaleString("it-IT")} partenze
+                        del 2025 e del 2026: dove diceva «alto» ha rotto {conArticolo(Math.round((data.galoppo.fasce.alto?.vera ?? 0) * 100))} dei cavalli,
+                        dove diceva «basso» {conArticolo(Math.round((data.galoppo.fasce.basso?.vera ?? 0) * 100))}. È un rischio, non una certezza: anche fra i cavalli a rischio alto quasi due su tre finiscono la corsa senza squalifica.
+                      </div>
+                    )}
+                    {data.pronostico && race.n_runners <= 3 && (
+                      <div style={{ padding: "0 20px 8px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>
+                        Con {race.n_runners} partenti arrivano tutti nei primi tre, se finiscono la corsa: qui la stima non serve.
+                      </div>
+                    )}
+                    {/* Entries table */}
+                    <div style={{ padding: "0 8px 8px" }}>
+                      {race.entries.map((entry, idx) => {
+                        const podiumColor = idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : idx === 2 ? "hsl(30 70% 50%)" : "hsl(210 8% 40%)";
+                        const podiumBg = idx === 0 ? "hsl(51 80% 50% / 0.06)" : idx === 1 ? "hsl(0 0% 70% / 0.04)" : idx === 2 ? "hsl(30 70% 50% / 0.04)" : "transparent";
+                        return (
+                          <div key={`${entry.horse_name}-${idx}`} className="riga-pronostico" style={{
+                            display: "grid",
+                            gridTemplateColumns: data.pronostico ? "28px 24px 1fr auto auto auto auto" : "28px 24px 1fr auto auto auto",
+                            alignItems: "center", gap: "12px",
+                            padding: "10px 16px", borderRadius: "8px",
+                            background: podiumBg,
+                            transition: "background 0.1s",
+                          }}
+                            onMouseEnter={e => e.currentTarget.style.background = idx < 3 ? podiumBg : "hsl(220 10% 14%)"}
+                            onMouseLeave={e => e.currentTarget.style.background = podiumBg}
+                          >
+                            {/* Position */}
+                            <span className="tabular" style={{
+                              fontSize: "13px", fontWeight: 700,
+                              color: podiumColor,
+                              textAlign: "center",
+                            }}>
+                              {idx < 3 ? ["1°", "2°", "3°"][idx] : idx + 1}
+                            </span>
+
+                            {/* Medal */}
+                            {idx < 3 ? (
+                              <Medal size={14} style={{ color: podiumColor }} />
+                            ) : (
+                              <span style={{ width: 14 }} />
+                            )}
+
+                            {/* Name + info */}
+                            <div>
+                              <Link href={`/horse/${encodeURIComponent(entry.horse_name)}/${entry.birth_year || 0}`}>
+                                <a style={{
+                                  fontSize: "13px", fontWeight: 600,
+                                  color: idx < 3 ? podiumColor : "hsl(210 10% 85%)",
+                                  textDecoration: "none",
+                                }}>
+                                  <BandieraCavallo nome={entry.horse_name} paese={entry.country} /> {entry.horse_name}
+                                </a>
+                              </Link>
+                              <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "2px" }}>
+                                {entry.sire && <span>{entry.sire}</span>}
+                                {entry.birth_year && <span> · {entry.birth_year}</span>}
+                                {entry.career_races != null && <span> · {entry.career_races} gare</span>}
+                                {entry.win_rate != null && entry.win_rate > 0 && <span> · {entry.win_rate.toFixed(0)}% vinte</span>}
+                                {entry.start_pos != null && <span> · numero {entry.start_pos}</span>}
+                              </div>
+                              {entry.galoppo && <ChipGaloppo g={entry.galoppo} />}
+                              {entry.top3 && entry.top3.motivi.length > 0 && (
+                                <div className="motivi-pronostico">
+                                  {entry.top3.motivi.map((m, k) => (
+                                    <span key={k} className={m.pro ? "motivo pro" : "motivo contro"}>{m.pro ? "+" : "−"} {m.testo}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Grade */}
+                            <div>
+                              {entry.grade ? <GradeBadge grade={entry.grade} size="sm" /> : <span style={{ fontSize: "11px", color: "hsl(210 8% 40%)" }}>—</span>}
+                            </div>
+
+                            {/* Score */}
+                            <div className="tabular" style={{
+                              fontSize: "13px", fontWeight: 700, minWidth: "36px", textAlign: "right",
+                              color: entry.score != null ? "hsl(183 60% 55%)" : "hsl(210 8% 40%)",
+                            }}>
+                              {entry.score != null ? entry.score.toFixed(1) : "—"}
+                            </div>
+
+                            {/* Win estimate bar */}
+                            <div className="barra-stima" style={{ minWidth: "100px", display: "flex", alignItems: "center", gap: "8px" }}>
+                              <div style={{ flex: 1, height: "8px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden" }}>
+                                <div style={{
+                                  height: "100%", width: `${Math.min(entry.top3 ? entry.top3.prob : data.pronostico ? 0 : entry.win_estimate * 2, 100)}%`,
+                                  background: idx < 3 ? podiumColor : "hsl(183 60% 50%)",
+                                  borderRadius: "4px", transition: "width 0.5s",
+                                }} />
+                              </div>
+                              <span className="tabular" style={{
+                                fontSize: "13px", fontWeight: 700, minWidth: "40px",
+                                color: idx < 3 ? podiumColor : "hsl(183 60% 55%)",
+                              }}>
+                                {entry.top3 || !data.pronostico ? `${stima(entry).toFixed(0)}%` : race.n_runners <= 3 ? "" : "—"}
+                              </span>
+                            </div>
+                            {data.pronostico && (entry.top3 && !entry.top3.affidabile
+                              ? <span className="poco-affidabile" title={`Solo ${entry.top3.n_corse} corse in archivio: la stima è debole`}>poche corse</span>
+                              : <span className="cella-vuota" />)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {data.pronostico && race.n_runners > 3 && (
+                      <DettaglioPronostico track={race.track} date={race.race_date} time={race.race_time} />
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {scheda === "prossime" && data?.pronostico && <VerificaPronostico />}
+
+      {/* Disclaimer */}
+      {scheda === "prossime" && data && data.races.length > 0 && (
+        <div className="pannello" style={{
+          marginTop: "20px", padding: "14px 18px" }}>
+          <Spiegazione titolo="Come è fatto il conto e cosa non dice" compatta>
+            {data.pronostico
+              ? "La percentuale è la probabilità di arrivare nei primi tre, stimata da un modello di apprendimento automatico (XGBoost) con quello che si sa prima della partenza: forma recente, premi, tempi, guidatore dichiarato per la corsa, numero di partenza e confronto con gli avversari. In ogni corsa le percentuali sommano a tre, perché i posti sono tre. È una lettura statistica, non un consiglio di scommessa: non conosciamo le quote né lo stato del cavallo il giorno della gara."
+              : "Le probabilità di vittoria sono stime indicative basate sul punteggio StatIppica e non tengono conto di fattori come partenza, condizioni di pista, stato di forma recente e strategie di gara. Non costituiscono consiglio di scommessa."}
+          </Spiegazione>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Rischio di galoppo: piccola etichetta colorata sotto il nome del cavallo. */
+function ChipGaloppo({ g }: { g: NonNullable<CalendarEntry["galoppo"]> }) {
+  const titolo = g.n_corse
+    ? `Ha rotto ${g.rotture} volte su ${g.n_corse} corse in archivio`
+    : "Debutto: nessuna corsa in archivio, la stima è più incerta";
+  return (
+    <div style={{ marginTop: 4 }}>
+      <span className={`chip-galoppo ${g.fascia}`} title={titolo}>
+        galoppo {g.prob.toFixed(0)}% · {g.fascia}
+      </span>
+    </div>
+  );
+}
+
+/** "il 37%", "l'8%", "l'11%": l'articolo giusto davanti a una percentuale. */
+function conArticolo(n: number) {
+  const elide = n === 8 || n === 11 || (n >= 80 && n < 90) || n === 1;
+  return `${elide ? "l'" : "il "}${n}%`;
+}

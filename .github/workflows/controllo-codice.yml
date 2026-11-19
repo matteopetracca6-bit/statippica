@@ -1,0 +1,64 @@
+name: StatIppica — Controllo del codice
+
+# Novembre 2026. A ogni pull request e a ogni push su main si controlla che il
+# codice stia in piedi prima che arrivi su Render:
+#   - TypeScript: i tipi di sito e server (npm run check = tsc) e la build
+#     vera (npm run build), la stessa che fa Render;
+#   - Python: che ogni script si possa almeno leggere (niente errori di
+#     sintassi), perche' un errore in nightly_update.py ferma tutta la notte.
+# Non tocca l'archivio e non pubblica niente: se qualcosa non va, la pull
+# request e il commit restano segnati in rosso.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: controllo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    name: TypeScript (tipi e build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Installa le dipendenze
+        run: npm ci --no-audit --no-fund
+      - name: Controlla i tipi
+        run: npm run check
+      - name: Prova la build
+        run: npm run build
+
+  python:
+    name: Python (sintassi)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Compila tutti gli script
+        run: |
+          python3 - <<'PY'
+          import pathlib, py_compile, sys
+          errori = 0
+          for f in sorted(pathlib.Path(".").rglob("*.py")):
+              if "node_modules" in f.parts or ".git" in f.parts:
+                  continue
+              try:
+                  py_compile.compile(str(f), doraise=True)
+              except py_compile.PyCompileError as e:
+                  errori += 1
+                  print(f"::error file={f}::{e.msg}")
+          print(f"script controllati, errori: {errori}")
+          sys.exit(1 if errori else 0)
+          PY

@@ -1,0 +1,165 @@
+name: StatIppica — Allenatori (ogni notte)
+
+# Raccoglie l'allenatore di ogni cavallo in ogni corsa dai risultati ufficiali
+# MASAF / Grande Ippica Italiana (dal 2016), lo scrive sulle corse
+# dell'archivio, calcola le schede degli allenatori e ripubblica l'archivio.
+# Dalla stessa pagina prende anche il proprietario di ogni cavallo e calcola
+# le schede dei proprietari (scripts/proprietari.py, chiamato alla fine).
+# La prima notte dopo questa aggiunta rilegge tutte le giornate una volta.
+#
+# La prima volta legge tutte le giornate dal 2016 (circa mezz'ora, dieci
+# pagine alla volta). Dalle notti dopo legge solo le giornate nuove e quelle
+# degli ultimi sette giorni, che la fonte puo' ancora correggere: un paio di
+# minuti. Se dovesse servire piu' tempo del previsto, si ferma prima del limite
+# di GitHub, salva quello che ha letto e riprende la notte dopo.
+#
+# Lo lancia la regia notturna (scripts/regia_notturna.sh) subito dopo il
+# lavoro dei risultati: aspetta che finisca (aspetta_turno.sh) e parte dalla
+# sua copia, cosi' trova gia' le corse del giorno prima.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo prova, senza pubblicare niente"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write # serve per pubblicare l'archivio aggiornato nel rilascio
+  actions: read # serve per vedere se un altro lavoro sta gia' pubblicando
+
+jobs:
+  allenatori:
+    runs-on: ubuntu-latest
+    name: Raccogli allenatori e pubblica
+    timeout-minutes: 340
+    steps:
+      - name: Segna l'ora di partenza
+        run: echo "PARTENZA=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+
+      - name: Recupera le gare mancanti dai risultati ufficiali
+        # Novembre 2026 (scripts/gare_ufficiali.py): dalle stesse pagine
+        # ufficiali prende le gare che l'archivio non ha, soprattutto quelle
+        # dei cavalli nati prima del 2012 (stagioni 2016-2019). Va prima degli
+        # allenatori, cosi' le gare nuove ricevono subito allenatore e
+        # proprietario. Ogni pagina si controlla da sola contro l'archivio e si
+        # scarta sotto il 90% di concordanza. Se la fonte non risponde, la
+        # notte prosegue senza: si riprende la volta dopo.
+        run: |
+          python3 scripts/gare_ufficiali.py --db data.db --minuti 40 --atleti --genitori \
+            || echo "::warning::recupero delle gare ufficiali non riuscito, si riprova la prossima notte"
+          python3 - <<'PY'
+          import sqlite3
+          c = sqlite3.connect('data.db')
+          try:
+              for stato, n in c.execute("SELECT COALESCE(motivo, stato), COUNT(*) FROM gare_ufficiali_attesa GROUP BY 1 ORDER BY 2 DESC"):
+                  print(f"  {stato:30} {n}")
+              lette = c.execute("SELECT esito, COUNT(*) FROM gare_ufficiali_lette GROUP BY 1").fetchall()
+              print("  giornate lette:", dict(lette))
+          except sqlite3.Error as e:
+              print("  tabelle non ancora create:", e)
+          PY
+
+      - name: Ripara gare e schede doppie del recupero
+        # Novembre 2026 (scripts/ripara_recupero.py): se il recupero ha
+        # inserito una gara che l'archivio aveva gia' senza data, la riga di
+        # TrottoWeb prende la data e la copia si toglie; le schede di cavalli
+        # stranieri scritte senza parentesi ("X S") si uniscono a quelle con le
+        # parentesi ("X (S)"). Se non c'e' niente da riparare non cambia niente.
+        run: |
+          python3 scripts/ripara_recupero.py --db data.db \
+            || echo "::warning::riparazione dei doppioni non riuscita, si riprova la prossima notte"
+          # Novembre 2026 (scripts/ripara_archivio.py): schede doppie dello
+          # stesso cavallo (stesso anno e stessi genitori, come MAYOR SISU e
+          # MAYOR SISU (S)) e dati impossibili nelle corse in Italia (tempi
+          # sotto 1'08"5, distanze di 0 o 200 metri, arrivi oltre i partenti).
+          # Ogni correzione resta scritta nella tabella anomalie_corrette.
+          python3 scripts/ripara_archivio.py --db data.db \
+            || echo "::warning::riparazione dell'archivio non riuscita, si riprova la prossima notte"
+
+      - name: Raccogli gli allenatori e calcola le schede
+        # Il tempo per leggere e' quello che resta fino a 300 minuti dalla
+        # partenza (l'attesa del turno compresa), con un minimo di 10: cosi'
+        # resta sempre il margine per pubblicare prima del limite di 340.
+        run: |
+          PASSATI=$(( ($(date +%s) - PARTENZA) / 60 ))
+          RESTANO=$(( 300 - PASSATI ))
+          [ "$RESTANO" -lt 10 ] && RESTANO=10
+          echo "Minuti a disposizione per leggere: $RESTANO"
+          python3 scripts/allenatori.py --db data.db --minuti "$RESTANO"
+
+      - name: Controlla il risultato
+        run: |
+          python3 - <<'PY'
+          import sqlite3, sys
+          c = sqlite3.connect('data.db')
+          tot, con = c.execute("""SELECT COUNT(*), COUNT(trainer) FROM races
+                                   WHERE race_date >= '2016-01-01' AND track != 'ESTERO'""").fetchone()
+          lette, = c.execute("SELECT COUNT(*) FROM allenatori_date_lette").fetchone()
+          schede, = c.execute("SELECT COUNT(*) FROM trainer_stats").fetchone()
+          print(f"corse dal 2016: {tot}, con allenatore: {con} ({100*con/max(tot,1):.1f}%)")
+          print(f"date lette: {lette}, schede allenatori: {schede}")
+          try:
+              conp, = c.execute("""SELECT COUNT(owner) FROM races
+                                    WHERE race_date >= '2016-01-01' AND track != 'ESTERO'""").fetchone()
+              sp, = c.execute("SELECT COUNT(*) FROM owner_stats").fetchone()
+              print(f"con proprietario: {conp} ({100*conp/max(tot,1):.1f}%), schede proprietari: {sp}")
+          except sqlite3.Error as e:
+              print(f"proprietari non ancora pronti: {e}")
+          if schede < 50 or con == 0:
+              print("::error::troppo pochi allenatori: la raccolta non e' andata a buon fine.")
+              sys.exit(1)
+          # Quando tutte le date sono lette, quasi ogni corsa deve avere
+          # l'allenatore: se no l'abbinamento dei nomi si e' rotto.
+          date_tot, = c.execute("""SELECT COUNT(DISTINCT race_date) FROM races
+                                    WHERE race_date >= '2016-01-01' AND track != 'ESTERO'""").fetchone()
+          if lette >= date_tot - 10 and con < 0.95 * tot:
+              print(f"::error::solo il {100*con/tot:.1f}% delle corse ha l'allenatore.")
+              sys.exit(1)
+          for nome, n, v, p in c.execute("""SELECT nome, n_corse, n_vittorie, pct_vittorie
+                                              FROM trainer_stats ORDER BY n_vittorie DESC LIMIT 10"""):
+              print(f"  {nome:40} {n:6} corse {v:5} vittorie ({p}%)")
+          PY
+
+      - name: Pubblica l'archivio aggiornato
+        if: ${{ inputs.prova != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          bash scripts/pubblica_archivio.sh
+          echo "Archivio aggiornato pubblicato."
+
+      - name: Chiedi a Render di ripubblicare il sito
+        if: ${{ success() && inputs.prova != true }}
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" \
+            -d '{}' | head -c 300
+          echo

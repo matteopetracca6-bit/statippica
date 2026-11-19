@@ -1,0 +1,39 @@
+name: PROVA — foto scheda
+on:
+  push:
+    branches: [prova/forza-sito]
+permissions:
+  contents: write
+jobs:
+  foto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Aspetta il deploy nuovo
+        shell: bash {0}
+        run: |
+          sleep 240
+          for i in $(seq 1 30); do
+            curl -s -m 60 https://statippica.onrender.com/ | grep -q "assets" && break; sleep 20
+          done
+      - name: Fotografa
+        run: |
+          i=0
+          for u in "horse/CHICCA%20ROSS/2018" "horse/GHEMON%20COL/2022"; do
+            i=$((i+1))
+            timeout 120 google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1400,3000 --virtual-time-budget=30000 \
+              --screenshot="$PWD/foto$i.png" "https://statippica.onrender.com/#/$u" || true
+          done
+          ls -la foto*.png
+      - uses: actions/checkout@v5
+        with:
+          path: repo
+      - name: Salva
+        run: |
+          cd repo
+          git checkout -q --orphan prova/forza-foto
+          git rm -rq . || true
+          cp ../foto*.png .
+          git add foto*.png
+          git -c user.name=prova -c user.email=prova@example.com commit -qm foto
+          git push -qf origin prova/forza-foto

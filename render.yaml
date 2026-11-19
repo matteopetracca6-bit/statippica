@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: statippica
+    runtime: node
+    region: frankfurt
+    plan: free
+    # L'archivio NON sta dentro il progetto: lo scarica prima di partire.
+    #
+    # Dentro git ogni versione nuova si somma alle precedenti per sempre, e un
+    # binario compresso da 30 MB che cambia ogni notte non ha nulla in comune
+    # con quello di ieri: git aggiunge 30 MB di cronologia a notte, circa
+    # 900 MB al mese. In tre mesi il progetto era a 477 MB, con GitHub che
+    # raccomanda di restare sotto 1 GB. Ora l'archivio sta in un rilascio, a
+    # un indirizzo fisso, e la copia nuova sostituisce la vecchia.
+    #
+    # Lo script scarica, verifica (dimensione e numero di gare) e, se qualcosa
+    # non torna, FERMA la pubblicazione invece di avviare un sito senza dati.
+    buildCommand: npm install && npm run build && bash scripts/prepara_archivio.sh
+    startCommand: NODE_ENV=production node dist/index.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER
+        value: "true"
+      - key: PORT
+        value: "10000"

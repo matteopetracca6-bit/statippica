@@ -1,0 +1,100 @@
+name: StatIppica — Nightly Maintenance (aggiorna e colma buchi cavalli esistenti)
+on:
+  # Niente orario programmato (GitHub lo faceva partire con 6-9 ore di
+  # ritardo, in pieno giorno): lo lancia, subito dopo i risultati, la regia notturna dopo l'una di
+  # notte, ora italiana (scripts/regia_notturna.sh).
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Motivo del trigger manuale"
+        required: false
+        default: "trigger manuale"
+jobs:
+  nightly-maintenance:
+    name: Esegui nightly_update.py (mode=maintenance)
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4 numpy pandas scikit-learn  # numpy e pandas: pronostico dei primi tre; scikit-learn: forza (forza.py)
+      - name: Procura l'archivio
+        # Lo scarica dal rilascio e verifica il numero di gare. Se non torna,
+        # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e
+        # pubblicare al posto di quello vero. La logica sta in un solo script
+        # perche' la usano tutti e quattro i lavori automatici.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Esegui nightly_update.py (maintenance)
+        env:
+          NIGHTLY_MODE: maintenance
+          DB_PATH: data.db
+          REPO_DB_PATH: data.db
+          GITHUB_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+          GITHUB_USER: matteopetracca6-bit
+          GITHUB_REPO: statippica
+          ACTIVE_UPDATE_BATCH_SIZE: "800"
+          BACKFILL_BATCH_SIZE: "150"
+          # FASE 2c (copertura genitori): UNIRE ora attivo (unire_source.py).
+          # 300 genitori/notte a 2 richieste per genitore con 1s pausa ≈ 12 min.
+          PARENT_COVERAGE_BATCH_SIZE: "600"
+          # Recupero date mancanti: col lettore nuovo ogni cavallo raggiungibile
+          # rende, quindi vale la pena smaltire in fretta gli 8.714 arretrati.
+          UNDATED_BATCH_SIZE: "2000"
+          # Seconda fonte (VendoPuledri): genealogia a 5 generazioni e incroci.
+          # ~1,3 s a cavallo, quindi 1200 sono circa 25 minuti; restano
+          # ~5.600 cavalli arretrati, smaltiti in meno di una settimana.
+          VP_PEDIGREE_BATCH_SIZE: "1200"
+          VP_SIRES_PER_NIGHT: "10"
+          # Cavalli che TrottoWeb conosce e l'archivio no (mai corsi): una
+          # pagina per stallone e annata, ~1 s l'una. 900 pagine ~ 15-20 min;
+          # il primo giro completo (~5.400 pagine) richiede circa sei notti.
+          CAVALLI_MANCANTI_RICHIESTE: "900"
+          CAVALLI_MANCANTI_MINUTI: "30"
+          # Carriera delle fattrici che hanno corso (carriere_fattrici.py):
+          # una scheda per fattrice, ~1,2 s l'una. Le nate dal 2011 da
+          # recuperare sono poche centinaia: bastano una o due notti.
+          CARRIERE_FATTRICI_NUMERO: "300"
+          CARRIERE_FATTRICI_MINUTI: "20"
+        run: python nightly_update.py
+
+      # Controlla che ogni dato mostrato dal sito abbia un lavoro automatico che
+      # lo aggiorna. Non blocca il flusso: l'archivio e' gia' stato aggiornato e
+      # va pubblicato comunque. Segnala e basta, perche' il guasto tipico qui e'
+      # silenzioso — una catena che si rompe e una pagina che continua a
+      # mostrare dati vecchi senza errori.
+      - name: Controlla che tutte le pagine si aggiornino
+        if: always()
+        continue-on-error: true
+        run: python3 scripts/controlla_aggiornamenti.py
+      - name: Trigger deploy Render dopo aggiornamento DB
+        if: success()
+        run: |
+          # Pausa breve: da' tempo al webhook GitHub->Render di arrivare, altrimenti
+          # Render puo' deployare l'ultimo commit che conosceva PRIMA di questo push
+          # (race condition osservata: deploy sull'commit precedente, non quello nuovo)
+          sleep 15
+          # La risposta di Render non e' sempre JSON (errore HTML, rate limit, 5xx).
+          # Con json.load diretto il passo andava in JSONDecodeError e faceva
+          # fallire l'intero job DOPO che i dati erano gia' stati salvati e
+          # committati: un allarme falso che nasconde i fallimenti veri.
+          # Ora il deploy non confermato e' un warning, non un errore.
+          RESP=$(curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" || true)
+          DEPLOY_ID=$(echo "$RESP" | sed -n 's/.*"id"[: ]*"\([^"]*\)".*/\1/p' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            echo "Deploy Render avviato: $DEPLOY_ID"
+          else
+            echo "::warning::Render non ha confermato il deploy. Risposta: $(echo "$RESP" | head -c 200)"
+          fi

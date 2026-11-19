@@ -1,0 +1,75 @@
+name: StatIppica — Storici dal registro UNIRE (ogni giorno)
+
+# Novembre 2026 (scripts/storici_unire.py). Recupera a tappe tutti i trottatori
+# nati dal 1990 al 2011 che hanno corso, con anagrafica e totali di carriera dal
+# registro ufficiale UNIRE: entrano fra gli storici, valutati sulla scala di
+# prima (nightly_update.phase_historic_ratings). Ogni giorno lavora per al
+# massimo 150 minuti a una richiesta al secondo e riprende la notte dopo dal
+# punto esatto. Lo lancia per ultimo la regia notturna
+# (scripts/regia_notturna.sh): aspetta che gli altri lavori finiscano
+# (aspetta_turno.sh) e si ferma comunque alle 8:00 italiane, cosi' archivio e
+# sito sono a posto prima delle 9. Lanciato a mano di giorno, lavora i minuti
+# chiesti senza limite di orario.
+
+on:
+  workflow_dispatch:
+    inputs:
+      minuti:
+        description: "Minuti di lavoro"
+        required: false
+        default: "150"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  storici:
+    runs-on: ubuntu-latest
+    # Il limite conta anche l'attesa del turno dietro gli altri lavori: il
+    # 18/11/2026 un giro ha aspettato 71 minuti, poi ha lavorato i suoi 220 ed
+    # e' stato interrotto al limite di 240 prima di pubblicare, perdendo tutto.
+    # Ora i minuti di lavoro si calcolano su quanto resta (vedi sotto).
+    timeout-minutes: 355
+    steps:
+      - name: Segna l'ora di partenza
+        run: echo "PARTENZA=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Recupera gli storici
+        id: storici
+        env:
+          MINUTI: ${{ inputs.minuti || '150' }}
+        run: |
+          set -euo pipefail
+          # Di notte (lancio della regia) si lavora al massimo fino alle 8:00
+          # italiane: dopo restano pubblicazione e deploy, da finire prima delle 9.
+          ORA=$(TZ=Europe/Rome date +%H%M)
+          if [ "$((10#$ORA))" -lt 800 ]; then
+            FINE=$(TZ=Europe/Rome date -d "$(TZ=Europe/Rome date +%Y-%m-%d) 08:00" +%s)
+            RESTANO=$(( (FINE - $(date +%s)) / 60 ))
+            [ "$RESTANO" -lt "$MINUTI" ] && MINUTI=$RESTANO
+          fi
+          # Si lascia sempre il tempo per pubblicare prima del limite del
+          # lavoro (355 minuti dalla partenza, attesa del turno compresa).
+          PASSATI=$(( ($(date +%s) - PARTENZA) / 60 ))
+          MARGINE=$(( 335 - PASSATI ))
+          [ "$MARGINE" -lt "$MINUTI" ] && MINUTI=$MARGINE
+          # Anche se arriva tardi non salta: lavora almeno un quarto d'ora.
+          [ "$MINUTI" -lt 15 ] && MINUTI=15
+          echo "Lavoro per $MINUTI minuti."
+          python3 scripts/storici_unire.py --db data.db --minuti "$MINUTI"
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh

@@ -1,0 +1,74 @@
+name: StatIppica — Weekly Stallion Catalog (tasse di monta e allevamenti)
+on:
+  # Settimanale e non notturno: il catalogo monte cambia poche volte a
+  # stagione, e le 152 schede si leggono in pochi minuti. Lo lancia la regia
+  # notturna nella notte fra domenica e lunedi' (scripts/regia_notturna.sh).
+  workflow_dispatch: {}
+permissions:
+  contents: write # serve per caricare l'archivio nel rilascio
+  actions: read # serve per vedere se un altro lavoro sta gia' pubblicando
+
+jobs:
+  sync:
+    name: Aggiorna i dati del catalogo monte
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4
+      - name: Procura l'archivio
+        # Lo scarica dal rilascio e verifica il numero di gare. Se non torna,
+        # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e
+        # pubblicare al posto di quello vero. La logica sta in un solo script
+        # perche' la usano tutti e quattro i lavori automatici.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Leggi il catalogo e aggiorna il database
+        run: python scripts/sync_stallion_catalog.py --db data.db
+      - name: Ripulisci i nomi degli allevamenti
+        run: python scripts/clean_stud_farm.py --db data.db
+      - name: Pubblica l'archivio aggiornato nel rilascio
+        # NON dentro git: e' il punto di tutto il cambiamento. In git ogni
+        # versione si sommava alle precedenti per sempre, 30 MB che non si
+        # potevano piu' togliere. In un rilascio la copia nuova sostituisce la
+        # vecchia e il peso resta fermo.
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Prima di pubblicare: e' ancora l'archivio buono? Se il lavoro di
+          # prima l'ha danneggiato, pubblicarlo cancellerebbe quello vero.
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          echo "Gare nell'archivio da pubblicare: $GARE"
+          if [ "$GARE" -lt 500000 ]; then
+            echo "::error::solo $GARE gare: non lo pubblico."
+            exit 1
+          fi
+          gzip -9 -c data.db > data.db.gz
+          ls -l data.db.gz
+          bash scripts/pubblica_archivio.sh
+          echo "Archivio pubblicato."
+      - name: Trigger deploy Render
+        if: success()
+        run: |
+          sleep 15
+          RESP=$(curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" || true)
+          DEPLOY_ID=$(echo "$RESP" | sed -n 's/.*"id"[: ]*"\([^"]*\)".*/\1/p' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            echo "Deploy Render avviato: $DEPLOY_ID"
+          else
+            echo "::warning::Render non ha confermato il deploy. Risposta: $(echo "$RESP" | head -c 200)"
+          fi

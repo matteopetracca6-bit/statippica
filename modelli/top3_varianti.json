@@ -1,0 +1,62 @@
+{
+  "v3": {
+    "modello": {
+      "auc": 0.7413,
+      "log_loss": 0.5472,
+      "brier": 0.1851,
+      "tre_scelti_a_segno": 0.5065
+    },
+    "campo_completo": {
+      "auc": 0.7461,
+      "log_loss": 0.5693,
+      "brier": 0.1861,
+      "tre_scelti_a_segno": 0.5373
+    },
+    "temperatura": 1.05
+  },
+  "v3+allenatore": {
+    "modello": {
+      "auc": 0.7423,
+      "log_loss": 0.5462,
+      "brier": 0.1847,
+      "tre_scelti_a_segno": 0.5072
+    },
+    "campo_completo": {
+      "auc": 0.7467,
+      "log_loss": 0.5688,
+      "brier": 0.1858,
+      "tre_scelti_a_segno": 0.5385
+    },
+    "temperatura": 1.05
+  },
+  "v3+livello": {
+    "modello": {
+      "auc": 0.7436,
+      "log_loss": 0.5452,
+      "brier": 0.1842,
+      "tre_scelti_a_segno": 0.5099
+    },
+    "campo_completo": {
+      "auc": 0.7484,
+      "log_loss": 0.5674,
+      "brier": 0.1853,
+      "tre_scelti_a_segno": 0.5416
+    },
+    "temperatura": 1.05
+  },
+  "v4": {
+    "modello": {
+      "auc": 0.7446,
+      "log_loss": 0.5443,
+      "brier": 0.1839,
+      "tre_scelti_a_segno": 0.51
+    },
+    "campo_completo": {
+      "auc": 0.7494,
+      "log_loss": 0.5667,
+      "brier": 0.185,
+      "tre_scelti_a_segno": 0.5423
+    },
+    "temperatura": 1.05
+  }
+}

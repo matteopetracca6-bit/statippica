@@ -1,0 +1,122 @@
+{
+  "nome": "galoppo-xgb-v1",
+  "calcolato_il": "2026-11-02",
+  "esito_contato": "squalifica per galoppo: r.p. (rottura prolungata) o r.a. (galoppo in arrivo)",
+  "periodi": {
+    "impara": "2015-2023",
+    "taratura_e_stop": "2024",
+    "prova": "dal 2025"
+  },
+  "partenze_prova": 104726,
+  "quota_galoppo_prova": 0.201,
+  "auc_modello": 0.6883,
+  "auc_storia_cavallo": 0.6619,
+  "vantaggio_intervallo_95": [
+    0.0235,
+    0.0292
+  ],
+  "brier_modello": 0.1488,
+  "brier_costante": 0.1607,
+  "scarto_massimo_decimi": 0.0198,
+  "decimi": [
+    {
+      "prevista": 0.0548,
+      "vera": 0.0539,
+      "n": 10473
+    },
+    {
+      "prevista": 0.0917,
+      "vera": 0.0833,
+      "n": 10473
+    },
+    {
+      "prevista": 0.1194,
+      "vera": 0.1223,
+      "n": 10472
+    },
+    {
+      "prevista": 0.1446,
+      "vera": 0.1404,
+      "n": 10473
+    },
+    {
+      "prevista": 0.1704,
+      "vera": 0.1715,
+      "n": 10472
+    },
+    {
+      "prevista": 0.1981,
+      "vera": 0.2004,
+      "n": 10473
+    },
+    {
+      "prevista": 0.2295,
+      "vera": 0.2322,
+      "n": 10472
+    },
+    {
+      "prevista": 0.2687,
+      "vera": 0.2718,
+      "n": 10473
+    },
+    {
+      "prevista": 0.3244,
+      "vera": 0.3123,
+      "n": 10472
+    },
+    {
+      "prevista": 0.4416,
+      "vera": 0.4218,
+      "n": 10473
+    }
+  ],
+  "per_anno": {
+    "2025": {
+      "partenze": 57751,
+      "auc_modello": 0.6937,
+      "auc_storia_cavallo": 0.667
+    },
+    "2026": {
+      "partenze": 46975,
+      "auc_modello": 0.6813,
+      "auc_storia_cavallo": 0.6554
+    }
+  },
+  "debutti": {
+    "partenze": 2609,
+    "quota_galoppo": 0.2629,
+    "auc": 0.6299
+  },
+  "fasce_sito": {
+    "basso": {
+      "quota_partenze": 0.2519,
+      "prevista": 0.0815,
+      "vera": 0.0772
+    },
+    "medio": {
+      "quota_partenze": 0.5615,
+      "prevista": 0.198,
+      "vera": 0.1994
+    },
+    "alto": {
+      "quota_partenze": 0.1866,
+      "prevista": 0.3892,
+      "vera": 0.3729
+    }
+  },
+  "soglie_fasce": {
+    "basso_sotto": 0.12,
+    "alto_da": 0.3
+  },
+  "taratura": {
+    "a": 1.0011022090911865,
+    "b": 0.09604000300168991
+  },
+  "alberi": 245,
+  "regole": {
+    "vantaggio_sicuro": true,
+    "fasce_vere": true,
+    "ogni_anno": true
+  },
+  "supera": true
+}

@@ -1,0 +1,377 @@
+{
+ "calcolato_il": "2026-10-18",
+ "costo_anno": 14400,
+ "cavalli_per_scuderia": 5,
+ "principale": {
+  "data": "2025-10-01",
+  "tenere": {
+   "cavalli": 5746,
+   "per_esito": [
+    {
+     "esito": "perdita",
+     "cavalli": 5185,
+     "stima_media": 3697,
+     "vero_medio": 3681,
+     "vero_mediano": 860,
+     "hanno_coperto": 4.9,
+     "sotto_un_terzo": 72.1,
+     "non_hanno_piu_corso": 29.2
+    },
+    {
+     "esito": "pari",
+     "cavalli": 147,
+     "stima_media": 14204,
+     "vero_medio": 12204,
+     "vero_mediano": 10057,
+     "hanno_coperto": 27.2,
+     "sotto_un_terzo": 23.1,
+     "non_hanno_piu_corso": 4.8
+    },
+    {
+     "esito": "profitto",
+     "cavalli": 414,
+     "stima_media": 38728,
+     "vero_medio": 41108,
+     "vero_mediano": 17358,
+     "hanno_coperto": 57.5,
+     "sotto_un_terzo": 13.5,
+     "non_hanno_piu_corso": 1.4
+    }
+   ],
+   "regola_semplice": {
+    "cavalli": 3561,
+    "hanno_coperto": 3.4,
+    "vero_medio": 2664
+   },
+   "in_perdita_che_hanno_coperto": 254,
+   "in_perdita_che_hanno_coperto_quota": 4.9,
+   "in_profitto_che_non_hanno_coperto_quota": 42.5,
+   "premi_totali_stimati": 37290623,
+   "premi_totali_veri": 37899581,
+   "calibrazione_copre": [
+    {
+     "da": 5,
+     "a": 15,
+     "cavalli": 4464,
+     "detta": 5.4,
+     "vera": 2.3
+    },
+    {
+     "da": 15,
+     "a": 30,
+     "cavalli": 597,
+     "detta": 16.7,
+     "vera": 17.6
+    },
+    {
+     "da": 30,
+     "a": 50,
+     "cavalli": 338,
+     "detta": 32.8,
+     "vera": 31.7
+    },
+    {
+     "da": 50,
+     "a": 70,
+     "cavalli": 210,
+     "detta": 50.5,
+     "vera": 51.0
+    },
+    {
+     "da": 70,
+     "a": 100,
+     "cavalli": 137,
+     "detta": 73.6,
+     "vera": 79.6
+    }
+   ]
+  },
+  "scuderie": {
+   "a_caso": {
+    "scuderie": 3000,
+    "in_pari_detto": 6.5,
+    "in_pari_vero": 7.3,
+    "premi_attesi_medi": 32501,
+    "premi_veri_medi": 32349,
+    "dentro_forchetta_10_90": 80.5,
+    "sotto_p10": 10.5,
+    "sopra_p90": 9.1,
+    "calibrazione": [
+     {
+      "da": 0,
+      "a": 10,
+      "scuderie": 2439,
+      "detta": 1.5,
+      "vera": 1.3
+     },
+     {
+      "da": 10,
+      "a": 25,
+      "scuderie": 320,
+      "detta": 16.6,
+      "vera": 19.1
+     },
+     {
+      "da": 25,
+      "a": 50,
+      "scuderie": 169,
+      "detta": 34.9,
+      "vera": 45.0
+     },
+     {
+      "da": 50,
+      "a": 75,
+      "scuderie": 59,
+      "detta": 62.9,
+      "vera": 71.2
+     }
+    ]
+   },
+   "stesso_guidatore": {
+    "scuderie": 807,
+    "in_pari_detto": 8.4,
+    "in_pari_vero": 6.8,
+    "premi_attesi_medi": 36119,
+    "premi_veri_medi": 33204,
+    "dentro_forchetta_10_90": 83.6,
+    "sotto_p10": 9.4,
+    "sopra_p90": 6.9,
+    "calibrazione": [
+     {
+      "da": 0,
+      "a": 10,
+      "scuderie": 644,
+      "detta": 1.2,
+      "vera": 0.8
+     },
+     {
+      "da": 10,
+      "a": 25,
+      "scuderie": 73,
+      "detta": 16.0,
+      "vera": 6.8
+     },
+     {
+      "da": 25,
+      "a": 50,
+      "scuderie": 51,
+      "detta": 37.9,
+      "vera": 29.4
+     },
+     {
+      "da": 75,
+      "a": 100,
+      "scuderie": 22,
+      "detta": 86.7,
+      "vera": 86.4
+     }
+    ]
+   }
+  }
+ },
+ "altre_date": [
+  {
+   "data": "2024-01-01",
+   "cavalli": 5703,
+   "perdita_hanno_coperto": 4.7,
+   "profitto_hanno_coperto": 61.3,
+   "premi_stimati": 35753074,
+   "premi_veri": 37220978,
+   "scuderie_in_pari_detto": 5.7,
+   "scuderie_in_pari_vero": 8.4,
+   "stesso_guidatore_detto": 6.9,
+   "stesso_guidatore_vero": 8.9,
+   "stesso_guidatore_dentro_10_90": 79.7,
+   "a_caso_dentro_10_90": 77.5
+  },
+  {
+   "data": "2024-04-01",
+   "cavalli": 5668,
+   "perdita_hanno_coperto": 4.0,
+   "profitto_hanno_coperto": 59.3,
+   "premi_stimati": 34721038,
+   "premi_veri": 36110626,
+   "scuderie_in_pari_detto": 5.3,
+   "scuderie_in_pari_vero": 7.8,
+   "stesso_guidatore_detto": 7.0,
+   "stesso_guidatore_vero": 7.7,
+   "stesso_guidatore_dentro_10_90": 77.5,
+   "a_caso_dentro_10_90": 78.9
+  },
+  {
+   "data": "2024-07-01",
+   "cavalli": 5525,
+   "perdita_hanno_coperto": 3.7,
+   "profitto_hanno_coperto": 61.4,
+   "premi_stimati": 34034240,
+   "premi_veri": 34432250,
+   "scuderie_in_pari_detto": 6.1,
+   "scuderie_in_pari_vero": 7.3,
+   "stesso_guidatore_detto": 8.7,
+   "stesso_guidatore_vero": 9.5,
+   "stesso_guidatore_dentro_10_90": 82.6,
+   "a_caso_dentro_10_90": 80.2
+  },
+  {
+   "data": "2024-10-01",
+   "cavalli": 5701,
+   "perdita_hanno_coperto": 4.1,
+   "profitto_hanno_coperto": 60.6,
+   "premi_stimati": 36110197,
+   "premi_veri": 38038062,
+   "scuderie_in_pari_detto": 6.6,
+   "scuderie_in_pari_vero": 7.9,
+   "stesso_guidatore_detto": 8.3,
+   "stesso_guidatore_vero": 7.9,
+   "stesso_guidatore_dentro_10_90": 80.9,
+   "a_caso_dentro_10_90": 80.1
+  }
+ ],
+ "asta_2024": {
+  "data_stima": "2024-10-01",
+  "ultimo_dato": "2026-10-14",
+  "quota_stagione_3_anni_gia_corsa": 0.784,
+  "lotti": 238,
+  "venduti": 193,
+  "in_archivio": 190,
+  "stima_totale_2_anni": 847959,
+  "vero_totale_2_anni": 666416,
+  "stima_totale_3_anni_finora": 1970212,
+  "vero_totale_3_anni_finora": 1736328,
+  "correlazione_stima": 0.086,
+  "correlazione_prezzo": 0.183,
+  "per_terzi_di_stima": [
+   {
+    "terzo": "basso",
+    "lotti": 80,
+    "da": 6421,
+    "a": 8056,
+    "vero_medio": 7973,
+    "vero_mediano": 3041,
+    "hanno_corso_a_2": 37.5
+   },
+   {
+    "terzo": "medio",
+    "lotti": 79,
+    "da": 8056,
+    "a": 14722,
+    "vero_medio": 12656,
+    "vero_mediano": 3624,
+    "hanno_corso_a_2": 48.1
+   },
+   {
+    "terzo": "alto",
+    "lotti": 79,
+    "da": 14722,
+    "a": 21385,
+    "vero_medio": 9685,
+    "vero_mediano": 3946,
+    "hanno_corso_a_2": 46.8
+   }
+  ],
+  "per_terzi_di_prezzo": [
+   {
+    "terzo": "basso",
+    "lotti": 65,
+    "da": 3000,
+    "a": 17000,
+    "vero_medio": 6132,
+    "vero_mediano": 895,
+    "hanno_corso_a_2": 30.8
+   },
+   {
+    "terzo": "medio",
+    "lotti": 64,
+    "da": 17000,
+    "a": 30000,
+    "vero_medio": 11126,
+    "vero_mediano": 5304,
+    "hanno_corso_a_2": 60.9
+   },
+   {
+    "terzo": "alto",
+    "lotti": 64,
+    "da": 30000,
+    "a": 220000,
+    "vero_medio": 14014,
+    "vero_mediano": 3583,
+    "hanno_corso_a_2": 39.1
+   }
+  ],
+  "prezzi_pagati": 5584000,
+  "premi_venduti_due_anni": 2007568,
+  "ripagati_con_due_anni": 24,
+  "migliori": [
+   {
+    "puledro": "IN THE NIGHT GAR",
+    "padre": "VICTOR GIO",
+    "prezzo": 48000,
+    "stima": 12332,
+    "vero": 154646
+   },
+   {
+    "puledro": "IN THE WIND GAR",
+    "padre": "CAPTAIN COREY",
+    "prezzo": 24000,
+    "stima": 8056,
+    "vero": 147223
+   },
+   {
+    "puledro": "ITAN PAL FERM",
+    "padre": "THE BANK",
+    "prezzo": 11000,
+    "stima": 14722,
+    "vero": 131709
+   },
+   {
+    "puledro": "IFIGENIA OF BROWN",
+    "padre": "WALNER",
+    "prezzo": 105000,
+    "stima": 13605,
+    "vero": 127918
+   },
+   {
+    "puledro": "INIMITABLE",
+    "padre": "BAR HOPPING",
+    "prezzo": 28000,
+    "stima": 8583,
+    "vero": 123587
+   },
+   {
+    "puledro": "IZOARD BLUE GRIF",
+    "padre": "READLY EXPRESS",
+    "prezzo": null,
+    "stima": 13652,
+    "vero": 89570
+   },
+   {
+    "puledro": "ICEBERG BI",
+    "padre": "READLY EXPRESS",
+    "prezzo": 60000,
+    "stima": 13652,
+    "vero": 58042
+   },
+   {
+    "puledro": "IDRA PAL BAR",
+    "padre": "FACE TIME BOURBON",
+    "prezzo": 75000,
+    "stima": 20118,
+    "vero": 48918
+   },
+   {
+    "puledro": "ITALO JET",
+    "padre": "MAHARAJAH",
+    "prezzo": 39000,
+    "stima": 15235,
+    "vero": 39766
+   },
+   {
+    "puledro": "IRON WISE L",
+    "padre": "MAHARAJAH",
+    "prezzo": 33000,
+    "stima": 15235,
+    "vero": 37988
+   }
+  ]
+ }
+}

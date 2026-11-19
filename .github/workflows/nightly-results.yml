@@ -1,0 +1,109 @@
+name: StatIppica — Nightly Results (gare mancanti + cavalli nuovi)
+on:
+  # Niente orario programmato (GitHub lo faceva partire con 6-9 ore di
+  # ritardo, in pieno giorno): lo lancia la regia notturna dopo l'una di
+  # notte, ora italiana (scripts/regia_notturna.sh).
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Motivo del trigger manuale"
+        required: false
+        default: "trigger manuale"
+jobs:
+  nightly-results:
+    name: Esegui nightly_update.py (mode=results)
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4 numpy pandas scikit-learn  # numpy e pandas: pronostico dei primi tre; scikit-learn: forza (forza.py)
+      - name: Procura l'archivio
+        # Lo scarica dal rilascio e verifica il numero di gare. Se non torna,
+        # si ferma: lavorare senza archivio lo farebbe ricreare vuoto e
+        # pubblicare al posto di quello vero. La logica sta in un solo script
+        # perche' la usano tutti e quattro i lavori automatici.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Esegui nightly_update.py (results)
+        env:
+          NIGHTLY_MODE: results
+          DB_PATH: data.db
+          REPO_DB_PATH: data.db
+          GITHUB_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+          GITHUB_USER: matteopetracca6-bit
+          GITHUB_REPO: statippica
+        run: python nightly_update.py
+
+      # Consigliere di allevamento, previsione dei puledri e valore di carriera: prima si rifacevano a
+      # mano e restavano fermi. Ora si ricalcolano ogni notte sull'archivio
+      # appena aggiornato (circa 2 minuti). Se qualcosa va storto non blocca il
+      # resto: resta online la versione della notte prima.
+      - name: Ricalcola consigliere e valore di carriera
+        id: consigliere
+        continue-on-error: true
+        run: |
+          python3 scripts/career_data.py
+          python3 scripts/career_table.py > /dev/null
+          python3 scripts/career_model.py > /dev/null
+          python3 scripts/advisor_model.py > /dev/null
+          python3 scripts/puledri_model.py > /dev/null
+          python3 scripts/controlla_calcoli_consigliere.py
+      - name: Pubblica consigliere e valore di carriera
+        if: steps.consigliere.outcome == 'success'
+        continue-on-error: true
+        run: |
+          git config user.email "nightly@statippica.bot"
+          git config user.name "StatIppica Nightly"
+          git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
+          git add advisor_model.json advisor_backtest.json career_value_model.json puledri_model.json puledri_verifica.json
+          if git diff --cached --quiet; then
+            echo "Nessun cambiamento nei calcoli."
+          else
+            # Il messaggio inizia con "nightly update": il deploy lo lancia il
+            # passo qui sotto, non serve un secondo deploy al push.
+            git commit -q -m "nightly update consigliere e valore di carriera $(date -u '+%Y-%m-%d')"
+            git pull -q --rebase --autostash origin main
+            git push -q origin main && echo "Calcoli pubblicati."
+          fi
+
+      # Controlla che ogni dato mostrato dal sito abbia un lavoro automatico che
+      # lo aggiorna. Non blocca il flusso: l'archivio e' gia' stato aggiornato e
+      # va pubblicato comunque. Segnala e basta, perche' il guasto tipico qui e'
+      # silenzioso — una catena che si rompe e una pagina che continua a
+      # mostrare dati vecchi senza errori.
+      - name: Controlla che tutte le pagine si aggiornino
+        if: always()
+        continue-on-error: true
+        run: python3 scripts/controlla_aggiornamenti.py
+      - name: Trigger deploy Render dopo aggiornamento DB
+        if: success()
+        run: |
+          # Pausa breve: da' tempo al webhook GitHub->Render di arrivare, altrimenti
+          # Render puo' deployare l'ultimo commit che conosceva PRIMA di questo push
+          # (race condition osservata: deploy sull'commit precedente, non quello nuovo)
+          sleep 15
+          # La risposta di Render non e' sempre JSON (errore HTML, rate limit, 5xx).
+          # Con json.load diretto il passo andava in JSONDecodeError e faceva
+          # fallire l'intero job DOPO che i dati erano gia' stati salvati e
+          # committati: un allarme falso che nasconde i fallimenti veri.
+          # Ora il deploy non confermato e' un warning, non un errore.
+          RESP=$(curl -s -m 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" || true)
+          DEPLOY_ID=$(echo "$RESP" | sed -n 's/.*"id"[: ]*"\([^"]*\)".*/\1/p' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            echo "Deploy Render avviato: $DEPLOY_ID"
+          else
+            echo "::warning::Render non ha confermato il deploy. Risposta: $(echo "$RESP" | head -c 200)"
+          fi
