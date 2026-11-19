@@ -68,6 +68,18 @@ jobs:
           [ "$MINUTI" -lt 15 ] && MINUTI=15
           echo "Lavoro per $MINUTI minuti."
           python3 scripts/storici_unire.py --db data.db --minuti "$MINUTI"
+      - name: Voti da pedigree (anche i mai corsi appena entrati)
+        run: |
+          pip install numpy pandas >/dev/null 2>&1 || true
+          python3 - <<'PY' || echo "::warning::voti da pedigree non ricalcolati: li rifa' il notturno"
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          nu.phase_voti_pedigree(conn)
+          conn.close()
+          PY
       - name: Pubblica l'archivio aggiornato
         env:
           GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
