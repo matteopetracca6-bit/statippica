@@ -35,7 +35,7 @@ function sessoSoggetto(d: PedigreeData) {
 
 export default function PedigreePage() {
   const [search, setSearch] = useState("");
-  const [gens, setGens] = useState(5);
+  const [gens, setGens] = useState(4);
   const [hoveredAncestor, setHoveredAncestor] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<PedigreeData>({
@@ -73,7 +73,7 @@ export default function PedigreePage() {
   return (
     <div className="page-shell">
       <IntestazionePagina icona={Network} colore={COLORE_PED} titolo="Pedigree" margineSotto={18}
-        sottotitolo="Albero genealogico fino a cinque generazioni, consanguineità e incroci ripetuti, per qualunque cavallo in archivio." />
+        sottotitolo="Albero genealogico fino ai trisavoli, consanguineità e incroci ripetuti, per qualunque cavallo in archivio." />
 
       {/* Scelta del cavallo: tendina con ricerca, non piu' solo testo libero */}
       <div className="pannello" style={{ padding: "16px 20px", marginBottom: "24px",
@@ -88,10 +88,10 @@ export default function PedigreePage() {
         />
         <div>
           <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(210 8% 50%)", marginBottom: "6px" }}>
-            Generazioni
+            Fino a
           </div>
           <div style={{ display: "flex", gap: "4px" }}>
-            {[3, 4, 5].map(g => (
+            {([[2, "Nonni"], [3, "Bisnonni"], [4, "Trisavoli"]] as [number, string][]).map(([g, etichetta]) => (
               <button
                 key={g}
                 onClick={() => setGens(g)}
@@ -102,7 +102,7 @@ export default function PedigreePage() {
                   border: `1px solid ${gens === g ? "hsl(183 100% 45%)" : "hsl(220 12% 22%)"}`,
                   color: gens === g ? "hsl(183 80% 68%)" : "hsl(210 8% 58%)",
                 }}
-              >{g}</button>
+              >{etichetta}</button>
             ))}
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function PedigreePage() {
               <Network size={17} /> Scegli un cavallo per vedere il suo albero
             </div>
             <div style={{ fontSize: 13, color: "hsl(210 8% 62%)", lineHeight: 1.65, marginTop: 8 }}>
-              Si vedono padre, madre e gli antenati fino a cinque generazioni, e, quando c'è, il voto del cavallo scelto.
+              Si vedono padre, madre e gli antenati fino ai trisavoli, con il voto da atleta e da stallone o fattrice di ognuno, e, quando c'è, il voto del cavallo scelto.
               Sotto l'albero c'è il coefficiente di consanguineità e l'elenco degli antenati che compaiono più di una volta.
             </div>
           </div>
