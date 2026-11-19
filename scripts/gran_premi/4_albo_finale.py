@@ -39,9 +39,9 @@ NOMI={"derby":"Derby Italiano del Trotto","lotteria":"Gran Premio Lotteria di Ag
  "napoli":"Gran Premio Città di Napoli","napoli_filly":"Gran Premio Città di Napoli Filly",
  "duomo":"Premio Duomo","europeo":"Campionato Europeo (finale)","biasuzzi":"Gran Premio Giuseppe Biasuzzi",
  "duemari":"Gran Premio Due Mari","sicilia":"Gran Premio Regione Sicilia","torino":"Gran Premio Città di Torino",
- "cacciari":"Premio Carlo Cacciari","firenze":"Premio Firenze","carena":"Gran Premio Antonio Carena",
+ "cacciari":"Premio Carlo Cacciari Filly","firenze":"Premio Firenze","carena":"Gran Premio Antonio Carena",
  "orlandi":"Premio Renzo Orlandi"}
-DIV={"italia","allevatori","anact","torino","cacciari"}
+DIV={"italia","allevatori","anact","torino"}
 FONTE_UFF="https://database.grandeippicaitaliana.it/risultati/giornata/T/{c}/{d}"
 out=[]
 extra_rows={"mangelli":[('2018-11-01','IT44',8)],"nazioni":[('2018-11-01','IT44',7)],"ue":[('2020-11-15','IT34',5)]}
@@ -62,7 +62,7 @@ for k,xs in C.items():
             # ANACT: le due finali possono cadere in giorni diversi (2024: la
             # maschile rinviata al lunedi' per la nebbia), quindi la divisione
             # si legge sempre dal nome.
-            if k in ('torino','cacciari'):
+            if k=='torino':
                 # Maschi e femmine quando il nome lo dice; una sola corsa senza
                 # indicazione e' aperta a tutti.
                 div=("Femmine" if re.search(r"FILL|FEMMIN",n) else "Maschi" if re.search(r"MASCH",n)
