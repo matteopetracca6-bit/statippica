@@ -796,8 +796,7 @@ export default function HorsePage() {
       )}
       <section id="sez-palmares"><Palmares nome={horse.name} anno={horse.birth_year} /></section>
 
-      {((horse.rating_mode === "performance" && (horse.grade_annata || horse.affidabilita_voto?.disponibile || horse.voto_previsto || curvaPronta((horse as any).forza)))
-        || (horse.career_earnings ?? 0) > 0) && (
+      {horse.rating_mode === "performance" && (
       <div className="pannello in-breve" style={panelStyle}>
         <div style={panelTitle}>In breve</div>
         <div className="in-breve-griglia">
@@ -883,10 +882,59 @@ export default function HorsePage() {
             )}
             </div>
           )}
-          <div className="in-breve-parte">
-            <div className="in-breve-titolo">Guadagni</div>
-            <RigaSoldi horse={horse} />
+          {/* 20/11/2026: a destra del voto i percentili nella generazione (prima
+              in "Il voto in dettaglio"); i guadagni erano gia' in testa e in
+              Economia. */}
+          {horse.rating_mode === "performance" && (
+          <div id="sez-percentili" className="in-breve-parte">
+              <div className="in-breve-titolo">Percentili generazione {horse.birth_year}</div>
+              <PercentileBar label="Guadagni" value={horse.earn_percentile} />
+              <PercentileBar label="Miglior tempo" value={horse.time_percentile} />
+              {horse.tenuta_percentile != null && (
+                <PercentileBar label="Stagioni corse" value={horse.tenuta_percentile} />
+              )}
+              {horse.integrita_percentile != null && (
+                <PercentileBar label="Continuita' per la sua eta'" value={horse.integrita_percentile} />
+              )}
+              {horse.sire_percentile != null && (
+                <PercentileBar label={`vs fratellastri (${horse.sire})`} value={horse.sire_percentile} />
+              )}
+              {/* Il rapporto stagioni corse su possibili diventa un numero, non
+                  una frase: era il dato piu' concreto del riquadro e stava
+                  sepolto in fondo a un paragrafo. */}
+              {horse.stagioni_corse != null && horse.stagioni_possibili != null && (
+                <div className="tabular" style={{
+                  fontSize: 12.5, color: "hsl(210 10% 78%)", marginTop: 12,
+                  paddingTop: 10, borderTop: "1px solid hsl(220 10% 16%)",
+                }}>
+                  Stagioni corse:{" "}
+                  <strong style={{ color: "hsl(210 10% 92%)" }}>
+                    {Math.min(horse.stagioni_corse, horse.stagioni_possibili)} su {horse.stagioni_possibili}
+                  </strong>{" "}
+                  <span style={{ color: "var(--muted)" }}>possibili fino ai 7 anni</span>
+                  {horse.stagioni_corse > horse.stagioni_possibili && (
+                    <span style={{ color: "var(--muted)" }}> · {horse.stagioni_corse} in tutto</span>
+                  )}
+                </div>
+              )}
+
+              <Spiegazione titolo="Che cosa sono i percentili">
+                <p style={{ margin: "0 0 8px" }}>
+                  Ogni barra dice quanti cavalli nati nello stesso anno questo cavallo lascia
+                  dietro di sé. Il 90% sui guadagni vuol dire che ha guadagnato pi&ugrave; di nove
+                  coetanei su dieci. Il confronto è sempre dentro l&apos;annata, così i giovani
+                  non risultano scarsi solo perch&eacute; hanno corso meno.
+                </p>
+                <p style={{ margin: 0 }}>
+                  &laquo;Stagioni corse&raquo; misura quante annate il cavallo è rimasto in
+                  attivit&agrave;, &laquo;continuit&agrave; per la sua et&agrave;&raquo; lo rapporta
+                  a quante avrebbe potuto correrne fino ai 7 anni. La seconda serve a non punire un tre anni per
+                  non avere ancora la carriera di un nove anni, e a non punire chi smette a 7 anni, per esempio per andare in razza. Il voto tiene conto di entrambe:
+                  una carriera lunga vale pi&ugrave; di una stagione brillante.
+                </p>
+              </Spiegazione>
           </div>
+          )}
         </div>
       </div>
       )}
@@ -898,118 +946,6 @@ export default function HorsePage() {
           </div>
       )}
 
-      {horse.rating_mode === "performance" && (
-        <SezioneScheda id="voto" titolo="Il voto in dettaglio"
-          riassunto={`Percentili nella generazione ${horse.birth_year} e come si legge la lettera`}>
-          <div className="pannello pannello-unito voto-dettaglio" style={panelStyle}>
-                <div id="sez-percentili" className="sotto-sezione">
-      {horse.rating_mode === "performance" && (
-          <div id="sez-percentili" className="sotto-sezione">
-            <div style={panelTitle}>Percentili generazione {horse.birth_year}</div>
-            <PercentileBar label="Guadagni" value={horse.earn_percentile} />
-            <PercentileBar label="Miglior tempo" value={horse.time_percentile} />
-            {horse.tenuta_percentile != null && (
-              <PercentileBar label="Stagioni corse" value={horse.tenuta_percentile} />
-            )}
-            {horse.integrita_percentile != null && (
-              <PercentileBar label="Continuita' per la sua eta'" value={horse.integrita_percentile} />
-            )}
-            {horse.sire_percentile != null && (
-              <PercentileBar label={`vs fratellastri (${horse.sire})`} value={horse.sire_percentile} />
-            )}
-            {/* Il rapporto stagioni corse su possibili diventa un numero, non
-                una frase: era il dato piu' concreto del riquadro e stava
-                sepolto in fondo a un paragrafo. */}
-            {horse.stagioni_corse != null && horse.stagioni_possibili != null && (
-              <div className="tabular" style={{
-                fontSize: 12.5, color: "hsl(210 10% 78%)", marginTop: 12,
-                paddingTop: 10, borderTop: "1px solid hsl(220 10% 16%)",
-              }}>
-                Stagioni corse:{" "}
-                <strong style={{ color: "hsl(210 10% 92%)" }}>
-                  {Math.min(horse.stagioni_corse, horse.stagioni_possibili)} su {horse.stagioni_possibili}
-                </strong>{" "}
-                <span style={{ color: "var(--muted)" }}>possibili fino ai 7 anni</span>
-                {horse.stagioni_corse > horse.stagioni_possibili && (
-                  <span style={{ color: "var(--muted)" }}> · {horse.stagioni_corse} in tutto</span>
-                )}
-              </div>
-            )}
-
-            <Spiegazione titolo="Che cosa sono i percentili">
-              <p style={{ margin: "0 0 8px" }}>
-                Ogni barra dice quanti cavalli nati nello stesso anno questo cavallo lascia
-                dietro di sé. Il 90% sui guadagni vuol dire che ha guadagnato pi&ugrave; di nove
-                coetanei su dieci. Il confronto è sempre dentro l&apos;annata, così i giovani
-                non risultano scarsi solo perch&eacute; hanno corso meno.
-              </p>
-              <p style={{ margin: 0 }}>
-                &laquo;Stagioni corse&raquo; misura quante annate il cavallo è rimasto in
-                attivit&agrave;, &laquo;continuit&agrave; per la sua et&agrave;&raquo; lo rapporta
-                a quante avrebbe potuto correrne fino ai 7 anni. La seconda serve a non punire un tre anni per
-                non avere ancora la carriera di un nove anni, e a non punire chi smette a 7 anni, per esempio per andare in razza. Il voto tiene conto di entrambe:
-                una carriera lunga vale pi&ugrave; di una stagione brillante.
-              </p>
-            </Spiegazione>
-          </div>
-      )}
-                </div>
-                <div className="sotto-sezione">
-                <div style={panelTitle}>Come leggere questo voto</div>
-            {horse.voto_previsto && (
-              <Spiegazione titolo="Come si stima il voto a fine carriera">
-                <p style={{ margin: "0 0 8px" }}>
-                  È una stima sperimentale, non un giudizio. Un modello ha imparato dai cavalli nati
-                  fra il 2012 e il 2016 come cambia il voto dopo i primi anni, guardando corse,
-                  vittorie, piazzamenti, premi, tempi, livello delle corse e i fratelli più vecchi
-                  per parte di padre. Il confronto è con i nati nello stesso anno, e la tenuta non
-                  conta, perché a questa età non si può misurare.
-                </p>
-                <p style={{ margin: "0 0 8px" }}>
-                  Provato sui nati del 2015 e del 2016 ({horse.voto_previsto.prova.cavalli.toLocaleString("it-IT")} cavalli
-                  a {horse.voto_previsto.eta} anni): la lettera finale era quella stimata
-                  nel {Math.round(horse.voto_previsto.prova.giusta_modello * 100)}% dei casi, contro
-                  il {Math.round(horse.voto_previsto.prova.giusta_attuale * 100)}% del voto di allora; quella stimata
-                  o una accanto nel {Math.round(horse.voto_previsto.prova.accanto_modello * 100)}%,
-                  contro il {Math.round(horse.voto_previsto.prova.accanto_attuale * 100)}%.
-                  L&apos;intervallo conteneva la lettera finale
-                  nel {Math.round(horse.voto_previsto.prova.copertura * 100)}% dei casi.
-                </p>
-                <p style={{ margin: 0 }}>
-                  Compare solo dai 2 ai 4 anni: a 5 anni il voto attuale è già quasi definitivo e
-                  la stima non lo batteva in modo netto.
-                </p>
-              </Spiegazione>
-            )}
-
-            {(horse.affidabilita_voto?.disponibile || horse.grade_annata) && (
-              <Spiegazione titolo="Perché due lettere, e quanto durano">
-                {horse.grade_annata && horse.grade_annata !== horse.grade && (
-                  <p style={{ margin: "0 0 8px" }}>
-                    Le due lettere nascono dallo stesso punteggio: cambia solo con chi viene
-                    confrontato. Il voto generale mette insieme tutte le generazioni, e i
-                    cavalli giovani ne escono penalizzati perche&apos; hanno avuto meno anni
-                    per correre e guadagnare.
-                  </p>
-                )}
-                {horse.affidabilita_voto?.disponibile && (
-                  <>
-                    <p style={{ margin: "0 0 8px" }}>{horse.affidabilita_voto.frase}</p>
-                    <p style={{ margin: 0 }}>
-                      Misurato su {horse.affidabilita_voto.n?.toLocaleString("it-IT")} cavalli
-                      nati fra il 2012 e il 2016, di cui la carriera e&apos; conclusa: per ogni
-                      eta&apos; si ricostruisce il voto che avevano allora, usando solo le gare
-                      corse entro quel momento, e si guarda dove sono finiti. È una statistica
-                      di gruppo, non una previsione su questo cavallo.
-                    </p>
-                  </>
-                )}
-              </Spiegazione>
-            )}
-                </div>
-          </div>
-        </SezioneScheda>
-      )}
 
       {(horse.qualifica || (horse.races?.length ?? 0) > 0 || (stats?.yearlyStats?.length ?? 0) > 0 || (stats?.bestRaces?.length ?? 0) > 0) && (
       <SezioneScheda id="gare" titolo="Carriera e gare" apertaDaComputer
