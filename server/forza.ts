@@ -1,8 +1,9 @@
 /**
- * Forza e curva di carriera (novembre 2026, forza.py).
+ * Forza e curva del voto di carriera (novembre 2026, forza.py).
  *
  * Il calcolo e' notturno, in Python: forza_cavallo (oggi), forza_stagioni
- * (fine anno per eta') e curva_carriera (eta' future). Qui si leggono per la
+ * (voto di carriera e forza a fine anno, per eta'), curva_carriera (eta'
+ * future) e voto_soglie (le lettere del voto). Qui si leggono per la
  * scheda del cavallo, con l'esito della verifica (modelli/forza_verifica.json).
  */
 import fs from "fs";
@@ -32,6 +33,8 @@ export function forzaCavallo(db: Database.Database, nome: string) {
   if (!f) return null;
   const stagioni = db.prepare(`SELECT * FROM forza_stagioni
                                WHERE horse_name = ? ORDER BY eta`).all(nome) as any[];
+  const soglie = tabella(db, "voto_soglie")
+    ? (db.prepare(`SELECT grado, soglia FROM voto_soglie ORDER BY soglia DESC`).all() as any[]) : [];
   const curva = db.prepare(`SELECT eta, mediana, basso, alto FROM curva_carriera
                             WHERE horse_name = ? ORDER BY eta`).all(nome) as any[];
   if (!stagioni.length && !curva.length) return null;
@@ -41,11 +44,12 @@ export function forzaCavallo(db: Database.Database, nome: string) {
     ultima_corsa: f.ultima_corsa, ferma: !!f.ferma,
     potenziale: f.potenziale, potenziale_basso: f.potenziale_basso, potenziale_alto: f.potenziale_alto,
     potenziale_eta: f.potenziale_eta, picco: f.picco, picco_eta: f.picco_eta,
-    nato: f.birth_year, stagioni, curva, calcolato_il: f.calcolato_il,
+    nato: f.birth_year, stagioni, curva, soglie, calcolato_il: f.calcolato_il,
     verifica: v ? {
       forza: v.forza ? { esito: v.forza.esito, ordine_giusto: v.forza.ordine_giusto, corse: v.forza.corse } : null,
       curva: v.curva ? { esito: v.curva.esito, errore_modello: v.curva.errore_modello,
-                         errore_resta_com_e: v.curva.errore_resta_com_e, copertura_80: v.curva.copertura_80 } : null,
+                         errore_riferimento: v.curva.errore_crescita_tipica ?? v.curva.errore_resta_com_e,
+                         copertura_80: v.curva.copertura_80 } : null,
     } : null,
   };
 }

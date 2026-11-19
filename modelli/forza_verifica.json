@@ -1,5 +1,5 @@
 {
- "versione": "forza-v1",
+ "versione": "forza-v2",
  "calcolato_il": "2026-11-19",
  "forza": {
   "corse": 5051,
@@ -8,35 +8,35 @@
   "esito": "affidabile"
  },
  "curva": {
-  "taratura": 1.08,
-  "esempi_prova": 13353,
-  "errore_modello": 18.48,
-  "errore_resta_com_e": 25.06,
-  "copertura_80": 0.795,
+  "taratura": 1.02,
+  "esempi_prova": 35295,
+  "errore_modello": 7.07,
+  "errore_crescita_tipica": 8.19,
+  "copertura_80": 0.793,
   "per_anni_avanti": {
    "1": {
-    "n": 4816,
-    "errore_modello": 15.19,
-    "errore_resta_com_e": 23.74,
-    "copertura_80": 0.794
+    "n": 10202,
+    "errore_modello": 3.87,
+    "errore_crescita_tipica": 4.71,
+    "copertura_80": 0.821
    },
    "2": {
-    "n": 4056,
-    "errore_modello": 20.11,
-    "errore_resta_com_e": 25.48,
-    "copertura_80": 0.802
+    "n": 9507,
+    "errore_modello": 6.49,
+    "errore_crescita_tipica": 7.55,
+    "copertura_80": 0.794
    },
    "3": {
-    "n": 2752,
-    "errore_modello": 20.99,
-    "errore_resta_com_e": 26.16,
-    "copertura_80": 0.785
+    "n": 8392,
+    "errore_modello": 8.61,
+    "errore_crescita_tipica": 9.83,
+    "copertura_80": 0.775
    },
    "4": {
-    "n": 1729,
-    "errore_modello": 19.86,
-    "errore_resta_com_e": 26.0,
-    "copertura_80": 0.798
+    "n": 7194,
+    "errore_modello": 10.6,
+    "errore_crescita_tipica": 12.1,
+    "copertura_80": 0.775
    }
   },
   "esito": "affidabile"
