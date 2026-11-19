@@ -58,7 +58,7 @@ PARTITI=$(gh api --paginate "repos/$REPO/actions/runs?per_page=100&created=%3E%3
 
 GIORNO=$(TZ=Europe/Rome date +%u)   # 1 = lunedi'
 LAVORI="nightly-results.yml nightly-maintenance.yml archivio-allenatori.yml totali-mondiali.yml"
-[ "$GIORNO" = "1" ] && LAVORI="$LAVORI weekly-stallion-catalog.yml nightly-pedigree.yml"
+[ "$GIORNO" = "1" ] && LAVORI="$LAVORI weekly-stallion-catalog.yml nightly-pedigree.yml gran-premi.yml"
 LAVORI="$LAVORI archivio-storici-unire.yml"
 
 MANCANO=""

@@ -1,4 +1,4 @@
-import json,re,sqlite3
+import json,re,sqlite3,datetime as _dt
 C=json.load(open('cand.json'))
 R=json.load(open('corse.json'))
 db=sqlite3.connect('/tmp/gendir/data.db')
@@ -87,7 +87,7 @@ from collections import Counter
 c=Counter((r['gara'],r['anno'],r['divisione']) for r in out)
 print("dup",[k for k,v in c.items() if v>1])
 for k in NOMI:
-    ys=sorted({r['anno'] for r in out if r['gara']==k}); miss=[y for y in range(2014,2027) if y not in ys]
+    ys=sorted({r['anno'] for r in out if r['gara']==k}); miss=[y for y in range(2014,_dt.date.today().year+1) if y not in ys]
     print(k,len([r for r in out if r['gara']==k]),"mancano",miss)
 print("senza nato",[ (r['vincitore'],r['anno']) for r in out if not r['nato']])
 def norm_drv(d):
