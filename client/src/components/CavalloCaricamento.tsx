@@ -1,3 +1,5 @@
+import FrasiCaricamento from "./FrasiCaricamento";
+
 /**
  * Cavallo al galoppo, animazione di caricamento.
  *
@@ -181,9 +183,11 @@ export default function CavalloCaricamento({
         style={{ width: size, height: "2px", borderRadius: "1px" }}
       />
 
-      <div style={{ fontSize: "13px", color: "hsl(210 8% 45%)", letterSpacing: "0.03em" }}>
-        {label}
-      </div>
+      {/* 20/11/2026: al posto dell'etichetta fissa, frasi ippiche che
+          cambiano ogni 3 secondi con la barretta blu. L'etichetta resta per
+          chi usa un lettore di schermo. */}
+      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>{label}</span>
+      <FrasiCaricamento />
     </div>
   );
 }
