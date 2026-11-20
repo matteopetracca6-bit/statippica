@@ -5802,6 +5802,8 @@ def main():
             sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
             from nazionalita_stalloni import applica as phase_nazionalita_stalloni
             print(f"[NAZIONALITA] {phase_nazionalita_stalloni(conn)}", file=sys.stderr)
+            from monte_stalloni import applica as phase_monte_stalloni
+            print(f"[MONTE] {phase_monte_stalloni(conn)}", file=sys.stderr)
         except Exception as e:
             print(f"[NAZIONALITA] errore: {e}", file=sys.stderr)
         try:
