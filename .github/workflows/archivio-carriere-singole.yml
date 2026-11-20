@@ -1,0 +1,78 @@
+name: StatIppica — Carriere di singoli cavalli da UNIRE (a mano)
+
+# 20/11/2026 (scripts/carriere_singole.py). Carriera in Italia di singoli
+# cavalli da UNIRE (per esempio LEMON DRA, 1986), poi ricalcolo di voti,
+# stalloni, fattrici e forza, pubblicazione dell'archivio e del sito.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cavalli:
+        description: "Cavalli, separati da virgola: NOME:ANNO:SESSO"
+        required: true
+        default: "LEMON DRA:1986:M"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  carriere:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4 numpy pandas scikit-learn
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Carriere da UNIRE
+        env:
+          CAVALLI: ${{ inputs.cavalli }}
+        run: |
+          IFS=',' read -ra LISTA <<< "$CAVALLI"
+          python3 scripts/carriere_singole.py --db data.db "${LISTA[@]}"
+      - name: Ricalcola classi, voti e forza
+        env:
+          DB_PATH: data.db
+          CAVALLI: ${{ inputs.cavalli }}
+        run: |
+          python3 - <<'PY'
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          nu.init_db(conn)                  # classi: fino al 2011 storici, dal 2012 atleti
+          conn.commit()
+          nu.phase_ratings(conn)
+          nu.phase_historic_ratings(conn)
+          nu.phase_stallion_ratings(conn)
+          nu.phase_dam_ratings(conn)
+          conn.commit()
+          import forza
+          forza.calcola(conn)
+          for n in [x.split(":")[0].strip().upper() for x in __import__("os").environ.get("CAVALLI", "").split(",") if x.strip()]:
+              print(n, conn.execute("SELECT h.birth_year, h.career_races, h.career_earnings, r.rating_mode, r.grade FROM horses h LEFT JOIN horse_ratings r ON r.name = h.name WHERE h.name = ?", (n,)).fetchall(),
+                    conn.execute("SELECT grade FROM stallion_rating_stats WHERE sire = ?", (n,)).fetchone())
+          conn.close()
+          PY
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
+      - name: Chiedi a Render di ripubblicare il sito
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 300; echo
