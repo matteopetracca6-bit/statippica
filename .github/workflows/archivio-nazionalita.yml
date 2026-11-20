@@ -31,6 +31,7 @@ jobs:
           DB_PATH: data.db
         run: |
           python3 scripts/nazionalita_stalloni.py --db data.db
+          python3 scripts/monte_stalloni.py --db data.db
           python3 - <<'PY'
           import importlib.util, sqlite3
           spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
