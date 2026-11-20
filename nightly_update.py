@@ -3779,8 +3779,14 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
     n_figli_tutti = 0
 
     for (sire_name,) in stallions:
+        # 20/11/2026: il voto di ogni figlio e' quello nella sua annata, non
+        # quello contro tutte le generazioni. Con il voto generale uno stallone
+        # con figli di 2-3 anni risultava F solo perche' i figli sono giovani
+        # (EL IDEAL: 13 figli su 95 S o meglio fra i coetanei, 3 su 95 contro
+        # tutti). Dove l'annata e' troppo piccola per avere un voto proprio
+        # resta il voto generale.
         children = conn.execute("""
-            SELECT grade FROM horse_ratings
+            SELECT COALESCE(grade_annata, grade) FROM horse_ratings
             WHERE UPPER(TRIM(sire))=UPPER(TRIM(?)) AND rating_mode=\'performance\'
         """, (sire_name,)).fetchall()
 
@@ -5006,8 +5012,9 @@ def phase_dam_ratings(conn: sqlite3.Connection):
     """).fetchall()
 
     ratings: dict[tuple, tuple] = {}
+    # 20/11/2026: come per gli stalloni, il voto dei figli nella loro annata.
     for name, birth_year, grade, score, earn in conn.execute("""
-        SELECT name, birth_year, grade, score, career_earnings
+        SELECT name, birth_year, COALESCE(grade_annata, grade), score, career_earnings
         FROM horse_ratings
         WHERE rating_mode = 'performance'
           AND COALESCE(horse_class, 'athlete') = 'athlete'
