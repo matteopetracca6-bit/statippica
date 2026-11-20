@@ -6,8 +6,8 @@ import { Link } from "wouter";
 /**
  * PANNELLO CONSANGUINEITA'.
  *
- * Mostra gli antenati che ricorrono sia dalla parte del padre sia da quella
- * della madre. La sigla "4+5" significa che quell'antenato compare due volte
+ * Mostra gli antenati che compaiono piu' di una volta nell'albero, dalla
+ * parte del padre, da quella della madre o da tutte e due. La sigla "4+5" significa che quell'antenato compare due volte
  * su quel lato, alla quarta e alla quinta generazione; un trattino significa
  * che su quel lato non compare.
  *
@@ -128,10 +128,12 @@ export default function InbreedingPanel({ horseName }: { horseName: string }) {
           {/* La spiegazione della notazione serve una volta sola: chi la
               conosce non deve rileggerla a ogni cavallo. */}
           <Spiegazione titolo="Come si legge" compatta>
-            Questi antenati compaiono da entrambe le parti dell'albero. Le cifre indicano a
+            Questi antenati compaiono più di una volta nell'albero. Le cifre indicano a
             quale generazione: «4+5» vuol dire due volte su quel lato, alla quarta e alla
-            quinta. Più il numero è basso, più l'incrocio è stretto, perché l'antenato
-            comune è più vicino e pesa di più sul patrimonio genetico.
+            quinta; il trattino vuol dire che su quel lato non c'è. Più il numero è basso,
+            più l'incrocio è stretto. Nel coefficiente di inbreeding entrano solo quelli
+            presenti da tutte e due le parti: un antenato ripetuto su un lato solo rende
+            consanguineo quel genitore, non il cavallo.
           </Spiegazione>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>

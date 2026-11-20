@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { calcolaWright, comparseAlbero } from "./consanguineita";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 import { forzaCavallo } from "./forza";
 
@@ -2722,47 +2723,15 @@ export function registerRoutes(httpServer: Server, app: Express) {
       }
       aggiungiVotiAlbero(db, tree);
 
-      // Compute inbreeding coefficient (Wright's formula)
-      // Walk sire side and dam side separately, collecting ancestors with generation depth
-      const sireAncestors = new Map<string, number>(); // name -> min generation on sire side
-      const damAncestors = new Map<string, number>();
-
-      function walkSire(node: any, gen: number) {
-        if (!node || !node.name || gen > MAX_GEN) return;
-        const key = node.name.toUpperCase();
-        const existing = sireAncestors.get(key);
-        if (existing === undefined || gen < existing) sireAncestors.set(key, gen);
-        if (node.sire) walkSire(node.sire, gen + 1);
-        if (node.dam) walkSire(node.dam, gen + 1);
-      }
-      function walkDam(node: any, gen: number) {
-        if (!node || !node.name || gen > MAX_GEN) return;
-        const key = node.name.toUpperCase();
-        const existing = damAncestors.get(key);
-        if (existing === undefined || gen < existing) damAncestors.set(key, gen);
-        if (node.sire) walkDam(node.sire, gen + 1);
-        if (node.dam) walkDam(node.dam, gen + 1);
-      }
-
-      // Start from the sire and dam of the subject horse
-      if (tree.sire) walkSire(tree.sire, 1);
-      if (tree.dam) walkDam(tree.dam, 1);
-
-      // Find common ancestors on both sides
-      const commonAncestors: { name: string; contribution: number; sire_gen: number; dam_gen: number }[] = [];
-      for (const [name, sireGen] of sireAncestors) {
-        const damGen = damAncestors.get(name);
-        if (damGen !== undefined) {
-          // Wright's formula: contribution = (1/2)^(sireGen + damGen - 1) * (1 + F_ancestor)
-          // Simplified: assume F_ancestor = 0 (no recursive inbreeding)
-          const contribution = Math.pow(0.5, sireGen + damGen - 1);
-          commonAncestors.push({ name, contribution, sire_gen: sireGen, dam_gen: damGen });
-        }
-      }
-      commonAncestors.sort((a, b) => b.contribution - a.contribution);
-
-      // Inbreeding coefficient = sum of contributions
-      const inbreedingCoeff = commonAncestors.reduce((sum, a) => sum + a.contribution, 0);
+      // Consanguineita' (consanguineita.ts): Wright su tutte le coppie di
+      // comparse, senza contare due volte i tratti in comune.
+      const inb = calcolaWright(
+        comparseAlbero(tree.sire, MAX_GEN - 1),
+        comparseAlbero(tree.dam, MAX_GEN - 1),
+        1,
+      );
+      const commonAncestors = inb.comuni;
+      const inbreedingCoeff = inb.coefficiente;
 
       // Get rating if available
       const rating = db.prepare(`
@@ -2786,6 +2755,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         rating: rating || null,
         inbreeding_coefficient: Math.round(inbreedingCoeff * 1000) / 10,
         common_ancestors: commonAncestors.slice(0, 10),
+        ripetuti_un_lato: inb.ripetuti.slice(0, 12),
         max_generations: MAX_GEN,
         has_source_pedigree: vp.size > 0,
       });
