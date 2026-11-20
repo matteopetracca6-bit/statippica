@@ -22,6 +22,7 @@
  * valga come una con venti figli.
  */
 
+import { calcolaWright, comparseVp } from "./consanguineita";
 import fs from "fs";
 import path from "path";
 import type { Database as DB } from "better-sqlite3";
@@ -307,8 +308,8 @@ export interface InbreedingResult {
 /**
  * Cerca gli antenati in comune fra stallone e fattrice usando l'albero
  * completo (vp_pedigree), non solo genitori e nonni come prima.
- * La stima del coefficiente segue Wright: ogni antenato in comune
- * contribuisce (1/2)^(gen_padre + gen_madre + 1).
+ * La stima del coefficiente segue Wright su tutte le coppie di comparse
+ * (consanguineita.ts, 20/11/2026).
  */
 export function inbreeding(db: DB, stallion: string, mare: string): InbreedingResult {
   const idOf = db.prepare("SELECT id FROM vp_names WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) LIMIT 1");
@@ -321,31 +322,19 @@ export function inbreeding(db: DB, stallion: string, mare: string): InbreedingRe
     };
   }
 
-  const anc = db.prepare(`
-    SELECT ancestor_id, MIN(LENGTH(path)) AS gen FROM vp_pedigree
-    WHERE horse_id = ? GROUP BY ancestor_id
-  `);
-  const sMap = new Map<number, number>();
-  for (const r of anc.all(sid) as any[]) sMap.set(r.ancestor_id, r.gen);
-  const mMap = new Map<number, number>();
-  for (const r of anc.all(mid) as any[]) mMap.set(r.ancestor_id, r.gen);
-
-  const nameOf = db.prepare("SELECT name FROM vp_names WHERE id = ? LIMIT 1");
-  const common: InbreedingResult["common_ancestors"] = [];
-  let coeff = 0;
-  // Array.from invece di iterare la Map: il target di compilazione e' ES5.
-  for (const [aid, sg] of Array.from(sMap.entries())) {
-    const mg = mMap.get(aid);
-    if (mg === undefined) continue;
-    const contrib = Math.pow(0.5, sg + mg + 1);
-    coeff += contrib;
-    common.push({
-      name: (nameOf.get(aid) as any)?.name ?? `#${aid}`,
-      sire_gen: sg, dam_gen: mg,
-      contribution: Math.round(contrib * 100000) / 1000,
-    });
-  }
-  common.sort((a, b) => b.contribution - a.contribution);
+  // Wright su tutte le coppie di comparse, senza contare due volte i tratti
+  // in comune (consanguineita.ts). Lo stallone e la fattrice sono gen 0.
+  const righe = db.prepare(`SELECT p.path, n.name AS nome FROM vp_pedigree p
+    JOIN vp_names n ON n.id = p.ancestor_id WHERE p.horse_id = ?`);
+  const ris = calcolaWright(
+    comparseVp(righe.all(sid) as any[], stallion.toUpperCase().trim()),
+    comparseVp(righe.all(mid) as any[], mare.toUpperCase().trim()),
+  );
+  const coeff = ris.coefficiente;
+  const common: InbreedingResult["common_ancestors"] = ris.comuni.map(c => ({
+    name: c.name, sire_gen: c.sire_gen, dam_gen: c.dam_gen,
+    contribution: Math.round(c.contribution * 100000) / 1000,
+  }));
 
   const pct = Math.round(coeff * 10000) / 100;
   const level = pct >= 6.25 ? "alta" : pct >= 3.125 ? "media" : pct > 0 ? "bassa" : "nessuna";

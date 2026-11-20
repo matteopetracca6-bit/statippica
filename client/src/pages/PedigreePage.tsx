@@ -19,7 +19,8 @@ interface PedigreeData {
   horse: PedigreeNode;
   rating: { grade: string; score: number; career_earnings: number; career_races: number; career_wins: number; win_rate: number } | null;
   inbreeding_coefficient: number;
-  common_ancestors: { name: string; contribution: number }[];
+  common_ancestors: { name: string; contribution: number; sire_gens?: number[]; dam_gens?: number[] }[];
+  ripetuti_un_lato?: { name: string; lato: "padre" | "madre"; gens: number[] }[];
   max_generations?: number;
   has_source_pedigree?: boolean;
   figli?: number;
@@ -225,7 +226,31 @@ export default function PedigreePage() {
                         cursor: "pointer", transition: "all 0.15s",
                       }}
                     >
-                      {a.name} · {(a.contribution * 100).toFixed(1)}%
+                      {a.name}{a.sire_gens && a.dam_gens ? ` (${a.sire_gens.join("+")} × ${a.dam_gens.join("+")})` : ""} · {(a.contribution * 100).toFixed(1)}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {(data.ripetuti_un_lato?.length ?? 0) > 0 && (
+              <div style={{ flexBasis: "100%" }}>
+                <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
+                  Ripetuti su un lato solo — non entrano nel coefficiente
+                </div>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {data.ripetuti_un_lato!.map(a => (
+                    <span
+                      key={a.name + a.lato}
+                      onMouseEnter={() => setHoveredAncestor(a.name)}
+                      onMouseLeave={() => setHoveredAncestor(null)}
+                      title={`Compare ${a.gens.length} volte dal lato ${a.lato === "padre" ? "del padre" : "della madre"}: rende consanguineo ${a.lato === "padre" ? "il padre" : "la madre"}, non questo cavallo.`}
+                      style={{
+                        fontSize: "11px", padding: "3px 10px", borderRadius: "4px", cursor: "pointer",
+                        background: hoveredAncestor === a.name ? "hsl(210 20% 30%)" : "hsl(210 15% 30% / 0.15)",
+                        border: "1px solid hsl(210 15% 35% / 0.4)", color: "hsl(210 10% 70%)",
+                      }}
+                    >
+                      {a.name} · {a.gens.join("+")} lato {a.lato}
                     </span>
                   ))}
                 </div>
