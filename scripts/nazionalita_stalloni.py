@@ -37,6 +37,13 @@ def unisci_refusi(conn, righe) -> list:
         figli = conn.execute("SELECT COUNT(*) FROM horses WHERE UPPER(TRIM(sire)) = ? OR UPPER(TRIM(dam)) = ?",
                              (storpiato, storpiato)).fetchone()[0]
         scheda = conn.execute("SELECT COALESCE(career_races, 0) FROM horses WHERE name = ?", (storpiato,)).fetchone()
+        try:
+            figli += conn.execute("SELECT COUNT(*) FROM horse_ratings WHERE UPPER(TRIM(sire)) = ?",
+                                  (storpiato,)).fetchone()[0]
+            figli += conn.execute("SELECT COUNT(*) FROM stallion_rating_stats WHERE sire = ?",
+                                  (storpiato,)).fetchone()[0]
+        except sqlite3.Error:
+            pass
         if scheda and scheda[0] > 0:
             continue   # ha corse sue: e' un cavallo vero, non un refuso
         if figli or scheda:
