@@ -23,7 +23,6 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import GradeBadge from "../components/GradeBadge";
 import { formatRecord } from "@/lib/record";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro } from "../components/DueColonne";
-import FrasiCaricamento from "@/components/FrasiCaricamento";
 
 const COLORE = coloreScheda("/fattrici");
 const PAGE = 30;
@@ -103,7 +102,7 @@ function SchedaFattrice({ m, onClose }: { m: MareRow; onClose?: () => void }) {
       )}
 
       <div className="ed-etich" style={{ margin: "16px 0 6px" }}>I figli, dal voto più alto</div>
-      {isLoading ? <FrasiCaricamento /> : figli.length === 0 ? (
+      {isLoading ? <CavalloCaricamento label="Caricamento" /> : figli.length === 0 ? (
         <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>Nessun figlio in archivio.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 360, overflowY: "auto" }}>

@@ -1,4 +1,14 @@
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import FrasiCaricamento from "./FrasiCaricamento";
+
+/* 20/11/2026: un solo caricamento visibile per pagina. Ogni caricamento si
+   iscrive qui; si vede solo il primo, gli altri restano vuoti finche'
+   non tocca a loro. */
+let iscritti: number[] = [];
+let prossimo = 1;
+const ascolta = new Set<() => void>();
+const avvisa = () => ascolta.forEach(f => f());
+function primo() { return iscritti[0] ?? 0; }
 
 /**
  * Cavallo al galoppo, animazione di caricamento.
@@ -31,6 +41,17 @@ export default function CavalloCaricamento({
   label = "Caricamento...",
   size = 96,
 }: { label?: string; size?: number }) {
+  const id = useRef(0);
+  if (!id.current) id.current = prossimo++;
+  useEffect(() => {
+    iscritti.push(id.current); avvisa();
+    return () => { iscritti = iscritti.filter(x => x !== id.current); avvisa(); };
+  }, []);
+  const davanti = useSyncExternalStore(
+    f => { ascolta.add(f); return () => { ascolta.delete(f); }; },
+    primo, primo,
+  );
+  if (davanti !== id.current) return null;
   return (
     <div
       style={{

@@ -15,7 +15,7 @@ import { Activity, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "./GradeBadge";
 import BandieraCavallo from "@/components/BandieraCavallo";
-import FrasiCaricamento from "./FrasiCaricamento";
+import CavalloCaricamento from "./CavalloCaricamento";
 
 // Colori ufficiali dei voti (SSS oro, SS argento, S bronzo...), uguali in tutto il sito.
 const GRADE_COLORS: Record<string, string> = COLORE_SCHEDA_VOTO;
@@ -65,7 +65,7 @@ export default function RiquadroRating() {
       </button>
 
       {isLoading || !data ? (
-        <div><FrasiCaricamento /><div className="skeleton" style={{ height: "120px", borderRadius: "8px", marginTop: 10 }} /></div>
+        <CavalloCaricamento label="Caricamento" />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {data.voti.map(v => (

@@ -16,7 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { ChevronDown, ListChecks } from "lucide-react";
 import { Spiegazione } from "./Spiegazione";
 import BandieraCavallo from "@/components/BandieraCavallo";
-import FrasiCaricamento from "./FrasiCaricamento";
+import CavalloCaricamento from "./CavalloCaricamento";
 
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 42%)";
@@ -62,7 +62,7 @@ export default function DettaglioPronostico({ track, date, time }: { track: stri
         <ChevronDown size={14} style={{ transform: aperto ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
       </button>
       {aperto && (
-        isLoading ? <div style={{ padding: "10px 4px" }}><FrasiCaricamento /></div>
+        isLoading ? <CavalloCaricamento label="Caricamento" />
         : error || !d?.cavalli ? <div style={{ fontSize: 12, color: MUTED, padding: "10px 4px" }}>I dettagli di questa corsa non sono disponibili.</div>
         : (
           <div style={{ marginTop: 10 }}>

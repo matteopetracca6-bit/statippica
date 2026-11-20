@@ -10,7 +10,6 @@ import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import EsploraCategorie, { trasparente } from "../components/EsploraCategorie";
 import BandieraCavallo from "@/components/BandieraCavallo";
-import FrasiCaricamento from "@/components/FrasiCaricamento";
 import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
   BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked, Scale, Briefcase, Tag } from "lucide-react";
@@ -191,7 +190,7 @@ export default function Home() {
               </Link>
             </div>
             {!stallions ? (
-              <div><FrasiCaricamento /><div className="skeleton" style={{ height: "180px", borderRadius: "8px", marginTop: 10 }} /></div>
+              <CavalloCaricamento label="Caricamento" />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {topStallions.map((s, i) => (
@@ -237,10 +236,7 @@ export default function Home() {
               <span style={{ fontSize: "11px", color: "hsl(210 8% 45%)" }}>solo nati in Italia</span>
             </div>
             {isLoading ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <FrasiCaricamento />
-                {[1,2,3,4,5,6,7,8,9,10].map(i => <div key={i} className="skeleton" style={{ height: "32px", borderRadius: "6px" }} />)}
-              </div>
+<CavalloCaricamento label="Caricamento" />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 {stats?.topByYear.slice(0, 10).map((h, i) => (

@@ -434,13 +434,7 @@ export default function StallionPage() {
       )}
 
       {isLoading && !isSearch && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <CavalloCaricamento label="Apro la scheda dello stallone" />
-          <div className="skeleton" style={{ height: "50px", width: "280px", borderRadius: "10px" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
-            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: "76px", borderRadius: "10px" }} />)}
-          </div>
-        </div>
+        <CavalloCaricamento label="Apro la scheda dello stallone" />
       )}
 
       {!isSearch && !isLoading && stallion && (

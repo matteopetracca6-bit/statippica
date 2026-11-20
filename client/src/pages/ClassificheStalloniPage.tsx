@@ -24,7 +24,6 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import GradeBadge from "../components/GradeBadge";
 import { tempoKm } from "@/lib/record";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro } from "../components/DueColonne";
-import FrasiCaricamento from "@/components/FrasiCaricamento";
 
 const COLORE = coloreScheda("/stalloni/classifiche");
 const ORO = "hsl(51 80% 62%)";
@@ -129,7 +128,7 @@ function SchedaStagione({ r, d, eta, esteri, onClose }: { r: RigaStagione; d: St
       <Soglie titolo={`Figli che nel ${d.anno} hanno vinto almeno`} etichette={d.soglie_vincite.map(v => `€ ${migliaia(v)}`)} valori={r.soglie_vincite}
         nota="Vincite nette della sola stagione." />
       <div className="ed-etich" style={{ margin: "16px 0 6px" }}>I figli nella stagione, da chi ha vinto di più</div>
-      {isLoading ? <FrasiCaricamento /> : (
+      {isLoading ? <CavalloCaricamento label="Caricamento" /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 380, overflowY: "auto" }}>
           {(data?.figli ?? []).map(f => (
             <div key={f.nome} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, fontSize: 12.5, padding: "7px 10px", borderRadius: 8, background: "var(--ed-fondo2)" }}>

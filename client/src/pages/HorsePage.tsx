@@ -537,12 +537,6 @@ export default function HorsePage() {
       {/* 20/11/2026: e' l'attesa piu' lunga del sito, quindi anche qui il
           cavallo al galoppo con le frasi ippiche e la barretta blu. */}
       <CavalloCaricamento label="Apro la scheda del cavallo" />
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-        <div className="skeleton" style={{ height: "60px", width: "300px", borderRadius: "10px" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(105px, 1fr))", gap: "12px" }}>
-          {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "10px" }} />)}
-        </div>
-      </div>
     </div>
   );
 
