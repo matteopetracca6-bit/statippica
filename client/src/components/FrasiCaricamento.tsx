@@ -64,7 +64,6 @@ export const FRASI_CARICAMENTO = [
   "L'allenatore dà le ultime istruzioni…",
   "Studiando il programma di corse…",
   "Leggendo le quote al totalizzatore…",
-  "Compilando la schedina…",
   "Ripassando le linee di sangue…",
   "Chiedendo un consiglio allo stalliere…",
   "Prendendo un caffè al bar dell'ippodromo…",
@@ -75,7 +74,6 @@ export const FRASI_CARICAMENTO = [
   "Svezzando i puledri…",
   "Domando lo yearling…",
   "Mettendo il primo filetto…",
-  "Aspettando la monta…",
 ];
 
 const DURATA = 3000;
