@@ -205,7 +205,9 @@ def aggiungi_mai_corsi(conn) -> dict:
     return esiti
 
 
-def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
+def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre, aggiorna: bool = False) -> str:
+    """aggiorna=True (carriere_singole): una carriera gia' presente ma piu' corta
+    di quella di UNIRE prende i totali di UNIRE."""
     d = u.fetch_horse(cid)
     if not d:
         return "errore"
@@ -241,7 +243,7 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre) -> str:
             return "omonimo"
         nome, gia = nome_om, None
     if gia:
-        if gia[1] > 0:
+        if gia[1] > 0 and not (aggiorna and corse > gia[1]):
             return "gia_presente"
         # Scheda vuota dello stesso cavallo (per esempio un genitore non
         # trovato): riceve anagrafica mancante e totali.
@@ -341,6 +343,7 @@ def main() -> int:
     log(f"[STORICI-UNIRE] mai corsi dei giri precedenti: {aggiungi_mai_corsi(conn)}")
     prima = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
     esito = lavora(conn, a.minuti, a.massimo)
+    log(f"[STORICI-UNIRE] omonimi, nome pulito al piu' giovane: {omonimi.ordina(conn)}")
     log(f"[STORICI-UNIRE] omonimi, figli al genitore giusto: {omonimi.riassegna(conn)}")
     dopo = conn.execute("SELECT COUNT(*) FROM horses WHERE source = 'unire_blocco'").fetchone()[0]
     log(f"[STORICI-UNIRE] {esito}; storici dal registro: {prima} -> {dopo}"

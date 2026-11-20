@@ -3,6 +3,7 @@ name: StatIppica — Carriere di singoli cavalli da UNIRE (a mano)
 # 20/11/2026 (scripts/carriere_singole.py). Carriera in Italia di singoli
 # cavalli da UNIRE (per esempio LEMON DRA, 1986), poi ricalcolo di voti,
 # stalloni, fattrici e forza, pubblicazione dell'archivio e del sito.
+# Con "stalloni": anche ogni stallone con un voto e senza carriera da atleta.
 
 on:
   workflow_dispatch:
@@ -11,6 +12,10 @@ on:
         description: "Cavalli, separati da virgola: NOME:ANNO:SESSO"
         required: true
         default: "LEMON DRA:1986:M"
+      stalloni:
+        description: "Anche tutti gli stalloni senza carriera da atleta"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -33,9 +38,12 @@ jobs:
       - name: Carriere da UNIRE
         env:
           CAVALLI: ${{ inputs.cavalli }}
+          STALLONI: ${{ inputs.stalloni }}
         run: |
           IFS=',' read -ra LISTA <<< "$CAVALLI"
-          python3 scripts/carriere_singole.py --db data.db "${LISTA[@]}"
+          EXTRA=""
+          if [ "$STALLONI" = "true" ]; then EXTRA="--stalloni"; fi
+          python3 scripts/carriere_singole.py --db data.db --minuti 150 $EXTRA "${LISTA[@]}"
       - name: Ricalcola classi, voti e forza
         env:
           DB_PATH: data.db
@@ -49,6 +57,9 @@ jobs:
           conn = sqlite3.connect("data.db")
           nu.init_db(conn)                  # classi: fino al 2011 storici, dal 2012 atleti
           conn.commit()
+          import omonimi                    # nome pulito al piu' giovane, figli al genitore giusto
+          print("[OMONIMI] nomi:", omonimi.ordina(conn))
+          print("[OMONIMI]", omonimi.riassegna(conn))
           nu.phase_ratings(conn)
           nu.phase_historic_ratings(conn)
           nu.phase_stallion_ratings(conn)

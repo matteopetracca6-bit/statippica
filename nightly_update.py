@@ -5800,7 +5800,8 @@ def main():
         try:
             # Omonimi (omonimi.py): i figli nuovi arrivano con il nome del
             # genitore senza anno; si rimettono al genitore giusto.
-            from omonimi import riassegna as phase_omonimi
+            from omonimi import riassegna as phase_omonimi, ordina as phase_omonimi_nomi
+            print(f"[OMONIMI] nomi: {phase_omonimi_nomi(conn)}", file=sys.stderr)
             print(f"[OMONIMI] {phase_omonimi(conn)}", file=sys.stderr)
         except Exception as e:
             print(f"[OMONIMI] errore: {e}", file=sys.stderr)
