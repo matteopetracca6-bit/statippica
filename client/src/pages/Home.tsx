@@ -135,7 +135,7 @@ export default function Home() {
       <div className="page-shell">
         <div className="numeri-home">
           {[
-            { label: "Cavalli", nota: "nel database, pedigree compresi", value: stats?.totalNelDatabase ?? stats?.totalHorses ?? 0, icon: Users, color: "hsl(51 80% 55%)", href: "/leaderboard" },
+            { label: "Cavalli", nota: "nel database", value: stats?.totalNelDatabase ?? stats?.totalHorses ?? 0, icon: Users, color: "hsl(51 80% 55%)", href: "/leaderboard" },
             { label: "Gare archiviate", nota: "un arrivo per ogni cavallo", value: stats?.totalRaces ?? 0, icon: Flag, color: "hsl(0 60% 55%)", href: "/ippodromi" },
             { label: "Stalloni analizzati", nota: "giudicati sui figli", value: stats?.totalStallions ?? 0, icon: TrendingUp, color: "hsl(120 60% 50%)", href: "/stalloni" },
             { label: "Cavalli votati", nota: "con un voto da SSS a F", value: totalPerf, icon: Zap, color: "hsl(183 70% 52%)", href: "/metodo" },
