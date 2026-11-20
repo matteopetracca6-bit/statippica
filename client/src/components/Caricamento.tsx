@@ -17,35 +17,16 @@
  * dato mancante sono due cose diverse e vanno dette diversamente.
  */
 
-import { useEffect, useState } from "react";
 import CavalloCaricamento from "./CavalloCaricamento";
 
 const MUTED = "hsl(210 8% 55%)";
-const DIM = "hsl(210 8% 42%)";
 
 export function Caricamento({ testo }: { testo: string }) {
-  const [secondi, setSecondi] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setSecondi(s => s + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
-
+  // 20/11/2026: niente piu' "il sito si sta riaccendendo": durante l'attesa
+  // girano le frasi ippiche di CavalloCaricamento, una ogni 3 secondi.
   return (
     <div style={{ padding: "30px 20px 60px", textAlign: "center" }}>
       <CavalloCaricamento label={testo} />
-      <div style={{
-        maxWidth: "420px", margin: "0 auto", fontSize: "12.5px", color: DIM,
-        lineHeight: 1.65,
-        // Non compare e scompare: appare e resta, altrimenti il testo che
-        // lampeggia da' piu' l'idea del guasto di quella che togliere.
-        opacity: secondi >= 6 ? 1 : 0, transition: "opacity 600ms ease",
-        minHeight: "54px",
-      }}>
-        {secondi >= 20
-          ? "Il sito si sta riaccendendo e sta riprendendo l'archivio delle gare. Ci vuole ancora una ventina di secondi: succede solo al primo accesso dopo una pausa."
-          : "Il sito si stava riposando e si sta riaccendendo. Al primo accesso puo' volerci mezzo minuto."}
-      </div>
     </div>
   );
 }
