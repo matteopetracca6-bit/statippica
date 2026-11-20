@@ -5,6 +5,7 @@
  * "Calcolo...") si vede la sua forma in grigio: titolo, riquadri, righe. Cosi'
  * la pagina non salta quando i dati compaiono, perche' lo spazio e' gia' preso.
  */
+import FrasiCaricamento from "./FrasiCaricamento";
 const CARD: React.CSSProperties = {
   background: "hsl(220 12% 10%)", border: "1px solid hsl(220 10% 16%)", borderRadius: "12px", padding: "20px 22px",
 };
@@ -24,6 +25,7 @@ export default function Sagoma({
 }) {
   const corpo = (
     <div aria-busy="true" aria-label="Caricamento" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <FrasiCaricamento />
       {titolo && <div className="skeleton" style={{ height: "12px", width: "38%" }} />}
       {riquadri > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(min(200px, 100%), 1fr))`, gap: "10px" }}>

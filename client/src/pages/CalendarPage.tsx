@@ -12,6 +12,7 @@ import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle
 import VerificaPronostico from "../components/VerificaPronostico";
 import VerificaGare from "../components/VerificaGare";
 import DettaglioPronostico from "../components/DettaglioPronostico";
+import FrasiCaricamento from "@/components/FrasiCaricamento";
 
 interface CalendarEntry {
   horse_name: string;
@@ -128,6 +129,7 @@ export default function CalendarPage() {
 
       {scheda === "verifica" ? <VerificaGare /> : loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <FrasiCaricamento />
           {[1, 2, 3].map(i => (
             <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "12px" }} />
           ))}

@@ -20,6 +20,7 @@ import { Spiegazione } from "../components/Spiegazione";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import GradeBadge from "../components/GradeBadge";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro } from "../components/DueColonne";
+import FrasiCaricamento from "@/components/FrasiCaricamento";
 
 const COLORE = coloreScheda("/allevatori/classifiche");
 // I premi in giallo come in tutto il sito (prima erano verdi solo qui).
@@ -72,7 +73,7 @@ function SchedaAllevatore({ r, d, eta, onClose }: { r: Riga; d: Dati; eta: strin
         <Cifra titolo="Media a cavallo" valore={euro(r.media_cavallo)} sotto={`vince il ${num(r.pct_vittorie, 1)}% delle corse`} />
       </div>
       <div className="ed-etich" style={{ margin: "16px 0 6px" }}>I suoi cavalli nella stagione, da chi ha vinto di più</div>
-      {isLoading ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>Carico...</div> : (
+      {isLoading ? <FrasiCaricamento /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 420, overflowY: "auto" }}>
           {(data?.cavalli ?? []).map(c => (
             <div key={c.nome} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, fontSize: 12.5, padding: "7px 10px", borderRadius: 8, background: "var(--ed-fondo2)" }}>

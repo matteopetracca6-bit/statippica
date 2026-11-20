@@ -121,30 +121,6 @@ export default function PedigreePage() {
         </div>
       )}
 
-      {/* Prima di scegliere un cavallo la pagina era vuota sotto la ricerca:
-          ora spiega cosa si vedra' e propone qualche nome da cui partire. */}
-      {!search && (
-        <div className="pannello" data-testid="pedigree-vuoto" style={{ padding: "22px 24px", display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORE_PED, fontWeight: 800, fontSize: 15 }}>
-              <Network size={17} /> Scegli un cavallo per vedere il suo albero
-            </div>
-            <div style={{ fontSize: 13, color: "hsl(210 8% 62%)", lineHeight: 1.65, marginTop: 8 }}>
-              Si vedono padre, madre e gli antenati fino ai trisavoli, con il voto da atleta e da stallone o fattrice di ognuno, e, quando c'è, il voto del cavallo scelto.
-              Sotto l'albero c'è il coefficiente di consanguineità e l'elenco degli antenati che compaiono più di una volta.
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "hsl(210 8% 50%)", marginBottom: 8 }}>Per cominciare</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {["VARENNE", "VIVID WISE AS", "FACE TIME BOURBON", "AMORE STECCA"].map(n => (
-                <button key={n} className="chip-filtro" onClick={() => setSearch(n)} data-testid={`esempio-${n}`}>{n}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {data && !isLoading && (
         <div className="fade-in">
           {/* Horse header */}
