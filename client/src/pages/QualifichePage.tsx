@@ -31,6 +31,7 @@ import NomePista from "@/components/NomePista";
 import { tempoKm, formatRecord } from "@/lib/record";
 import AltreProve, { type AltraProva } from "../components/AltreProve";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
+import FrasiCaricamento from "@/components/FrasiCaricamento";
 
 const COLORE = coloreScheda("/qualifiche");
 const VERDE = "hsl(150 60% 52%)";
@@ -166,7 +167,7 @@ function SchedaProva({ r, stats, onClose, vaiPadre }: { r: QualRow; stats?: Qual
       {r.sire && (
         <>
           <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Altri figli di {r.sire} in qualifica</div>
-          {caricaFratelli ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>Carico...</div> : altri.length === 0 ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>È l'unico figlio di questo padre fra le prove raccolte.</div> : (
+          {caricaFratelli ? <FrasiCaricamento /> : altri.length === 0 ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>È l'unico figlio di questo padre fra le prove raccolte.</div> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {altri.map(x => (
                 <div key={chiave(x)} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12.5, padding: "6px 10px", borderRadius: 8, background: "var(--ed-fondo2)" }}>
@@ -344,7 +345,7 @@ function SchedaPadre({ p, stats, onClose }: { p: Padre; stats?: QualStats | null
         <Cifra titolo="Figli qualificati" valore={num(p.n_figli)} sotto={p.migliore != null ? `il più veloce in ${tempoKm(p.migliore)}` : undefined} />
       </div>
       <div className="ed-etich" style={{ margin: "16px 0 6px" }}>I figli, dal più veloce</div>
-      {isLoading ? <div style={{ fontSize: 12.5, color: "var(--ed-fioco)" }}>Carico...</div> : (
+      {isLoading ? <FrasiCaricamento /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 420, overflowY: "auto" }}>
           {(data?.rows ?? []).map(x => (
             <div key={chiave(x)} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, fontSize: 12.5, padding: "7px 10px", borderRadius: 8, background: "var(--ed-fondo2)" }}>

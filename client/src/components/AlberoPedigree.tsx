@@ -15,6 +15,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import BandieraCavallo from "./BandieraCavallo";
+import CavalloCaricamento from "./CavalloCaricamento";
 
 export interface VotiNodo { atleta: string | null; stallone: string | null; fattrice: string | null }
 
@@ -185,7 +186,7 @@ export function AlberoPedigreeCavallo({ nome, generazioni = 5 }: { nome: string;
     retry: false,
     staleTime: 120000,
   });
-  if (isLoading) return <div style={{ fontSize: 12, color: "var(--muted)", padding: "12px 0" }}>Costruzione dell'albero…</div>;
+  if (isLoading) return <CavalloCaricamento label="Costruzione dell'albero" />;
   if (error || !data?.horse) return <div style={{ fontSize: 12, color: "var(--muted)", padding: "12px 0" }}>Albero non disponibile.</div>;
   return <AlberoPedigree root={data.horse} generazioni={generazioni} hovered={hovered} onHover={setHovered} />;
 }
