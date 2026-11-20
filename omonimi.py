@@ -97,6 +97,9 @@ def rinomina(conn, vecchio: str, nuovo: str):
             conn.execute(f'DELETE FROM "{t}" WHERE {col} = ?', (vecchio,))  # doppioni rimasti
     for ruolo in ("sire", "dam"):
         conn.execute(f"UPDATE horses SET {ruolo} = ? WHERE UPPER(TRIM({ruolo})) = ?", (nuovo, vecchio))
+    # Il voto da stallone si calcola dai figli in horse_ratings (copia del padre).
+    if _esiste(conn, "horse_ratings", "sire"):
+        conn.execute("UPDATE horse_ratings SET sire = ? WHERE UPPER(TRIM(sire)) = ?", (nuovo, vecchio))
 
 
 def ordina(conn) -> dict:
