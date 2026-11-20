@@ -33,6 +33,7 @@ import InbreedingPanel from "../components/InbreedingPanel";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
 import CurvaVoto, { curvaPronta } from "../components/CurvaVoto";
 import { AlberoPedigreeCavallo } from "../components/AlberoPedigree";
+import CavalloCaricamento from "../components/CavalloCaricamento";
 import { Spiegazione } from "../components/Spiegazione";
 import NomePista from "../components/NomePista";
 import { nomePista } from "@/lib/piste";
@@ -533,6 +534,9 @@ export default function HorsePage() {
 
   if (isLoading) return (
     <div style={{ padding: "28px 32px" }}>
+      {/* 20/11/2026: e' l'attesa piu' lunga del sito, quindi anche qui il
+          cavallo al galoppo con le frasi ippiche e la barretta blu. */}
+      <CavalloCaricamento label="Apro la scheda del cavallo" />
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         <div className="skeleton" style={{ height: "60px", width: "300px", borderRadius: "10px" }} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(105px, 1fr))", gap: "12px" }}>
