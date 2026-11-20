@@ -16,7 +16,7 @@ import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, Cart
 import { Scale, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "./GradeBadge";
-import FrasiCaricamento from "./FrasiCaricamento";
+import CavalloCaricamento from "./CavalloCaricamento";
 
 const MUTED = "hsl(210 8% 50%)";
 const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
@@ -77,7 +77,7 @@ export default function ConfrontoStalloni() {
             <span style={{ fontSize: "12px", color: MUTED }}>Costo al mese:</span>
             {[800, 1200].map(m => <button key={m} style={bottone(mensile === m)} onClick={() => setMensile(m)}>{euro(m)}</button>)}
           </div>
-          {isLoading || !data ? <div><FrasiCaricamento /><div className="skeleton" style={{ height: "320px", borderRadius: "8px", marginTop: 10 }} /></div> : (
+          {isLoading || !data ? <CavalloCaricamento label="Caricamento" /> : (
             <>
               <div style={{ height: "320px" }}>
                 <ResponsiveContainer width="100%" height="100%">

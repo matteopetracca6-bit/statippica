@@ -14,7 +14,7 @@ import { Flame, Timer } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "./GradeBadge";
 import BandieraCavallo from "@/components/BandieraCavallo";
-import FrasiCaricamento from "./FrasiCaricamento";
+import CavalloCaricamento from "./CavalloCaricamento";
 
 const MUTED = "hsl(210 8% 50%)";
 const CARD: React.CSSProperties = { padding: "22px 24px",
@@ -81,7 +81,7 @@ export default function CavalliDelMomento() {
         <div className="pannello" style={CARD}>
           {titolo(Flame, "In forma", "hsl(25 90% 58%)")}
           <div style={{ fontSize: "12px", color: MUTED, marginBottom: "10px" }}>Più vittorie e piazzamenti nei primi tre nell'ultimo mese, con almeno 2 corse.</div>
-          {isLoading || !d ? <div><FrasiCaricamento /><div className="skeleton" style={{ height: "300px", borderRadius: "8px", marginTop: 10 }} /></div> :
+          {isLoading || !d ? <CavalloCaricamento label="Caricamento" /> :
             d.in_forma.length === 0 ? vuoto : d.in_forma.map((h, i) => (
               <Riga key={h.nome} i={i} nome={h.nome} anno={h.anno} voto={h.voto}>
                 <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 10% 80%)", whiteSpace: "nowrap" }}>
@@ -93,7 +93,7 @@ export default function CavalliDelMomento() {
         <div className="pannello" style={CARD}>
           {titolo(Timer, "Nuovo record personale", "hsl(183 60% 55%)")}
           <div style={{ fontSize: "12px", color: MUTED, marginBottom: "10px" }}>Chi nell'ultimo mese ha corso più veloce che mai, con almeno 5 corse cronometrate prima.</div>
-          {isLoading || !d ? <div><FrasiCaricamento /><div className="skeleton" style={{ height: "300px", borderRadius: "8px", marginTop: 10 }} /></div> :
+          {isLoading || !d ? <CavalloCaricamento label="Caricamento" /> :
             d.record.length === 0 ? vuoto : d.record.map((h, i) => (
               <Riga key={h.nome} i={i} nome={h.nome} anno={h.anno} voto={h.voto}>
                 <span className="tabular" style={{ fontSize: "12px", color: MUTED, whiteSpace: "nowrap" }}>prima {tempo(h.tempo_prima)}</span>
