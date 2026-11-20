@@ -12,9 +12,13 @@ stesso nome. Due casi veri:
   * BRILLANTISSIME: in archivio c'era un atleta del 2017 con 123 "figli" nati
     dal 2016, che sono dello stallone del 2011 (READY CASH x IVRE DE VICTOIRE).
 
-COME. Il cavallo che c'era resta con il suo nome (e' quello che arriva dalle
-fonti delle corse); l'omonimo entra con l'anno nel nome, "SALSA PICCANTE
-(2011)", e la coppia si registra nella tabella omonimi. Poi, per ogni coppia,
+COME. L'omonimo entra con l'anno nel nome, "SALSA PICCANTE (2011)", e la
+coppia si registra nella tabella omonimi. Dal 20/11/2026 il nome pulito spetta
+sempre al cavallo PIU' GIOVANE (e' quello che corre oggi e che le fonti delle
+corse scrivono senza anno); il piu' vecchio porta l'anno: "SOLANO" e' quello
+del 2011, "SOLANO (1964)" quello del 1964. ordina() scambia i nomi delle
+coppie messe al contrario, in tutte le tabelle, con le sue corse, i voti e i
+riferimenti dei figli. Poi, per ogni coppia,
 ogni figlio va al genitore che poteva davvero averlo: eta' del genitore alla
 nascita del figlio fra 3 e 25 anni per una fattrice, fra 3 e 30 per uno
 stallone. Se e' possibile per uno solo dei due, il figlio va a quello; se e'
@@ -60,6 +64,62 @@ def registra(conn, nome: str, anno: int | None, nome_omonimo: str, anno_omonimo:
     conn.execute("INSERT OR REPLACE INTO omonimi VALUES (?,?,?,?,?)",
                  (nome, anno, nome_omonimo, int(anno_omonimo),
                   datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")))
+
+
+# Tabelle e colonne che contengono il nome di un cavallo (la sua identita').
+# horses.sire/dam (i figli) si trattano a parte.
+COLONNE_NOME = [
+    ("horses", "name"), ("horse_ratings", "name"), ("races", "horse_name"),
+    ("allenatori_corse", "cavallo"), ("gare_ufficiali_attesa", "cavallo"),
+    ("curva_carriera", "horse_name"), ("forza_cavallo", "horse_name"), ("forza_stagioni", "horse_name"),
+    ("potenziale_storico", "horse_name"), ("potenziale_traguardo", "horse_name"),
+    ("pronostico_top3", "horse_name"), ("pronostico_top3_storico", "horse_name"),
+    ("quote_totalizzatore", "horse_name"), ("rischio_galoppo", "horse_name"),
+    ("rischio_galoppo_storico", "horse_name"), ("stima_premi", "horse_name"),
+    ("stima_premi_storico", "horse_name"), ("valore_residuo", "horse_name"), ("voto_previsto", "horse_name"),
+    ("partenti_ritirati", "horse_name"), ("upcoming_races", "horse_name"), ("riparazione_premi", "horse_name"),
+    ("undated_repair_log", "horse_name"), ("stallion_rating_stats", "sire"), ("dam_rating_stats", "dam"),
+    ("stallion_pedigree", "name"), ("stallions", "name"), ("stalloni_schede", "nome"),
+    ("storici_corse", "nome"), ("storici_totali_cambi", "nome"), ("storici_unire_parziali", "nome"),
+    ("fattrici_carriera_letta", "nome"), ("cavalli_alias", "nome"),
+]
+
+
+def _esiste(conn, tabella, colonna) -> bool:
+    return any(r[1] == colonna for r in conn.execute(f'PRAGMA table_info("{tabella}")'))
+
+
+def rinomina(conn, vecchio: str, nuovo: str):
+    """Il cavallo 'vecchio' si chiama ora 'nuovo' in tutto l'archivio, figli compresi."""
+    for t, col in COLONNE_NOME:
+        if _esiste(conn, t, col):
+            conn.execute(f'UPDATE OR IGNORE "{t}" SET {col} = ? WHERE {col} = ?', (nuovo, vecchio))
+            conn.execute(f'DELETE FROM "{t}" WHERE {col} = ?', (vecchio,))  # doppioni rimasti
+    for ruolo in ("sire", "dam"):
+        conn.execute(f"UPDATE horses SET {ruolo} = ? WHERE UPPER(TRIM({ruolo})) = ?", (nuovo, vecchio))
+
+
+def ordina(conn) -> dict:
+    """Coppie al contrario (il nome pulito al piu' vecchio): si scambiano."""
+    crea_tabelle(conn)
+    esito = {"coppie": 0, "scambiate": 0}
+    for nome, anno, nome_om, anno_om in conn.execute(
+            "SELECT nome, anno, nome_omonimo, anno_omonimo FROM omonimi").fetchall():
+        esito["coppie"] += 1
+        r = conn.execute("SELECT birth_year FROM horses WHERE name = ?", (nome,)).fetchone()
+        anno = (r[0] if r else None) or anno
+        if anno is None or anno_om is None or int(anno) >= int(anno_om):
+            continue
+        nuovo_vecchio = nome_con_anno(nome, anno)
+        if conn.execute("SELECT 1 FROM horses WHERE name = ?", (nuovo_vecchio,)).fetchone():
+            continue
+        rinomina(conn, nome, nuovo_vecchio)     # il piu' vecchio prende l'anno
+        rinomina(conn, nome_om, nome)           # il piu' giovane il nome pulito
+        conn.execute("DELETE FROM omonimi WHERE nome_omonimo = ?", (nome_om,))
+        registra(conn, nome, anno_om, nuovo_vecchio, anno)
+        esito["scambiate"] += 1
+    conn.commit()
+    return esito
 
 
 def _possibile(ruolo, anno_genitore, anno_figlio) -> bool:
@@ -113,4 +173,5 @@ if __name__ == "__main__":
     ap.add_argument("--db", default=os.environ.get("DB_PATH", "data.db"))
     a = ap.parse_args()
     c = sqlite3.connect(a.db)
+    log(f"[OMONIMI] nomi: {ordina(c)}")
     log(f"[OMONIMI] {riassegna(c)}")
