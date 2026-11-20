@@ -10,8 +10,8 @@ import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import EsploraCategorie, { trasparente } from "../components/EsploraCategorie";
 import BandieraCavallo from "@/components/BandieraCavallo";
-import {
 import FrasiCaricamento from "@/components/FrasiCaricamento";
+import {
   Users, Flag, TrendingUp, ChevronRight, Trophy, Dna, GitCompare,
   BookOpen, Activity, Award, Network, Coins, Zap, Clock, MapPin, Calendar, Heart, Sparkles, Warehouse, FlaskConical, BookMarked, Scale, Briefcase, Tag } from "lucide-react";
 
