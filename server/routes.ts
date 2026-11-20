@@ -2128,6 +2128,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const totalBreeders = (db.prepare(
         "SELECT COUNT(*) as c FROM horses WHERE horse_class = 'breeder'"
       ).get() as any).c;
+      // 20/11/2026: in home tutti i cavalli del database, anche quelli che
+      // compaiono solo nei pedigree (riproduttori, antenati esteri della
+      // seconda fonte che non sono nella tabella dei cavalli).
+      const soloPedigree = (db.prepare(`SELECT COUNT(*) as c FROM sqlite_master WHERE type='table' AND name='vp_names'`).get() as any).c
+        ? (db.prepare(`SELECT COUNT(*) as c FROM vp_names v WHERE NOT EXISTS (SELECT 1 FROM horses h WHERE h.name = v.name)`).get() as any).c
+        : 0;
+      const totalNelDatabase = totalHorses + totalBreeders + soloPedigree;
       const totalRaces = (db.prepare("SELECT COUNT(*) as c FROM races").get() as any).c;
       const totalStallions = (db.prepare("SELECT COUNT(DISTINCT sire) as c FROM stallion_rating_stats").get() as any).c;
       const gradeDist = db.prepare(`
@@ -2150,7 +2157,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         ORDER BY hr.birth_year DESC
         LIMIT 10
       `).all() as any[];
-      res.json({ totalHorses, totalRaces, totalStallions, totalBreeders, gradeDist, topByYear });
+      res.json({ totalHorses, totalNelDatabase, totalRaces, totalStallions, totalBreeders, gradeDist, topByYear });
     } finally {
       db.close();
     }
