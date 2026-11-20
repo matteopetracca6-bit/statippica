@@ -35,7 +35,7 @@ function sessoSoggetto(d: PedigreeData) {
 
 export default function PedigreePage() {
   const [search, setSearch] = useState("");
-  const [gens, setGens] = useState(4);
+  const [gens, setGens] = useState(5);
   const [hoveredAncestor, setHoveredAncestor] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<PedigreeData>({
@@ -73,7 +73,7 @@ export default function PedigreePage() {
   return (
     <div className="page-shell">
       <IntestazionePagina icona={Network} colore={COLORE_PED} titolo="Pedigree" margineSotto={18}
-        sottotitolo="Albero genealogico fino ai trisavoli, consanguineità e incroci ripetuti, per qualunque cavallo in archivio." />
+        sottotitolo="Albero genealogico fino alla quinta generazione, consanguineità e incroci ripetuti, per qualunque cavallo in archivio." />
 
       {/* Scelta del cavallo: tendina con ricerca, non piu' solo testo libero */}
       <div className="pannello" style={{ padding: "16px 20px", marginBottom: "24px",
@@ -91,7 +91,7 @@ export default function PedigreePage() {
             Fino a
           </div>
           <div style={{ display: "flex", gap: "4px" }}>
-            {([[2, "Nonni"], [3, "Bisnonni"], [4, "Trisavoli"]] as [number, string][]).map(([g, etichetta]) => (
+            {([[2, "Nonni"], [3, "Bisnonni"], [4, "Trisavoli"], [5, "5ª generazione"]] as [number, string][]).map(([g, etichetta]) => (
               <button
                 key={g}
                 onClick={() => setGens(g)}
