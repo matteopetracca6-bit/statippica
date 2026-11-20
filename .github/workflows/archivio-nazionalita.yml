@@ -1,0 +1,43 @@
+name: StatIppica — Nazionalita' degli stalloni (a mano)
+
+# 20/11/2026 (scripts/nazionalita_stalloni.py). Applica subito all'archivio il
+# paese degli stalloni cercato a mano (dati/nazionalita_stalloni.csv), senza
+# aspettare la notte, poi pubblica l'archivio e ripubblica il sito.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  nazionalita:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Applica le nazionalita'
+        run: python3 scripts/nazionalita_stalloni.py --db data.db
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
+      - name: Chiedi a Render di ripubblicare il sito
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 300; echo

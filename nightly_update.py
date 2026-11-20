@@ -5798,6 +5798,13 @@ def main():
         phase_correggi_genealogie_stalloni(conn)  # FASE 2g-bis: genealogie web -> registro UNIRE
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi
         try:
+            # Paese degli stalloni cercato a mano (dati/nazionalita_stalloni.csv).
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+            from nazionalita_stalloni import applica as phase_nazionalita_stalloni
+            print(f"[NAZIONALITA] {phase_nazionalita_stalloni(conn)}", file=sys.stderr)
+        except Exception as e:
+            print(f"[NAZIONALITA] errore: {e}", file=sys.stderr)
+        try:
             # Omonimi (omonimi.py): i figli nuovi arrivano con il nome del
             # genitore senza anno; si rimettono al genitore giusto.
             from omonimi import riassegna as phase_omonimi, ordina as phase_omonimi_nomi
