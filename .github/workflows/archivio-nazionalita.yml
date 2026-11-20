@@ -1,7 +1,8 @@
 name: StatIppica — Nazionalita' degli stalloni (a mano)
 
 # 20/11/2026 (scripts/nazionalita_stalloni.py). Applica subito all'archivio il
-# paese degli stalloni cercato a mano (dati/nazionalita_stalloni.csv), senza
+# paese degli stalloni cercato a mano (dati/nazionalita_stalloni.csv) e unisce
+# le schede degli stalloni con il nome storpiato, senza
 # aspettare la notte, poi pubblica l'archivio e ripubblica il sito.
 
 on:
@@ -24,8 +25,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
-      - name: Applica le nazionalita'
-        run: python3 scripts/nazionalita_stalloni.py --db data.db
+      - run: pip install requests beautifulsoup4 numpy pandas scikit-learn
+      - name: Applica le nazionalita' e unisci i refusi
+        env:
+          DB_PATH: data.db
+        run: |
+          python3 scripts/nazionalita_stalloni.py --db data.db
+          python3 - <<'PY'
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          nu.phase_stallion_ratings(conn)   # i figli dei refusi contano per lo stallone giusto
+          conn.commit()
+          for n in ["KEN WARKENTIN", "MANOFMANYMISSIONS", "MUSCLES YANKEE", "SJ'S PHOTO", "LOOK DE STAR", "E L TITAN"]:
+              print(n, conn.execute("SELECT n_figli_totali, grade FROM stallion_rating_stats WHERE sire = ?", (n,)).fetchone())
+          conn.close()
+          PY
       - name: Pubblica l'archivio aggiornato
         env:
           GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
