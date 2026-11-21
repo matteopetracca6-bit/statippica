@@ -1,0 +1,58 @@
+name: StatIppica — Puledri dagli allevatori di vendopuledri (a mano)
+
+# 21/11/2026 (vendopuledri_source.import_puledri). Lo stesso passo gira ogni
+# notte dentro le qualifiche; questo lavoro serve a farlo subito: puledri nati
+# l'anno scorso e quest'anno, poi voto da pedigree, archivio e sito.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  puledri:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests beautifulsoup4 numpy pandas scikit-learn
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Puledri e voto da pedigree
+        env:
+          DB_PATH: data.db
+        run: |
+          python3 - <<'PY'
+          import importlib.util, sqlite3
+          from datetime import datetime
+          import vendopuledri_source as vp
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec); spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          vp.init_vp_schema(conn)
+          for anno in (datetime.utcnow().year - 1, datetime.utcnow().year):
+              print(anno, vp.import_puledri(conn, anno))
+          nu.phase_voti_pedigree(conn)
+          conn.commit()
+          print(conn.execute("SELECT COUNT(*), SUM(r.grade IS NOT NULL) FROM horses h LEFT JOIN horse_ratings r ON r.name = h.name AND r.rating_mode = 'pedigree' WHERE h.source_role = 'vp_puledri'").fetchone())
+          PY
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
+      - name: Chiedi a Render di ripubblicare il sito
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 300; echo

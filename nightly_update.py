@@ -5590,6 +5590,12 @@ def phase_vp_qualifiche(conn: sqlite3.Connection) -> dict:
         "SELECT ? - COUNT(*) FROM vp_qualifiche_annate WHERE annata BETWEEN ? AND ?",
         (datetime.utcnow().year - 2 - vp.PRIMA_ANNATA_QUALIFICHE + 1,
          vp.PRIMA_ANNATA_QUALIFICHE, datetime.utcnow().year - 2)).fetchone()[0]
+    # 21/11/2026: i puledri nati l'anno scorso e quest'anno degli allevatori del sito.
+    for anno in (datetime.utcnow().year - 1, datetime.utcnow().year):
+        try:
+            print(f"[VP] Puledri nati {anno}: {vp.import_puledri(conn, anno)}", file=sys.stderr)
+        except Exception as e:
+            print(f"[VP] Puledri nati {anno}: errore {type(e).__name__}: {e}", file=sys.stderr)
     breeders = vp.import_breeders_directory(conn)
     print(f"[VP] Qualifiche: {seen} righe viste, {new} nuove; annate ancora da leggere: {mancano}; "
           f"allevatori in rubrica: {breeders}", file=sys.stderr)
