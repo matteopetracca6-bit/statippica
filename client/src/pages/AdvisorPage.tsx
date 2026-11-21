@@ -145,6 +145,7 @@ function quotaIncrocio(c?: Conto | null, base = 25): number {
 
 interface Simulation {
   stallion: string;
+  potenziale?: Candidate["potenziale"];
   mare: string;
   stud_fee: number;
   monta_manuale?: boolean;
@@ -391,6 +392,7 @@ function Dettaglio({ c, mare, onClose, pf, base }: { c: Candidate; mare: string;
 
   const buoni = sim?.prediction?.puledro?.prob_buono ?? c.prob_buono;
   const corre = sim?.prediction?.puledro?.prob_corre ?? c.prob_corre;
+  const pot = c.potenziale ?? sim?.potenziale ?? null;
 
   return (
     <div className="adv-dettaglio" data-testid="advisor-dettaglio">
@@ -443,10 +445,10 @@ function Dettaglio({ c, mare, onClose, pf, base }: { c: Candidate; mare: string;
             <Cifra titolo="Voto atteso" colore={C.cyan}
               valore={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{num(c.expected_score, 1)}{c.expected_grade && <GradeBadge grade={c.expected_grade} size="sm" />}</span>}
               sotto={isNum(c.typical_low) && isNum(c.typical_high) ? `di solito ${num(c.typical_low)}–${num(c.typical_high)}` : "fra chi corre"} />
-            {c.potenziale && (
+            {pot && (
               <Cifra titolo="Potenziale a 4 anni" colore="hsl(265 85% 76%)"
-                valore={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{num(c.potenziale.p50, 1)}<GradeBadge grade={lettera(c.potenziale.p50)} size="sm" /></span>}
-                sotto={`fra ${lettera(c.potenziale.p10)} e ${lettera(c.potenziale.p90)} · ${c.potenziale.etichetta?.esito ?? "in verifica"}`} />
+                valore={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{num(pot.p50, 1)}<GradeBadge grade={lettera(pot.p50)} size="sm" /></span>}
+                sotto={`fra ${lettera(pot.p10)} e ${lettera(pot.p90)} · ${pot.etichetta?.esito ?? "in verifica"}`} />
             )}
           </div>
         </div>

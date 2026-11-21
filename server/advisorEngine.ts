@@ -337,10 +337,29 @@ export interface InbreedingResult {
  * La stima del coefficiente segue Wright su tutte le coppie di comparse
  * (consanguineita.ts, 20/11/2026).
  */
+// Ricerca dell'albero (21/11/2026): prima il nome esatto, che usa l'indice;
+// solo se manca, il confronto ripulito (UPPER/TRIM scorre tutti i 34.000
+// nomi, e nella classifica completa dell'Advisor lo si faceva 330 volte).
+// L'albero della fattrice e' lo stesso per tutti gli stalloni: si tiene due minuti.
+const MEMO_ALBERI = new Map<string, { quando: number; v: { id: any; righe: any[] } }>();
+function alberoVp(db: DB, nome: string) {
+  const k = nome.toUpperCase().trim();
+  const c = MEMO_ALBERI.get(k);
+  if (c && Date.now() - c.quando < 2 * 60 * 1000) return c.v;
+  const id = (db.prepare("SELECT id FROM vp_names WHERE name = ? LIMIT 1").get(k) as any)?.id
+    ?? (db.prepare("SELECT id FROM vp_names WHERE UPPER(TRIM(name)) = ? LIMIT 1").get(k) as any)?.id;
+  const righe = id ? db.prepare(`SELECT p.path, n.name AS nome FROM vp_pedigree p
+    JOIN vp_names n ON n.id = p.ancestor_id WHERE p.horse_id = ?`).all(id) as any[] : [];
+  const v = { id, righe };
+  if (MEMO_ALBERI.size > 1000) MEMO_ALBERI.clear();
+  MEMO_ALBERI.set(k, { quando: Date.now(), v });
+  return v;
+}
+
 export function inbreeding(db: DB, stallion: string, mare: string): InbreedingResult {
-  const idOf = db.prepare("SELECT id FROM vp_names WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) LIMIT 1");
-  const sid = (idOf.get(stallion) as any)?.id;
-  const mid = (idOf.get(mare) as any)?.id;
+  const as = alberoVp(db, stallion), am = alberoVp(db, mare);
+  const sid = as.id;
+  const mid = am.id;
   if (!sid || !mid) {
     return {
       available: false, common_ancestors: [], coefficient_pct: 0, level: "nessuna",
@@ -350,11 +369,9 @@ export function inbreeding(db: DB, stallion: string, mare: string): InbreedingRe
 
   // Wright su tutte le coppie di comparse, senza contare due volte i tratti
   // in comune (consanguineita.ts). Lo stallone e la fattrice sono gen 0.
-  const righe = db.prepare(`SELECT p.path, n.name AS nome FROM vp_pedigree p
-    JOIN vp_names n ON n.id = p.ancestor_id WHERE p.horse_id = ?`);
   const ris = calcolaWright(
-    comparseVp(righe.all(sid) as any[], stallion.toUpperCase().trim()),
-    comparseVp(righe.all(mid) as any[], mare.toUpperCase().trim()),
+    comparseVp(as.righe, stallion.toUpperCase().trim()),
+    comparseVp(am.righe, mare.toUpperCase().trim()),
   );
   const coeff = ris.coefficiente;
   const common: InbreedingResult["common_ancestors"] = ris.comuni.map(c => ({

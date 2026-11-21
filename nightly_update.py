@@ -5875,6 +5875,14 @@ def main():
             phase_forza(conn, con_verifica=False)
         except Exception as e:
             print(f"[FORZA] errore: {e}", file=sys.stderr)
+        try:
+            # Misure del radar della scheda cavallo (scripts/radar_misure.py):
+            # il sito le legge invece di rifare il giro su tutte le gare.
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+            from radar_misure import phase_radar_misure
+            phase_radar_misure(conn)
+        except Exception as e:
+            print(f"[RADAR] errore: {e}", file=sys.stderr)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:
