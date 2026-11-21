@@ -8,14 +8,8 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          echo "== travsport"
-          for n in "READLY%20EXPRESS" "MANOFMANYMISSIONS" "NAPOLEON"; do
-            curl -s -A "$UA" -H "Accept: application/json" "https://api.travsport.se/webapi/horses/search/organisation/TROT?age=0&gender=BOTH&horseName=$n&trotBreed=ALL&autoSuffixWildcard=false" | head -c 700; echo
+          B=https://api.travsport.se/webapi
+          for u in "horses/search/organisation/TROT?horseName=READLY%20EXPRESS" "horses/search/organisation/TROT/sourceofdata/SPORT?horseName=READLY%20EXPRESS" "horses/search?horseName=READLY%20EXPRESS" "search/horses/organisation/TROT?name=READLY%20EXPRESS" "horses/search/organisation/TROT?age=0&gender=BOTH&horseName=READLY%20EXPRESS&trotBreed=ALL&autoSuffixWildcard=true" "horses/organisation/TROT/search?name=READLY%20EXPRESS"; do
+            sleep 4; echo "== $u"; curl -s -A "$UA" -H "Accept: application/json" -w " [%{http_code}]" "$B/$u" | head -c 400; echo
           done
-          echo "== letrot con cookie"
-          curl -s -c /tmp/j -b /tmp/j -A "$UA" -o /dev/null https://www.letrot.com/
-          for p in "search/horse/ready%20cash" "search/fuzzy/ready%20cash" "search/horse/ready-cash"; do
-            curl -s -c /tmp/j -b /tmp/j -A "$UA" -H "Accept: application/json, text/plain, */*" -H "X-Requested-With: XMLHttpRequest" -H "Referer: https://www.letrot.com/" -w " [%{http_code}]" "https://www.letrot.com/v1/api/$p" | head -c 700; echo
-          done
-          echo "== stdbred canada"
-          curl -s -A "$UA" -w " [%{http_code}]" "https://standardbredcanada.ca/horse-search?name=manofmanymissions" | grep -oE 'href="[^"]*horse[^"]*"' | head -5
+          sleep 4; curl -s -A "$UA" -o /tmp/s.html "https://sportapp.travsport.se/"; grep -oE '/(static|assets)/[^"]+\.js' /tmp/s.html | head -5
