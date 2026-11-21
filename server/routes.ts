@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { calcolaWright, comparseAlbero } from "./consanguineita";
+import { registraSimulatore } from "./simulatore";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 import { forzaCavallo } from "./forza";
 
@@ -298,6 +299,9 @@ function totaleMondiale(nome: string, anno: number) {
 }
 
 export function registerRoutes(httpServer: Server, app: Express) {
+  // Simulatore della corsa (simulatore.ts).
+  registraSimulatore(app, getDb, NOMI_CALENDARIO, vpTableExists);
+
   // Dopo l'avvio il server si chiede da solo le pagine piu' lente, cosi' il
   // primo visitatore trova i conti gia' fatti.
   setTimeout(async () => {
@@ -3558,7 +3562,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // Sorprese: nei primi tre con meno del 20%.
         const sorprese = voci.filter(v => v.top3 && v.prob < 20).map(v => ({ nome: v.horse_name, prob: v.prob, arrivo: v.arrivo_testo }));
         corse.push({
-          race_date: g[0].race_date, pista: g[0].pista, tipo,
+          race_date: g[0].race_date, pista: g[0].pista, tipo, codice: codice ?? null,
           corsa: /^\d{1,2}:\d{2}/.test(g[0].corsa) ? g[0].corsa.slice(0, 5) : null,
           numero: m && !/^\d{1,2}:\d{2}/.test(g[0].corsa) ? Number(m[1]) : null,
           partenti: g.length, favoriti_noti: favNoti.length, favoriti_a_segno: segno, voci,

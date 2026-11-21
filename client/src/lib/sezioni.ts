@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass, Flag } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -47,6 +47,8 @@ export const GRUPPI: Gruppo[] = [
     schede: [
     { href: "/calendario", label: "Calendario", nota: "Prossime gare con iscritti e voti", icon: Calendar, colore: "hsl(0 62% 56%)",
       descrizione: "Prossime gare con iscritti, voti e probabilità di arrivare nei primi tre" },
+    { href: "/simulatore", label: "Simulatore", nota: "La corsa simulata dal vivo, o mille volte", icon: Flag, colore: "hsl(355 72% 62%)",
+      descrizione: "Una corsa in programma o già corsa simulata sulla pista: velocità, penalità, corda, galoppi e squalifiche, anche mille volte di fila" },
     { href: "/ippodromi", label: "Ippodromi e Gran Premi", nota: "Piste, albo d'oro delle grandi corse e trend", icon: MapPin, colore: "hsl(352 68% 64%)",
       descrizione: "Le piste italiane, quanto pesa il numero di partenza, i vincitori dei Gran Premi dal 2014 e come cambiano i numeri negli anni" },
     { href: "/guidatori", label: "Guidatori", nota: "Chi fa rendere di più i cavalli", icon: Users, colore: "hsl(10 72% 60%)",

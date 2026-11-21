@@ -27,7 +27,7 @@ const DIM = "hsl(210 8% 42%)";
 
 type Voce = { horse_name: string; birth_year: number | null; prob: number; favorito: boolean; affidabile: boolean; arrivo: number | null; arrivo_testo: string | null; top3: boolean | null };
 type Mancante = { horse_name: string; birth_year: number | null; arrivo_testo: string | null; top3: boolean };
-type Corsa = { race_date: string; pista: string; tipo: string; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean; controllo?: Controllo | null;
+type Corsa = { race_date: string; pista: string; tipo: string; codice?: string | null; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean; controllo?: Controllo | null;
   vincitore?: { nome: string; prob: number | null; posto: number | null; su: number } | null; attesi?: number;
   sorprese?: { nome: string; prob: number; arrivo: string }[]; primo_favorito?: { nome: string; prob: number; arrivo: string | null; top3: boolean | null } | null };
 type Controllo = { tentativi: number; ultimo: string; esito: string; dettaglio: string | null };
@@ -314,6 +314,13 @@ export default function VerificaGare() {
                 </button>
                 {ap && (
                   <div className="verifica-corsa-corpo">
+                    {c.codice && (
+                      <Link href={`/simulatore?tipo=passata&codice=${encodeURIComponent(c.codice)}`}>
+                        <a className="vc-simula" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "hsl(355 70% 64%)", textDecoration: "none", marginBottom: 8 }}>
+                          ▶ Rivedi la corsa nel simulatore
+                        </a>
+                      </Link>
+                    )}
                     <div className="vc-sommario">
                       {c.vincitore && (
                         <div>
