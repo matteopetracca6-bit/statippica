@@ -8,17 +8,10 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+          for f in app.0c30b946 458.9ca2ab0d 566.dcdbe4b1 669.3a42bd68 721.fd59b202 73.77bd4f4d 762.90221c66 802.25a91b3e 843.a1296e73 961.c046c14d 968.1fe2af21; do
+            curl -sL -A "$UA" -o /tmp/$f.js "https://www.letrot.com/build/$f.js"
+            echo "== $f $(wc -c </tmp/$f.js)"
+            grep -oE '["'"'"'`][^"'"'"'` ]*(json|api|ajax|stats/|courses|performances)[^"'"'"'` ]*["'"'"'`]' /tmp/$f.js | sort -u | head -25
+          done
           curl -sL -A "$UA" -o /tmp/p.html "https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses"
-          python3 - <<'PY'
-          import re,html
-          s=open('/tmp/p.html',encoding='utf-8',errors='ignore').read()
-          for m in re.finditer(r'mtapi',s):
-              print('CTX', s[max(0,m.start()-400):m.start()+400].replace('\n',' '))
-          t=re.sub(r'<script.*?</script>|<style.*?</style>','',s,flags=re.S)
-          t=html.unescape(re.sub(r'<[^>]+>',' ',t)); t=re.sub(r'\s+',' ',t)
-          i=t.find('Records absolus'); print('DOPO', t[i:i+4000])
-          for m in re.finditer(r'<table[^>]*>',s): print('TABLE', m.group(0)[:200])
-          for m in re.finditer(r'data-[a-z\-]+="[^"]{3,120}"',s): pass
-          print('DATA', sorted(set(re.findall(r'data-(?:url|href|src|api|route)[a-z\-]*="[^"]+"',s)))[:30])
-          print('JS', sorted(set(re.findall(r'src="([^"]+\.js[^"]*)"',s)))[:20])
-          PY
+          grep -oE '(href|data-[a-z-]+)="[^"]*ZWdbYgYIBAsM[^"]*"' /tmp/p.html | sort -u
