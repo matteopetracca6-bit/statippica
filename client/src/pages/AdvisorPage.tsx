@@ -131,6 +131,7 @@ interface Candidate {
   incrocio?: Conto | null;
   linea?: Conto | null;
   fratelli?: Conto | null;
+  distanza_figli?: { profilo: "corto" | "lungo" | "entrambi" | null; figli: number; differenza_media: number } | null;
 }
 
 /** Conti degli incroci simili (server/incroci.ts). */
@@ -704,6 +705,8 @@ function Riga({ c, pos, attiva, spuntato, onApri, onSpunta, pf, base }: {
           {c.fratelli && c.fratelli.n > 0 && (
             <span className="adv-tag" data-tono="buono" title="Questa fattrice ha già figli di questo stallone">già provato: {c.fratelli.n} {c.fratelli.n === 1 ? "figlio" : "figli"}</span>
           )}
+          {c.distanza_figli?.profilo === "corto" && <span className="adv-tag" title={`Su ${c.distanza_figli.figli} figli con gare corte e lunghe, ne escono più adatti al corto che al lungo`}>figli più da corto</span>}
+          {c.distanza_figli?.profilo === "lungo" && <span className="adv-tag" title={`Su ${c.distanza_figli.figli} figli con gare corte e lunghe, ne escono più adatti al lungo che al corto`}>figli più da lungo</span>}
           {c.inbreeding_noto === false && <span className="adv-tag" title="Albero di uno dei due non disponibile">consang. non calcolabile</span>}
         </div>
       </div>

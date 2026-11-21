@@ -30,6 +30,7 @@ const CUORI: Record<string, string> = {
 };
 import { formatRecord, tempoKm } from "@/lib/record";
 import InbreedingPanel from "../components/InbreedingPanel";
+import { DistanzaCavallo, EtichettaProfilo, kmTesto, kmSotto, type Distanza } from "../components/DistanzaCavallo";
 import ValoreResiduo, { type ValoreCarriera } from "../components/ValoreResiduo";
 import CurvaVoto, { curvaPronta } from "../components/CurvaVoto";
 import { AlberoPedigreeCavallo } from "../components/AlberoPedigree";
@@ -697,6 +698,14 @@ export default function HorsePage() {
           <Cifra titolo="Guadagni" colore={horse.career_earnings ? "hsl(51 90% 62%)" : undefined}
             valore={horse.career_earnings != null ? `€ ${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
           <Cifra titolo="Record al km" valore={horse.record_career ? formatRecord(horse.record_career) : "—"} colore="hsl(183 70% 60%)" />
+          {(horse as any).distanza && <>
+            <Cifra titolo="Km gara corta" valore={kmTesto((horse as any).distanza.corto)} colore="hsl(28 85% 64%)"
+              sotto={kmSotto((horse as any).distanza.corto, "corto")} />
+            <Cifra titolo="Km gara lunga" valore={kmTesto((horse as any).distanza.lungo)} colore="hsl(205 75% 66%)"
+              sotto={(horse as any).distanza.profilo
+                ? <EtichettaProfilo profilo={((horse as any).distanza as Distanza).profilo} />
+                : kmSotto((horse as any).distanza.lungo, "lungo")} />
+          </>}
         </>}
         avviso={eStorico && !parziale ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
           : parziale ? (
@@ -911,6 +920,7 @@ export default function HorsePage() {
       {(horse.qualifica || (stats?.yearlyStats?.length ?? 0) > 0 || (horse.gare_estero ?? 0) + (horse.gare_italia ?? 0) > 0) && (
           <div className="pannello pannello-unito" style={panelStyle}>
             <QualificaCavallo q={horse.qualifica} />
+            <DistanzaCavallo d={(horse as any).distanza} />
             <RottureGaloppo tipo="cavallo" nome={horse.name} />
       {/* Year-by-year breakdown */}
       {stats?.yearlyStats && stats.yearlyStats.length > 0 && (
