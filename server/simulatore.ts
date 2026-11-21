@@ -139,7 +139,12 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       const rischioS = esiste(db, "rischio_galoppo_storico") ? db.prepare(`SELECT prob FROM rischio_galoppo_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
       const pronP = esiste(db, "pronostico_top3") ? db.prepare(`SELECT prob FROM pronostico_top3 WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
       const pronS = esiste(db, "pronostico_top3_storico") ? db.prepare(`SELECT prob FROM pronostico_top3_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
-      const quota = esiste(db, "quote_totalizzatore") ? db.prepare(`SELECT quota FROM quote_totalizzatore WHERE race_date = ? AND pista = ? AND corsa = ? AND horse_name = ?`) : null;
+      // Quote finali per nome senza segni: Hippoweb scrive "-S-", l'archivio "(S)".
+      const nq = (n: string) => String(n || "").toUpperCase().replace(/\s*[-(]\s*([A-Z]{1,3})\s*[-)]\s*$/, " $1").replace(/[^A-Z0-9]/g, "");
+      const quoteCorsa = new Map<string, number>();
+      if (esiste(db, "quote_totalizzatore") && numero != null)
+        for (const r of db.prepare(`SELECT horse_name, quota FROM quote_totalizzatore WHERE race_date = ? AND pista = ? AND corsa = ?`).all(data, pista, numero) as any[])
+          if (r.quota != null) quoteCorsa.set(nq(r.horse_name), r.quota);
 
       const cavalli = partenti.map(p => {
         const storia = ultime.all(p.nome, data) as any[];
@@ -168,7 +173,7 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
         const top3 = tipo === "passata"
           ? (pronS && ora ? (pronS.get(pista, data, ora, p.nome) as any)?.prob : null)
           : (pronP ? (pronP.get(sigla, data, ora, p.nome) as any)?.prob : null);
-        const q = quota && numero != null ? (quota.get(data, pista, numero, p.nome) as any)?.quota : null;
+        const q = quoteCorsa.get(nq(p.nome)) ?? null;
         const eff = guid && p.guidatore ? (guid.get(p.guidatore) as any)?.effetto_corretto : null;
         return {
           nome: p.nome, numero: p.numero, distanza: p.distanza ?? base, penalita: Math.max(0, (p.distanza ?? base) - base),
