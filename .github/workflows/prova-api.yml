@@ -5,7 +5,7 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
-      - run: python3 probe.py
+      - run: bash probe.sh
