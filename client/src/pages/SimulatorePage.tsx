@@ -17,6 +17,7 @@ import { Flag, Play, Pause, RotateCcw, Shuffle, Dices } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { coloreScheda } from "@/lib/sezioni";
 import IntestazionePagina from "../components/IntestazionePagina";
+import { CSS_DUE_COLONNE } from "../components/DueColonne";
 import { Spiegazione } from "../components/Spiegazione";
 import CavalloCaricamento from "@/components/CavalloCaricamento";
 import {
@@ -88,6 +89,7 @@ function mappa(corsa: CorsaDati, W: number, H: number) {
 /** Dove sta sul disegno il cavallo i (per la telecamera che lo segue). */
 function posizioneCavallo(corsa: CorsaDati, sim: Simulazione, i: number, W: number, H: number) {
   const m = mappa(corsa, W, H), c = sim.corridori[i];
+  if (!c) return [W / 2, H / 2];
   const [x, y] = m.punto(-corsa.distanza + Math.min(c.s, corsa.distanza + 60), 0.9 + c.corsia * LARGHEZZA_CORSIA);
   return [m.X(x), m.Y(y)];
 }
@@ -220,6 +222,7 @@ function disegna(ctx: CanvasRenderingContext2D, W: number, H: number, corsa: Cor
   const primo = sim.corridori.filter(c => c.stato !== "squalificato").sort((a, b) => b.s - a.s)[0];
   for (const c of ordine) {
     const cav = corsa.cavalli[c.i];
+    if (!cav) continue;
     const n = cav.numero ?? c.i + 1;
     const [x, y] = punto(inizio + Math.min(c.s, corsa.distanza + 60), 0.9 + c.corsia * LARGHEZZA_CORSIA);
     const px = X(x), py = Y(y);
@@ -408,7 +411,10 @@ export default function SimulatorePage() {
     setRiepilogo(r); setAvanz(null);
   };
 
-  const sim = simRef.current;
+  // La simulazione vale solo per la corsa che si sta guardando: appena cambia
+  // la corsa, finche' non e' pronta quella nuova, non si disegna la vecchia.
+  const sim = simRef.current && corsaSim && simRef.current.corsa === corsaSim ? simRef.current : null;
+  const seguiValido = segui != null && corsa && segui < corsa.cavalli.length ? segui : null;
   const voci = elencoTipo === "prossima" ? elenco?.prossime ?? [] : elenco?.passate ?? [];
   const giornate = Array.from(new Set(voci.map(v => v.data)));
   const dataScelta = corsa?.data ?? giornate[0];
@@ -429,15 +435,16 @@ export default function SimulatorePage() {
         sottotitolo="Scegli una corsa in programma o già corsa e guardala girare: velocità, spunto, tenuta, penalità ai nastri, corda e ruote esterne, galoppi e squalifiche. Poi simulala mille volte." />
 
       {/* Scelta della corsa */}
-      <div className="pannello" style={{ padding: "14px 16px", marginBottom: 14, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-        <div className="ed-linguette" role="tablist" style={{ marginBottom: 0 }}>
+      <style>{CSS_DUE_COLONNE}</style>
+      <div className="ed-linguette" role="tablist" style={{ marginBottom: 12 }}>
           <button className="ed-linguetta" role="tab" aria-selected={elencoTipo === "prossima"} onClick={() => { setElencoTipo("prossima"); scegli(elenco?.prossime[0]); }}>
             <span><b>In programma</b><small>prossime corse</small></span>
           </button>
           <button className="ed-linguetta" role="tab" aria-selected={elencoTipo === "passata"} onClick={() => { setElencoTipo("passata"); scegli(elenco?.passate[0]); }}>
             <span><b>Già corse</b><small>replay, ultimi 14 giorni</small></span>
           </button>
-        </div>
+      </div>
+      <div className="pannello" style={{ padding: "14px 16px", marginBottom: 14, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
         <Selettore etichetta="Giornata" valore={dataScelta ?? ""} opzioni={giornate.map(d => [d, dataIt(d)])}
           cambia={d => scegli(voci.find(v => v.data === d))} />
         <Selettore etichetta="Ippodromo" valore={pistaScelta ?? ""} opzioni={pisteDelGiorno.map(p => [p, titolo(p)])}
@@ -460,7 +467,7 @@ export default function SimulatorePage() {
           </div>
           <div className="sim-griglia">
             <div>
-              <Pista corsa={corsa} sim={sim} tick={tick} prospettiva={prospettiva} evidenziato={evidenziato} segui={segui} />
+              <Pista corsa={corsa} sim={sim} tick={tick} prospettiva={prospettiva} evidenziato={evidenziato} segui={seguiValido} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
                 <button className="sim-bottone forte" onClick={() => {
                   if (sim?.finita && corsaSim) { simRef.current = nuovaSimulazione(corsaSim, seme); azzeraCronaca(); setTick(t => t + 1); }
@@ -483,7 +490,7 @@ export default function SimulatorePage() {
                 </label>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
-                <Selettore etichetta="Segui un cavallo" valore={segui == null ? "" : String(segui)}
+                <Selettore etichetta="Segui un cavallo" valore={seguiValido == null ? "" : String(seguiValido)}
                   opzioni={[["", "Tutta la pista"], ...corsa.cavalli.map((c, i) => [String(i), `${c.numero ?? i + 1} ${c.nome}`] as [string, string])]}
                   cambia={v => setSegui(v === "" ? null : Number(v))} />
                 {conQuote && (
