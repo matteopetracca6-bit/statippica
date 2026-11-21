@@ -5,11 +5,7 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - run: |
-          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          B=https://api.travsport.se/webapi
-          for u in "horses/search/organisation/TROT?horseName=READLY%20EXPRESS" "horses/search/organisation/TROT/sourceofdata/SPORT?horseName=READLY%20EXPRESS" "horses/search?horseName=READLY%20EXPRESS" "search/horses/organisation/TROT?name=READLY%20EXPRESS" "horses/search/organisation/TROT?age=0&gender=BOTH&horseName=READLY%20EXPRESS&trotBreed=ALL&autoSuffixWildcard=true" "horses/organisation/TROT/search?name=READLY%20EXPRESS"; do
-            sleep 4; echo "== $u"; curl -s -A "$UA" -H "Accept: application/json" -w " [%{http_code}]" "$B/$u" | head -c 400; echo
-          done
-          sleep 4; curl -s -A "$UA" -o /tmp/s.html "https://sportapp.travsport.se/"; grep -oE '/(static|assets)/[^"]+\.js' /tmp/s.html | head -5
+      - uses: actions/checkout@v5
+      - run: python3 probe.py
