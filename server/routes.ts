@@ -225,7 +225,10 @@ function prendiListeRadar(db: any): ListeRadar {
   // (classe), quota di arrivi nei primi tre (costanza) e corse medie per stagione corsa
   // (frequenza). Tutto dalle gare in
   // archivio, come la testata della scheda.
-  const righe = db.prepare(`
+  // Dal 21/11/2026 le misure si calcolano di notte (scripts/radar_misure.py,
+  // stesso conto): qui si legge la tabella. Senza tabella si fa il giro qui.
+  const conTabella = (() => { try { return !!db.prepare(`SELECT 1 FROM radar_misure LIMIT 1`).get(); } catch { return false; } })();
+  const righe = conTabella ? db.prepare(`SELECT h, c, p, cl, nl, t3, st, y FROM radar_misure`).all() as any[] : db.prepare(`
     WITH liv AS (SELECT race_date d, track t, race_number n, MAX(prize_net / ${QUOTA_POSTO}) l
                  FROM races WHERE placement BETWEEN 1 AND 5 AND prize_net > 0 AND race_number IS NOT NULL
                    AND track <> 'ESTERO'
@@ -319,6 +322,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
                      "/api/calendar/verifica", "/api/pareggio/stalloni", "/api/pareggio/mercato", "/api/momento",
                      "/api/scuderia/esempio", "/api/controllo-a-posteriori"]) {
       try { await fetch(`http://127.0.0.1:${porta}${u}`); } catch { /* il sito funziona lo stesso */ }
+      // Una pausa fra un conto e l'altro: il server fa una cosa alla volta,
+      // e chi apre una scheda in quel minuto passa fra un conto e il prossimo.
+      await new Promise(r => setTimeout(r, 300));
     }
     // Le liste del radar della scheda del cavallo (un giro su tutte le gare).
     try { const db = getDb(); try { prendiListeRadar(db); } finally { db.close(); } } catch { /* si rifanno alla prima scheda */ }
@@ -914,6 +920,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const name = decodeURIComponent(req.params.name).toUpperCase();
     const year = parseInt(req.params.year);
     const db = getDb();
+    // Tempi delle parti della scheda nell'intestazione Server-Timing
+    // (21/11/2026): per vedere da fuori quale parte rallenta.
+    const tempi: string[] = [];
+    let ultimo = performance.now();
+    const segna = (k: string) => { const t = performance.now(); tempi.push(`${k};dur=${(t - ultimo).toFixed(1)}`); ultimo = t; };
     try {
       // Stesso cavallo con due schede: quella da stallone (nome senza sigla,
       // usata dai figli) e quella da corsa (con la sigla del paese). Chi apre
@@ -1011,6 +1022,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // da stallone o da fattrice, che ha figli, voto e statistiche. Appena un
       // riproduttore riceve una carriera (la ricerca notturna su UNIRE), la
       // scheda torna a mostrarsi.
+      segna("base");
       horse.potenziale = potenzialeCavallo(db, name, horse.birth_year ?? null);
       // Forza e curva di carriera (forza.py): nella scheda prendono il posto
       // del potenziale ai 4 anni.
@@ -1040,6 +1052,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         }
       }
 
+      segna("potenziale_forza");
       // Last 20 races
       const races = db.prepare(`
         SELECT race_date, track, placement, placement_raw, time_km,
@@ -1094,8 +1107,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Stesso albero della pagina Pedigree (genealogia propria di padre e
       // madre compresa). Se la fonte non ha ancora la genealogia la si chiede,
       // ma senza far aspettare la scheda piu' di qualche secondo.
+      segna("gare_nonni");
       await Promise.race([completaGenealogia(db, name), new Promise(r => setTimeout(r, 4000))]);
+      segna("fonte_genealogia");
       const { tree: alberoIntero } = alberoGenealogico(db, name);
+      segna("albero");
       const nome = (x: any) => (x && x.name) || null;
       // L'albero cerca il cavallo per nome: con un omonimo di un'altra annata
       // i genitori potrebbero essere diversi, e allora non lo si usa.
@@ -1118,6 +1134,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
          corso o in quello precedente: la stagione e' lunga e un cavallo
          che ha corso a novembre non e' ritirato a gennaio. */
       const annoOggi = new Date().getFullYear();
+      segna("pedigree");
       /* Circa una gara su dieci nell'archivio non ha data. Per un cavallo
          con qualche gara datata non e' un problema, ma per uno che non ne
          ha nessuna non si puo' dire se sia fermo o se manchi il dato: sono
@@ -1201,6 +1218,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Viene dalla seconda fonte (vp_qualifiche). Il nome da solo non basta,
       // ci sono omonimi: si tiene la prova dell'annata giusta, oppure, se
       // l'annata non e' segnata, una prova fatta fra 1 e 6 anni dopo la nascita.
+      segna("valore_voto");
       let qualifica: any = null;
       if (vpTableExists(db, "vp_qualifiche") && horse.birth_year) {
         try {
@@ -1220,12 +1238,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
             // (una per cavallo): un tempo fatto all'estero non si confronta.
             const tardivaQ = Number(String(q.qual_date).slice(0, 4)) - horse.birth_year >= 5;
             if (haAnnata && q.time_km && q.track !== "ES" && !tardivaQ) {
-              const r = db.prepare(`
-                WITH ${cteQualifiche(db)}
-                SELECT SUM(CASE WHEN time_km < @t THEN 1 ELSE 0 END) + 1 AS pos, COUNT(*) AS n
-                FROM qu WHERE annata = @anno AND rn = 1 AND fuori = 0 AND time_km IS NOT NULL
-              `).get({ t: q.time_km, anno: horse.birth_year }) as any;
-              if (r?.n >= 50) { posizione = r.pos; suTotale = r.n; }
+              const tempi = tempiQualificaAnnata(db, horse.birth_year);
+              let sotto = 0;
+              while (sotto < tempi.length && tempi[sotto] < q.time_km) sotto++;
+              if (tempi.length >= 50) { posizione = sotto + 1; suTotale = tempi.length; }
             }
             qualifica = {
               // Un tempo non credibile (es. "1.8.3") ha time_km vuoto: non si
@@ -1245,6 +1261,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
         } catch { /* fonte non ancora pronta */ }
       }
 
+      segna("qualifica");
+      const radar = radarCavallo(db, horse);
+      segna("radar");
+      res.setHeader("Server-Timing", tempi.join(", "));
       res.json({
         ...horse, races, siblings, pedigree,
         qualifica,
@@ -1253,7 +1273,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         in_attivita: inAttivita,
         valore_carriera: valoreCarriera,
         affidabilita_voto: affidabilita,
-        radar: radarCavallo(db, horse),
+        radar,
         totali_mondiali: horse.rating_mode === "storico" ? totaleMondiale(horse.name, horse.birth_year) : null,
       });
     } finally {
@@ -2966,9 +2986,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // 43 e 51 e rendeva il prezzo praticamente uguale per tutti.
       const rivendita = stimaRivendita(stallion, studFee, costoYearling);
 
+      let potenziale: any = null;
+      try { potenziale = potenzialeNascita(db, stallion, contestoMadre(db, mare)); } catch { /* resta senza */ }
       res.json({
         stallion,
         mare,
+        potenziale,
         mareData: mareData || null,
         stud_fee: studFee,
         monta_manuale: montaManuale != null,
@@ -3216,9 +3239,6 @@ export function registerRoutes(httpServer: Server, app: Express) {
           return true;
         })
         .map((s: any) => {
-          // Potenziale dinamico allo stadio nascita (potenziale.py): lo stesso
-          // modello delle schede, per il puledro di questa coppia.
-          const potenziale = potenzialeNascita(db, s.name, ctxMadre);
           // Ogni candidato viene valutato SULLA FATTRICE scelta:
           // stesso stallone + fattrice diversa = risultato diverso.
           const p = predictPair(db, s.name, fattriceUpper);
@@ -3244,9 +3264,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
             value_index: fee
               ? Math.round(((p.expected_score - p.population_mean) / (fee / 1000)) * 100) / 100
               : null,
-            reasons: explain(p, inb, fee),
             score_rank: p.expected_score,
-            potenziale,
             padre_stallone: padreStallone ? String(padreStallone).toUpperCase().trim() : null,
             incrocio: inc.stretto(s.name),
             linea: inc.linea(padreStallone),
@@ -3262,6 +3280,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // tutti i nati (anche chi non corre). A pari probabilita', voto atteso.
         .sort((a: any, b: any) => ((b.prob_buono ?? -1) - (a.prob_buono ?? -1))
                                   || (b.expected_score - a.expected_score));
+      // Il potenziale a 4 anni (potenziale.py) percorre centinaia di alberi:
+      // per tutti gli stalloni costava piu' del resto della classifica. Si
+      // calcola per i primi 25; per gli altri lo da' il dettaglio della coppia
+      // (/api/advisor/simulate), quando lo si apre.
+      candidates.forEach((c: any, i: number) => { c.potenziale = i < 25 || singolo ? potenzialeNascita(db, c.name, ctxMadre) : null; });
 
       const paesi = singolo ? [] : Array.from(new Set(catalogo.map((s: any) => String(s.country ?? "").toUpperCase()).filter(Boolean))).sort();
 
@@ -3962,6 +3985,23 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // come "altre prove", ciascuna con il motivo.
   function qualHaAnnata(db: any): boolean {
     return (db.prepare("PRAGMA table_info(vp_qualifiche)").all() as any[]).some(c => c.name === "annata");
+  }
+  // Tempi di qualifica di un'annata (una prova per cavallo, solo italiane e
+  // non tardive), in ordine: la posizione nella scheda si conta qui invece di
+  // rifare la classifica di tutte le 20.000 prove a ogni scheda (21/11/2026).
+  // Si rifanno quando arriva l'archivio nuovo.
+  let tempiQualifica: { mtime: number; perAnno: Map<number, number[]> } | null = null;
+  function tempiQualificaAnnata(db: any, anno: number): number[] {
+    const mt = mtimeDb();
+    if (!tempiQualifica || tempiQualifica.mtime !== mt) tempiQualifica = { mtime: mt, perAnno: new Map() };
+    let v = tempiQualifica.perAnno.get(anno);
+    if (!v) {
+      v = (db.prepare(`WITH ${cteQualifiche(db)}
+        SELECT time_km t FROM qu WHERE annata = ? AND rn = 1 AND fuori = 0 AND time_km IS NOT NULL ORDER BY time_km`)
+        .all(anno) as any[]).map(r => r.t);
+      tempiQualifica.perAnno.set(anno, v);
+    }
+    return v;
   }
   function cteQualifiche(db: any): string {
     const haAnnata = qualHaAnnata(db);
