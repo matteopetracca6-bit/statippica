@@ -8,15 +8,17 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          for u in "https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses" "https://www.letrot.com/stats/fiche-cheval/face-time-bourbon/ZWdbYgYIBAsM/courses/dernieres-performances" "https://www.paris-turf.com/fiche-cheval/face-time-bourbon-1274703"; do
-            code=$(curl -sL -A "$UA" -o /tmp/p.html -w "%{http_code} %{url_effective}" "$u"); echo "== $u -> $code $(wc -c </tmp/p.html)"
-            python3 - <<'PY'
+          curl -sL -A "$UA" -o /tmp/p.html "https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses"
+          python3 - <<'PY'
           import re,html
           s=open('/tmp/p.html',encoding='utf-8',errors='ignore').read()
+          for m in re.finditer(r'mtapi',s):
+              print('CTX', s[max(0,m.start()-400):m.start()+400].replace('\n',' '))
           t=re.sub(r'<script.*?</script>|<style.*?</style>','',s,flags=re.S)
           t=html.unescape(re.sub(r'<[^>]+>',' ',t)); t=re.sub(r'\s+',' ',t)
-          i=t.find('Montier'); print('TESTO', t[max(0,i-1500):i+3500] if i>=0 else t[:2500])
-          print('JSON api:', sorted(set(re.findall(r'https?://[a-z.\-]*letrot[^"\' ]*api[^"\' ]*',s)))[:10])
-          print('fetch urls:', sorted(set(re.findall(r'["\'](/[a-z\-/]*(?:api|ajax|json)[^"\']*)["\']',s)))[:15])
+          i=t.find('Records absolus'); print('DOPO', t[i:i+4000])
+          for m in re.finditer(r'<table[^>]*>',s): print('TABLE', m.group(0)[:200])
+          for m in re.finditer(r'data-[a-z\-]+="[^"]{3,120}"',s): pass
+          print('DATA', sorted(set(re.findall(r'data-(?:url|href|src|api|route)[a-z\-]*="[^"]+"',s)))[:30])
+          print('JS', sorted(set(re.findall(r'src="([^"]+\.js[^"]*)"',s)))[:20])
           PY
-          done
