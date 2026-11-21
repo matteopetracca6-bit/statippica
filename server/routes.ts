@@ -118,6 +118,11 @@ async function statoGitHub(): Promise<any> {
   return dati;
 }
 
+/** Nome per abbinare le quote: "FAEN TROOT -S-" e "FAEN TROOT (S)" sono lo stesso cavallo. */
+function nomeQuota(n: string): string {
+  return String(n || "").toUpperCase().replace(/\s*[-(]\s*([A-Z]{1,3})\s*[-)]\s*$/, " $1").replace(/[^A-Z0-9]/g, "");
+}
+
 function getDb() {
   return new Database(DB_PATH, { readonly: true });
 }
@@ -3436,7 +3441,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     assicuraIndici();
     const db = getDb();
     try {
-      const giorni = Math.max(1, Math.min(30, parseInt(req.query.giorni as string) || 14));
+      const giorni = Math.max(1, Math.min(62, parseInt(req.query.giorni as string) || 14));
       const c = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pronostico_top3_storico'").get();
       if (!c) return res.json({ corse: [], sintesi: null });
       const righe = db.prepare(`
@@ -3536,12 +3541,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
         let favMercato: string[] | null = null;
         let segnoMercato: number | null = null;
         const nCorsa = String(codice ?? "").match(/_R?(\d+)$/);
+        // Quote finali del totalizzatore per nome; Hippoweb scrive "-S-" dove
+        // l'archivio scrive "(S)": si confrontano i nomi senza segni.
+        const qq = new Map<string, number>();
+        if (leggiQuote && nCorsa) {
+          for (const x of leggiQuote.all(g[0].race_date, g[0].pista, Number(nCorsa[1])) as any[])
+            if (x.quota != null) qq.set(nomeQuota(x.horse_name), x.quota);
+        }
+        for (const v of voci as any[]) v.quota = qq.get(nomeQuota(v.horse_name)) ?? null;
+        for (const m of mancanti as any[]) m.quota = qq.get(nomeQuota(m.horse_name)) ?? null;
         if (leggiQuote && nCorsa && mancanti.length === 0) {
-          const qq = new Map<string, number>((leggiQuote.all(g[0].race_date, g[0].pista, Number(nCorsa[1])) as any[])
-            .filter(x => x.quota != null).map(x => [x.horse_name, x.quota]));
           const partitiQ = voci.filter(v => v.top3 != null);
-          if (partitiQ.length >= 4 && partitiQ.every(v => qq.has(v.horse_name))) {
-            const ord = [...partitiQ].sort((a, b) => qq.get(a.horse_name)! - qq.get(b.horse_name)!).slice(0, 3);
+          if (partitiQ.length >= 4 && partitiQ.every(v => qq.has(nomeQuota(v.horse_name)))) {
+            const ord = [...partitiQ].sort((a, b) => qq.get(nomeQuota(a.horse_name))! - qq.get(nomeQuota(b.horse_name))!).slice(0, 3);
             favMercato = ord.map(v => v.horse_name);
             segnoMercato = ord.filter(v => v.top3).length;
             if (tipo === "del_giorno" && favNoti.length === 3) {
