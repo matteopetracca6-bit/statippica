@@ -980,6 +980,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const tot = db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) p
                               FROM races WHERE horse_name = ?`).get(name) as any;
       horse.career_top3 = tot?.n ? (tot.p ?? 0) : ((horse.career_wins ?? 0) + (horse.career_places ?? 0));
+      // Carriera completa di chi ha corso soprattutto all'estero
+      // (scripts/carriere_complete.py): i totali vengono dalla fonte ufficiale
+      // straniera, le gare una per una restano solo quelle italiane.
+      horse.carriera_completa = vpTableExists(db, "carriere_complete")
+        ? (db.prepare(`SELECT * FROM carriere_complete WHERE nome = ? AND anno = ?`).get(name, year) as any) ?? null : null;
+      if (horse.carriera_completa) horse.career_top3 = horse.carriera_completa.primi_tre;
       // Carriera parziale (novembre 2026): cavalli con gare in archivio ma senza
       // i totali di carriera. Sono quelli recuperati dai risultati ufficiali
       // MASAF (solo dal 2016) che le schede di TrottoWeb non trovano, e i
@@ -1053,7 +1059,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                                WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))`).get(nomeStallone) as any;
         horse.stallone = st ? { nome: st.sire, n_figli: st.n_figli_totali, voto: st.grade } : null;
         const paese = String(horse.country ?? "").toUpperCase();
-        horse.voto_non_comparabile = !!st && !!paese && paese !== "ITA" && paese !== "IT";
+        horse.voto_non_comparabile = !!st && !!paese && paese !== "ITA" && paese !== "IT" && !horse.carriera_completa;
       }
       horse.vai_a_pagina = null;
       if (!(horse.career_races > 0) && !(tot?.n > 0) && !horse.stallone) {

@@ -2746,6 +2746,15 @@ def phase_ratings(conn: sqlite3.Connection):
     """):
         stagioni_corse[(nome_g or "").strip().upper()] = n_st
 
+    # Carriere complete di chi ha corso all'estero (scripts/carriere_complete.py):
+    # le stagioni vere, se sono piu' di quelle contate dalle gare italiane.
+    try:
+        for nome_c, n_c in conn.execute("SELECT nome, n_stagioni FROM carriere_complete"):
+            k = (nome_c or "").strip().upper()
+            stagioni_corse[k] = max(stagioni_corse.get(k, 0), n_c or 0)
+    except sqlite3.Error:
+        pass
+
     anno_corrente = datetime.utcnow().year
 
     def stagioni_possibili(birth_year) -> int:
@@ -5812,6 +5821,9 @@ def main():
             print(f"[MONTE] {phase_monte_stalloni(conn)}", file=sys.stderr)
             from puledri_web import applica as phase_puledri_web
             print(f"[PULEDRI-WEB] {phase_puledri_web(conn)}", file=sys.stderr)
+            # Carriere complete di chi ha corso all'estero (dati/carriere_complete.csv).
+            from carriere_complete import applica as phase_carriere_complete
+            print(f"[CARRIERE COMPLETE] {phase_carriere_complete(conn)}", file=sys.stderr)
         except Exception as e:
             print(f"[NAZIONALITA] errore: {e}", file=sys.stderr)
         try:
