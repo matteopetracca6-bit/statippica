@@ -35,9 +35,11 @@ jobs:
           nu = importlib.util.module_from_spec(spec); spec.loader.exec_module(nu)
           conn = sqlite3.connect("data.db")
           nu.phase_ratings(conn)
+          nu.phase_historic_ratings(conn)
+          nu.phase_pulisci_voti_pedigree(conn)
           nu.phase_stallion_ratings(conn)
           conn.commit()
-          for r in conn.execute("SELECT h.name, h.career_races, h.career_wins, h.career_earnings, r.grade, r.score FROM carriere_complete c JOIN horses h ON h.name = c.nome AND h.birth_year = c.anno LEFT JOIN horse_ratings r ON r.name = h.name AND r.rating_mode = 'performance'"):
+          for r in conn.execute("SELECT h.name, h.career_races, h.career_wins, h.career_earnings, r.grade, r.score FROM carriere_complete c JOIN horses h ON h.name = c.nome LEFT JOIN horse_ratings r ON r.name = h.name AND r.rating_mode IN ('performance', 'storico')"):
               print(r)
           conn.close()
           PY

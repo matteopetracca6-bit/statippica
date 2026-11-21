@@ -710,13 +710,17 @@ export default function HorsePage() {
         avviso={(horse as any).carriera_completa ? (
             <div data-testid="nota-carriera-completa" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(205 70% 78%)",
                  border: "1px solid hsl(205 60% 45% / .45)", background: "hsl(205 50% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
-              Carriera completa, in tutto il mondo: {(horse as any).carriera_completa.corse} corse, {(horse as any).carriera_completa.vittorie} vittorie,
-              {" "}{(horse as any).carriera_completa.primi_tre} volte nei primi tre, record {formatRecord((horse as any).carriera_completa.record)}
-              {(horse as any).carriera_completa.record_luogo ? <> ({(horse as any).carriera_completa.record_luogo})</> : null}.
-              {" "}Fonte: {(horse as any).carriera_completa.url
-                ? <a href={(horse as any).carriera_completa.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{(horse as any).carriera_completa.fonte}</a>
-                : (horse as any).carriera_completa.fonte}.
-              {" "}Il voto è calcolato su questi totali. Le gare una per una qui sotto sono solo quelle corse in Italia.
+              {(() => { const cc = (horse as any).carriera_completa; return <>
+              Carriera completa, in tutto il mondo: {cc.corse} corse, {cc.vittorie} vittorie
+              {cc.primi_tre != null ? <>, {cc.primi_tre} volte nei primi tre</> : null}
+              {cc.record ? <>, record {formatRecord(cc.record)}{cc.record_luogo ? <> ({cc.record_luogo})</> : null}</> : null}.
+              {" "}Fonte: {cc.url ? <a href={cc.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{cc.fonte}</a> : cc.fonte}.
+              {cc.valuta_originale ? <> I guadagni sono {Math.round(cc.importo_originale).toLocaleString("it-IT")} {cc.valuta_originale === "SEK" ? "corone svedesi" : cc.valuta_originale === "USD" ? "dollari" : cc.valuta_originale},
+                convertiti in euro al cambio medio della BCE degli anni di corsa ({String(cc.cambio).replace(".", ",")} per un euro): circa.</> : null}
+              {" "}Il voto è calcolato su questi totali, senza spostare la scala degli altri cavalli, che contano solo le corse in Italia
+              {cc.stagioni_stimate ? <>; le stagioni di corsa non sono nella fonte e sono stimate dalle corse (una ogni 12)</> : null}.
+              {" "}Le gare una per una qui sotto sono solo quelle corse in Italia.
+              </>; })()}
             </div>
           ) : eStorico && !parziale ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
           : parziale ? (
