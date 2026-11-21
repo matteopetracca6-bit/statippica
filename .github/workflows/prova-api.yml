@@ -9,8 +9,10 @@ jobs:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
           curl -sL -A "$UA" -o /tmp/p.html "https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses"
-          grep -oE '(api-uri|apiuri|:api-uri|api_uri)="[^"]*"' /tmp/p.html | sort -u | head
-          grep -oE '/v1/api/[^"&<> ]*' /tmp/p.html | sort -u | head -20
-          for u in /v1/api/horses/ZWdbYgYIBAsM/performances /v1/api/horses/ZWdbYgYIBAsM/races /v1/api/horses/ZWdbYgYIBAsM; do
-            echo "== $u"; curl -sL -A "$UA" -H "Accept: application/json" -H "X-Requested-With: XMLHttpRequest" -H "Referer: https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses" "https://www.letrot.com$u" | head -c 1500; echo
-          done
+          python3 - <<'PY'
+          import re
+          s=open('/tmp/p.html',encoding='utf-8',errors='ignore').read()
+          for k in ['horsePerformances','connector','performances','v1/']:
+              for m in list(re.finditer(k,s))[:4]:
+                  print('K',k,'::',s[max(0,m.start()-500):m.start()+500].replace('\n',' '))
+          PY
