@@ -39,9 +39,12 @@ jobs:
           vp.init_vp_schema(conn)
           for anno in (datetime.utcnow().year - 1, datetime.utcnow().year):
               print(anno, vp.import_puledri(conn, anno))
+          import sys; sys.path.insert(0, "scripts")
+          import puledri_web
+          print("web", puledri_web.applica(conn))
           nu.phase_voti_pedigree(conn)
           conn.commit()
-          print(conn.execute("SELECT COUNT(*), SUM(r.grade IS NOT NULL) FROM horses h LEFT JOIN horse_ratings r ON r.name = h.name AND r.rating_mode = 'pedigree' WHERE h.source_role = 'vp_puledri'").fetchone())
+          print(conn.execute("SELECT COUNT(*), SUM(r.grade IS NOT NULL) FROM horses h LEFT JOIN horse_ratings r ON r.name = h.name AND r.rating_mode = 'pedigree' WHERE h.source_role IN ('vp_puledri', 'puledri_web')").fetchone())
           PY
       - name: Pubblica l'archivio aggiornato
         env:

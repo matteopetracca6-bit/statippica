@@ -5810,6 +5810,8 @@ def main():
             print(f"[NAZIONALITA] {phase_nazionalita_stalloni(conn)}", file=sys.stderr)
             from monte_stalloni import applica as phase_monte_stalloni
             print(f"[MONTE] {phase_monte_stalloni(conn)}", file=sys.stderr)
+            from puledri_web import applica as phase_puledri_web
+            print(f"[PULEDRI-WEB] {phase_puledri_web(conn)}", file=sys.stderr)
         except Exception as e:
             print(f"[NAZIONALITA] errore: {e}", file=sys.stderr)
         try:
