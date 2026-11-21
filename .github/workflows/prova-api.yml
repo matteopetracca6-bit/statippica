@@ -8,11 +8,8 @@ jobs:
     steps:
       - run: |
           B=https://statippica.onrender.com
-          for i in $(seq 1 60); do
-            curl -s "$B/api/advisor/simulate?stallion=MAHARAJAH&mare=ONE%20DREAM%20GRIF" | grep -q '"potenziale"' && break; sleep 20
-          done
-          echo "nuovo deploy pronto dopo $i tentativi"; sleep 60
-          for giro in 1 2; do
+          sleep 780; echo "nuovo deploy pronto"
+          for giro in 1 2 3; do
             for h in "VIVID%20WISE%20AS/2014" "GINOSTRABLIGGI/2022" "FRAGOLINO%20ROSSO%20(D)/2022"; do
               curl -s -D /tmp/h -o /dev/null -w "%{http_code} %{time_total}s $h\n" "$B/api/horse/$h"; grep -i server-timing /tmp/h || true
             done
