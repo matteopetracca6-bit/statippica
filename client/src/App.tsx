@@ -48,6 +48,7 @@ const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const DriversPage = lazy(() => import("./pages/DriversPage"));
 const DriverPage = lazy(() => import("./pages/DriverPage"));
 const AllenatoriPage = lazy(() => import("./pages/AllenatoriPage"));
+const SimulatorePage = lazy(() => import("./pages/SimulatorePage"));
 const AllenatorePage = lazy(() => import("./pages/AllenatorePage"));
 const ProprietariPage = lazy(() => import("./pages/ProprietariPage"));
 const ProprietarioPage = lazy(() => import("./pages/ProprietarioPage"));
@@ -98,6 +99,7 @@ export default function App() {
               <Route path="/fattrici" component={MaresPage} />
               <Route path="/fattrice/:name" component={MarePage} />
               <Route path="/calendario" component={CalendarPage} />
+              <Route path="/simulatore" component={SimulatorePage} />
               <Route path="/gran-premi" component={IppodromiTrendPage} />
               <Route path="/albo-doro" component={IppodromiTrendPage} />
               <Route path="/palmares" component={IppodromiTrendPage} />

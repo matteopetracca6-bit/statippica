@@ -192,6 +192,9 @@ export default function CalendarPage() {
                       <span style={{ fontSize: "12px", color: "hsl(210 8% 40%)", marginLeft: "8px" }}>
                         {race.n_runners} partenti
                       </span>
+                      <Link href={`/simulatore?tipo=prossima&pista=${encodeURIComponent(race.track)}&data=${race.race_date}&ora=${encodeURIComponent(race.race_time)}`}>
+                        <a onClick={e => e.stopPropagation()} style={{ fontSize: "12px", fontWeight: 600, color: "hsl(355 70% 64%)", marginLeft: "10px", textDecoration: "none" }}>▶ Simula</a>
+                      </Link>
                     </div>
                   </div>
 
