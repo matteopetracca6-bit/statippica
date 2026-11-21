@@ -85,7 +85,7 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
           const segna = db.prepare(`SELECT corsa FROM pronostico_top3_storico WHERE race_date = ? AND pista = ? AND horse_name = ?`);
           const conta = new Map<string, number>();
           for (const p of partenti) { const r = segna.get(data, pista, p.nome) as any; if (r) conta.set(r.corsa, (conta.get(r.corsa) ?? 0) + 1); }
-          ora = [...conta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+          ora = Array.from(conta.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
         }
       } else {
         sigla = String(req.query.pista || ""); data = String(req.query.data || ""); ora = String(req.query.ora || "");
