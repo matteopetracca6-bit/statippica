@@ -24,6 +24,8 @@ export interface CavalloDati {
   galoppo: number; effetto_guidatore: number | null; corse_note: number;
   /** Vittorie con questo numero su questa pista rispetto alla media dei numeri in corsa (1 = nella media). */
   vantaggio_numero?: number | null;
+  /** Quota finale del totalizzatore, se c'e' (per "pesa il mercato"). */
+  quota?: number | null;
 }
 export interface CorsaDati {
   distanza: number; partenza: "autostart" | "nastri"; lunghezza_pista: number; km_pista: number;
@@ -282,7 +284,7 @@ export function simulaMolte(corsa: CorsaDati, n: number, seme: number, avanzamen
  * quelle che il pubblico dava (1/quota, normalizzato). peso 0 = solo i nostri
  * dati, 1 = tutto il mercato. Restituisce una copia della corsa.
  */
-export function pesaMercato(corsa: CorsaDati & { cavalli: (CavalloDati & { quota?: number | null })[] }, peso: number, giri = 3, prove = 160): CorsaDati {
+export function pesaMercato(corsa: CorsaDati, peso: number, giri = 3, prove = 160): CorsaDati {
   const quote = corsa.cavalli.map(c => c.quota ?? null);
   if (peso <= 0 || quote.some(q => !q || q <= 1)) return corsa;
   const inv = quote.map(q => 1 / q!), tot = inv.reduce((a, b) => a + b, 0);
