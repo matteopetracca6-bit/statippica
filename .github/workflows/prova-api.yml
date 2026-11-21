@@ -8,9 +8,15 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          for u in "https://www.letrot.com/" "https://www.letrot.com/stats/recherche?q=face+time+bourbon" "https://www.letrot.com/recherche?q=face+time+bourbon" "https://www.letrot.com/stats/fiche-cheval/face-time-bourbon" "https://fr.wikipedia.org/wiki/Face_Time_Bourbon" "https://www.equidia.fr/chevaux/face-time-bourbon" "https://www.turf-fr.com/recherche?q=face+time+bourbon"; do
+          for u in "https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses" "https://www.letrot.com/stats/fiche-cheval/face-time-bourbon/ZWdbYgYIBAsM/courses/dernieres-performances" "https://www.paris-turf.com/fiche-cheval/face-time-bourbon-1274703"; do
             code=$(curl -sL -A "$UA" -o /tmp/p.html -w "%{http_code} %{url_effective}" "$u"); echo "== $u -> $code $(wc -c </tmp/p.html)"
-            grep -oE 'href="[^"]*(fiche-cheval|chevaux|cheval)[^"]*"' /tmp/p.html | sort -u | head -8
-            grep -oiE '(api|graphql)[^" ]{0,80}' /tmp/p.html | sort -u | head -5
+            python3 - <<'PY'
+          import re,html
+          s=open('/tmp/p.html',encoding='utf-8',errors='ignore').read()
+          t=re.sub(r'<script.*?</script>|<style.*?</style>','',s,flags=re.S)
+          t=html.unescape(re.sub(r'<[^>]+>',' ',t)); t=re.sub(r'\s+',' ',t)
+          i=t.find('Montier'); print('TESTO', t[max(0,i-1500):i+3500] if i>=0 else t[:2500])
+          print('JSON api:', sorted(set(re.findall(r'https?://[a-z.\-]*letrot[^"\' ]*api[^"\' ]*',s)))[:10])
+          print('fetch urls:', sorted(set(re.findall(r'["\'](/[a-z\-/]*(?:api|ajax|json)[^"\']*)["\']',s)))[:15])
+          PY
           done
-          curl -sL -A "$UA" "https://fr.wikipedia.org/w/index.php?title=Face_Time_Bourbon&action=raw" | head -c 6000
