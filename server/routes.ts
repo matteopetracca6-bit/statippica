@@ -984,8 +984,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // (scripts/carriere_complete.py): i totali vengono dalla fonte ufficiale
       // straniera, le gare una per una restano solo quelle italiane.
       horse.carriera_completa = vpTableExists(db, "carriere_complete")
-        ? (db.prepare(`SELECT * FROM carriere_complete WHERE nome = ? AND anno = ?`).get(name, year) as any) ?? null : null;
-      if (horse.carriera_completa) horse.career_top3 = horse.carriera_completa.primi_tre;
+        ? (db.prepare(`SELECT * FROM carriere_complete WHERE nome = ? AND (anno = ? OR anno IS NULL)`).get(name, year) as any) ?? null : null;
+      if (horse.carriera_completa?.primi_tre != null) horse.career_top3 = horse.carriera_completa.primi_tre;
       // Carriera parziale (novembre 2026): cavalli con gare in archivio ma senza
       // i totali di carriera. Sono quelli recuperati dai risultati ufficiali
       // MASAF (solo dal 2016) che le schede di TrottoWeb non trovano, e i

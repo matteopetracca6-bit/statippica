@@ -2714,6 +2714,14 @@ def phase_parents_coverage(conn: sqlite3.Connection,
 # ─────────────────────────────────────────────
 # FASE 3 — RATINGS cavalli
 # ─────────────────────────────────────────────
+def _nomi_carriere_complete(conn) -> set:
+    """Cavalli con la carriera completa all'estero (scripts/carriere_complete.py)."""
+    try:
+        return {(n or "").strip().upper() for (n,) in conn.execute("SELECT nome FROM carriere_complete")}
+    except sqlite3.Error:
+        return set()
+
+
 def phase_ratings(conn: sqlite3.Connection):
     print("[RATINGS] Calcolo rating cavalli...", file=sys.stderr)
 
@@ -2730,7 +2738,12 @@ def phase_ratings(conn: sqlite3.Connection):
     # servono per valutare la progenie, non per competere in classifica. Senza
     # questa separazione un campione degli anni '90 alzerebbe l'asticella a
     # tutta la popolazione in gara oggi.
-    pool = [r for r in horses if r[7] != CLASS_BREEDER]
+    # Le carriere complete all'estero (scripts/carriere_complete.py) si
+    # valutano contro il pool, ma non lo spostano: gli altri hanno solo le
+    # corse italiane, e cinquanta campioni stranieri con i totali mondiali
+    # avrebbero fatto scendere di una lettera centinaia di cavalli italiani.
+    esteri = _nomi_carriere_complete(conn)
+    pool = [r for r in horses if r[7] != CLASS_BREEDER and (r[0] or "").strip().upper() not in esteri]
     n_breeder = len(horses) - len(pool)
     if n_breeder:
         print(f"[RATINGS] {n_breeder} riproduttori: valutati contro il pool atleti "
@@ -2912,7 +2925,8 @@ def phase_ratings(conn: sqlite3.Connection):
     # (popolazione corsa storica, esclusi i genitori recuperati) — così
     # aumentare la copertura non sposta i confini dei voti già pubblicati.
     backfill_keys = {(r[0], r[1]) for r in horses if r[7] == CLASS_BREEDER}
-    pool_scores = [d["score"] for key, d in scores.items() if key not in backfill_keys]
+    pool_scores = [d["score"] for key, d in scores.items()
+                   if key not in backfill_keys and (key[0] or "").strip().upper() not in esteri]
     horse_thresholds = build_horse_grade_thresholds(pool_scores)
     print(f"[RATINGS] Soglie cavalli: {[(round(t,1),g) for t,g in horse_thresholds]}", file=sys.stderr)
 
@@ -2937,7 +2951,7 @@ def phase_ratings(conn: sqlite3.Connection):
     # annata, e le due cose non sono in contraddizione.
     per_annata: dict[int, list[float]] = {}
     for (nome_a, anno_a), d in scores.items():
-        if (nome_a, anno_a) in backfill_keys or anno_a is None:
+        if (nome_a, anno_a) in backfill_keys or anno_a is None or (nome_a or "").strip().upper() in esteri:
             continue
         per_annata.setdefault(anno_a, []).append(d["score"])
 
@@ -3075,8 +3089,12 @@ def phase_historic_ratings(conn: sqlite3.Connection):
     # scala di prima. Percentili, media delle vittorie e soglie delle lettere
     # vengono solo dal gruppo di riferimento (gli altri storici), come per le
     # carriere parziali: i voti gia' pubblicati non si spostano.
-    righe = [r[:7] for r in tutte if r[7] != "unire_blocco"] or [r[:7] for r in tutte]
-    nuovi = {(r[0], r[1]) for r in tutte if r[7] == "unire_blocco"}
+    # Le carriere complete all'estero si valutano sulla scala ma non la
+    # spostano (vedi phase_ratings).
+    esteri = _nomi_carriere_complete(conn)
+    righe = [r[:7] for r in tutte if r[7] != "unire_blocco" and (r[0] or "").strip().upper() not in esteri] \
+        or [r[:7] for r in tutte]
+    nuovi = {(r[0], r[1]) for r in tutte if r[7] == "unire_blocco" or (r[0] or "").strip().upper() in esteri}
 
     guadagni = sorted(r[5] for r in righe if r[5])
 

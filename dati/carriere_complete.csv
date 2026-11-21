@@ -1,2 +1,63 @@
-nome;anno;corse;vittorie;primi_tre;guadagni_eur;record;record_data;record_luogo;stagioni;fonte;url
-FACE TIME BOURBON;2015;43;35;42;3392880;1'09"1;2021-06-27;Vincennes, 2100 m, Prix René Ballière;2017,2018,2019,2020,2021;LeTrot (SETF, scheda ufficiale francese);https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses
+nome;anno;corse;vittorie;primi_tre;guadagni_eur;record;record_data;record_luogo;stagioni;fonte;url;valuta_originale;importo_originale;cambio
+FACE TIME BOURBON;2015;43;35;42;3392880;"1'09""1";2021-06-27;Vincennes, 2100 m, Prix René Ballière;2017,2018,2019,2020,2021;LeTrot (SETF, scheda ufficiale francese);https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses;;;
+MAHARAJAH;2005;59;31;;2607548;"1'10""3";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Maharajah_%28cheval%29;;;
+LOVE YOU;1999;59;22;;1416537;"1'10""2";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Love_You_%28cheval%29;;;
+NAGLO;1999;66;27;;1395312;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Naglo;SEK;12837145;9.2002
+GANYMEDE;1994;50;7;;762477;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Ganym%C3%A8de;;;
+WISHING STONE;2007;83;24;;1756053;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Wishing_Stone;USD;2357150;1.3423
+CONWAY HALL;1995;29;13;;717823;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Conway_Hall;SEK;6400974;8.9172
+FROM ABOVE;1998;38;23;;920458;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/From_Above;SEK;8344320;9.0654
+READY CASH;2005;70;40;;4282300;"1'10""3";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Ready_Cash;;;
+BRILLANTISSIME (2011);2011;46;14;;958375;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Brillantissime;;;
+SELF POSSESSED;1996;24;13;;1209036;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Self_Possessed;SEK;10831271;8.9586
+MUSCLE HILL;2006;21;20;;2396297;"1'08""5";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Muscle_Hill;USD;3273342;1.366
+FATHER PATRICK;2011;33;23;;2297318;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Father_Patrick;SEK;21620061;9.411
+CANTAB HALL;2001;23;14;;1155549;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Cantab_Hall;SEK;10717829;9.2751
+TIMOKO;2007;101;36;64;5011851;"1'09""1";;;;LeTrot (SETF, scheda ufficiale francese);https://www.letrot.com/stats/chevaux/timoko/ZGV8ZwsACgIZ/courses;;;
+ANDOVER HALL;1999;22;11;;975147;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Andover_Hall;SEK;8971549;9.2002
+BOLD EAGLE;2011;77;47;;5124087;"1'08""4";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Bold_Eagle;;;
+NUNCIO;2011;62;42;;2929688;"1'08""7";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Nuncio;;;
+PRODIGIOUS;2003;61;8;;644130;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Prodigious;;;
+FABULOUS WOOD;2015;13;7;;203630;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Fabulous_Wood;;;
+GOETMALS WOOD;1994;66;14;;894190;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Goetmals_Wood;;;
+SUPER LIGHT;1998;142;38;;1272984;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Super_Light;SEK;11540111;9.0654
+VILLIAM;2014;15;7;;619055;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Villiam_%28travh%C3%A4st%29;SEK;6250660;10.0971
+MALABAR CIRCLE AS;1999;73;24;;1422131;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Malabar_Circle_%C3%85s;SEK;13083894;9.2002
+MUSCLES YANKEE;1995;21;15;;1243828;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Muscles_Yankee;SEK;11091463;8.9172
+VILLAGE MYSTIC;2009;44;12;;844420;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Village_Mystic;;;
+CALGARY GAMES;2017;11;10;;619354;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Calgary_Games;SEK;6685000;10.7935
+SAXO DE VANDEL;2006;27;8;;755450;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Saxo_de_Vandel;;;
+CHARLY DU NOYER;2012;55;12;;839790;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Charly_du_Noyer;;;
+MISTER J.P.;2012;13;10;;341641;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Mister_J.P.;SEK;3325500;9.7339
+RAJA MIRCHI;2007;60;24;;941039;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Raja_Mirchi;SEK;8726632;9.2734
+ROYAL DREAM;2005;55;22;;1591310;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Royal_Dream;;;
+UP AND QUICK;2008;76;17;39;2383476;"1'09""4";;;;LeTrot (SETF, scheda ufficiale francese);https://www.letrot.com/stats/chevaux/up-and-quick/ZGpaZQEIAQQT/courses;;;
+ORLANDO VICI;2002;32;12;;835990;"1'12""7";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Orlando_Vici;;;
+CREDIT WINNER;1997;23;9;;1445707;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Credit_Winner;USD;1495295;1.0343
+LEGENDARY LOVER K;1997;90;35;;1837222;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Legendary_Lover_K.;SEK;16509648;8.9862
+SAM BOURBON;2006;26;6;;373430;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Sam_Bourbon;;;
+ICELAND;2004;99;25;;1011081;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Iceland_%28travh%C3%A4st%29;SEK;9656832;9.551
+CAPTAIN COREY;2018;14;10;;1045290;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Captain_Corey;USD;1162258;1.1119
+PASSWORD;2003;12;4;;189810;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Password_%28travh%C3%A4st%29;;;
+VOLSTEAD;2011;72;23;;624304;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Volstead;SEK;5875324;9.411
+BOOSTER WINNER;;52;10;;997650;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Booster_Winner;;;
+DIJON;2013;50;13;;1077728;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Dijon_%28travh%C3%A4st%29;SEK;10739454;9.9649
+COKTAIL JET;1990;63;24;;1896774;"1'10""7";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Coktail_Jet;;;
+GIGANT NEO;1998;63;32;;2225985;"1'10""7";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Gigant_Neo;;;
+ROLLING D'HERIPRE;2005;39;9;;791100;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Rolling_d%27H%C3%A9ripr%C3%A9;;;
+GREEN MANALISHI;2016;29;11;;983123;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Green_Manalishi;SEK;10418939;10.5978
+HOHNECK;2017;67;22;;2483145;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Hohneck;;;
+JOKE FACE;2006;43;21;;772687;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Joke_Face;SEK;7231968;9.3595
+LOVE MATTERS;2013;48;15;;522876;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Love_Matters;SEK;5210412;9.9649
+SUPERGILL;1985;22;8;;483871;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Supergill;SEK;4261691;8.8075
+THE BEST MADRIK;2007;54;13;;1367710;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/The_Best_Madrik;;;
+TRITON SUND;2001;100;34;;1655106;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Triton_Sund;SEK;15351275;9.2751
+CHAPTER SEVEN;2008;28;20;;1509859;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Chapter_Seven;USD;1954966;1.2948
+EXPLOSIVE MATTER;2006;18;10;;1105814;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Explosive_Matter;USD;1510542;1.366
+WALNER;2014;10;9;;496329;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Walner;USD;567652;1.1437
+GELATI CUT;2016;42;10;;621448;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Gelati_Cut;;;
+OFFSHORE DREAM;2002;47;13;;1997825;"1'10""1";;;;Wikipedia (fr);https://fr.wikipedia.org/wiki/Offshore_Dream;;;
+CRISTAL MONEY;2012;20;9;;523330;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Cristal_Money;;;
+DIGGER CROWN;1997;126;59;;2958655;;;;;Wikipedia (en);https://en.wikipedia.org/wiki/Digger_Crown;USD;3060137;1.0343
+GU D'HERIPRE;;36;15;;894100;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Gu_d%27H%C3%A9ripr%C3%A9;;;
+UN MEC D'HERIPRE;2008;63;29;;2059223;;;;;Wikipedia (sv);https://sv.wikipedia.org/wiki/Un_Mec_d%27H%C3%A9ripr%C3%A9;;;
