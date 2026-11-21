@@ -8,14 +8,13 @@ jobs:
     steps:
       - run: |
           B=https://statippica.onrender.com
-          sleep 780; echo "nuovo deploy pronto"
-          for giro in 1 2 3; do
-            for h in "VIVID%20WISE%20AS/2014" "GINOSTRABLIGGI/2022" "FRAGOLINO%20ROSSO%20(D)/2022"; do
-              curl -s -D /tmp/h -o /dev/null -w "%{http_code} %{time_total}s $h\n" "$B/api/horse/$h"; grep -i server-timing /tmp/h || true
-            done
+          for i in $(seq 1 70); do
+            curl -s -D /tmp/h -o /dev/null -H 'content-type: application/json' -d '{"fattrice":"LOVE ME TENDER"}' $B/api/advisor
+            grep -qi "server-timing" /tmp/h && break; sleep 20
           done
-          for m in "ONE DREAM GRIF" "LOVE ME TENDER" "ONE DREAM GRIF"; do
-            curl -s -o /tmp/a.json -w "advisor %{http_code} %{time_total}s %{size_download}B $m\n" -H 'content-type: application/json' -d "{\"fattrice\":\"$m\"}" $B/api/advisor
+          echo "nuovo deploy dopo $i"; sleep 30
+          for m in "ONE DREAM GRIF" "LOVE ME TENDER" "ONE DREAM GRIF" "LOVE ME TENDER"; do
+            curl -s -D /tmp/h -o /tmp/a.json -w "advisor %{http_code} %{time_total}s %{size_download}B $m\n" -H 'content-type: application/json' -d "{\"fattrice\":\"$m\"}" $B/api/advisor; grep -i server-timing /tmp/h
           done
           python3 -c "
-          import json;d=json.load(open('/tmp/a.json'));c=d['candidates'];print(len(c), sum(1 for x in c if x.get('potenziale')), 'con potenziale')"
+          import json;d=json.load(open('/tmp/a.json'));c=d['candidates'];print(len(c), sum(1 for x in c if x.get('potenziale')), 'con potenziale', c[0].get('potenziale'))"
