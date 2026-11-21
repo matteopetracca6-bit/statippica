@@ -22,6 +22,10 @@ export interface CavalloDati {
   nome: string; numero: number | null; penalita: number; guidatore: string | null;
   km_base: number | null; km_migliore: number | null; record_corto: number | null; record_lungo: number | null;
   galoppo: number; effetto_guidatore: number | null; corse_note: number;
+  /** Vittorie con questo numero su questa pista rispetto alla media dei numeri in corsa (1 = nella media). */
+  vantaggio_numero?: number | null;
+  /** Quota finale del totalizzatore, se c'e' (per "pesa il mercato"). */
+  quota?: number | null;
 }
 export interface CorsaDati {
   distanza: number; partenza: "autostart" | "nastri"; lunghezza_pista: number; km_pista: number;
@@ -40,6 +44,18 @@ export interface Simulazione {
   arrivo: number[];          // indici in ordine d'arrivo
   rnd: () => number;
 }
+
+/**
+ * Parametri tarati sulle corse vere (vedi TARATURA in fondo): si possono
+ * cambiare per le prove, la pagina usa questi.
+ */
+export const PARAMETRI = {
+  ritmo: 1.3,        // secondi al km aggiunti a tutti: cosi' il vincitore simulato va come quello vero
+  incertezza: 1.8,   // quanto caso sul tempo al km di ogni corsa (piu' caso = previsioni meno sicure di se', e piu' giuste)
+  numero: 5,         // metri guadagnati o persi alla partenza per ogni punto di ln(vantaggio del numero): conta poco
+  galoppo: 1.03,     // probabilita' di rompere = rischio di squalifica x questo (squalifiche simulate = vere)
+  spunto: 0.7,       // peso dello spunto nel finale
+};
 
 export const LARGHEZZA_CORSIA = 1.4;   // metri fra una ruota e l'altra
 const ACCELERAZIONE = 2.2;             // m/s2 da fermo, ai nastri
@@ -91,10 +107,10 @@ export function nuovaSimulazione(corsa: CorsaDati, seme: number): Simulazione {
     // Poche corse note: piu' incertezza.
     const incertezza = c.corse_note >= 4 ? 0.9 : c.corse_note >= 1 ? 1.3 : 1.8;
     const eff = Math.max(-0.3, Math.min(0.3, (c.effetto_guidatore ?? 0) * 1.5));
-    const km = base + normale(rnd) * incertezza + eff;
+    const km = base + PARAMETRI.ritmo + normale(rnd) * incertezza * PARAMETRI.incertezza + eff;
     const vMedia = 1000 / km;
     const spunto = Math.max(0, Math.min(3, base - (c.km_migliore ?? base)));
-    let mFinale = 1.03 + spunto / base;
+    let mFinale = 1.03 + PARAMETRI.spunto * spunto / base;
     if (c.record_corto && c.record_lungo) {
       const diff = c.record_lungo - c.record_corto;      // >0: va meglio sul corto
       if (D >= 2000) mFinale -= Math.max(0, Math.min(0.04, (diff - 1) * 0.012));
@@ -104,7 +120,7 @@ export function nuovaSimulazione(corsa: CorsaDati, seme: number): Simulazione {
     const mMezzo = 0.68 / Math.max(0.3, 1 - 0.12 / fPart - 0.2 / mFinale);
     // Rischio di rottura: il totale della corsa diviso sui metri, con piu'
     // peso in partenza (300 m, x3) e nel finale (400 m, x1,5).
-    const pRompe = Math.min(0.9, (c.galoppo ?? 0.15) * 1.25);
+    const pRompe = Math.min(0.9, (c.galoppo ?? 0.15) * PARAMETRI.galoppo);
     const lambda = -Math.log(1 - pRompe);
     const pesoTot = Math.min(300, D) * 3 + Math.min(400, D) * 1.5 + Math.max(0, D - 700);
     return {
@@ -130,6 +146,11 @@ export function nuovaSimulazione(corsa: CorsaDati, seme: number): Simulazione {
       corridori[i].v = 0;
     });
   }
+  // Il numero di partenza, dai dati della pista: metri di vantaggio o di svantaggio.
+  if (PARAMETRI.numero) corsa.cavalli.forEach((c, i) => {
+    const v = c.vantaggio_numero && c.vantaggio_numero > 0 ? c.vantaggio_numero : 1;
+    corridori[i].s += PARAMETRI.numero * Math.log(v);
+  });
   return { t: 0, corridori, finita: false, corsa, arrivo: [], rnd };
 }
 
@@ -255,6 +276,30 @@ export function simulaMolte(corsa: CorsaDati, n: number, seme: number, avanzamen
     };
     blocco();
   });
+}
+
+/**
+ * "Pesa il mercato": quando ci sono le quote del totalizzatore, il tempo al
+ * km di ogni cavallo si sposta finche' le vittorie simulate si avvicinano a
+ * quelle che il pubblico dava (1/quota, normalizzato). peso 0 = solo i nostri
+ * dati, 1 = tutto il mercato. Restituisce una copia della corsa.
+ */
+export function pesaMercato(corsa: CorsaDati, peso: number, giri = 3, prove = 160): CorsaDati {
+  const quote = corsa.cavalli.map(c => c.quota ?? null);
+  if (peso <= 0 || quote.some(q => !q || q <= 1)) return corsa;
+  const inv = quote.map(q => 1 / q!), tot = inv.reduce((a, b) => a + b, 0);
+  const pMercato = inv.map(x => x / tot);
+  const kmDefault = corsa.km_pista + 1.5;
+  let attuale: CorsaDati = { ...corsa, cavalli: corsa.cavalli.map(c => ({ ...c, km_base: c.km_base ?? kmDefault })) };
+  for (let g = 0; g < giri; g++) {
+    const vinte = new Array(corsa.cavalli.length).fill(0.5);
+    for (let s = 0; s < prove; s++) { const sim = corriTutta(attuale, 99 + g * 1000 + s * 7919); if (sim.arrivo.length) vinte[sim.arrivo[0]]++; }
+    const tv = vinte.reduce((a, b) => a + b, 0);
+    attuale = { ...attuale, cavalli: attuale.cavalli.map((c, i) => ({
+      ...c, km_base: c.km_base! + peso * 0.45 * (Math.log(vinte[i] / tv) - Math.log(pMercato[i])),
+    })) };
+  }
+  return attuale;
 }
 
 /** "1'14\"3" da secondi al km. */

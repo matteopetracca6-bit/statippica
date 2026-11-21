@@ -20,7 +20,7 @@ import IntestazionePagina from "../components/IntestazionePagina";
 import { Spiegazione } from "../components/Spiegazione";
 import CavalloCaricamento from "@/components/CavalloCaricamento";
 import {
-  nuovaSimulazione, passo, geometria, simulaMolte, formatoKm, LARGHEZZA_CORSIA,
+  nuovaSimulazione, passo, geometria, simulaMolte, formatoKm, LARGHEZZA_CORSIA, pesaMercato,
   type CorsaDati, type Simulazione, type Riepilogo, type Corridore,
 } from "@/lib/simulaCorsa";
 
@@ -32,9 +32,11 @@ interface CavalloApi {
   anno: number | null; km_base: number | null; km_migliore: number | null; record_corto: number | null; record_lungo: number | null;
   corse_note: number; galoppo: number; galoppo_fonte: string; effetto_guidatore: number | null;
   pronostico_top3: number | null; quota: number | null; arrivo: number | null; arrivo_testo: string | null; km_reale: number | null;
+  ferri_effetto?: number; forma?: number | null; giorni_riposo?: number | null; vantaggio_numero?: number;
 }
 interface CorsaApi extends CorsaDati {
   tipo: "prossima" | "passata"; pista: string; sigla: string | null; data: string; ora: string | null; numero: number | null;
+  pista_verificata?: boolean;
   cavalli: CavalloApi[];
 }
 interface VoceElenco { tipo: "prossima" | "passata"; pista: string; sigla?: string; codice?: string; data: string; ora?: string; numero?: number | null; partenti: number; distanza: number }
@@ -57,8 +59,8 @@ const fmtTempo = (t: number) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).pad
 // ─── Disegno della pista ────────────────────────────────────────────────────
 const FASCIA = 13;   // larghezza della pista in metri, dalla corda alla staccionata
 
-function disegna(ctx: CanvasRenderingContext2D, W: number, H: number, corsa: CorsaApi, sim: Simulazione | null,
-                 evidenziato: number | null) {
+/** Dalla pista al disegno: scala, origine e il punto a u metri dal traguardo, scost metri dalla corda. */
+function mappa(corsa: CorsaDati, W: number, H: number) {
   const g = geometria(corsa.lunghezza_pista);
   const R = g.raggio, L = g.lunghezza;
   const mondoW = g.rettilineo + 2 * (R + FASCIA) + 30, mondoH = 2 * (R + FASCIA) + 34;
@@ -80,6 +82,19 @@ function disegna(ctx: CanvasRenderingContext2D, W: number, H: number, corsa: Cor
     x -= semi;
     return [cx1 + x, cy + r];
   };
+  return { g, R, L, k, X, Y, punto, cx1, cx2, cy };
+}
+
+/** Dove sta sul disegno il cavallo i (per la telecamera che lo segue). */
+function posizioneCavallo(corsa: CorsaDati, sim: Simulazione, i: number, W: number, H: number) {
+  const m = mappa(corsa, W, H), c = sim.corridori[i];
+  const [x, y] = m.punto(-corsa.distanza + Math.min(c.s, corsa.distanza + 60), 0.9 + c.corsia * LARGHEZZA_CORSIA);
+  return [m.X(x), m.Y(y)];
+}
+
+function disegna(ctx: CanvasRenderingContext2D, W: number, H: number, corsa: CorsaApi, sim: Simulazione | null,
+                 evidenziato: number | null, camera: { x: number; y: number; f: number } | null = null) {
+  const { g, R, L, k, X, Y, punto, cx1, cx2, cy } = mappa(corsa, W, H);
   const stadio = (r: number) => {
     ctx.beginPath();
     ctx.moveTo(X(cx1), Y(cy + r));
@@ -92,9 +107,12 @@ function disegna(ctx: CanvasRenderingContext2D, W: number, H: number, corsa: Cor
 
   // Fondo: il terreno intorno.
   ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#0d2216"; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  if (camera) { ctx.translate(W / 2, H / 2); ctx.scale(camera.f, camera.f); ctx.translate(-camera.x, -camera.y); }
   const fondo = ctx.createLinearGradient(0, 0, 0, H);
   fondo.addColorStop(0, "#14301f"); fondo.addColorStop(1, "#0d2216");
-  ctx.fillStyle = fondo; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = fondo; ctx.fillRect(-W, -H, 3 * W, 3 * H);
 
   // Tribuna lungo il rettilineo d'arrivo.
   const tx0 = cx1 + g.traguardoSulRett - g.rettilineo * 0.55, tx1 = cx1 + g.traguardoSulRett + g.rettilineo * 0.12;
@@ -180,7 +198,7 @@ function disegna(ctx: CanvasRenderingContext2D, W: number, H: number, corsa: Cor
     ctx.fillText(penalita.length > 1 ? `PARTENZA · nastri +${penalita.slice(1).join("/+")} m` : "PARTENZA", X(x), Y(y));
   }
 
-  if (!sim) return;
+  if (!sim) { ctx.restore(); return; }
 
   // Macchina dell'autostart, che si allarga e se ne va.
   if (corsa.partenza === "autostart" && sim.t < 7) {
@@ -224,9 +242,11 @@ function disegna(ctx: CanvasRenderingContext2D, W: number, H: number, corsa: Cor
       ctx.fillStyle = "#fff"; ctx.fillText(testo, px, py - raggio * 1.85);
     }
   }
+  ctx.restore();
 }
 
-function Pista({ corsa, sim, tick, prospettiva, evidenziato }: { corsa: CorsaApi; sim: Simulazione | null; tick: number; prospettiva: boolean; evidenziato: number | null }) {
+function Pista({ corsa, sim, tick, prospettiva, evidenziato, segui }: { corsa: CorsaApi; sim: Simulazione | null; tick: number; prospettiva: boolean; evidenziato: number | null; segui: number | null }) {
+  const cam = useRef<{ x: number; y: number; f: number } | null>(null);
   const tela = useRef<HTMLCanvasElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const [larg, setLarg] = useState(900);
@@ -242,8 +262,18 @@ function Pista({ corsa, sim, tick, prospettiva, evidenziato }: { corsa: CorsaApi
     if (cv.width !== larg * dpr) { cv.width = larg * dpr; cv.height = alt * dpr; }
     const ctx = cv.getContext("2d"); if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    disegna(ctx, larg, alt, corsa, sim, evidenziato);
-  }, [corsa, sim, tick, larg, alt, evidenziato]);
+    // Telecamera: segue il cavallo scelto, con un po' di ritardo per non tremare.
+    if (segui != null && sim) {
+      const [px, py] = posizioneCavallo(corsa, sim, segui, larg, alt);
+      const c = cam.current ?? { x: larg / 2, y: alt / 2, f: 1 };
+      cam.current = { x: c.x + (px - c.x) * 0.18, y: c.y + (py - c.y) * 0.18, f: c.f + (2.6 - c.f) * 0.1 };
+    } else if (cam.current) {
+      const c = cam.current;
+      cam.current = { x: c.x + (larg / 2 - c.x) * 0.2, y: c.y + (alt / 2 - c.y) * 0.2, f: c.f + (1 - c.f) * 0.2 };
+      if (Math.abs(cam.current.f - 1) < 0.01) cam.current = null;
+    }
+    disegna(ctx, larg, alt, corsa, sim, segui ?? evidenziato, cam.current);
+  }, [corsa, sim, tick, larg, alt, evidenziato, segui]);
   return (
     <div ref={box} style={{ width: "100%", perspective: prospettiva ? 1300 : undefined, overflow: "hidden", borderRadius: 14,
                             background: "#0d2216", height: prospettiva ? alt * 0.78 : alt }}>
@@ -285,7 +315,12 @@ export default function SimulatorePage() {
   });
 
   // Simulazione animata.
-  const [seme, setSeme] = useState(() => Math.floor(Math.random() * 1e9));
+  const [seme, setSeme] = useState(() => Number(iniziali.seme) || Math.floor(Math.random() * 1e9));
+  const [segui, setSegui] = useState<number | null>(null);
+  const [mercato, setMercato] = useState(0);
+  const [cronaca, setCronaca] = useState<{ t: number; testo: string }[]>([]);
+  const statoCronaca = useRef<{ testa: number | null; ultimaTesta: number; stati: string[]; punti: Set<number> }>({ testa: null, ultimaTesta: -99, stati: [], punti: new Set() });
+  const [copiato, setCopiato] = useState(false);
   const simRef = useRef<Simulazione | null>(null);
   const [tick, setTick] = useState(0);
   const [inCorsa, setInCorsa] = useState(false);
@@ -294,37 +329,82 @@ export default function SimulatorePage() {
   const [evidenziato, setEvidenziato] = useState<number | null>(null);
   const velRef = useRef(velocita); velRef.current = velocita;
 
+  const conQuote = !!corsa && corsa.cavalli.every(c => c.quota != null && c.quota > 1);
+  const corsaSim = useMemo<CorsaDati | null>(() => !corsa ? null : (mercato && conQuote ? pesaMercato(corsa, mercato) : corsa), [corsa, mercato, conQuote]);
+  const azzeraCronaca = () => { statoCronaca.current = { testa: null, ultimaTesta: -99, stati: [], punti: new Set() }; setCronaca([]); };
   useEffect(() => {
+    if (!corsaSim) return;
+    simRef.current = nuovaSimulazione(corsaSim, seme);
+    azzeraCronaca(); setInCorsa(false); setTick(t => t + 1);
+  }, [corsaSim, seme]);
+  useEffect(() => { setSegui(null); setMercato(0); }, [corsa]);
+  // L'indirizzo porta la corsa e la semina: chi lo apre vede la stessa corsa.
+  useEffect(() => {
+    if (!scelta) return;
+    const q = scelta.tipo === "passata" ? `tipo=passata&codice=${encodeURIComponent(scelta.codice)}`
+      : `tipo=prossima&pista=${encodeURIComponent(scelta.sigla)}&data=${scelta.data}&ora=${encodeURIComponent(scelta.ora)}`;
+    try { history.replaceState(null, "", `#/simulatore?${q}&seme=${seme}`); } catch { /* niente */ }
+  }, [scelta, seme]);
+
+  // Cronaca: chi passa in testa, chi rompe, chi e' squalificato, l'arrivo.
+  const aggiornaCronaca = (sim: Simulazione) => {
     if (!corsa) return;
-    simRef.current = nuovaSimulazione(corsa, seme);
-    setInCorsa(false); setTick(t => t + 1);
-  }, [corsa, seme]);
+    const st = statoCronaca.current, nuove: { t: number; testo: string }[] = [];
+    const nome = (i: number) => `${corsa.cavalli[i].numero ?? i + 1} ${corsa.cavalli[i].nome}`;
+    if (sim.t > 0 && st.stati.length === 0) nuove.push({ t: 0, testo: corsa.partenza === "autostart" ? "Via! La macchina apre le ali." : "Via! Si alzano i nastri." });
+    sim.corridori.forEach(c => {
+      const prima = st.stati[c.i];
+      if (prima && prima !== c.stato) {
+        if (c.stato === "galoppo") nuove.push({ t: sim.t, testo: `${nome(c.i)} rompe al galoppo${c.s > corsa.distanza - 500 ? " nel finale" : c.s < 300 ? " in partenza" : ""}.` });
+        if (c.stato === "squalificato") nuove.push({ t: sim.t, testo: `${nome(c.i)} è squalificato per galoppo.` });
+        if (c.stato === "corre" && prima === "galoppo") nuove.push({ t: sim.t, testo: `${nome(c.i)} si rimette al trotto.` });
+      }
+      st.stati[c.i] = c.stato;
+    });
+    const attivi = sim.corridori.filter(c => c.stato === "corre" || c.stato === "galoppo");
+    const testa = attivi.sort((a, b) => b.s - a.s)[0];
+    if (testa && testa.i !== st.testa && sim.t - st.ultimaTesta > 6) {
+      nuove.push({ t: sim.t, testo: st.testa == null ? `${nome(testa.i)} prende la testa.` : `${nome(testa.i)} passa in testa.` });
+      st.testa = testa.i; st.ultimaTesta = sim.t;
+    }
+    for (const m of [1000, 500, 200]) if (testa && !st.punti.has(m) && corsa.distanza > m + 100 && testa.s >= corsa.distanza - m) {
+      st.punti.add(m);
+      const sec = attivi[1];
+      nuove.push({ t: sim.t, testo: `Ai ${m} metri: ${nome(testa.i)} davanti${sec ? `, ${nome(sec.i)} a ${Math.max(1, Math.round(testa.s - sec.s))} m` : ""}.` });
+    }
+    if (sim.finita && sim.arrivo.length && !st.punti.has(0)) {
+      st.punti.add(0);
+      nuove.push({ t: sim.t, testo: `Vince ${nome(sim.arrivo[0])}${sim.arrivo[1] != null ? `, poi ${nome(sim.arrivo[1])}` : ""}${sim.arrivo[2] != null ? ` e ${nome(sim.arrivo[2])}` : ""}.` });
+    }
+    if (nuove.length) setCronaca(c => [...nuove.reverse(), ...c].slice(0, 40));
+  };
 
   useEffect(() => {
-    if (!inCorsa || !corsa) return;
+    if (!inCorsa || !corsaSim) return;
     let ultimo = performance.now(), id = 0, conta = 0;
-    const g = geometria(corsa.lunghezza_pista);
+    const g = geometria(corsaSim.lunghezza_pista);
     const giro = (ora: number) => {
       const sim = simRef.current; if (!sim) return;
       let dt = Math.min(0.1, (ora - ultimo) / 1000) * velRef.current;
       ultimo = ora;
       while (dt > 0 && !sim.finita) { const p = Math.min(0.05, dt); passo(sim, p, g); dt -= p; }
       setTick(++conta);
+      aggiornaCronaca(sim);
       if (sim.finita) { setInCorsa(false); return; }
       id = requestAnimationFrame(giro);
     };
     id = requestAnimationFrame(giro);
     return () => cancelAnimationFrame(id);
-  }, [inCorsa, corsa]);
+  }, [inCorsa, corsaSim]);
 
   // Mille simulazioni.
   const [riepilogo, setRiepilogo] = useState<Riepilogo | null>(null);
   const [avanz, setAvanz] = useState<number | null>(null);
-  useEffect(() => { setRiepilogo(null); setAvanz(null); }, [corsa]);
+  useEffect(() => { setRiepilogo(null); setAvanz(null); }, [corsaSim]);
   const simulaMille = async () => {
-    if (!corsa || avanz != null) return;
+    if (!corsaSim || avanz != null) return;
     setAvanz(0);
-    const r = await simulaMolte(corsa, 1000, Math.floor(Math.random() * 1e9), f => setAvanz(f));
+    const r = await simulaMolte(corsaSim, 1000, Math.floor(Math.random() * 1e9), f => setAvanz(f));
     setRiepilogo(r); setAvanz(null);
   };
 
@@ -374,19 +454,21 @@ export default function SimulatorePage() {
         <>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
             <b style={{ fontSize: 15 }}>{titolo(corsa.pista)} · {dataIt(corsa.data)}{corsa.ora ? ` · ${corsa.ora}` : corsa.numero ? ` · corsa ${corsa.numero}` : ""}</b>
-            <span style={{ fontSize: 12, color: MUTED }}>{corsa.distanza} m · partenza {corsa.partenza} (stimata) · pista di circa {corsa.lunghezza_pista} m</span>
+            <span style={{ fontSize: 12, color: MUTED }}>{corsa.distanza} m · partenza {corsa.partenza} (stimata) · {corsa.pista_verificata
+              ? <span title="Dalla scheda ufficiale dell'ippodromo (MASAF/ASSI)">pista di {corsa.lunghezza_pista} m</span>
+              : <span title="L'archivio non ha la misura di questa pista">pista di circa {corsa.lunghezza_pista} m</span>}</span>
           </div>
           <div className="sim-griglia">
             <div>
-              <Pista corsa={corsa} sim={sim} tick={tick} prospettiva={prospettiva} evidenziato={evidenziato} />
+              <Pista corsa={corsa} sim={sim} tick={tick} prospettiva={prospettiva} evidenziato={evidenziato} segui={segui} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
                 <button className="sim-bottone forte" onClick={() => {
-                  if (sim?.finita) { simRef.current = nuovaSimulazione(corsa, seme); setTick(t => t + 1); }
+                  if (sim?.finita && corsaSim) { simRef.current = nuovaSimulazione(corsaSim, seme); azzeraCronaca(); setTick(t => t + 1); }
                   setInCorsa(v => !v);
                 }}>
                   {inCorsa ? <><Pause size={15} /> Pausa</> : <><Play size={15} /> {sim && sim.t > 0 && !sim.finita ? "Riprendi" : "Via!"}</>}
                 </button>
-                <button className="sim-bottone" onClick={() => { simRef.current = nuovaSimulazione(corsa, seme); setInCorsa(false); setTick(t => t + 1); }}>
+                <button className="sim-bottone" onClick={() => { if (corsaSim) simRef.current = nuovaSimulazione(corsaSim, seme); azzeraCronaca(); setInCorsa(false); setTick(t => t + 1); }}>
                   <RotateCcw size={14} /> Ricomincia
                 </button>
                 <button className="sim-bottone" onClick={() => setSeme(Math.floor(Math.random() * 1e9))} title="Un'altra estrazione: ogni corsa è diversa">
@@ -400,8 +482,26 @@ export default function SimulatorePage() {
                   <input type="checkbox" checked={prospettiva} onChange={e => setProspettiva(e.target.checked)} /> prospettiva
                 </label>
               </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
+                <Selettore etichetta="Segui un cavallo" valore={segui == null ? "" : String(segui)}
+                  opzioni={[["", "Tutta la pista"], ...corsa.cavalli.map((c, i) => [String(i), `${c.numero ?? i + 1} ${c.nome}`] as [string, string])]}
+                  cambia={v => setSegui(v === "" ? null : Number(v))} />
+                {conQuote && (
+                  <Selettore etichetta="Pesa il mercato (quote finali)" valore={String(mercato)}
+                    opzioni={[["0", "No: solo i nostri dati"], ["0.5", "A metà"], ["1", "Tutto il mercato"]]}
+                    cambia={v => setMercato(Number(v))} />
+                )}
+                <button className="sim-bottone" style={{ alignSelf: "flex-end" }} onClick={() => {
+                  try { navigator.clipboard.writeText(window.location.href); setCopiato(true); setTimeout(() => setCopiato(false), 2000); } catch { /* niente */ }
+                }} title="Chi apre il link vede la stessa corsa, con la stessa estrazione">
+                  {copiato ? "Link copiato" : "Copia il link di questa corsa"}
+                </button>
+              </div>
             </div>
-            <Classifica corsa={corsa} sim={sim} tick={tick} evidenzia={setEvidenziato} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Classifica corsa={corsa} sim={sim} tick={tick} evidenzia={setEvidenziato} segui={setSegui} />
+              <Cronaca righe={cronaca} />
+            </div>
           </div>
 
           {sim?.finita && <Arrivo corsa={corsa} sim={sim} />}
@@ -422,18 +522,23 @@ export default function SimulatorePage() {
             {riepilogo && <TabellaMille corsa={corsa} r={riepilogo} />}
           </div>
 
+          <Precisione />
           <Partenti corsa={corsa} />
 
           <div style={{ marginTop: 16 }}>
             <Spiegazione titolo="Come funziona il simulatore">
               Ogni cavallo corre al <b>suo tempo al chilometro</b>: la mediana delle ultime otto corse su distanze vicine (±500 m), con un po' di caso
-              a ogni corsa (di più se ha corso poco). Lo <b>spunto</b> è quanto il suo tempo migliore recente è sotto quello solito: conta negli ultimi
-              400 metri. Sulle distanze lunghe chi ha il record sul lungo peggiore di quello sul corto <b>cala</b> nel finale. Ai <b>nastri</b> chi ha la
-              penalità parte indietro di quei metri e da fermo; in <b>autostart</b> si parte lanciati, in seconda fila dal numero 9. In curva chi è in
-              seconda o terza ruota fa più strada; chi è chiuso dietro un cavallo più lento esce se c'è spazio, altrimenti aspetta. Il <b>galoppo</b> usa
-              il rischio del modello del calendario (o, se manca, quante volte il cavallo ha rotto): più facile in partenza e nel finale. Chi rompe perde
-              terreno; alla seconda rottura, se resta al galoppo o se rompe negli ultimi 200 metri è squalificato. L'<b>effetto del guidatore</b> sposta
-              di qualche decimo il tempo al km. La lunghezza della pista e il tipo di partenza sono indicativi: l'archivio non li ha, si ricavano dai dati.
+              a ogni corsa (di più se ha corso poco). Il tempo si corregge con tre effetti misurati su 85.000 tempi dell'archivio: la <b>ferratura</b> di
+              oggi (scalzo circa mezzo secondo al km più veloce che ferrato), la <b>forma</b> (le ultime tre corse rispetto al suo solito) e il{" "}
+              <b>riposo</b> (chi torna dopo più di quattro mesi va circa tre decimi più piano). Lo <b>spunto</b> è quanto il suo tempo migliore recente è
+              sotto quello solito: conta negli ultimi 400 metri. Sulle distanze lunghe chi ha il record sul lungo peggiore di quello sul corto <b>cala</b>.
+              Ai <b>nastri</b> chi ha la penalità parte indietro di quei metri e da fermo; in <b>autostart</b> si parte lanciati, in seconda fila dal
+              numero 9. Il <b>numero</b> pesa quanto dicono le vittorie con quel numero su quella pista. In curva chi è in seconda o terza ruota fa più
+              strada; chi è chiuso dietro un cavallo più lento esce se c'è spazio, altrimenti aspetta. Il <b>galoppo</b> usa il rischio del modello del
+              calendario: più facile in partenza e nel finale; alla seconda rottura, se resta al galoppo o se rompe negli ultimi 200 metri è squalificato.
+              Con <b>"pesa il mercato"</b> (solo quando ci sono le quote finali) il tempo di ogni cavallo si sposta finché le vittorie simulate si
+              avvicinano a quelle date dal pubblico. Le piste con la misura ufficiale (schede MASAF/ASSI) sono disegnate alla lunghezza vera, le altre
+              a una lunghezza indicativa; il tipo di partenza si ricava dalle distanze dei partenti.
             </Spiegazione>
           </div>
         </>
@@ -474,7 +579,20 @@ function Numero({ n }: { n: number }) {
     background: coloreNumero(n), color: testoNumero(n), fontSize: 11, fontWeight: 800, border: "1px solid rgba(255,255,255,.4)" }}>{n}</span>;
 }
 
-function Classifica({ corsa, sim, evidenzia }: { corsa: CorsaApi; sim: Simulazione | null; tick: number; evidenzia: (i: number | null) => void }) {
+function Cronaca({ righe }: { righe: { t: number; testo: string }[] }) {
+  return (
+    <div className="pannello" style={{ padding: "12px 12px", maxHeight: 220, overflowY: "auto" }}>
+      <b style={{ fontSize: 13 }}>Cronaca</b>
+      {righe.length === 0 ? <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>Premi "Via!".</div> : righe.map((r, i) => (
+        <div key={i} style={{ fontSize: 12.5, padding: "3px 0", borderBottom: "1px solid hsl(0 0% 100% / .04)", opacity: i === 0 ? 1 : 0.85 }}>
+          <span className="tabular" style={{ color: MUTED, marginRight: 6 }}>{fmtTempo(r.t)}</span>{r.testo}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Classifica({ corsa, sim, evidenzia, segui }: { corsa: CorsaApi; sim: Simulazione | null; tick: number; evidenzia: (i: number | null) => void; segui: (i: number | null) => void }) {
   if (!sim) return null;
   const peso = (c: Corridore) => c.stato === "arrivato" ? 0 : c.stato === "squalificato" ? 2 : 1;
   const righe = [...sim.corridori].sort((a, b) => peso(a) - peso(b) ||
@@ -498,8 +616,8 @@ function Classifica({ corsa, sim, evidenzia }: { corsa: CorsaApi; sim: Simulazio
         const distacco = c.stato === "arrivato" ? (pos === 0 ? "" : `+${((c.tempo ?? 0) - (righe[0].tempo ?? 0)).toFixed(1)}s`)
           : testa && c !== testa ? `−${Math.round(testa.s - c.s)} m` : "";
         return (
-          <div key={c.i} onMouseEnter={() => evidenzia(c.i)} onMouseLeave={() => evidenzia(null)}
-            style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 2px", fontSize: 12.5, opacity: c.stato === "squalificato" ? 0.5 : 1,
+          <div key={c.i} onMouseEnter={() => evidenzia(c.i)} onMouseLeave={() => evidenzia(null)} onClick={() => segui(c.i)} title="Clicca per seguirlo"
+            style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 2px", fontSize: 12.5, cursor: "pointer", opacity: c.stato === "squalificato" ? 0.5 : 1,
                      borderBottom: "1px solid hsl(0 0% 100% / .04)" }}>
             <span className="tabular" style={{ width: 18, color: MUTED, textAlign: "right" }}>{c.stato === "squalificato" ? "" : pos + 1}</span>
             <Numero n={n} />
@@ -587,6 +705,35 @@ function TabellaMille({ corsa, r }: { corsa: CorsaApi; r: Riepilogo }) {
   );
 }
 
+// Prova del 21/11/2026 su 461 corse vere (25/10-20/11/2026), 150 simulazioni a
+// corsa, con i parametri di lib/simulaCorsa.ts. Si rifa' quando cambia il motore.
+const PROVA = {
+  corse: 461, dal: "25/10", al: "20/11/2026",
+  squalificheSim: 17.6, squalificheVere: 17.6, scartoKm: 0.1,
+  alVincitore: { simulatore: 13, conMercato: 16, totalizzatore: 21 },
+  favoritoVince: { simulatore: 17, conMercato: 25 },
+  errorePrimiTre: { simulatore: 0.197, pronostico: 0.184, conMercato: 0.181 },
+};
+function Precisione() {
+  const p = PROVA;
+  const riga = (t: string, v: React.ReactNode) => <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 10px", padding: "4px 0", fontSize: 12.5 }}><span style={{ color: MUTED, minWidth: 260 }}>{t}</span><span>{v}</span></div>;
+  return (
+    <div className="pannello" style={{ padding: "14px 16px", marginTop: 16 }}>
+      <b style={{ fontSize: 14 }}>Quanto ci azzecca</b>
+      <div style={{ fontSize: 12, color: MUTED, margin: "4px 0 8px" }}>Prova su {p.corse} corse vere dal {p.dal} al {p.al}, simulate prima di conoscere l'arrivo.</div>
+      {riga("Squalificati per galoppo", <>simulati {p.squalificheSim}% · veri {p.squalificheVere}%</>)}
+      {riga("Tempo al km del vincitore", <>{p.scartoKm >= 0 ? "+" : ""}{p.scartoKm.toFixed(1).replace(".", ",")} secondi dal vero, in media</>)}
+      {riga("Probabilità data al vincitore vero", <>simulatore {p.alVincitore.simulatore}% · pesando il mercato {p.alVincitore.conMercato}% · totalizzatore {p.alVincitore.totalizzatore}%</>)}
+      {riga("Il più vincente nelle simulazioni ha vinto", <>{p.favoritoVince.simulatore}% delle corse · pesando il mercato {p.favoritoVince.conMercato}%</>)}
+      {riga("Errore sui primi tre (più basso è meglio)", <>simulatore {p.errorePrimiTre.simulatore.toFixed(3).replace(".", ",")} · nostro pronostico {p.errorePrimiTre.pronostico.toFixed(3).replace(".", ",")} · simulatore con il mercato {p.errorePrimiTre.conMercato.toFixed(3).replace(".", ",")}</>)}
+      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8 }}>
+        Da solo il simulatore sa meno del pronostico e del pubblico: vede tempi, ferri, numero e galoppo, non il voto, l'allenatore o le voci di scuderia.
+        Pesando le quote finali indovina i primi tre un po' meglio del pronostico. È uno strumento per capire la corsa, non un consiglio di gioco.
+      </div>
+    </div>
+  );
+}
+
 function Partenti({ corsa }: { corsa: CorsaApi }) {
   const passata = corsa.tipo === "passata";
   return (
@@ -597,6 +744,10 @@ function Partenti({ corsa }: { corsa: CorsaApi }) {
           <th>N.</th><th>Cavallo</th><th>Guidatore</th><th className="n">Penalità</th><th className="n" title="Mediana delle ultime corse su distanze vicine">Km atteso</th>
           <th className="n" title="Il miglior tempo recente">Km migliore</th><th className="n">Record corto / lungo</th>
           <th className="n" title="Probabilità di squalifica per galoppo">Rischio galoppo</th>
+          <th className="n" title="Ferratura di oggi: secondi al km rispetto al suo solito (misurato sull'archivio)">Ferri</th>
+          <th className="n" title="Le ultime tre corse rispetto al suo solito: negativo = in crescita">Forma</th>
+          <th className="n" title="Giorni dall'ultima corsa">Riposo</th>
+          <th className="n" title="Vittorie con questo numero su questa pista rispetto alla media dei numeri in corsa">Numero</th>
           {passata && <th className="n">Arrivo vero</th>}
         </tr></thead>
         <tbody>
@@ -610,6 +761,12 @@ function Partenti({ corsa }: { corsa: CorsaApi }) {
               <td className="n">{formatoKm(c.km_migliore)}</td>
               <td className="n" style={{ color: MUTED }}>{formatoKm(c.record_corto)} / {formatoKm(c.record_lungo)}</td>
               <td className="n" title={c.galoppo_fonte === "modello" ? "dal modello del calendario" : "dalle sue corse"}>{(c.galoppo * 100).toFixed(0)}%</td>
+              <td className="n" style={{ color: MUTED }}>{c.ferri ?? "—"}{c.ferri_effetto != null ? ` (${c.ferri_effetto > 0 ? "+" : ""}${c.ferri_effetto.toFixed(1)}s)` : ""}</td>
+              <td className="n" style={{ color: c.forma == null ? MUTED : c.forma < -0.3 ? "hsl(150 55% 60%)" : c.forma > 0.3 ? "hsl(10 60% 62%)" : undefined }}>
+                {c.forma == null ? "—" : `${c.forma > 0 ? "+" : ""}${c.forma.toFixed(1)}s`}</td>
+              <td className="n" style={{ color: MUTED }}>{c.giorni_riposo != null ? `${c.giorni_riposo} gg` : "—"}</td>
+              <td className="n" style={{ color: (c.vantaggio_numero ?? 1) > 1.15 ? "hsl(150 55% 60%)" : (c.vantaggio_numero ?? 1) < 0.85 ? "hsl(10 60% 62%)" : MUTED }}>
+                {c.vantaggio_numero != null ? `×${c.vantaggio_numero.toFixed(2)}` : "—"}</td>
               {passata && <td className="n">{c.arrivo != null ? `${c.arrivo}°` : c.arrivo_testo ?? "—"}</td>}
             </tr>
           ))}

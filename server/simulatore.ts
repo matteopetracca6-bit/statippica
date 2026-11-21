@@ -14,14 +14,31 @@
  */
 import type { Express } from "express";
 
-// Lunghezza della pista in metri: indicativa (l'archivio non la ha). Serve
-// solo a disegnare il giro e a mettere le curve al posto giusto.
-const LUNGHEZZA_PISTA: Record<string, number> = {
-  NAPOLI: 1000, MILANO: 1000, ROMA: 1000, TORINO: 1000, PALERMO: 1000, SIRACUSA: 1000, TREVISO: 1000,
-  BOLOGNA: 800, FIRENZE: 800, PADOVA: 800, CESENA: 800, MODENA: 800, MONTECATINI: 800, MONTEGIORGIO: 800,
-  CASTELLUCCIO: 800, CASARANO: 800, TARANTO: 800, AVERSA: 800, GARIGLIANO: 800, FOLLONICA: 800,
-  PONTECAGNANO: 800, CIVITANOVA: 800, FERRARA: 800, TRIESTE: 800, VILLANOVA: 800, PRATO: 800,
+// Lunghezza della pista in metri, a un metro dalla corda: dalle schede degli
+// ippodromi del MASAF/ASSI (unire.it, 21/11/2026) dove c'e'; per le altre
+// piste e' indicativa (1000 le grandi, 800 le piccole). Serve a disegnare il
+// giro e a mettere le curve al posto giusto.
+export const PISTE_VERIFICATE: Record<string, number> = {
+  MILANO: 999, BOLOGNA: 800, TREVISO: 1014, MONTECATINI: 805, CASTELLUCCIO: 1000, TORINO: 1004,
+  FIRENZE: 800, PALERMO: 1000, MONTEGIORGIO: 806, CASARANO: 1000, MODENA: 1001, PADOVA: 805,
 };
+const LUNGHEZZA_PISTA: Record<string, number> = {
+  NAPOLI: 1000, ROMA: 1000, SIRACUSA: 1000, CESENA: 800, TARANTO: 800, AVERSA: 800, GARIGLIANO: 800,
+  FOLLONICA: 800, PONTECAGNANO: 800, CIVITANOVA: 800, FERRARA: 800, TRIESTE: 800, VILLANOVA: 800, PRATO: 800,
+  ...PISTE_VERIFICATE,
+};
+
+// Effetti misurati sull'archivio (corse 2025-2026, 85.000 tempi): quanti
+// secondi al km un cavallo va piu' piano (+) o piu' forte (-) del suo solito.
+// Ferratura: F ferrato, A sferrato davanti, P sferrato dietro, AP scalzo.
+const EFFETTO_FERRI: Record<string, number> = { F: 0.225, A: -0.071, P: -0.035, AP: -0.219 };
+const FERRI_IGNOTI = 0.124;
+const effettoFerri = (f: string | null | undefined) => EFFETTO_FERRI[String(f ?? "").trim().toUpperCase()] ?? FERRI_IGNOTI;
+// Giorni dall'ultima corsa: chi torna dopo una lunga sosta va piu' piano.
+function effettoRiposo(giorni: number | null): number {
+  if (giorni == null) return 0.13;
+  return giorni < 15 ? 0.02 : giorni <= 30 ? 0.07 : giorni <= 60 ? 0.13 : giorni <= 120 ? 0.22 : 0.38;
+}
 
 const NON_ARRIVATO = new Set(["r.p.", "r.a.", "dis.", "rit.", "am.", "amb.", "cad.", "n.c."]);
 const GALOPPO = new Set(["r.p.", "r.a."]);
@@ -101,8 +118,21 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       const ts = esiste(db, "track_stats") ? db.prepare(`SELECT tempo_km_mediano FROM track_stats WHERE track = ?`).get(pista) as any : null;
       const kmPista = kmSecondi(ts?.tempo_km_mediano) ?? 76;
 
-      const ultime = db.prepare(`SELECT time_km, distance, placement_raw, placement FROM races
+      const ultime = db.prepare(`SELECT time_km, distance, placement_raw, placement, shoes, race_date FROM races
                                   WHERE horse_name = ? AND race_date < ? ORDER BY race_date DESC LIMIT 20`);
+      // Il numero di partenza: vittorie con quel numero su questa pista (o su
+      // tutte, se la pista ne ha poche) rispetto alla media dei numeri in corsa.
+      const vittNumero = new Map<number, number>();
+      if (esiste(db, "start_pos_stats")) {
+        const tutte = new Map<number, number>();
+        for (const r of db.prepare(`SELECT start_pos, track, n_gare, pct_vittorie FROM start_pos_stats WHERE track IN (?, '*')`).all(pista) as any[]) {
+          if (r.track === "*") tutte.set(r.start_pos, r.pct_vittorie);
+          else if (r.n_gare >= 300) vittNumero.set(r.start_pos, r.pct_vittorie);
+        }
+        for (const [k, v] of Array.from(tutte.entries())) if (!vittNumero.has(k)) vittNumero.set(k, v);
+      }
+      const numeriInCorsa = partenti.map(p => vittNumero.get(p.numero)).filter((x): x is number => x != null && x > 0);
+      const mediaNumeri = numeriInCorsa.length ? numeriInCorsa.reduce((a, b) => a + b, 0) / numeriInCorsa.length : null;
       const scheda = db.prepare(`SELECT birth_year, record_short, record_long FROM horses WHERE name = ?`);
       const guid = esiste(db, "driver_stats") ? db.prepare(`SELECT effetto_corretto FROM driver_stats WHERE driver = ?`) : null;
       const rischioP = esiste(db, "rischio_galoppo") ? db.prepare(`SELECT prob FROM rischio_galoppo WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
@@ -114,9 +144,18 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       const cavalli = partenti.map(p => {
         const storia = ultime.all(p.nome, data) as any[];
         const vicine = storia.filter(r => kmSecondi(r.time_km) && Math.abs((r.distance ?? base) - (p.distanza ?? base)) <= 500);
-        const tempi = (vicine.length >= 3 ? vicine : storia.filter(r => kmSecondi(r.time_km))).slice(0, 8).map(r => kmSecondi(r.time_km)!);
-        const kmBase = mediana(tempi);
-        const migliore = tempi.length ? Math.min(...tempi) : null;
+        // Tempi "a ferri neutri": si toglie l'effetto della ferratura di quel giorno.
+        const tempi = (vicine.length >= 3 ? vicine : storia.filter(r => kmSecondi(r.time_km))).slice(0, 8)
+          .map(r => kmSecondi(r.time_km)! - effettoFerri(r.shoes));
+        let kmBase = mediana(tempi);
+        const ferriOggi = effettoFerri(p.shoes);
+        // Forma: le ultime tre corse rispetto al solito (pesano un terzo).
+        const forma = tempi.length >= 5 && kmBase != null ? mediana(tempi.slice(0, 3))! - kmBase : null;
+        const giorni = storia[0]?.race_date ? Math.round((Date.parse(data) - Date.parse(storia[0].race_date)) / 86400000) : null;
+        const riposo = effettoRiposo(giorni) - 0.07;
+        if (kmBase != null) kmBase += ferriOggi + (forma != null ? 0.3 * forma : 0) + riposo;
+        const migliore = tempi.length ? Math.min(...tempi) + ferriOggi : null;
+        const vn = mediaNumeri && vittNumero.get(p.numero) ? vittNumero.get(p.numero)! / mediaNumeri : 1;
         const h = scheda.get(p.nome) as any;
         const corto = recordSecondi(h?.record_short), lungo = recordSecondi(h?.record_long);
         // Rotture: quota delle corse finite al galoppo, con un minimo di prudenza.
@@ -135,8 +174,12 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
           nome: p.nome, numero: p.numero, distanza: p.distanza ?? base, penalita: Math.max(0, (p.distanza ?? base) - base),
           guidatore: p.guidatore, ferri: p.shoes ?? null, anno: h?.birth_year ?? null,
           km_base: kmBase != null ? Math.round(kmBase * 10) / 10 : null,
-          km_migliore: migliore, record_corto: corto, record_lungo: lungo,
+          km_migliore: migliore != null ? Math.round(migliore * 10) / 10 : null, record_corto: corto, record_lungo: lungo,
           corse_note: tempi.length,
+          ferri_effetto: Math.round(ferriOggi * 100) / 100,
+          forma: forma != null ? Math.round(forma * 100) / 100 : null,
+          giorni_riposo: giorni,
+          vantaggio_numero: Math.round(vn * 1000) / 1000,
           galoppo: Math.round((galoppoModello ?? galoppoStorico) * 1000) / 1000,
           galoppo_fonte: galoppoModello != null ? "modello" : "storico",
           effetto_guidatore: eff ?? null,
@@ -150,6 +193,7 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
         tipo, pista, sigla, data, ora, numero, distanza: base,
         partenza: nastri ? "nastri" : "autostart",
         lunghezza_pista: LUNGHEZZA_PISTA[pista] ?? 1000,
+        pista_verificata: pista in PISTE_VERIFICATE,
         km_pista: Math.round(kmPista * 10) / 10,
         cavalli,
       });
