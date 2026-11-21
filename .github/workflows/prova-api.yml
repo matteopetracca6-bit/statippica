@@ -8,12 +8,7 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          curl -sL -A "$UA" -o /tmp/app.js "https://www.letrot.com/build/app.0c30b946.js"
-          python3 - <<'PY'
-          import re
-          s=open('/tmp/app.js',encoding='utf-8',errors='ignore').read()
-          for k in ['search','recherche','autocomplete']:
-              for u in sorted(set(re.findall(r'["\'`](/v1/api/[^"\'`]*'+k+r'[^"\'`]*)["\'`]',s)))[:10]: print('U',u)
-              for m in list(re.finditer(r'/v1/api/[a-z\-/]*'+k,s))[:3]: print('C',s[max(0,m.start()-200):m.start()+300].replace('\n',' '))
-          print('ALL', sorted(set(re.findall(r'["\'`](/v1/api/[a-z\-_/]+)',s)))[:80])
-          PY
+          H=(-A "$UA" -H "Accept: application/json, text/plain, */*" -H "Referer: https://www.letrot.com/")
+          for u in "/v1/api/search/horse/maharajah" "/v1/api/search/fuzzy/maharajah" "/v1/api/search/horse/ready%20cash" "/v1/api/horses/ZWdbYgYIBAsM/performances" "/v1/api/horses/ZWdbYgYIBAsM/performances?page=1" "/v1/api/performances/horse/ZWdbYgYIBAsM"; do
+            echo "== $u"; curl -sL "${H[@]}" "https://www.letrot.com$u" | head -c 1500; echo
+          done
