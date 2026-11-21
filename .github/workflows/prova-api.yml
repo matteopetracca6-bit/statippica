@@ -8,11 +8,12 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          curl -sL -A "$UA" -o /tmp/p.html "https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses"
+          curl -sL -A "$UA" -o /tmp/app.js "https://www.letrot.com/build/app.0c30b946.js"
           python3 - <<'PY'
           import re
-          s=open('/tmp/p.html',encoding='utf-8',errors='ignore').read()
-          for k in ['horsePerformances','connector','performances','v1/']:
-              for m in list(re.finditer(k,s))[:4]:
-                  print('K',k,'::',s[max(0,m.start()-500):m.start()+500].replace('\n',' '))
+          s=open('/tmp/app.js',encoding='utf-8',errors='ignore').read()
+          for k in ['search','recherche','autocomplete']:
+              for u in sorted(set(re.findall(r'["\'`](/v1/api/[^"\'`]*'+k+r'[^"\'`]*)["\'`]',s)))[:10]: print('U',u)
+              for m in list(re.finditer(r'/v1/api/[a-z\-/]*'+k,s))[:3]: print('C',s[max(0,m.start()-200):m.start()+300].replace('\n',' '))
+          print('ALL', sorted(set(re.findall(r'["\'`](/v1/api/[a-z\-_/]+)',s)))[:80])
           PY
