@@ -101,15 +101,31 @@ export function puntiFattrice(db: DB, mare: string):
   } catch { return null; }
 }
 
+// I voti medi dei figli di TUTTI i padri, letti una volta all'ora con una
+// sola lettura (21/11/2026). Prima si rileggeva tutta la tabella per ogni
+// stallone (UPPER(TRIM()) non usa l'indice): 0,2 secondi l'uno, e la
+// classifica completa dell'Advisor avrebbe chiesto quasi un minuto.
+let MEDIE_PADRI: { quando: number; m: Map<string, { avg_score: number; n: number }> } | null = null;
+function mediePadri(db: DB) {
+  if (MEDIE_PADRI && Date.now() - MEDIE_PADRI.quando < 60 * 60 * 1000) return MEDIE_PADRI.m;
+  const m = new Map<string, { avg_score: number; n: number }>();
+  for (const r of db.prepare(`
+    SELECT UPPER(TRIM(sire)) AS k, AVG(score) AS avg_score, COUNT(*) AS n
+    FROM horse_ratings
+    WHERE rating_mode = 'performance' AND score IS NOT NULL AND sire IS NOT NULL
+    GROUP BY 1`).all() as any[]) m.set(r.k, { avg_score: r.avg_score, n: r.n });
+  MEDIE_PADRI = { quando: Date.now(), m };
+  return m;
+}
+
+// L'indizio della madre non dipende dallo stallone: nella classifica la stessa
+// fattrice si valuta con 170 stalloni, quindi lo si tiene due minuti.
+const MEMO_MADRE = new Map<string, { quando: number; v: ParentSignal }>();
+
 /** Indizio del padre: voto medio dei figli valutati. */
 export function sireSignal(db: DB, stallion: string): ParentSignal {
   const m = model();
-  const row = db.prepare(`
-    SELECT AVG(score) AS avg_score, COUNT(*) AS n
-    FROM horse_ratings
-    WHERE rating_mode = 'performance' AND score IS NOT NULL
-      AND UPPER(TRIM(sire)) = UPPER(TRIM(?))
-  `).get(stallion) as any;
+  const row = mediePadri(db).get(stallion.toUpperCase().trim());
   const s = shrink(row?.avg_score ?? null, row?.n ?? 0, m.population_mean, m.k_sire);
   return {
     name: stallion,
@@ -129,6 +145,16 @@ export function sireSignal(db: DB, stallion: string): ParentSignal {
  *  3. altrimenti la media generale, e lo si dice
  */
 export function damSignal(db: DB, mare: string): ParentSignal {
+  const k = mare.toUpperCase().trim();
+  const c = MEMO_MADRE.get(k);
+  if (c && Date.now() - c.quando < 2 * 60 * 1000) return c.v;
+  const v = damSignalCalcolo(db, mare);
+  if (MEMO_MADRE.size > 500) MEMO_MADRE.clear();
+  MEMO_MADRE.set(k, { quando: Date.now(), v });
+  return v;
+}
+
+function damSignalCalcolo(db: DB, mare: string): ParentSignal {
   const m = model();
   const own = db.prepare(`
     SELECT AVG(r.score) AS avg_score, COUNT(*) AS n

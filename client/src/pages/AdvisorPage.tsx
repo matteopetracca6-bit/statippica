@@ -91,6 +91,10 @@ interface AdvisorResult {
   stallone?: string | null;
   stallone_non_trovato?: boolean;
   candidates?: Candidate[];
+  incroci?: { padre_fattrice: string | null; base: Conto | null } | null;
+  esclusi?: { parenti: number; monta: number; consanguineita: number; paese: number } | null;
+  in_catalogo?: number | null;
+  paesi?: string[];
   validazione?: {
     stato: string; sperimentale: boolean; riserva?: string | null;
     potenziale_nascita?: { esito: string; motivo: string | null } | null;
@@ -119,6 +123,24 @@ interface Candidate {
   potenziale?: { p10: number; p50: number; p90: number; etichetta: { esito: string; motivo: string | null } | null } | null;
   monta_manuale?: boolean;
   antenato?: boolean;
+  country?: string | null;
+  stud_status?: string | null;
+  grado_stallone?: string | null;
+  padre_stallone?: string | null;
+  inbreeding_noto?: boolean;
+  incrocio?: Conto | null;
+  linea?: Conto | null;
+  fratelli?: Conto | null;
+}
+
+/** Conti degli incroci simili (server/incroci.ts). */
+interface Conto { n: number; corrono: number; votati: number; buoni: number; media: number | null; migliore: { nome: string; voto: string; anno: number | null } | null }
+
+/** Buoni ogni 100 figli con un voto, attenuato verso la media quando sono pochi:
+ *  serve solo a ordinare, sulla pagina si mostrano i conti veri. */
+function quotaIncrocio(c?: Conto | null, base = 25): number {
+  if (!c || !c.votati) return -1;
+  return (c.buoni + (base / 100) * 8) / (c.votati + 8) * 100;
 }
 
 interface Simulation {
@@ -157,7 +179,8 @@ interface CompareRow {
   value_index?: number | null;
 }
 
-type Ordine = "buoni" | "monta" | "valore" | "figli";
+type Ordine = "buoni" | "incroci" | "monta" | "valore" | "consang" | "figli";
+type Consang = "tutte" | "media" | "bassa";
 
 /* ------------------------------------------------------------------ */
 /* Stile della pagina                                                  */
@@ -181,6 +204,16 @@ const CSS = `
 .adv-ordina button { background: none; border: none; color: ${C.muto}; font-size: 12px; font-weight: 600;
   padding: 6px 11px; border-radius: 7px; cursor: pointer; }
 .adv-ordina button[aria-pressed="true"] { background: hsl(183 100% 38% / 0.18); color: ${C.cyan}; }
+.adv-filtri { display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; margin: -4px 0 12px; font-size: 12px; color: ${C.muto}; }
+.adv-filtri select { background: hsl(220 12% 11%); color: ${C.testo}; border: 1px solid ${C.bordo}; border-radius: 7px; padding: 5px 8px; font: inherit; font-size: 12px; }
+.adv-filtri label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.adv-tag { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid ${C.bordo}; color: ${C.muto}; white-space: nowrap; }
+.adv-tag[data-tono="buono"] { color: hsl(100 55% 62%); border-color: hsl(100 50% 40% / 0.45); background: hsl(100 50% 30% / 0.12); }
+.adv-tag[data-tono="scarso"] { color: hsl(15 60% 64%); border-color: hsl(15 50% 40% / 0.45); }
+.adv-altri { margin-top: 8px; width: 100%; padding: 10px; border-radius: 10px; background: none; border: 1px dashed ${C.bordo};
+  color: ${C.cyan}; font-weight: 700; font-size: 13px; cursor: pointer; }
+.adv-incroci { display: grid; gap: 10px; }
+.adv-incrocio { padding: 12px 14px; border-radius: 10px; background: hsl(220 12% 11%); border: 1px solid ${C.bordo}; min-width: 0; }
 .adv-griglia { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
 .adv-lista { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .adv-riga { display: grid; grid-template-columns: 22px 26px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center;
@@ -289,10 +322,67 @@ function Cifra({ titolo, valore, colore, sotto }: { titolo: string; valore: Reac
 /* Dettaglio di una coppia                                             */
 /* ------------------------------------------------------------------ */
 
-type Scheda = "economia" | "genetica" | "regole" | "perche";
+type Scheda = "incroci" | "economia" | "genetica" | "regole" | "perche";
 
-function Dettaglio({ c, mare, onClose }: { c: Candidate; mare: string; onClose?: () => void }) {
-  const [scheda, setScheda] = useState<Scheda>("economia");
+/** Come sono andati gli incroci simili: conti veri, non una previsione. */
+function SchedaIncroci({ c, mare, pf, base }: { c: Candidate; mare: string; pf?: string | null; base?: Conto | null }) {
+  const qBase = pct(base);
+  const Blocco = ({ titolo, spiega, conto, vuoto }: { titolo: string; spiega: string; conto?: Conto | null; vuoto: string }) => {
+    const q = pct(conto);
+    return (
+      <div className="adv-incrocio">
+        <div style={{ fontSize: 13, fontWeight: 800, color: C.testo }}>{titolo}</div>
+        <div style={{ fontSize: 11.5, color: C.muto, marginTop: 2, lineHeight: 1.45 }}>{spiega}</div>
+        {!conto || !conto.n ? (
+          <div style={{ fontSize: 12.5, color: C.fioco, marginTop: 8 }}>{vuoto}</div>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: "4px 16px", flexWrap: "wrap", marginTop: 8, fontSize: 12.5, color: "hsl(210 8% 72%)" }}>
+              <span><strong className="tabular" style={{ color: C.testo }}>{num(conto.n)}</strong> nati</span>
+              <span><strong className="tabular" style={{ color: "hsl(205 45% 65%)" }}>{num(conto.corrono)}</strong> hanno corso</span>
+              <span><strong className="tabular" style={{ color: C.buono }}>{num(conto.buoni)}</strong> buoni su {num(conto.votati)} con un voto
+                {q != null && <> (<strong className="tabular">{q}</strong> su 100)</>}</span>
+              {isNum(conto.media) && <span>voto medio <strong className="tabular" style={{ color: C.cyan }}>{num(conto.media, 1)}</strong></span>}
+            </div>
+            {conto.migliore && (
+              <div style={{ fontSize: 12, color: C.muto, marginTop: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                Il migliore:
+                <Link href={`/horse/${encodeURIComponent(conto.migliore.nome)}/${conto.migliore.anno || 0}`}><a style={{ color: C.cyan, fontWeight: 700 }}>{conto.migliore.nome}</a></Link>
+                <GradeBadge grade={conto.migliore.voto} size="sm" />
+              </div>
+            )}
+            {conto.votati < 5 && <div style={{ fontSize: 11.5, color: "hsl(35 80% 62%)", marginTop: 6 }}>Meno di 5 figli con un voto: un caso fortunato o sfortunato pesa troppo.</div>}
+          </>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div className="adv-incroci">
+      {pf ? (
+        <div style={{ fontSize: 12.5, color: C.muto, lineHeight: 1.5 }}>
+          Il padre di {mare} è <strong style={{ color: C.testo }}>{pf}</strong>. Fra tutti i nipoti di {pf} da parte di madre,
+          {qBase != null ? <> <strong style={{ color: C.testo }}>{qBase}</strong> su 100 di quelli con un voto sono buoni (A o meglio): è il metro di paragone.</> : " nessuno ha ancora un voto."}
+        </div>
+      ) : (
+        <div style={{ fontSize: 12.5, color: C.muto }}>Il padre di {mare} non è nell'archivio: gli incroci simili non si possono contare.</div>
+      )}
+      <Blocco titolo={`Già provato: ${c.name} × ${mare}`} spiega="I figli che questa fattrice ha già avuto da questo stallone."
+        conto={c.fratelli} vuoto="Nessun figlio di questa coppia nell'archivio." />
+      {pf && <Blocco titolo={`Stesso incrocio: ${c.name} × figlie di ${pf}`} spiega="I figli di questo stallone nati da sorellastre o cugine della fattrice per parte di padre: l'incrocio che gli allevatori chiamano nick."
+        conto={c.incrocio} vuoto={`Nessun figlio di ${c.name} da figlie di ${pf} nell'archivio.`} />}
+      {pf && c.padre_stallone && <Blocco titolo={`Stessa linea: figli di ${c.padre_stallone} × figlie di ${pf}`} spiega={`I puledri dei figli maschi di ${c.padre_stallone} (${c.name} compreso) con figlie di ${pf}: la linea paterna con quella della madre.`}
+        conto={c.linea} vuoto="Nessun puledro di questa linea con figlie di questo padre." />}
+      <div style={{ fontSize: 11.5, color: C.fioco, lineHeight: 1.5 }}>
+        Sono conti dell'archivio, non una previsione: i figli dei buoni stalloni nascono da fattrici migliori e corrono di più, e il conto non lo corregge.
+        La previsione in alto, invece, è provata su puledri mai visti.
+      </div>
+    </div>
+  );
+}
+
+function Dettaglio({ c, mare, onClose, pf, base }: { c: Candidate; mare: string; onClose?: () => void; pf?: string | null; base?: Conto | null }) {
+  const [scheda, setScheda] = useState<Scheda>("incroci");
   const { data: sim, isLoading, isError } = useQuery<Simulation>({
     queryKey: ["/api/advisor/simulate", c.name, mare, c.monta_manuale ? c.stud_fee_eur : null],
     queryFn: () => apiRequest("GET", `/api/advisor/simulate?stallion=${encodeURIComponent(c.name)}&mare=${encodeURIComponent(mare)}${c.monta_manuale && isNum(c.stud_fee_eur) ? `&monta=${c.stud_fee_eur}` : ""}`).then(r => r.json()),
@@ -364,16 +454,17 @@ function Dettaglio({ c, mare, onClose }: { c: Candidate; mare: string; onClose?:
 
       {/* Schede */}
       <div className="adv-schede" role="tablist">
-        {([["economia", "Economia"], ["genetica", "Genetica"], ["regole", "Regole"], ["perche", "Perché"]] as [Scheda, string][]).map(([k, t]) => (
+        {([["incroci", "Incroci simili"], ["economia", "Economia"], ["genetica", "Genetica"], ["regole", "Regole"], ["perche", "Perché"]] as [Scheda, string][]).map(([k, t]) => (
           <button key={k} role="tab" aria-selected={scheda === k} onClick={() => setScheda(k)} data-testid={`scheda-${k}`}>{t}</button>
         ))}
       </div>
 
-      {isLoading && <CavalloCaricamento label="Simulazione in corso..." />}
-      {(isError || (!isLoading && !sim)) && (
+      {scheda === "incroci" && <SchedaIncroci c={c} mare={mare} pf={pf} base={base} />}
+      {scheda !== "incroci" && isLoading && <CavalloCaricamento label="Simulazione in corso..." />}
+      {scheda !== "incroci" && (isError || (!isLoading && !sim)) && (
         <div style={{ fontSize: 13, color: C.muto }}>Non sono riuscito a calcolare il dettaglio di questa coppia.</div>
       )}
-      {sim && (
+      {sim && scheda !== "incroci" && (
         <div className="fade-in">
           {scheda === "economia" && <SchedaEconomia sim={sim} />}
           {scheda === "genetica" && <SchedaGenetica sim={sim} />}
@@ -562,8 +653,25 @@ function Confronto({ mare, stallions, onRemove, onClose }: { mare: string; stall
 /* Riga della classifica                                               */
 /* ------------------------------------------------------------------ */
 
-function Riga({ c, pos, attiva, spuntato, onApri, onSpunta }: {
+/** Buoni ogni 100 figli con un voto, senza attenuare: quello che si legge. */
+const pct = (c?: Conto | null) => (c && c.votati ? Math.round(c.buoni / c.votati * 100) : null);
+
+/** Etichetta breve dell'incrocio stallone x padre della fattrice, per la riga. */
+function TagIncrocio({ c, pf, base }: { c?: Conto | null; pf?: string | null; base: number | null }) {
+  if (!pf) return null;
+  if (!c || !c.votati) return <span className="adv-tag" title={`Nessun figlio con voto da figlie di ${pf}`}>incrocio mai provato</span>;
+  const q = pct(c)!;
+  const tono = c.votati >= 5 && base != null ? (q >= base + 8 ? "buono" : q <= base - 8 ? "scarso" : undefined) : undefined;
+  return (
+    <span className="adv-tag" data-tono={tono} title={`Figli di questo stallone da figlie di ${pf}: ${c.buoni} buoni su ${c.votati} con un voto (${c.n} nati)`}>
+      con figlie di {pf}: {c.buoni} buoni su {c.votati}
+    </span>
+  );
+}
+
+function Riga({ c, pos, attiva, spuntato, onApri, onSpunta, pf, base }: {
   c: Candidate; pos: number; attiva: boolean; spuntato: boolean; onApri: () => void; onSpunta: (v: boolean) => void;
+  pf?: string | null; base: number | null;
 }) {
   const sopra = isNum(c.prob_buono) ? c.prob_buono - BASE_BUONI : null;
   return (
@@ -587,10 +695,19 @@ function Riga({ c, pos, attiva, spuntato, onApri, onSpunta }: {
             <span style={{ color: inbColor(c.inbreeding_level ?? undefined) }}>consang. {num(c.inbreeding_pct, 2)}%</span>
           )}
         </div>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+          {c.country && <span className="adv-tag">{c.country}</span>}
+          {!c.n_figli_totali && <span className="adv-tag" title="Nessun figlio ancora valutato: la previsione si appoggia soprattutto alla fattrice">giovane, figli non ancora valutati</span>}
+          <TagIncrocio c={c.incrocio} pf={pf} base={base} />
+          {c.fratelli && c.fratelli.n > 0 && (
+            <span className="adv-tag" data-tono="buono" title="Questa fattrice ha già figli di questo stallone">già provato: {c.fratelli.n} {c.fratelli.n === 1 ? "figlio" : "figli"}</span>
+          )}
+          {c.inbreeding_noto === false && <span className="adv-tag" title="Albero di uno dei due non disponibile">consang. non calcolabile</span>}
+        </div>
       </div>
       <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
         <span className="tabular" style={{ fontSize: 12.5, fontWeight: 700, color: isNum(c.stud_fee_eur) && c.stud_fee_eur > 0 ? C.oro : C.fioco, whiteSpace: "nowrap" }}>
-          {isNum(c.stud_fee_eur) && c.stud_fee_eur > 0 ? euro(c.stud_fee_eur) : "monta non nota"}
+          {isNum(c.stud_fee_eur) && c.stud_fee_eur > 0 ? euro(c.stud_fee_eur) : c.stud_status === "da_concordare" ? "monta da concordare" : "monta non nota"}
         </span>
         {c.monta_manuale && <span style={{ fontSize: 10.5, color: C.muto }}>scritta da te</span>}
         {sopra != null && (
@@ -620,6 +737,11 @@ export default function AdvisorPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [mostraConfronto, setMostraConfronto] = useState(false);
   const [ordine, setOrdine] = useState<Ordine>("buoni");
+  // Filtri sulla classifica completa: si applicano subito, senza ricalcolare.
+  const [consang, setConsang] = useState<Consang>("tutte");
+  const [paese, setPaese] = useState("");
+  const [soloMontaNota, setSoloMontaNota] = useState(false);
+  const [quanti, setQuanti] = useState(20);
   const desktop = useDesktop();
   const confrontoRef = useRef<HTMLDivElement>(null);
 
@@ -629,7 +751,7 @@ export default function AdvisorPage() {
 
   function cerca(nome: string) {
     if (!nome.trim()) return;
-    setAperto(null); setSelected([]); setMostraConfronto(false);
+    setAperto(null); setSelected([]); setMostraConfronto(false); setQuanti(20);
     const b = parseInt(budget);
     const m = parseInt(montaScritta);
     if (modo === "stallone" && !stallone.trim()) return;
@@ -642,15 +764,28 @@ export default function AdvisorPage() {
 
   const mareName = data?.fattrice?.name || fattrice.trim();
 
+  const pf = data?.incroci?.padre_fattrice ?? null;
+  const basePct = pct(data?.incroci?.base);
   const lista = useMemo(() => {
-    const cs = (data?.candidates ?? []).slice();
+    const cs = (data?.candidates ?? []).filter(c => {
+      if (data?.stallone) return true;
+      if (consang === "media" && isNum(c.inbreeding_pct) && c.inbreeding_pct >= 6.25) return false;
+      if (consang === "bassa" && isNum(c.inbreeding_pct) && c.inbreeding_pct >= 3.125) return false;
+      if (paese && (c.country ?? "") !== paese) return false;
+      if (soloMontaNota && !(isNum(c.stud_fee_eur) && c.stud_fee_eur > 0)) return false;
+      return true;
+    });
     const v = (x: unknown, dflt: number) => (isNum(x) ? x : dflt);
     if (ordine === "buoni") cs.sort((a, b) => v(b.prob_buono, -1) - v(a.prob_buono, -1) || v(b.expected_score, 0) - v(a.expected_score, 0));
     if (ordine === "monta") cs.sort((a, b) => v(a.stud_fee_eur || null, 1e12) - v(b.stud_fee_eur || null, 1e12));
     if (ordine === "valore") cs.sort((a, b) => v(b.value_index, -1) - v(a.value_index, -1));
     if (ordine === "figli") cs.sort((a, b) => v(b.n_figli_totali, 0) - v(a.n_figli_totali, 0));
+    if (ordine === "incroci") cs.sort((a, b) => quotaIncrocio(b.incrocio, basePct ?? 25) - quotaIncrocio(a.incrocio, basePct ?? 25)
+      || v(b.incrocio?.votati, 0) - v(a.incrocio?.votati, 0) || v(b.prob_buono, -1) - v(a.prob_buono, -1));
+    if (ordine === "consang") cs.sort((a, b) => v(a.inbreeding_pct, 99) - v(b.inbreeding_pct, 99) || v(b.prob_buono, -1) - v(a.prob_buono, -1));
     return cs;
-  }, [data, ordine]);
+  }, [data, ordine, consang, paese, soloMontaNota, basePct]);
+  const visibili = lista.slice(0, quanti);
 
   const attivo = lista.find(c => c.name === aperto) ?? null;
 
@@ -671,7 +806,7 @@ export default function AdvisorPage() {
     <div className="page-shell">
       <style>{CSS}</style>
       <IntestazionePagina icona={Sparkles} colore={C.viola} titolo="Advisor Allevatore" etichetta={nascitaOk ? "verificato alla nascita" : "in verifica"} margineSotto={18}
-        sottotitolo="Scegli una fattrice: ti mostro gli stalloni compatibili in ordine di quanti puledri su 100 diventano buoni cavalli.">
+        sottotitolo="Scegli una fattrice: ti mostro tutti gli stalloni in monta in ordine di quanti puledri su 100 diventano buoni cavalli, con come sono andati gli incroci simili.">
         Per ogni stallone compatibile vedi quanti puledri su 100 di quella coppia
         diventano buoni cavalli e quanti arrivano alle corse, il voto atteso fra chi
         corre, la consanguineità e la tassa di monta. Tocca uno stallone per il
@@ -753,7 +888,7 @@ export default function AdvisorPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           {[
             ["1", "Scegli la fattrice", "Dall'elenco, e se vuoi un tetto alla tassa di monta."],
-            ["2", "Leggi la classifica", "Per ogni stallone, quanti puledri su 100 diventano buoni e quanti corrono."],
+            ["2", "Leggi la classifica", "Tutti gli stalloni in monta: quanti puledri su 100 diventano buoni, la consanguineità, e come è andato lo stesso incrocio con le figlie del padre della fattrice."],
             ["3", "Apri o confronta", "Il dettaglio della coppia: costi, consanguineità, regole. Oppure più stalloni affiancati."],
           ].map(([n, t, d]) => (
             <div key={n} style={{ padding: 16, borderRadius: 12, background: "hsl(220 12% 9%)", border: `1px solid ${C.bordo}` }}>
@@ -835,17 +970,41 @@ export default function AdvisorPage() {
           {/* Barra della classifica */}
           <div className="adv-barra">
             <div style={{ fontSize: 14, fontWeight: 800, color: C.testo, marginRight: "auto" }}>
-              {data.stallone ? `${data.stallone} con questa fattrice` : `${lista.length} stalloni compatibili`}
+              {data.stallone ? `${data.stallone} con questa fattrice` : `${lista.length} stalloni in monta`}
               {isNum(data.budget_max) && data.budget_max > 0 && (
                 <span style={{ fontSize: 12, fontWeight: 500, color: C.muto }}> · monta fino a {euro(data.budget_max)}</span>
               )}
             </div>
             {!data.stallone && <div className="adv-ordina" role="group" aria-label="Ordina per">
-              {([["buoni", "Più buoni"], ["monta", "Monta più bassa"], ["valore", "Qualità per euro"], ["figli", "Più figli valutati"]] as [Ordine, string][]).map(([k, t]) => (
+              {([["buoni", "Più buoni"], ["incroci", "Incroci riusciti"], ["monta", "Monta più bassa"], ["valore", "Qualità per euro"], ["consang", "Meno consanguinei"], ["figli", "Più figli valutati"]] as [Ordine, string][]).map(([k, t]) => (
                 <button key={k} type="button" aria-pressed={ordine === k} onClick={() => setOrdine(k)}>{t}</button>
               ))}
             </div>}
           </div>
+
+          {!data.stallone && (
+            <div className="adv-filtri" data-testid="advisor-filtri">
+              <label>Consanguineità
+                <select value={consang} onChange={e => { setConsang(e.target.value as Consang); setQuanti(20); }}>
+                  <option value="tutte">qualsiasi</option>
+                  <option value="media">sotto 6,25% (niente alta)</option>
+                  <option value="bassa">sotto 3,125% (solo bassa)</option>
+                </select>
+              </label>
+              {(data.paesi?.length ?? 0) > 1 && (
+                <label>Paese
+                  <select value={paese} onChange={e => { setPaese(e.target.value); setQuanti(20); }}>
+                    <option value="">tutti</option>
+                    {data.paesi!.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </label>
+              )}
+              <label><input type="checkbox" checked={soloMontaNota} onChange={e => { setSoloMontaNota(e.target.checked); setQuanti(20); }}
+                style={{ accentColor: "hsl(183 100% 38%)" }} /> solo monta nota</label>
+              {pf && <span>Incroci contati con le figlie di <strong style={{ color: C.testo }}>{pf}</strong>{basePct != null ? <> (in media {basePct} buoni su 100)</> : null}</span>}
+              {data.esclusi && data.esclusi.monta > 0 && <span>{data.esclusi.monta} fuori per la monta massima</span>}
+            </div>
+          )}
 
           {lista.some(c => c.antenato) && (
             <div className="adv-avviso" data-testid="avviso-antenato">
@@ -857,23 +1016,28 @@ export default function AdvisorPage() {
             <div style={{ padding: 18, borderRadius: 12, background: "hsl(220 12% 9%)", border: `1px solid ${C.bordo}`, fontSize: 13, color: C.muto }}>
               {data.stallone_non_trovato
                 ? `Lo stallone "${data.stallone}" non è nell'archivio: controlla come è scritto o sceglilo dall'elenco.`
-                : <>Nessuno stallone compatibile{isNum(data.budget_max) ? " con questa monta massima: prova ad alzarla o a toglierla." : "."}</>}
+                : <>Nessuno stallone compatibile{isNum(data.budget_max) ? " con questa monta massima: prova ad alzarla o a toglierla." : (data.candidates?.length ? " con questi filtri: prova ad allargarli." : ".")}</>}
             </div>
           ) : (
             <div className="adv-griglia">
               <div className="adv-lista">
-                {lista.map((c, i) => (
+                {visibili.map((c, i) => (
                   <div key={c.name} style={{ minWidth: 0 }}>
-                    <Riga c={c} pos={i + 1} attiva={aperto === c.name} spuntato={selected.includes(c.name)}
+                    <Riga c={c} pos={i + 1} attiva={aperto === c.name} spuntato={selected.includes(c.name)} pf={pf} base={basePct}
                       onApri={() => setAperto(aperto === c.name && !desktop ? null : c.name)} onSpunta={v => spunta(c.name, v)} />
                     {!desktop && aperto === c.name && (
-                      <div style={{ marginTop: 6 }}><Dettaglio c={c} mare={mareName} onClose={() => setAperto(null)} /></div>
+                      <div style={{ marginTop: 6 }}><Dettaglio c={c} mare={mareName} pf={pf} base={data.incroci?.base} onClose={() => setAperto(null)} /></div>
                     )}
                   </div>
                 ))}
+                {lista.length > visibili.length && (
+                  <button type="button" className="adv-altri" onClick={() => setQuanti(q => q + 30)} data-testid="advisor-altri">
+                    Mostra altri {Math.min(30, lista.length - visibili.length)} (di {lista.length - visibili.length} rimasti)
+                  </button>
+                )}
               </div>
               {desktop && (
-                attivo ? <Dettaglio key={attivo.name} c={attivo} mare={mareName} /> : (
+                attivo ? <Dettaglio key={attivo.name} c={attivo} mare={mareName} pf={pf} base={data.incroci?.base} /> : (
                   <div className="adv-dettaglio" style={{ borderStyle: "dashed", color: C.muto, fontSize: 13, textAlign: "center", padding: 40 }}>
                     Scegli uno stallone dalla classifica per vedere il dettaglio della coppia.
                   </div>
