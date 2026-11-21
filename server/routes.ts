@@ -136,8 +136,16 @@ function getDb() {
 // in memoria finche' l'archivio non cambia (o per il tempo indicato) e chi
 // arriva dopo la riceve subito.
 const cacheRisposte = new Map<string, { mtime: number; quando: number; corpo: unknown }>();
+// La "versione" dell'archivio. Fino al 21/11/2026 era l'ora di modifica del
+// file, ma il sito stesso scrive nell'archivio (la genealogia chiesta al
+// volo a vendopuledri, gli indici): ogni scrittura buttava via tutte le
+// risposte pronte e le liste del radar, e la scheda successiva rifaceva il
+// giro su tutte le gare (20 secondi misurati sul sito). L'archivio nuovo
+// arriva sempre con un file nuovo messo al posto del vecchio (index.ts,
+// scaricaArchivio), quindi cambia il numero del file (inode): e' quello che
+// conta. Le scritture del sito non lo cambiano.
 function mtimeDb(): number {
-  try { return fs.statSync(DB_PATH).mtimeMs; } catch { return 0; }
+  try { const st = fs.statSync(DB_PATH); return st.ino || st.mtimeMs; } catch { return 0; }
 }
 function pronta(durataMs = 60 * 60_000) {
   return (req: any, res: any, next: any) => {
@@ -168,6 +176,8 @@ function assicuraIndici() {
     w.exec("CREATE INDEX IF NOT EXISTS idx_races_code ON races(race_code)");
     // Il rendimento del guidatore, nel dettaglio del pronostico.
     w.exec("CREATE INDEX IF NOT EXISTS idx_races_driver ON races(driver)");
+    // Figli di una fattrice: incroci dell'Advisor, scheda della fattrice.
+    w.exec("CREATE INDEX IF NOT EXISTS idx_horses_dam ON horses(dam)");
     w.close();
     indiciPer = mtimeDb();
   } catch (e) { console.error("[indici]", e); }
@@ -1082,9 +1092,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
           s.unire_sire AS sire_unire_sire, s.unire_dam AS sire_unire_dam,
           d.unire_sire AS dam_unire_sire,  d.unire_dam AS dam_unire_dam
         FROM horses h
-        LEFT JOIN horses s ON UPPER(TRIM(s.name)) = UPPER(TRIM(h.sire)) AND h.sire IS NOT NULL AND h.sire != '' AND ${genitoreCompatibile("s", "h")}
-        LEFT JOIN horses d ON UPPER(TRIM(d.name)) = UPPER(TRIM(h.dam))  AND h.dam  IS NOT NULL AND h.dam  != '' AND ${genitoreCompatibile("d", "h")}
-        WHERE UPPER(TRIM(h.name)) = ? AND h.birth_year = ?
+        -- Nomi gia' maiuscoli e senza spazi ai bordi: il confronto diretto usa
+        -- l'indice (con UPPER/TRIM si leggevano tutti i cavalli, tre volte).
+        LEFT JOIN horses s ON s.name = h.sire AND h.sire IS NOT NULL AND h.sire != '' AND ${genitoreCompatibile("s", "h")}
+        LEFT JOIN horses d ON d.name = h.dam  AND h.dam  IS NOT NULL AND h.dam  != '' AND ${genitoreCompatibile("d", "h")}
+        WHERE h.name = ? AND h.birth_year = ?
         LIMIT 1
       `).get(name, year) as any;
 
@@ -3130,6 +3142,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     if (!fattrice) return res.status(400).json({ error: "fattrice required" });
 
     const fattriceUpper = fattrice.trim().toUpperCase();
+    assicuraIndici();
     const db = getDb();
     try {
       // Get fattrice data
