@@ -3,6 +3,7 @@ import { calcolaWright, comparseAlbero } from "./consanguineita";
 import { registraSimulatore } from "./simulatore";
 import { registraElencoCavalli } from "./elencoCavalli";
 import { incrociPerFattrice } from "./incroci";
+import { distanzaCavallo, distanzaStallone, profiliStalloni, velocitaPiste } from "./distanza";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 import { forzaCavallo } from "./forza";
 
@@ -323,6 +324,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
   registraSimulatore(app, getDb, NOMI_CALENDARIO, vpTableExists);
   // Schede Tutti e Novita' della pagina Cavalli (elencoCavalli.ts).
   registraElencoCavalli(app, getDb, vpTableExists);
+  // Velocita' delle piste a parita' di cavallo (scripts/record_distanza.py).
+  app.get("/api/piste/velocita", (_req, res) => {
+    const db = getDb();
+    try { res.json(velocitaPiste(db)); } finally { db.close(); }
+  });
 
   // Dopo l'avvio il server si chiede da solo le pagine piu' lente, cosi' il
   // primo visitatore trova i conti gia' fatti.
@@ -1286,6 +1292,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         valore_carriera: valoreCarriera,
         affidabilita_voto: affidabilita,
         radar,
+        // Km su gara corta e lunga (server/distanza.ts, scripts/record_distanza.py).
+        distanza: (() => { try { return distanzaCavallo(db, name, { corto: horse.record_short, lungo: horse.record_long }); } catch { return null; } })(),
         totali_mondiali: horse.rating_mode === "storico" ? totaleMondiale(horse.name, horse.birth_year) : null,
       });
     } finally {
@@ -1526,6 +1534,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
           catalog_url:           stud.catalog_url,
           catalog_synced_at:     stud.catalog_synced_at,
         } : null,
+        // Figli piu' adatti al corto o al lungo (scripts/record_distanza.py).
+        distanza_figli: (() => { try { return distanzaStallone(db, name); } catch { return null; } })(),
         // Anno di nascita, periodo in monta e generazione (server/alberoStalloni.ts).
         attivita: (() => { try { return attivitaStallone(db, String(mtimeDb()), name); } catch { return null; } })(),
         nonno: (() => { try { return nonnoStallone(db, name, cacheNonni, String(mtimeDb())); } catch { return null; } })(),
@@ -3240,6 +3250,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const soloMontaNota = !!(req.body as any).solo_monta_nota;
       const inc = incrociPerFattrice(db, fattriceUpper, horse.sire);
       const padreDi = db.prepare("SELECT sire FROM horses WHERE name = ? AND sire IS NOT NULL LIMIT 1");
+      const profili = (() => { try { return profiliStalloni(db); } catch { return new Map(); } })();
 
       const ctxMadre = contestoMadre(db, fattriceUpper);
       segna("catalogo_incroci");
@@ -3286,6 +3297,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
             incrocio: inc.stretto(s.name),
             linea: inc.linea(padreStallone),
             fratelli: inc.fratelli(s.name),
+            distanza_figli: profili.get(String(s.name).toUpperCase()) ?? null,
           };
         })
         .filter((c: any) => {

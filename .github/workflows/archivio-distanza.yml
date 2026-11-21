@@ -1,0 +1,40 @@
+name: StatIppica — Km corto e lungo (a mano)
+
+# 21/11/2026 (scripts/record_distanza.py, scripts/radar_misure.py). Calcola
+# subito i km su gara corta e lunga e le misure del radar, senza aspettare la
+# notte, e pubblica l'archivio. Il sito lo prende da solo entro venti minuti
+# (index.ts, controllaArchivio), senza riavviarsi.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  distanza:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Calcola
+        run: |
+          python3 scripts/radar_misure.py --db data.db
+          python3 scripts/record_distanza.py --db data.db
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh

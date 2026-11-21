@@ -5883,6 +5883,13 @@ def main():
             phase_radar_misure(conn)
         except Exception as e:
             print(f"[RADAR] errore: {e}", file=sys.stderr)
+        try:
+            # Km su gara corta e lunga, velocita' delle piste, profilo
+            # corto/lungo di cavalli e stalloni (scripts/record_distanza.py).
+            from record_distanza import calcola as phase_record_distanza
+            phase_record_distanza(conn)
+        except Exception as e:
+            print(f"[DISTANZA] errore: {e}", file=sys.stderr)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:

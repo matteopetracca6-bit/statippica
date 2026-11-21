@@ -13,8 +13,10 @@
  *  3. nipotiStalloni: la linea paterna vista da sopra: quanto vincono i figli
  *     dei figli stalloni di uno stallone.
  *
- * Distanza "breve" = sotto i 2000 metri (miglio e dintorni), "lunga" = 2000
- * metri e oltre. Un tempo vale solo se il cavallo e' arrivato (piazzamento
+ * Distanza "breve" = fino a 1700 metri (il miglio: 1600-1660), "lunga" = 2000
+ * metri e oltre (21/11/2026: prima "breve" era tutto sotto i 2000, come le
+ * poche gare da 1800, che ora non contano per nessuna delle due, come nella
+ * scheda del cavallo). Un tempo vale solo se il cavallo e' arrivato (piazzamento
  * presente) e il tempo al km e' plausibile (fra 1.08 e 1.30). Le vincite sono
  * quelle nette, come nel resto del sito.
  */
@@ -53,6 +55,7 @@ const fascia = (v: unknown): FasciaEta => (["2", "3", "4", "anziani", "tutte"].i
 export interface RigaLeader {
   nome: string; nato: number; sesso: string | null; padre: string | null; madre: string | null; nonno: string | null;
   corse: number; vittorie: number; primi_tre: number; vincite: number; breve: number | null; lunga: number | null;
+  breve_corr?: number | null; lunga_corr?: number | null;
   voto: string | null;
 }
 export interface Leaders {
@@ -69,7 +72,10 @@ export function leadersEta(db: Database.Database, q: { eta?: unknown; periodo?: 
   const natiDa = anno - amax, natiA = anno - amin;
   const sesso = q.sesso === "F" ? "F" : q.sesso === "M" ? "M" : null;
   const soloIta = q.naz !== "tutti";
-  const ordine = ["vincite", "vittorie", "breve", "lunga", "potenziale"].includes(String(q.ordine)) ? String(q.ordine) : "vincite";
+  const ordine = ["vincite", "vittorie", "breve", "lunga", "breve_corr", "lunga_corr", "potenziale"].includes(String(q.ordine)) ? String(q.ordine) : "vincite";
+  // Tempo corretto per la pista (scripts/record_distanza.py, piste_velocita):
+  // il tempo riportato a una pista media. Solo piste italiane con velocita' nota.
+  const conPiste = !!db.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='piste_velocita'`).get();
 
   const filtri: string[] = ["h.birth_year BETWEEN @natiDa AND @natiA"];
   if (soloIta) filtri.push("h.country = 'ITA'");
@@ -87,21 +93,28 @@ export function leadersEta(db: Database.Database, q: { eta?: unknown; periodo?: 
     agg AS (
       SELECT r.horse_name n, COUNT(*) corse, SUM(r.placement = 1) vitt, SUM(r.placement BETWEEN 1 AND 3) p3,
              COALESCE(SUM(r.prize_net), 0) vinc,
-             MIN(CASE WHEN r.distance < 2000 AND ${TEMPO_OK} THEN r.time_km END) breve,
+             MIN(CASE WHEN r.distance <= 1700 AND ${TEMPO_OK} THEN r.time_km END) breve,
              MIN(CASE WHEN r.distance >= 2000 AND ${TEMPO_OK} THEN r.time_km END) lunga
-      FROM races r WHERE r.horse_name IN (SELECT name FROM cav) ${dataRaces}
+             ${conPiste ? `, MIN(CASE WHEN r.distance <= 1700 AND ${TEMPO_OK} THEN r.time_km - pc.scarto END) breve_corr,
+             MIN(CASE WHEN r.distance >= 2000 AND ${TEMPO_OK} THEN r.time_km - pl.scarto END) lunga_corr` : ", NULL breve_corr, NULL lunga_corr"}
+      FROM races r
+      ${conPiste ? `LEFT JOIN piste_velocita pc ON pc.pista = r.track AND pc.classe = 'corta'
+                    LEFT JOIN piste_velocita pl ON pl.pista = r.track AND pl.classe = 'lunga'` : ""}
+      WHERE r.horse_name IN (SELECT name FROM cav) ${dataRaces}
       GROUP BY r.horse_name)
     SELECT c.name nome, c.birth_year nato, c.sex sesso, c.sire padre, c.dam madre, d.sire nonno,
-           a.corse, a.vitt vittorie, a.p3 primi_tre, a.vinc vincite, a.breve, a.lunga, hr.grade voto
+           a.corse, a.vitt vittorie, a.p3 primi_tre, a.vinc vincite, a.breve, a.lunga,
+           ROUND(a.breve_corr, 2) breve_corr, ROUND(a.lunga_corr, 2) lunga_corr, hr.grade voto
     FROM cav c JOIN agg a ON a.n = c.name
     LEFT JOIN horses d ON d.name = c.dam
     LEFT JOIN horse_ratings hr ON hr.name = c.name AND hr.birth_year = c.birth_year AND hr.rating_mode = 'performance'`;
   const tutte = db.prepare(sql).all({ natiDa, natiA, daData, aData }) as RigaLeader[];
   const tot = tutte.reduce((s, r) => s + (r.vincite || 0), 0);
-  const perTempo = (k: "breve" | "lunga") => (a: RigaLeader, b: RigaLeader) =>
+  const perTempo = (k: "breve" | "lunga" | "breve_corr" | "lunga_corr") => (a: RigaLeader, b: RigaLeader) =>
     (a[k] ?? 99) - (b[k] ?? 99) || b.vincite - a.vincite;
   const cmp = ordine === "vittorie" ? (a: RigaLeader, b: RigaLeader) => b.vittorie - a.vittorie || b.vincite - a.vincite
     : ordine === "breve" ? perTempo("breve") : ordine === "lunga" ? perTempo("lunga")
+    : ordine === "breve_corr" ? perTempo("breve_corr") : ordine === "lunga_corr" ? perTempo("lunga_corr")
     : (a: RigaLeader, b: RigaLeader) => b.vincite - a.vincite || b.vittorie - a.vittorie;
   // Potenziale dinamico (novembre 2026, potenziale.py): l'ultima stima del
   // registro per i cavalli che non hanno ancora raggiunto il traguardo dei 4
@@ -119,6 +132,7 @@ export function leadersEta(db: Database.Database, q: { eta?: unknown; periodo?: 
   const cmpPot = (a: RigaLeader, b: RigaLeader) =>
     (pot.get(b.nome.toUpperCase())?.potenziale ?? -1) - (pot.get(a.nome.toUpperCase())?.potenziale ?? -1) || b.vincite - a.vincite;
   const righe = tutte.filter(r => ordine === "breve" ? r.breve != null : ordine === "lunga" ? r.lunga != null
+                                  : ordine === "breve_corr" ? r.breve_corr != null : ordine === "lunga_corr" ? r.lunga_corr != null
                                   : ordine === "potenziale" ? pot.has(r.nome.toUpperCase()) : r.corse > 0)
     .sort(ordine === "potenziale" ? cmpPot : cmp).slice(0, 200)
     .map(r => ({ ...r, vincite: Math.round(r.vincite || 0), sesso: r.sesso || null,

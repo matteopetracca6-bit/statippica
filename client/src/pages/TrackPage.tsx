@@ -33,6 +33,19 @@ export default function TrackPage() {
     queryFn: () => apiRequest("GET", `/api/track/${encodeURIComponent(codice)}`).then(r => r.json()),
     enabled: !!codice,
   });
+  // Velocita' della pista a parita' di cavallo (scripts/record_distanza.py).
+  const { data: vel } = useQuery<{ pista: string; classe: string; scarto: number; gare: number }[]>({
+    queryKey: ["/api/piste/velocita"],
+    queryFn: () => apiRequest("GET", "/api/piste/velocita").then(r => r.json()),
+    staleTime: 60 * 60_000,
+  });
+  const velocita = (classe: string) => {
+    const nome = String(t?.codice ?? t?.nome ?? codice).toUpperCase();
+    const v = vel?.find(x => x.classe === classe && (x.pista === nome || x.pista === codice.toUpperCase()));
+    if (!v) return null;
+    const a = Math.abs(v.scarto).toFixed(1).replace(".", ",");
+    return Math.abs(v.scarto) < 0.05 ? "nella media" : `${a} s/km più ${v.scarto < 0 ? "veloce" : "lenta"}`;
+  };
 
   if (isLoading) return <Caricamento testo="Carico la scheda della pista..." />;
   if (error || !t || t.error) {
@@ -63,6 +76,8 @@ export default function TrackPage() {
           <Cifra titolo="Premio più alto" valore={t.premio_massimo ? euro(t.premio_massimo) : "\u2014"} colore="hsl(51 70% 60%)" />
           <Cifra titolo="Partenti medi" valore={t.partenti_medi ? t.partenti_medi.toFixed(1).replace(".", ",") : "\u2014"} />
           <Cifra titolo="Guidatori diversi" valore={t.n_guidatori?.toLocaleString("it-IT") ?? "\u2014"} />
+          {velocita("corta") && <Cifra titolo="Velocità sul miglio" valore={velocita("corta")!} sotto="a parità di cavallo, rispetto alla pista media" colore="hsl(28 85% 64%)" />}
+          {velocita("lunga") && <Cifra titolo="Velocità sul lungo" valore={velocita("lunga")!} sotto="da 2000 m, a parità di cavallo" colore="hsl(205 75% 66%)" />}
         </>}
       />
 

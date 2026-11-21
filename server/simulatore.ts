@@ -134,6 +134,14 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       const numeriInCorsa = partenti.map(p => vittNumero.get(p.numero)).filter((x): x is number => x != null && x > 0);
       const mediaNumeri = numeriInCorsa.length ? numeriInCorsa.reduce((a, b) => a + b, 0) / numeriInCorsa.length : null;
       const scheda = db.prepare(`SELECT birth_year, record_short, record_long FROM horses WHERE name = ?`);
+      // Km su gara corta (fino a 1700 m) e lunga (da 2000 m) dalle gare prima
+      // di quel giorno (21/11/2026). I record della fonte sono spesso vecchi:
+      // provato sulle 461 corse dal 25/10 al 20/11, con questi l'errore sul
+      // vincitore scende un poco (log-loss 2,036 -> 2,032). Riportare i tempi
+      // alla pista di oggi (piste_velocita) invece non migliorava: non si fa.
+      const recordGare = db.prepare(`SELECT MIN(CASE WHEN distance <= 1700 THEN time_km END) c,
+                                            MIN(CASE WHEN distance >= 2000 THEN time_km END) l
+                                     FROM races WHERE horse_name = ? AND race_date < ? AND time_km BETWEEN 7.5 AND 25`);
       const guid = esiste(db, "driver_stats") ? db.prepare(`SELECT effetto_corretto FROM driver_stats WHERE driver = ?`) : null;
       const rischioP = esiste(db, "rischio_galoppo") ? db.prepare(`SELECT prob FROM rischio_galoppo WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
       const rischioS = esiste(db, "rischio_galoppo_storico") ? db.prepare(`SELECT prob FROM rischio_galoppo_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
@@ -162,7 +170,8 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
         const migliore = tempi.length ? Math.min(...tempi) + ferriOggi : null;
         const vn = mediaNumeri && vittNumero.get(p.numero) ? vittNumero.get(p.numero)! / mediaNumeri : 1;
         const h = scheda.get(p.nome) as any;
-        const corto = recordSecondi(h?.record_short), lungo = recordSecondi(h?.record_long);
+        const rg = recordGare.get(p.nome, data) as any;
+        const corto = kmSecondi(rg?.c) ?? recordSecondi(h?.record_short), lungo = kmSecondi(rg?.l) ?? recordSecondi(h?.record_long);
         // Rotture: quota delle corse finite al galoppo, con un minimo di prudenza.
         const corse = storia.filter(r => r.placement != null || NON_ARRIVATO.has(String(r.placement_raw ?? "").trim()));
         const rotture = corse.filter(r => GALOPPO.has(String(r.placement_raw ?? "").trim())).length;

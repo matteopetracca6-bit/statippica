@@ -28,6 +28,7 @@ const PAGE = 30;
 interface Riga {
   nome: string; nato: number; sesso: string | null; padre: string | null; madre: string | null; nonno: string | null;
   corse: number; vittorie: number; primi_tre: number; vincite: number; breve: number | null; lunga: number | null; voto: string | null;
+  breve_corr?: number | null; lunga_corr?: number | null;
   potenziale?: { potenziale: number; basso: number; alto: number; stadio: string } | null;
 }
 interface Risposta {
@@ -62,8 +63,8 @@ function Scheda({ r, d, onClose }: { r: Riga; d: Risposta; onClose?: () => void 
       <div className="ed-cifre" style={{ marginTop: 14 }}>
         <Cifra titolo="Vincite" valore={euro(r.vincite)} colore={COLORE} sotto={quando} />
         <Cifra titolo="Vittorie" valore={num(r.vittorie)} sotto={`su ${num(r.corse)} corse · ${num(r.primi_tre)} volte nei primi tre`} />
-        <Cifra titolo="Tempo breve" valore={tempoKm(r.breve)} sotto="il migliore sotto i 2000 m" />
-        <Cifra titolo="Tempo lungo" valore={tempoKm(r.lunga)} sotto="il migliore da 2000 m in su" />
+        <Cifra titolo="Tempo breve" valore={tempoKm(r.breve)} sotto={r.breve_corr != null ? `fino a 1700 m · corretto per la pista ${tempoKm(r.breve_corr)}` : "il migliore fino a 1700 m"} />
+        <Cifra titolo="Tempo lungo" valore={tempoKm(r.lunga)} sotto={r.lunga_corr != null ? `da 2000 m · corretto per la pista ${tempoKm(r.lunga_corr)}` : "il migliore da 2000 m in su"} />
         {r.potenziale && <Cifra titolo="Potenziale a 4 anni" valore={lettera(r.potenziale.potenziale)} colore="hsl(265 85% 76%)"
           sotto={`fra ${lettera(r.potenziale.basso)} e ${lettera(r.potenziale.alto)} · ${r.potenziale.stadio}`} />}
       </div>
@@ -111,7 +112,7 @@ export default function ClassificheEtaPage() {
   const max = Math.max(1, ...righe.map(r => r.vincite));
   const anni = data?.anni ?? [];
   const annoStag = periodo === "carriera" ? null : periodo;
-  const tempo = ordine === "breve" || ordine === "lunga";
+  const tempo = ordine === "breve" || ordine === "lunga" || ordine === "breve_corr" || ordine === "lunga_corr";
 
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
@@ -148,6 +149,8 @@ export default function ClassificheEtaPage() {
           <button aria-pressed={ordine === "vittorie"} onClick={() => setOrdine("vittorie")}>Vittorie</button>
           <button aria-pressed={ordine === "breve"} onClick={() => setOrdine("breve")}>Tempo breve</button>
           <button aria-pressed={ordine === "lunga"} onClick={() => setOrdine("lunga")}>Tempo lungo</button>
+          <button aria-pressed={ordine === "breve_corr"} onClick={() => setOrdine("breve_corr")} title="Tempo riportato a una pista media">Breve, a parità di pista</button>
+          <button aria-pressed={ordine === "lunga_corr"} onClick={() => setOrdine("lunga_corr")} title="Tempo riportato a una pista media">Lungo, a parità di pista</button>
           {eta !== "anziani" && <button aria-pressed={ordine === "potenziale"} onClick={() => setOrdine("potenziale")} data-testid="ordina-potenziale">Potenziale</button>}
         </div>
         <button className="chip-filtro" aria-pressed={esteri} data-attivo={esteri} onClick={() => setEsteri(v => !v)}
@@ -193,7 +196,9 @@ export default function ClassificheEtaPage() {
                       </span>
                       <span style={{ textAlign: "right" }}>
                         <span className="tabular" style={{ display: "block", fontSize: 16, fontWeight: 800, color: COLORE, whiteSpace: "nowrap" }}>
-                          {ordine === "breve" ? tempoKm(r.breve) : ordine === "lunga" ? tempoKm(r.lunga) : ordine === "vittorie" ? `${r.vittorie} vitt.`
+                          {ordine === "breve" ? tempoKm(r.breve) : ordine === "lunga" ? tempoKm(r.lunga)
+                            : ordine === "breve_corr" ? tempoKm(r.breve_corr) : ordine === "lunga_corr" ? tempoKm(r.lunga_corr)
+                            : ordine === "vittorie" ? `${r.vittorie} vitt.`
                             : ordine === "potenziale" && r.potenziale ? lettera(r.potenziale.potenziale) : euro(r.vincite)}
                         </span>
                         <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)", whiteSpace: "nowrap" }}>
@@ -224,7 +229,10 @@ export default function ClassificheEtaPage() {
           Le vincite sono quelle nette delle corse nell'archivio di StatIppica, comprese quelle all'estero che l'archivio conosce.
           Di base si vedono solo i cavalli nati in Italia; «Anche i nati all'estero» aggiunge gli altri. «Maschi» comprende i castroni.
           Nella classifica in carriera degli anziani restano solo quelli che hanno corso nella stagione in corso. Il tempo «breve» è il
-          migliore sotto i 2000 metri, quello «lungo» il migliore da 2000 metri in su, contando solo le corse in cui il cavallo è arrivato.
+          migliore fino a 1700 metri (il miglio), quello «lungo» il migliore da 2000 metri in su, contando solo le corse in cui il cavallo è arrivato.
+          «A parità di pista» riporta ogni tempo a un ippodromo medio: ogni pista è misurata con gli stessi cavalli che hanno corso anche altrove
+          (sul miglio Siracusa e Follonica sono le più veloci, Aversa e Montecatini fra le più lente). Le gare all'estero lì non contano, e
+          l'archivio non dice se la partenza era con l'autostart o con i nastri.
           Si vedono i primi 200 di ogni classifica. La freccia viola è il potenziale: la lettera che il cavallo dovrebbe avere a fine
           anno dei 4 anni contro tutti i nati del suo anno, aggiornata ogni notte con qualifiche e corse (dettagli nella scheda).
         </Spiegazione>

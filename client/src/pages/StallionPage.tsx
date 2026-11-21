@@ -1,4 +1,5 @@
 import { periodoMonta } from "@/lib/periodoMonta";
+import { DistanzaFigli, type DatiDistanzaFigli as DistanzaFigliT } from "../components/DistanzaCavallo";
 import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
 import { Spiegazione } from "../components/Spiegazione";
@@ -66,6 +67,7 @@ interface StallionData {
   gradeDist: { grade: string; cnt: number }[];
   pedigree: Pedigree | null;
   nationality?: string | null;
+  distanza_figli?: DistanzaFigliT | null;
   // Nascita, anni in monta e generazione (server/alberoStalloni.ts).
   attivita?: {
     nato: number | null; figli: number; primo_figlio: number | null; ultimo_figlio: number | null; anno_punta: number | null;
@@ -558,6 +560,7 @@ export default function StallionPage() {
           )}
 
           {stallion.attivita && stallion.attivita.per_anno.length > 0 && <AnniInMonta a={stallion.attivita} nome={stallion.sire} />}
+          {stallion.distanza_figli && <DistanzaFigli d={stallion.distanza_figli} />}
           {stallion.nonno && stallion.nonno.nipoti_corsi > 0 && <ComeNonno n={stallion.nonno} nome={stallion.sire} />}
 
           {/* Punto di pareggio della monta */}
