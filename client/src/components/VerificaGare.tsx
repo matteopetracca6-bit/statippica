@@ -25,8 +25,8 @@ import BandieraCavallo from "@/components/BandieraCavallo";
 const MUTED = "hsl(210 8% 55%)";
 const DIM = "hsl(210 8% 42%)";
 
-type Voce = { horse_name: string; birth_year: number | null; prob: number; favorito: boolean; affidabile: boolean; arrivo: number | null; arrivo_testo: string | null; top3: boolean | null };
-type Mancante = { horse_name: string; birth_year: number | null; arrivo_testo: string | null; top3: boolean };
+type Voce = { horse_name: string; birth_year: number | null; prob: number; favorito: boolean; affidabile: boolean; arrivo: number | null; arrivo_testo: string | null; top3: boolean | null; quota?: number | null };
+type Mancante = { horse_name: string; birth_year: number | null; arrivo_testo: string | null; top3: boolean; quota?: number | null };
 type Corsa = { race_date: string; pista: string; tipo: string; codice?: string | null; corsa: string | null; numero: number | null; partenti: number; favoriti_noti: number; favoriti_a_segno: number; voci: Voce[]; mancanti?: Mancante[]; incompleto?: boolean; controllo?: Controllo | null;
   vincitore?: { nome: string; prob: number | null; posto: number | null; su: number } | null; attesi?: number;
   sorprese?: { nome: string; prob: number; arrivo: string }[]; primo_favorito?: { nome: string; prob: number; arrivo: string | null; top3: boolean | null } | null };
@@ -278,7 +278,7 @@ export default function VerificaGare() {
           <button key={k} className={`chip-filtro${tipo === k ? " attivo" : ""}`} onClick={() => setTipo(k)}>{t}</button>
         ))}
         <span style={{ width: 12 }} />
-        {[7, 14, 30].map(g => (
+        {[7, 14, 30, 60].map(g => (
           <button key={g} className={`chip-filtro${giorni === g ? " attivo" : ""}`} onClick={() => setGiorni(g)}>ultimi {g} giorni</button>
         ))}
       </div>
@@ -340,7 +340,7 @@ export default function VerificaGare() {
                         <div>Sorpres{c.sorprese!.length === 1 ? "a" : "e"}: {c.sorprese!.map(x => `${x.nome} (${Math.round(x.prob)}%, ${x.arrivo})`).join(", ")}.</div>
                       )}
                     </div>
-                    <div className="vc-riga intest"><span>Cavallo</span><span>Stima primi tre</span><span>Arrivo</span><span /></div>
+                    <div className="vc-riga intest"><span>Cavallo</span><span>Stima primi tre</span><span title="Quota finale del totalizzatore (vincente): solo un'indicazione di cosa pensava il pubblico">Quota</span><span>Arrivo</span><span /></div>
                     {c.voci.map(v => (
                       <div key={v.horse_name} className={`vc-riga${v.favorito ? " fav" : ""}`}>
                         <span>
@@ -350,6 +350,7 @@ export default function VerificaGare() {
                         <span className="tabular">
                           <span className="barretta"><span style={{ width: `${Math.min(100, v.prob)}%` }} /></span>{Math.round(v.prob)}%
                         </span>
+                        <span className="tabular" style={{ color: MUTED }}>{v.quota != null ? v.quota.toFixed(2).replace(".", ",") : "—"}</span>
                         <span className="tabular" style={{ color: v.top3 ? "hsl(150 55% 60%)" : v.top3 === false ? MUTED : DIM }}>
                           {v.arrivo_testo ?? "non in archivio"}
                         </span>
@@ -363,6 +364,7 @@ export default function VerificaGare() {
                           <small style={{ color: "hsl(35 80% 60%)" }}>non nel pronostico</small>
                         </span>
                         <span className="tabular" style={{ color: DIM }}>—</span>
+                        <span className="tabular" style={{ color: MUTED }}>{m.quota != null ? m.quota.toFixed(2).replace(".", ",") : "—"}</span>
                         <span className="tabular" style={{ color: m.top3 ? "hsl(150 55% 60%)" : MUTED }}>{m.arrivo_testo ?? "—"}</span>
                         <span />
                       </div>

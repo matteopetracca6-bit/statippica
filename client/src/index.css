@@ -792,7 +792,7 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .vc-favoriti span.ok { color: hsl(150 50% 62%); background: hsl(150 50% 40% / 0.14); }
 .vc-favoriti span.no { color: hsl(10 60% 66%); background: hsl(10 60% 45% / 0.12); }
 .verifica-corsa-corpo { border-top: 1px solid hsl(220 10% 16%); padding: 8px 12px 12px; }
-.vc-riga { display: grid; grid-template-columns: 1.6fr 1.2fr .8fr 24px; gap: 10px; align-items: center; padding: 7px 8px; font-size: 12.5px;
+.vc-riga { display: grid; grid-template-columns: 1.6fr 1.2fr .55fr .8fr 24px; gap: 10px; align-items: center; padding: 7px 8px; font-size: 12.5px;
   color: hsl(210 8% 70%); border-radius: 7px; }
 .vc-riga.intest { font-size: 10.5px; color: hsl(210 8% 46%); text-transform: uppercase; letter-spacing: .05em; }
 .vc-riga.fav { background: hsl(183 60% 40% / 0.07); }
@@ -802,7 +802,7 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .vc-riga .barretta span { display: block; height: 100%; background: hsl(183 70% 48%); }
 .vc-nota { font-size: 11px; color: hsl(210 8% 46%); margin-top: 8px; padding: 0 8px; line-height: 1.5; }
 @media (max-width: 560px) {
-  .vc-riga { grid-template-columns: 1.4fr 1fr .9fr 18px; gap: 6px; }
+  .vc-riga { grid-template-columns: 1.4fr .8fr .6fr .9fr 18px; gap: 6px; }
   .vc-riga .barretta { display: none; }
   .vc-data { min-width: 0; }
 }
