@@ -1,0 +1,53 @@
+name: StatIppica — Novita' dei cavalli, prima volta (a mano)
+
+# 21/11/2026 (scripts/novita_cavalli.py). Fa partire il registro delle novita'
+# confrontando l'archivio di adesso con la copia della pubblicazione prima
+# (data.db.precedente.gz): le differenze di quella notte diventano subito
+# novita'. Dopo, il registro si aggiorna da solo a ogni pubblicazione.
+
+on:
+  workflow_dispatch:
+    inputs:
+      quando:
+        description: "Data e ora UTC da segnare per le novita' di partenza"
+        required: true
+        default: "2026-11-21 04:53"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  novita:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Registro delle novita'
+        env:
+          QUANDO: ${{ inputs.quando }}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -m 600 -o /tmp/prec.gz "https://github.com/${GITHUB_REPOSITORY}/releases/download/archivio/data.db.precedente.gz"
+          gunzip -c /tmp/prec.gz > /tmp/prec.db
+          python3 scripts/novita_cavalli.py --db data.db --precedente /tmp/prec.db --quando "$QUANDO"
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
+      - name: Chiedi a Render di ripubblicare il sito
+        run: |
+          sleep 10
+          curl -s -m 60 -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/srv-d92cpfm7r5hc73fe07ig/deploys" | head -c 300; echo

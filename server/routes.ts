@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { calcolaWright, comparseAlbero } from "./consanguineita";
 import { registraSimulatore } from "./simulatore";
+import { registraElencoCavalli } from "./elencoCavalli";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 import { forzaCavallo } from "./forza";
 
@@ -306,6 +307,8 @@ function totaleMondiale(nome: string, anno: number) {
 export function registerRoutes(httpServer: Server, app: Express) {
   // Simulatore della corsa (simulatore.ts).
   registraSimulatore(app, getDb, NOMI_CALENDARIO, vpTableExists);
+  // Schede Tutti e Novita' della pagina Cavalli (elencoCavalli.ts).
+  registraElencoCavalli(app, getDb, vpTableExists);
 
   // Dopo l'avvio il server si chiede da solo le pagine piu' lente, cosi' il
   // primo visitatore trova i conti gia' fatti.

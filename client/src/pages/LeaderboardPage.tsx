@@ -22,6 +22,7 @@ import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
 import CavalloCaricamento from "../components/CavalloCaricamento";
+import { SchedaTutti, SchedaNovita } from "../components/ElencoCavalli";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro, isNum } from "../components/DueColonne";
 
 interface LeaderboardRow {
@@ -75,7 +76,10 @@ const MODI: { v: string; l: string; sotto: string }[] = [
   { v: "performance", l: "In gara", sotto: "voto dalle corse" },
   { v: "pedigree", l: "Pedigree", sotto: "senza carriera, voto da padre e madre" },
   { v: "storico", l: "Storici", sotto: "carriere concluse, scala a parte" },
+  { v: "tutti", l: "Tutti", sotto: "ogni cavallo dell'archivio, con e senza voto" },
+  { v: "novita", l: "Novità", sotto: "i cavalli entrati nell'ultima notte" },
 ];
+const ELENCHI = new Set(["tutti", "novita"]);
 
 const MIN_RACES_SOLID = 4;
 const LIMIT = 25;
@@ -199,6 +203,7 @@ export default function LeaderboardPage() {
   const { data: years } = useQuery<number[]>({
     queryKey: ["/api/leaderboard/years", mode],
     queryFn: async () => (await apiRequest("GET", `/api/leaderboard/years?mode=${mode}`)).json(),
+    enabled: !ELENCHI.has(mode),
   });
 
   // Dove ha corso. Filtra soltanto, non tocca il voto.
@@ -244,6 +249,7 @@ export default function LeaderboardPage() {
     queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove, voto, cerca, paese, sesso],
     queryFn: async () => (await apiRequest("GET", `/api/leaderboard?${params}`)).json(),
     placeholderData: prev => prev,
+    enabled: !ELENCHI.has(mode),
   });
 
   const rows = data?.rows ?? [];
@@ -272,14 +278,14 @@ export default function LeaderboardPage() {
         di cui conosciamo solo i totali e che hanno una scala a parte. Tocca una riga per aprire la scheda del cavallo.
       </IntestazionePagina>
 
-      <div className="ed-cifre" style={{ marginBottom: 16 }}>
+      {!ELENCHI.has(mode) && <div className="ed-cifre" style={{ marginBottom: 16 }}>
         <Cifra titolo="In questo elenco" valore={data ? num(data.total) : "—"} sotto={nFiltri || grade || cerca ? "con i filtri scelti" : "tutti"} />
         <Cifra titolo="Classifica" valore={modo.l} colore={COLORE} sotto={modo.sotto} />
         {mode === "performance" && (
           <Cifra titolo="Voto letto" valore={voto === "annata" ? "Fra coetanei" : "Contro tutti"} colore="hsl(51 80% 68%)"
             sotto={voto === "annata" ? "solo con i nati nello stesso anno" : "con tutte le generazioni insieme"} />
         )}
-      </div>
+      </div>}
 
       {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
           il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
@@ -312,7 +318,7 @@ export default function LeaderboardPage() {
       )}
 
       <div className="ed-barra">
-        <div className="ed-segm" role="group" aria-label="Classifica">
+        <div className="ed-segm" role="group" aria-label="Classifica" style={SCORRE}>
           {MODI.map(m => <button key={m.v} aria-pressed={mode === m.v} onClick={() => setMode(m.v)}>{m.l}</button>)}
         </div>
         {/* Le due letture del voto, in evidenza accanto alla scelta della
@@ -328,6 +334,7 @@ export default function LeaderboardPage() {
         )}
       </div>
 
+      {mode === "tutti" ? <SchedaTutti /> : mode === "novita" ? <SchedaNovita /> : (<>
       <div className="ed-barra" style={{ marginTop: -4 }}>
         <label className="ed-cerca">
           <Search size={15} style={{ color: "var(--ed-muto)" }} />
@@ -460,6 +467,8 @@ export default function LeaderboardPage() {
           {desktop && (sceltoR ? <SchedaCavallo key={scelto!} r={sceltoR} mode={mode} voto={voto} /> : <div className="ed-dettaglio ed-vuoto">Scegli un cavallo dall'elenco.</div>)}
         </div>
       )}
+
+      </>)}
 
       <CollegamentiCorrelati voci={[
         { href: "/advisor", titolo: "Advisor", descrizione: "Simula un accoppiamento e stima costi, premi e prezzo di rivendita del puledro (sperimentale)." },

@@ -65,6 +65,10 @@ if [ -s .archivio_targa ]; then
   fi
 fi
 
+# Novita': chi e' entrato nell'archivio e chi ha appena ricevuto la carriera
+# (scripts/novita_cavalli.py). Se va storto non si blocca la pubblicazione.
+python3 "$(dirname "$0")/novita_cavalli.py" --db data.db || echo "   novita': non aggiornate, vado avanti"
+
 # La copia compressa va rifatta se manca o se e' piu' vecchia dell'archivio.
 if [ ! -f data.db.gz ] || [ data.db -nt data.db.gz ]; then
   gzip -9 -c data.db > data.db.gz
