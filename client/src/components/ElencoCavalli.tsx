@@ -22,7 +22,7 @@ const TIPI: Record<string, { testo: string; colore: string }> = {
 const FONTI: Record<string, string> = {
   registro_unire: "registro UNIRE (storici)", risultati: "risultati delle corse", gare_ufficiali: "gare ufficiali",
   produzione_stalloni: "produzione degli stalloni", schede_stalloni: "schede degli stalloni", genitori: "genitori di altri cavalli",
-  altro: "altre fonti",
+  puledri_vendopuledri: "puledri degli allevatori (vendopuledri)", altro: "altre fonti",
 };
 
 interface Riga { nome: string; anno: number | null; sesso: string | null; paese: string | null; padre: string | null; madre: string | null;

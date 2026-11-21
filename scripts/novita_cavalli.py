@@ -29,6 +29,8 @@ CON_ANNO = re.compile(r"^(.*) \((\d{4})\)$")
 
 def fonte(source, ruolo) -> str:
     s, r = (source or ""), (ruolo or "")
+    if r == "vp_puledri":
+        return "puledri_vendopuledri"
     if r == "gare_ufficiali" or s == "gare_ufficiali":
         return "gare_ufficiali"
     if s == "unire_blocco":

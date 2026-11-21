@@ -29,6 +29,8 @@ Indirizzi usati (verificati il 19/09/2026):
   GET /api/v2/cavalli/miglioriFigli/<codice>  figli di uno stallone, con codice
   GET /api/v2/allevatori                      allevatori partner del sito
   GET /api/v2/cavalli?s=<nome>                ricerca per nome: codice + allevatori
+  GET /api/v2/puledri?year=<anno>             puledri nati in quell'anno degli allevatori
+                                              italiani del sito (21/11/2026)
 
 La vecchia ricerca per nome (/api/v1/cavalli/cerca) risponde errore 500; quella
 nuova (/api/v2/cavalli?s=) funziona ed e' usata da harvest_by_name (nov. 2026).
@@ -573,6 +575,64 @@ def _save_breeder(conn: sqlite3.Connection, br: dict) -> None:
           br.get("citta"), br.get("provincia"),
           br.get("telefono1") or br.get("telefono2"), br.get("email") or None,
           datetime.utcnow().strftime("%Y-%m-%d")))
+
+
+def import_puledri(conn: sqlite3.Connection, anno: int) -> dict:
+    """Puledri nati in quell'anno della pagina "Puledri nati <anno>" (21/11/2026).
+
+    Le aste yearling ci danno solo i puledri passati in asta; qui ci sono quelli
+    degli allevatori del sito, con padre, madre, nonno materno, mese di nascita
+    e allevamento. Chi manca entra nell'archivio come cavallo nato in quell'anno,
+    senza corse (prende il voto da pedigree come gli altri puledri); chi c'e'
+    gia' riceve solo i dati mancanti. Asta, vendita e video non si salvano.
+    """
+    conn.execute("""CREATE TABLE IF NOT EXISTS vp_puledri (vp_code TEXT PRIMARY KEY, nome TEXT, anno INTEGER, sesso TEXT,
+                    padre TEXT, madre TEXT, nonno_materno TEXT, mese INTEGER, allevamento TEXT, letto_il TEXT)""")
+    data = _get("/api/v2/puledri?" + requests.compat.urlencode({"year": anno}))
+    esito = {"visti": 0, "nuovi": 0, "completati": 0, "omonimi": 0}
+    if not isinstance(data, dict) or not isinstance(data.get("puledri"), list):
+        return esito
+    oggi = datetime.utcnow().strftime("%Y-%m-%d")
+    for x in data["puledri"]:
+        nome = _clean(x.get("NomeCavallo"))
+        codice = str(x.get("CodiceCavallo") or "").strip()
+        if not nome or not codice:
+            continue
+        esito["visti"] += 1
+        sesso = _clean(x.get("Sesso"))[:1] or None
+        padre, madre = _clean(x.get("NomePadre")) or None, _clean(x.get("NomeMadre")) or None
+        mese = x.get("Mese") if isinstance(x.get("Mese"), int) and 1 <= x.get("Mese") <= 12 else None
+        conn.execute("""INSERT INTO vp_puledri VALUES (?,?,?,?,?,?,?,?,?,?)
+                        ON CONFLICT(vp_code) DO UPDATE SET nome=excluded.nome, padre=excluded.padre, madre=excluded.madre,
+                          nonno_materno=excluded.nonno_materno, mese=excluded.mese, allevamento=excluded.allevamento,
+                          letto_il=excluded.letto_il""",
+                     (codice, nome, anno, sesso, padre, madre, _clean(x.get("nonnoMaterno")) or None, mese,
+                      _clean(x.get("Allevamento")) or None, oggi))
+        remember_code(conn, nome, codice, "puledri")
+        for br in x.get("breeders") or []:
+            if isinstance(br, dict):
+                _save_breeder(conn, br)
+                if (br.get("Nome") or "").strip():
+                    conn.execute("INSERT OR IGNORE INTO vp_horse_breeder (horse_name, breeder_id, breeder_name) VALUES (?,?,?)",
+                                 (nome, br.get("id"), br["Nome"].strip()))
+        gia = conn.execute("SELECT birth_year FROM horses WHERE name = ?", (nome,)).fetchone()
+        if gia and gia[0] is not None and int(gia[0]) != anno:
+            esito["omonimi"] += 1            # un altro cavallo con lo stesso nome: non si tocca
+            continue
+        if gia:
+            c = conn.execute("""UPDATE horses SET birth_year = COALESCE(birth_year, ?), sex = COALESCE(NULLIF(sex, ''), ?),
+                                    sire = COALESCE(NULLIF(sire, ''), ?), dam = COALESCE(NULLIF(dam, ''), ?)
+                                WHERE name = ? AND (birth_year IS NULL OR sex IS NULL OR sex = '' OR sire IS NULL OR sire = ''
+                                                    OR dam IS NULL OR dam = '')""", (anno, sesso, padre, madre, nome))
+            esito["completati"] += c.rowcount
+            continue
+        conn.execute("""INSERT INTO horses (name, birth_year, sex, country, sire, dam, career_races, career_wins, career_places,
+                            career_earnings, source, source_role, horse_class, backfill_status, tw_found, last_updated)
+                        VALUES (?,?,?, 'ITA', ?,?, 0, 0, 0, 0, 'vendopuledri', 'vp_puledri', 'athlete', 'done', 0, ?)""",
+                     (nome, anno, sesso, padre, madre, datetime.utcnow().isoformat(timespec="seconds")))
+        esito["nuovi"] += 1
+    conn.commit()
+    return esito
 
 
 def import_breeders_directory(conn: sqlite3.Connection) -> int:
