@@ -6,18 +6,21 @@ jobs:
   api:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - run: pip install requests beautifulsoup4 >/dev/null
       - run: |
-          python3 - <<'PY'
-          import sys; sys.path.insert(0,'.'); sys.path.insert(0,'scripts')
-          import storici_unire as su
-          for anno in (2025, 2024):
-              for sesso in ("M","F"):
-                  for t in ("", "M", "A", "MA"):
-                      try:
-                          n, righe = su.cerca(t, sesso, anno)
-                          print("UNIRE", anno, sesso, repr(t), n, len(righe), righe[:2])
-                      except Exception as e:
-                          print("UNIRE", anno, sesso, repr(t), "errore", e)
-          PY
+          B=https://statippica.onrender.com
+          t() { curl -s -o /tmp/r.json -w "%{http_code} %{time_total}s %{size_download}B  $1\n" "$B$1"; }
+          for giro in freddo caldo; do
+            echo "== $giro"
+            for h in "VIVID%20WISE%20AS/2014" "GINOSTRABLIGGI/2022" "ONE%20DREAM%20GRIF/0"; do
+              t "/api/horse/$h"; t "/api/horse/$h/stats"; t "/api/horse/$h/neighbors"
+            done
+            n=$(echo "VIVID WISE AS" | sed 's/ /%20/g'); t "/api/horse-trainers/$n"; t "/api/horse-owners/$n"; t "/api/pedigree/$n"
+          done
+          for m in "ONE DREAM GRIF" "LOVE ME TENDER"; do
+            curl -s -o /tmp/a.json -w "advisor %{http_code} %{time_total}s %{size_download}B $m\n" -H 'content-type: application/json' -d "{\"fattrice\":\"$m\"}" $B/api/advisor
+            python3 -c "
+          import json;d=json.load(open('/tmp/a.json'))
+          c=d.get('candidates',[]);print(len(c),'cand', d.get('in_catalogo'), d.get('esclusi'), d.get('incroci'))
+          for x in c[:6]: print(' ',x['name'],x.get('stud_fee_eur'),x.get('prob_buono'),x.get('inbreeding_pct'),x.get('country'),x.get('incrocio'),x.get('fratelli'))
+          print(' senza monta', sum(1 for x in c if not x.get('stud_fee_eur')), 'giovani', sum(1 for x in c if not x.get('n_figli_totali')))"
+          done
