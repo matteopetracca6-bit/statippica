@@ -114,11 +114,23 @@ export function contestoMadre(db: Database.Database, madre: string) {
   };
 }
 
+// I traguardi dei figli di tutti i padri in una sola lettura, tenuta un'ora
+// (21/11/2026): la lettura per singolo padre scorreva tutto l'archivio.
+let TRAGUARDI_PADRI: { quando: number; m: Map<string, { s: number; n: number }> } | null = null;
+function traguardiPadri(db: Database.Database) {
+  if (TRAGUARDI_PADRI && Date.now() - TRAGUARDI_PADRI.quando < 60 * 60 * 1000) return TRAGUARDI_PADRI.m;
+  const m = new Map<string, { s: number; n: number }>();
+  for (const r of db.prepare(`SELECT UPPER(TRIM(h.sire)) k, SUM(t.posizione) s, COUNT(*) n FROM potenziale_traguardo t
+                              JOIN horses h ON h.name = t.horse_name WHERE h.sire IS NOT NULL GROUP BY 1`).all() as any[])
+    m.set(r.k, { s: r.s, n: r.n });
+  TRAGUARDI_PADRI = { quando: Date.now(), m };
+  return m;
+}
+
 export function potenzialeNascita(db: Database.Database, padre: string, ctx: ReturnType<typeof contestoMadre>) {
   const mod = modello();
   if (!mod || !ctx) return null;
-  const rp = db.prepare(`SELECT SUM(t.posizione) s, COUNT(*) n FROM potenziale_traguardo t JOIN horses h ON h.name = t.horse_name
-                         WHERE UPPER(TRIM(h.sire)) = ?`).get(padre.toUpperCase().trim()) as any;
+  const rp = traguardiPadri(db).get(padre.toUpperCase().trim());
   const p = media(rp, K.padre);
   const valori: Record<string, number> = {
     eta_mesi: 12, padre_m: p.m, padre_n: p.n, madre_m: ctx.madre.m, madre_n: ctx.madre.n,

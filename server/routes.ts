@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { calcolaWright, comparseAlbero } from "./consanguineita";
 import { registraSimulatore } from "./simulatore";
 import { registraElencoCavalli } from "./elencoCavalli";
+import { incrociPerFattrice } from "./incroci";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 import { forzaCavallo } from "./forza";
 
@@ -3176,49 +3177,61 @@ export function registerRoutes(httpServer: Server, app: Express) {
           stallone_non_trovato: true, validazione: null });
       }
 
-      // Get all stallions with stats + stud fee
-      const allStallions = singolo ?? db.prepare(`
-        SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status,
-               srs.avg_score, srs.n_in_corsa, srs.n_figli_totali, srs.n_SSS, srs.n_SS, srs.n_S,
-               srs.pct_top_S, srs.avg_earnings, s.media_in_corsa, s.progeny_earnings_2024
-        FROM stallions s
-        JOIN stallion_rating_stats srs ON s.name = srs.sire
-        WHERE s.stud_fee_eur IS NOT NULL AND s.stud_status = 'active'
-        GROUP BY s.name
-        ORDER BY srs.avg_score DESC
-      `).all() as any[];
+      // Tutti gli stalloni in monta nella stagione piu' recente del catalogo
+      // (21/11/2026: anche quelli con monta "da concordare" e quelli senza
+      // figli ancora valutati, che prima restavano fuori), ognuno valutato per
+      // intero su QUESTA fattrice. Le letture lente dei padri ora sono in
+      // memoria (advisorEngine, potenziale), quindi si valutano tutti.
+      const finoA = (x: any) => { const m = String(x ?? "").match(/(\d{4})\s*$/); return m ? Number(m[1]) : 0; };
+      const catalogo = singolo ?? (() => {
+        const righe = db.prepare(`
+          SELECT s.name, s.stud_fee_eur, s.stud_farm, s.stud_status, s.season, s.country, s.catalog_sire,
+                 srs.avg_score, srs.n_in_corsa, srs.n_figli_totali, srs.n_SSS, srs.n_SS, srs.n_S,
+                 srs.pct_top_S, srs.avg_earnings, s.media_in_corsa, s.progeny_earnings_2024, srs.grade AS grado_stallone
+            FROM stallions s
+            LEFT JOIN stallion_rating_stats srs ON s.name = srs.sire
+           WHERE s.stud_status IN ('active', 'da_concordare', 'free')
+           GROUP BY s.name`).all() as any[];
+        const ultima = Math.max(0, ...righe.map(r => finoA(r.season)));
+        return righe.filter(r => !ultima || finoA(r.season) === ultima);
+      })();
+
+      const maxConsang = Number((req.body as any).max_consanguineita);
+      const paese = String((req.body as any).paese ?? "").trim().toUpperCase();
+      const soloMontaNota = !!(req.body as any).solo_monta_nota;
+      const inc = incrociPerFattrice(db, fattriceUpper, horse.sire);
+      const padreDi = db.prepare("SELECT sire FROM horses WHERE name = ? AND sire IS NOT NULL LIMIT 1");
 
       const ctxMadre = contestoMadre(db, fattriceUpper);
-      // Filter out inbreeding risk (ancestor in common) + budget
-      const candidates = allStallions
+      let esclusiParenti = 0, esclusiMonta = 0, esclusiConsang = 0, esclusiPaese = 0;
+      const candidates = catalogo
         .filter((s: any) => {
           if (singolo) return true;
           const nameUp = s.name.toUpperCase();
-          if (ancestorNames.has(nameUp)) return false; // direct ancestor
-          if (budget_max && s.stud_fee_eur > budget_max) return false;
+          if (ancestorNames.has(nameUp)) { esclusiParenti++; return false; } // antenato diretto
+          const fee = s.stud_fee_eur > 0 ? s.stud_fee_eur : null;
+          if (soloMontaNota && fee == null) { esclusiMonta++; return false; }
+          if (budget_max && fee != null && fee > budget_max) { esclusiMonta++; return false; }
+          if (paese && String(s.country ?? "").toUpperCase() !== paese) { esclusiPaese++; return false; }
           return true;
         })
-        // Prima si sceglie con la probabilita' di un buon cavallo, che costa
-        // poco (conti gia' in memoria); il calcolo completo, che e' lento,
-        // si fa solo sui 15 scelti. Valutare tutti gli stalloni per intero
-        // faceva aspettare 20-30 secondi sul sito pubblico.
-        .map((s: any) => ({ s, pb: predictPuledro(db, s.name, fattriceUpper).prob_buono ?? -1 }))
-        .sort((a: any, b: any) => (b.pb - a.pb) || ((b.s.avg_score ?? 0) - (a.s.avg_score ?? 0)))
-        .slice(0, 15)
-        .map(({ s }: any) => {
+        .map((s: any) => {
           // Potenziale dinamico allo stadio nascita (potenziale.py): lo stesso
           // modello delle schede, per il puledro di questa coppia.
           const potenziale = potenzialeNascita(db, s.name, ctxMadre);
-          // Ogni candidato viene ora valutato SULLA FATTRICE scelta:
+          // Ogni candidato viene valutato SULLA FATTRICE scelta:
           // stesso stallone + fattrice diversa = risultato diverso.
           const p = predictPair(db, s.name, fattriceUpper);
           const inb = inbreeding(db, s.name, fattriceUpper);
-          const fee = s.stud_fee_eur ?? null;
+          const fee = s.stud_fee_eur > 0 ? s.stud_fee_eur : null;
+          const padreStallone = s.catalog_sire || (padreDi.get(s.name) as any)?.sire || null;
           return {
             ...s,
+            stud_fee_eur: fee,
             inbreeding_risk: inb.level === "alta",
             inbreeding_pct: inb.coefficient_pct,
             inbreeding_level: inb.level,
+            inbreeding_noto: inb.available,
             expected_score: p.expected_score,
             expected_grade: p.expected_grade,
             typical_low: p.typical_low,
@@ -3228,19 +3241,29 @@ export function registerRoutes(httpServer: Server, app: Express) {
             prob_corre: p.puledro.prob_corre,
             confidence: p.confidence,
             confidence_label: p.confidence_label,
-            value_index: fee && fee > 0
+            value_index: fee
               ? Math.round(((p.expected_score - p.population_mean) / (fee / 1000)) * 100) / 100
               : null,
             reasons: explain(p, inb, fee),
             score_rank: p.expected_score,
             potenziale,
+            padre_stallone: padreStallone ? String(padreStallone).toUpperCase().trim() : null,
+            incrocio: inc.stretto(s.name),
+            linea: inc.linea(padreStallone),
+            fratelli: inc.fratelli(s.name),
           };
+        })
+        .filter((c: any) => {
+          if (singolo || !Number.isFinite(maxConsang) || maxConsang <= 0) return true;
+          if (c.inbreeding_pct > maxConsang) { esclusiConsang++; return false; }
+          return true;
         })
         // Ordine: probabilita' di un buon cavallo, la previsione verificata su
         // tutti i nati (anche chi non corre). A pari probabilita', voto atteso.
         .sort((a: any, b: any) => ((b.prob_buono ?? -1) - (a.prob_buono ?? -1))
-                                  || (b.expected_score - a.expected_score))
-        .slice(0, 15);
+                                  || (b.expected_score - a.expected_score));
+
+      const paesi = singolo ? [] : Array.from(new Set(catalogo.map((s: any) => String(s.country ?? "").toUpperCase()).filter(Boolean))).sort();
 
       // Lo stato del modello viaggia con i consigli, non solo nella pagina che
       // spiega il metodo: chi apre l'Advisor deve leggere accanto ai numeri
@@ -3269,6 +3292,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
         budget_max: singolo ? null : (budget_max || null),
         stallone: singolo ? stalloneUp : null,
         candidates,
+        incroci: { padre_fattrice: inc.padre_fattrice, base: inc.base },
+        esclusi: singolo ? null : { parenti: esclusiParenti, monta: esclusiMonta, consanguineita: esclusiConsang, paese: esclusiPaese },
+        in_catalogo: singolo ? null : catalogo.length,
+        paesi,
         validazione,
       });
     } finally {
