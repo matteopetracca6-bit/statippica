@@ -8,19 +8,17 @@ jobs:
     steps:
       - run: |
           B=https://statippica.onrender.com
-          t() { curl -s -o /tmp/r.json -w "%{http_code} %{time_total}s %{size_download}B  $1\n" "$B$1"; }
-          for giro in freddo caldo; do
-            echo "== $giro"
-            for h in "VIVID%20WISE%20AS/2014" "GINOSTRABLIGGI/2022" "ONE%20DREAM%20GRIF/0"; do
-              t "/api/horse/$h"; t "/api/horse/$h/stats"; t "/api/horse/$h/neighbors"
+          for i in $(seq 1 60); do
+            curl -s "$B/api/advisor/simulate?stallion=MAHARAJAH&mare=ONE%20DREAM%20GRIF" | grep -q '"potenziale"' && break; sleep 20
+          done
+          echo "nuovo deploy pronto dopo $i tentativi"; sleep 60
+          for giro in 1 2; do
+            for h in "VIVID%20WISE%20AS/2014" "GINOSTRABLIGGI/2022" "FRAGOLINO%20ROSSO%20(D)/2022"; do
+              curl -s -D /tmp/h -o /dev/null -w "%{http_code} %{time_total}s $h\n" "$B/api/horse/$h"; grep -i server-timing /tmp/h || true
             done
-            n=$(echo "VIVID WISE AS" | sed 's/ /%20/g'); t "/api/horse-trainers/$n"; t "/api/horse-owners/$n"; t "/api/pedigree/$n"
           done
-          for m in "ONE DREAM GRIF" "LOVE ME TENDER"; do
+          for m in "ONE DREAM GRIF" "LOVE ME TENDER" "ONE DREAM GRIF"; do
             curl -s -o /tmp/a.json -w "advisor %{http_code} %{time_total}s %{size_download}B $m\n" -H 'content-type: application/json' -d "{\"fattrice\":\"$m\"}" $B/api/advisor
-            python3 -c "
-          import json;d=json.load(open('/tmp/a.json'))
-          c=d.get('candidates',[]);print(len(c),'cand', d.get('in_catalogo'), d.get('esclusi'), d.get('incroci'))
-          for x in c[:6]: print(' ',x['name'],x.get('stud_fee_eur'),x.get('prob_buono'),x.get('inbreeding_pct'),x.get('country'),x.get('incrocio'),x.get('fratelli'))
-          print(' senza monta', sum(1 for x in c if not x.get('stud_fee_eur')), 'giovani', sum(1 for x in c if not x.get('n_figli_totali')))"
           done
+          python3 -c "
+          import json;d=json.load(open('/tmp/a.json'));c=d['candidates'];print(len(c), sum(1 for x in c if x.get('potenziale')), 'con potenziale')"
