@@ -8,10 +8,12 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          for f in app.0c30b946 458.9ca2ab0d 566.dcdbe4b1 669.3a42bd68 721.fd59b202 73.77bd4f4d 762.90221c66 802.25a91b3e 843.a1296e73 961.c046c14d 968.1fe2af21; do
-            curl -sL -A "$UA" -o /tmp/$f.js "https://www.letrot.com/build/$f.js"
-            echo "== $f $(wc -c </tmp/$f.js)"
-            grep -oE '["'"'"'`][^"'"'"'` ]*(json|api|ajax|stats/|courses|performances)[^"'"'"'` ]*["'"'"'`]' /tmp/$f.js | sort -u | head -25
-          done
-          curl -sL -A "$UA" -o /tmp/p.html "https://www.letrot.com/stats/chevaux/face-time-bourbon/ZWdbYgYIBAsM/courses"
-          grep -oE '(href|data-[a-z-]+)="[^"]*ZWdbYgYIBAsM[^"]*"' /tmp/p.html | sort -u
+          curl -sL -A "$UA" -o /tmp/app.js "https://www.letrot.com/build/app.0c30b946.js"
+          python3 - <<'PY'
+          import re
+          s=open('/tmp/app.js',encoding='utf-8',errors='ignore').read()
+          for k in ['apiUriHorse:function','apiUriResult:function','apiUriFilterPerformances','"/api/','/v1/','performances/','api.letrot','baseURL','apiUrl','API_URL']:
+              for m in list(re.finditer(re.escape(k),s))[:3]:
+                  print('K',k,'::',s[max(0,m.start()-150):m.start()+350].replace('\n',' '))
+          print('HOSTS', sorted(set(re.findall(r'https?://[a-z0-9.\-]+\.(?:fr|com|net|io)[^"\' ]{0,40}',s)))[:40])
+          PY
