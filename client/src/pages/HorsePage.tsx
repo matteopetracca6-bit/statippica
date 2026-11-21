@@ -707,7 +707,18 @@ export default function HorsePage() {
                 : kmSotto((horse as any).distanza.lungo, "lungo")} />
           </>}
         </>}
-        avviso={eStorico && !parziale ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
+        avviso={(horse as any).carriera_completa ? (
+            <div data-testid="nota-carriera-completa" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(205 70% 78%)",
+                 border: "1px solid hsl(205 60% 45% / .45)", background: "hsl(205 50% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
+              Carriera completa, in tutto il mondo: {(horse as any).carriera_completa.corse} corse, {(horse as any).carriera_completa.vittorie} vittorie,
+              {" "}{(horse as any).carriera_completa.primi_tre} volte nei primi tre, record {formatRecord((horse as any).carriera_completa.record)}
+              {(horse as any).carriera_completa.record_luogo ? <> ({(horse as any).carriera_completa.record_luogo})</> : null}.
+              {" "}Fonte: {(horse as any).carriera_completa.url
+                ? <a href={(horse as any).carriera_completa.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{(horse as any).carriera_completa.fonte}</a>
+                : (horse as any).carriera_completa.fonte}.
+              {" "}Il voto è calcolato su questi totali. Le gare una per una qui sotto sono solo quelle corse in Italia.
+            </div>
+          ) : eStorico && !parziale ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
           : parziale ? (
             <div data-testid="nota-carriera-parziale" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(45 85% 70%)",
                  border: "1px solid hsl(45 70% 45% / .45)", background: "hsl(45 60% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>

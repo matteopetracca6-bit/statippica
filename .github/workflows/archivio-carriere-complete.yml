@@ -1,0 +1,52 @@
+name: StatIppica — Carriere complete (a mano)
+
+# 21/11/2026 (scripts/carriere_complete.py). Mette subito nell'archivio le
+# carriere complete di dati/carriere_complete.csv, rifa' i voti dei cavalli e
+# degli stalloni e pubblica l'archivio. Il sito lo prende da solo entro venti
+# minuti, senza riavviarsi.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  carriere:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - run: pip install requests beautifulsoup4 numpy pandas scikit-learn
+      - name: Applica e rifai i voti
+        run: |
+          python3 scripts/carriere_complete.py --db data.db
+          python3 - <<'PY'
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec); spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          nu.phase_ratings(conn)
+          nu.phase_stallion_ratings(conn)
+          conn.commit()
+          for r in conn.execute("SELECT h.name, h.career_races, h.career_wins, h.career_earnings, r.grade, r.score FROM carriere_complete c JOIN horses h ON h.name = c.nome AND h.birth_year = c.anno LEFT JOIN horse_ratings r ON r.name = h.name AND r.rating_mode = 'performance'"):
+              print(r)
+          conn.close()
+          PY
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
