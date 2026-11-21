@@ -5822,6 +5822,15 @@ def main():
             print(f"[OMONIMI] {phase_omonimi(conn)}", file=sys.stderr)
         except Exception as e:
             print(f"[OMONIMI] errore: {e}", file=sys.stderr)
+        try:
+            # Refusi nei nomi di fattrici e stalloni (scripts/refusi_nomi.py):
+            # unisce solo i casi sicuri, gli altri vanno in refusi_proposti.
+            # Prima dei voti, cosi' i figli ritrovati contano gia' stanotte.
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+            from refusi_nomi import applica as phase_refusi_nomi
+            print(f"[REFUSI] {phase_refusi_nomi(conn)}", file=sys.stderr)
+        except Exception as e:
+            print(f"[REFUSI] errore: {e}", file=sys.stderr)
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
         phase_pulisci_voti_pedigree(conn)  # FASE 3a-ter: via dal pedigree chi ha corso
