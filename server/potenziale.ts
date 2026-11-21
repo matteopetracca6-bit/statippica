@@ -70,7 +70,12 @@ function modello(root = process.cwd()): any | null {
   const file = path.join(root, "modelli", "potenziale_modello.json");
   try {
     const mtime = fs.statSync(file).mtimeMs;
-    if (!MODELLO || MODELLO.mtime !== mtime) MODELLO = { mtime, m: JSON.parse(fs.readFileSync(file, "utf8")) };
+    // Il modello lo scrive Python, che mette Infinity nelle soglie degli
+    // alberi: per JSON.parse non e' un numero, e dal 17/11/2026 la lettura
+    // falliva in silenzio (niente potenziale alla nascita nell'Advisor).
+    // 1e308 fa lo stesso lavoro: ogni valore vero ci sta sotto.
+    if (!MODELLO || MODELLO.mtime !== mtime) MODELLO = { mtime, m: JSON.parse(
+      fs.readFileSync(file, "utf8").replace(/-Infinity\b/g, "-1e308").replace(/\bInfinity\b/g, "1e308").replace(/\bNaN\b/g, "null")) };
     return MODELLO.m;
   } catch {
     return null;

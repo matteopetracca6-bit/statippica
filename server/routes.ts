@@ -3144,6 +3144,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const fattriceUpper = fattrice.trim().toUpperCase();
     assicuraIndici();
     const db = getDb();
+    const tempi: string[] = [];
+    let ultimo = performance.now();
+    const segna = (k: string) => { const t = performance.now(); tempi.push(`${k};dur=${(t - ultimo).toFixed(1)}`); ultimo = t; };
     try {
       // Get fattrice data
       const horse = db.prepare(`
@@ -3239,6 +3242,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const padreDi = db.prepare("SELECT sire FROM horses WHERE name = ? AND sire IS NOT NULL LIMIT 1");
 
       const ctxMadre = contestoMadre(db, fattriceUpper);
+      segna("catalogo_incroci");
       let esclusiParenti = 0, esclusiMonta = 0, esclusiConsang = 0, esclusiPaese = 0;
       const candidates = catalogo
         .filter((s: any) => {
@@ -3297,7 +3301,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // per tutti gli stalloni costava piu' del resto della classifica. Si
       // calcola per i primi 25; per gli altri lo da' il dettaglio della coppia
       // (/api/advisor/simulate), quando lo si apre.
+      segna("valutazione");
       candidates.forEach((c: any, i: number) => { c.potenziale = i < 25 || singolo ? potenzialeNascita(db, c.name, ctxMadre) : null; });
+      segna("potenziale");
 
       const paesi = singolo ? [] : Array.from(new Set(catalogo.map((s: any) => String(s.country ?? "").toUpperCase()).filter(Boolean))).sort();
 
@@ -3320,6 +3326,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         potenziale_nascita: etichettaStadio("nascita"),
       } : null;
 
+      res.setHeader("Server-Timing", tempi.join(", "));
       res.json({
         found: true,
         // punti e grado della pagina Fattrici, per mostrarli uguali qui
