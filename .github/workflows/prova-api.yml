@@ -7,8 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          H=(-A "$UA" -H "Accept: application/json, text/plain, */*" -H "Referer: https://www.letrot.com/")
-          for u in "/v1/api/search/horse/maharajah" "/v1/api/search/fuzzy/maharajah" "/v1/api/search/horse/ready%20cash" "/v1/api/horses/ZWdbYgYIBAsM/performances" "/v1/api/horses/ZWdbYgYIBAsM/performances?page=1" "/v1/api/performances/horse/ZWdbYgYIBAsM"; do
-            echo "== $u"; curl -sL "${H[@]}" "https://www.letrot.com$u" | head -c 1500; echo
+          for v in SEK USD; do
+            curl -s "https://data-api.ecb.europa.eu/service/data/EXR/A.$v.EUR.SP00.A?format=csvdata" | python3 -c "
+          import csv,sys; r=list(csv.DictReader(sys.stdin)); print('$v', {x['TIME_PERIOD']: round(float(x['OBS_VALUE']),4) for x in r})"
           done
