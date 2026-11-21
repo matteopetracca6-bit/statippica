@@ -986,6 +986,18 @@ export function registerRoutes(httpServer: Server, app: Express) {
       horse.carriera_completa = vpTableExists(db, "carriere_complete")
         ? (db.prepare(`SELECT * FROM carriere_complete WHERE nome = ? AND (anno = ? OR anno IS NULL)`).get(name, year) as any) ?? null : null;
       if (horse.carriera_completa?.primi_tre != null) horse.career_top3 = horse.carriera_completa.primi_tre;
+      // "Dove ha corso": l'Italia dalle gare in archivio, l'estero e' quello che
+      // manca per arrivare ai totali della fonte straniera (prima diceva 0 euro
+      // all'estero a FACE TIME BOURBON, che all'estero ha vinto 3,3 milioni).
+      if (horse.carriera_completa) {
+        const cc = horse.carriera_completa;
+        const it = db.prepare(`SELECT COUNT(*) n, SUM(placement = 1) v, COALESCE(SUM(prize_net), 0) e
+                               FROM races WHERE horse_name = ? AND track <> 'ESTERO'`).get(name) as any;
+        horse.gare_italia = it?.n ?? 0; horse.vitt_italia = it?.v ?? 0; horse.guad_italia = it?.e ?? 0;
+        horse.gare_estero = Math.max(0, cc.corse - horse.gare_italia);
+        horse.vitt_estero = Math.max(0, cc.vittorie - horse.vitt_italia);
+        horse.guad_estero = Math.max(0, cc.guadagni_eur - horse.guad_italia);
+      }
       // Carriera parziale (novembre 2026): cavalli con gare in archivio ma senza
       // i totali di carriera. Sono quelli recuperati dai risultati ufficiali
       // MASAF (solo dal 2016) che le schede di TrottoWeb non trovano, e i
@@ -1048,7 +1060,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
       horse.potenziale = potenzialeCavallo(db, name, horse.birth_year ?? null);
       // Forza e curva di carriera (forza.py): nella scheda prendono il posto
       // del potenziale ai 4 anni.
-      horse.forza = forzaCavallo(db, name);
+      // Forza e curva della carriera si calcolano dalle gare una per una, che
+      // per chi ha corso all'estero sono solo quelle italiane: con la carriera
+      // completa sarebbero sbagliate (FACE TIME BOURBON: curva da B 63,9 contro
+      // un voto SSS), quindi non si mostrano.
+      horse.forza = horse.carriera_completa ? null : forzaCavallo(db, name);
       // E' uno stallone del sito (ha il voto da stallone)? Stemma verde e
       // collegamento alla pagina da stallone. Per gli stalloni nati o
       // cresciuti all'estero il voto da cavallo conta solo le corse in Italia:
