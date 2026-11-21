@@ -8,12 +8,15 @@ jobs:
     steps:
       - run: |
           B=https://statippica.onrender.com
-          for k in 1 2 3; do
-            curl -s -o /dev/null -w "home %{http_code} %{time_total}s\n" $B/api/stats
-            for m in "ONE DREAM GRIF" "LOVE ME TENDER" "OGRAZIA"; do
-              curl -s -D /tmp/h -o /tmp/a.json -w "advisor %{http_code} %{time_total}s %{size_download}B $m\n" -H 'content-type: application/json' -d "{\"fattrice\":\"$m\"}" $B/api/advisor; grep -i server-timing /tmp/h || head -c 300 /tmp/a.json
-            done
-            curl -s -o /dev/null -w "scheda %{http_code} %{time_total}s\n" "$B/api/horse/VIVID%20WISE%20AS/2014"
-          done
-          python3 -c "
-          import json;d=json.load(open('/tmp/a.json'));c=d.get('candidates',[]);print(len(c), sum(1 for x in c if x.get('potenziale')), 'con potenziale', c[0].get('potenziale') if c else None)"
+          for i in $(seq 1 90); do
+            curl -s "$B/api/horse/GINOSTRABLIGGI/2022" -o /tmp/h.json
+            python3 -c "import json,sys;d=json.load(open('/tmp/h.json'));sys.exit(0 if (d.get('distanza') or {}).get('corto',{}) and d['distanza']['corto'].get('fonte')=='gare' else 1)" && break; sleep 30
+          done; echo "pronto dopo $i"
+          python3 -c "import json;d=json.load(open('/tmp/h.json'));print(json.dumps(d.get('distanza'))[:700])"
+          curl -s "$B/api/stallion/VARENNE" | python3 -c "import json,sys;print(json.load(sys.stdin).get('distanza_figli'))"
+          curl -s "$B/api/stallion/NON%20SOLO%20BAR" | python3 -c "import json,sys;print(json.load(sys.stdin).get('distanza_figli'))"
+          curl -s "$B/api/piste/velocita" | python3 -c "import json,sys;d=json.load(sys.stdin);print(len(d), d[:3])"
+          curl -s "$B/api/classifiche/eta?eta=3&periodo=carriera&ordine=breve_corr" | python3 -c "import json,sys;d=json.load(sys.stdin);print([(r['nome'],r['breve'],r['breve_corr']) for r in d['righe'][:5]])"
+          curl -s -o /dev/null -w "advisor %{http_code} %{time_total}s\n" -H 'content-type: application/json' -d '{"fattrice":"ONE DREAM GRIF"}' $B/api/advisor
+          curl -s -H 'content-type: application/json' -d '{"fattrice":"ONE DREAM GRIF"}' $B/api/advisor | python3 -c "import json,sys;c=json.load(sys.stdin)['candidates'];print(sum(1 for x in c if x.get('distanza_figli')),[ (x['name'],x['distanza_figli']) for x in c if (x.get('distanza_figli') or {}).get('profilo') in ('corto','lungo')][:4])"
+          curl -s "$B/api/simulatore/elenco" | python3 -c "import json,sys;d=json.load(sys.stdin);print(list(d.keys()))"
