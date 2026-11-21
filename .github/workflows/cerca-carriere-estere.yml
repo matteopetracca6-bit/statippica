@@ -1,0 +1,31 @@
+name: StatIppica — Cerca carriere estere (a mano, sola lettura)
+
+# 21/11/2026 (scripts/cerca_carriere_estere.py). Non cambia l'archivio:
+# stampa le proposte, che si controllano prima di metterle in
+# dati/carriere_complete.csv.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  cerca:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - run: python3 scripts/cerca_carriere_estere.py --db data.db | tee proposte.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proposte
+          path: proposte.jsonl
