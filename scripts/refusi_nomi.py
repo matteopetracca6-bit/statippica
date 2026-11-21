@@ -12,25 +12,17 @@ registro italiano "GIULIO CESARE" e "GIULIOCESARE" sono due cavalli del 2022
 con genitori diversi, come "IN YOUR EYES" e "INYOUREYES". Per questo si unisce
 da soli solo quando le prove sono forti, e il resto si propone.
 
-COSA SI UNISCE DA SOLO
- 1. Genitore scritto male: un nome usato come padre o madre che non ha una
-    scheda, e un solo cavallo con scheda che:
-      - si scrive uguale a meno di spazi e segni ("PASCIA LEST" / "PASCIA' LEST"),
-        oppure differisce di una lettera e il pedigree di vendopuledri dei figli
-        scrive proprio il nome con scheda;
-      - ha il sesso giusto (una madre e' femmina, un padre no);
-      - ha l'eta' giusta: i figli nascono fra 3 e 28 anni dopo di lui;
-      - e nessun pedigree di vendopuledri scrive il nome senza scheda (se lo
-        scrive, il cavallo esiste davvero con quel nome).
- 2. Scheda doppia: due schede che si scrivono uguali a meno di spazi e segni,
-    stesso anno, stesso sesso, genitori compatibili, e una delle due e' vuota
-    (niente genitori, niente corse). Resta il nome della scheda con le corse,
-    o con i genitori.
+COSA SI UNISCE (regola decisa il 21/11/2026): due schede con nomi uguali a
+meno di spazi e segni o con una lettera di differenza, SOLO se hanno lo
+stesso anno di nascita e la stessa genealogia (stesso padre e stessa madre,
+tutti e due scritti). Con anno diverso, genealogia diversa o mancante restano
+separate. Un nome usato come genitore senza scheda non ha anno ne'
+genealogia: non si unisce mai. Stallone e atleta con la sigla del paese
+("X" e "X (S)") sono gia' collegati da cavalli_alias e non si toccano.
+Resta la scheda con piu' corse (a pari corse, il nome scritto pulito).
 
-COSA SI PROPONE (tabella refusi_proposti): gli stessi casi con una lettera di
-differenza ma senza la conferma di vendopuledri. Le decisioni prese a mano
-stanno in dati/refusi_decisi.csv (nome;nome_giusto;decisione si/no): "si" si
-unisce, "no" non si propone piu'.
+Un'unione decisa a mano si scrive in dati/refusi_decisi.csv
+(nome;nome_giusto;decisione si/no).
 
 Ogni unione resta nella tabella refusi_uniti.
 Uso: python3 scripts/refusi_nomi.py --db data.db [--prova]
@@ -139,63 +131,40 @@ def cerca(conn) -> tuple[list, list]:
                          "WHERE p.horse_id = ? AND p.path = ?", (i, path)).fetchone()
         return r[0].upper().strip() if r else None
 
+    # Regola del 21/11/2026 (decisa dal proprietario del sito): si uniscono
+    # solo due schede con lo STESSO anno di nascita e la STESSA genealogia
+    # (stesso padre e stessa madre, tutti e due scritti). Con un anno diverso,
+    # una genealogia diversa o mancante, restano separate: un nome usato come
+    # genitore senza scheda non ha ne' anno ne' genealogia, quindi non si
+    # unisce mai da solo.
     sicuri, proposti = [], []
-    # 1. Genitori scritti male
-    for col, path in (("dam", "m"), ("sire", "p")):
-        for x, a0, a1, n, figli in conn.execute(f"""
-                SELECT {col}, MIN(birth_year), MAX(birth_year), COUNT(*), GROUP_CONCAT(name, '|') FROM horses h
-                 WHERE {col} IS NOT NULL AND TRIM({col}) <> ''
-                   AND NOT EXISTS (SELECT 1 FROM horses x WHERE x.name = h.{col}) GROUP BY 1""").fetchall():
-            if CON_ANNO.search(x):
-                continue
-            cand = set()
-            for y in vicini(chiave(x)):
-                if y == x:
+    visti = set()
+    # Stallone e atleta con la sigla del paese ("DON FANUCCI ZET" e
+    # "DON FANUCCI ZET (S)") sono gia' collegati da cavalli_alias: non si toccano.
+    SIGLA = re.compile(r"\s*\([A-Z]{1,3}\)$")
+    try:
+        alias = {n for r in conn.execute("SELECT nome, alias FROM cavalli_alias") for n in r}
+    except sqlite3.Error:
+        alias = set()
+    for k, nomi_k in per_chiave.items():
+        for nb in vicini(k):
+            for na in nomi_k:
+                if na == nb or (nb, na) in visti or na in alias or nb in alias:
                     continue
-                for (by, s, *_r) in schede[y]:
-                    if col == "dam" and s not in ("F", ""):
-                        continue
-                    if col == "sire" and s == "F":
-                        continue
-                    if by and a0 and not (by + ETA[0] <= a0 and a1 <= by + ETA[1]):
-                        continue
-                    cand.add(y)
-            if len(cand) != 1:
-                continue
-            y = cand.pop()
-            visti = [v for v in (nome_vp(f, path) for f in figli.split("|")) if v]
-            if any(v == x for v in visti):
-                continue       # vendopuledri lo scrive cosi': il cavallo esiste con quel nome
-            conferma = bool(visti) and all(v == y for v in visti)
-            stessa = chiave(x) == chiave(y)
-            ruolo = "madre" if col == "dam" else "padre"
-            if stessa:
-                sicuri.append((x, y, ruolo, "si scrive uguale a meno di spazi e segni", n))
-            elif conferma:
-                sicuri.append((x, y, ruolo, "una lettera di differenza, confermata dal pedigree di vendopuledri", n))
-            else:
-                proposti.append((x, y, ruolo, "una lettera di differenza, eta' e sesso compatibili", n))
-    # 2. Schede doppie
-    for k, nomi in per_chiave.items():
-        if len(nomi) < 2:
-            continue
-        righe = [(nm, r) for nm in nomi for r in schede[nm]]
-        for i in range(len(righe)):
-            for j in range(len(righe)):
-                (na, (ya, sa, pa, ma, ca)), (nb, (yb, sb, pb, mb, cb)) = righe[i], righe[j]
-                if na == nb or not ya or ya != yb or (sa and sb and sa != sb):
+                if SIGLA.sub("", na) == SIGLA.sub("", nb):
                     continue
-                vuota_a = not pa and not ma and not ca
-                if not vuota_a or (not pb and not mb and not cb):
-                    continue   # si unisce la scheda vuota (a) in quella piena (b)
-                figli = conn.execute("SELECT COUNT(*) FROM horses WHERE sire = ? OR dam = ?", (na, na)).fetchone()[0]
-                # Se il nome giusto e' quello della scheda vuota ("VAN PERSIE LAKSMY"
-                # contro "VAN PERSIE LAKSMY+"), la scheda piena prende quel nome.
-                motivo = "scheda vuota doppia: stesso anno e sesso, si scrive uguale"
-                if STRANO.search(nb) and not STRANO.search(na):
-                    sicuri.append((nb, na, "scheda_piena", motivo + "; resta il nome scritto pulito", figli))
-                else:
-                    sicuri.append((na, nb, "scheda", motivo, figli))
+                visti.add((na, nb))
+                for (ya, sa, pa, ma, ca) in schede[na]:
+                    for (yb, sb, pb, mb, cb) in schede[nb]:
+                        if not ya or ya != yb or (sa and sb and sa != sb):
+                            continue
+                        if not (pa and ma and pb and mb) or pa != pb or ma != mb:
+                            continue
+                        # resta la scheda con piu' corse; a pari corse il nome scritto pulito
+                        tieni_b = (cb, not STRANO.search(nb)) >= (ca, not STRANO.search(na))
+                        x, y = (na, nb) if tieni_b else (nb, na)
+                        figli = conn.execute("SELECT COUNT(*) FROM horses WHERE sire = ? OR dam = ?", (x, x)).fetchone()[0]
+                        sicuri.append((x, y, "scheda", f"stesso anno ({ya}) e stessi genitori ({pa} x {ma})", figli))
     return sicuri, proposti
 
 
