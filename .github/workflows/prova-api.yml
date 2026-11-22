@@ -8,4 +8,6 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
-      - run: bash usta.sh
+      - run: |
+          npm init -y >/dev/null && npm i playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          node audit.mjs

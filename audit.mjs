@@ -14,7 +14,7 @@ for (const p of pagine) {
     await page.waitForTimeout(2500);
     const r = await page.evaluate(() => {
       const W = window.innerWidth;
-      const out = { overflowX: document.documentElement.scrollWidth - W, sbordano: [], spezzate: [], badge: [] };
+      const out = { testo: document.body.innerText.length, inizio: document.body.innerText.slice(0,80).replace(/\s+/g," "), elementi: document.querySelectorAll("body *").length, overflowX: document.documentElement.scrollWidth - W, sbordano: [], spezzate: [], badge: [] };
       const desc = (el) => { const t = (el.innerText || "").trim().replace(/\s+/g, " ").slice(0, 40); return `${el.tagName.toLowerCase()}${el.className && typeof el.className === "string" ? "." + el.className.split(" ")[0] : ""} «${t}»`; };
       const inScroll = (el) => { for (let a = el.parentElement; a; a = a.parentElement) { const s = getComputedStyle(a); if (/(auto|scroll|hidden)/.test(s.overflowX)) return true; } return false; };
       for (const el of document.querySelectorAll("body *")) {
