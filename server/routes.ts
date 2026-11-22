@@ -1075,7 +1075,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
                                WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))`).get(nomeStallone) as any;
         horse.stallone = st ? { nome: st.sire, n_figli: st.n_figli_totali, voto: st.grade } : null;
         const paese = String(horse.country ?? "").toUpperCase();
-        horse.voto_non_comparabile = !!st && !!paese && paese !== "ITA" && paese !== "IT" && !horse.carriera_completa;
+        horse.ospite_estero = vpTableExists(db, "ospiti_esteri")
+          ? (db.prepare(`SELECT motivo, gare_italia, gare_totali FROM ospiti_esteri WHERE nome = ?`).get(name) as any) ?? null : null;
+        // Il voto di un ospite estero conta tutta la carriera: e' confrontabile.
+        horse.voto_non_comparabile = !!st && !!paese && paese !== "ITA" && paese !== "IT" && !horse.carriera_completa && !horse.ospite_estero;
       }
       horse.vai_a_pagina = null;
       if (!(horse.career_races > 0) && !(tot?.n > 0) && !horse.stallone) {
@@ -1595,6 +1598,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const mode = req.query.mode as string || "performance";
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, parseInt(req.query.limit as string) || 25);
+    const haOspiti = (() => { const d = getDb(); try { return vpTableExists(d, "ospiti_esteri"); } finally { d.close(); } })();
     const offset = (page - 1) * limit;
     const sortBy = req.query.sort as string || "score";
 
@@ -1644,6 +1648,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       conditions.push("COALESCE(hr.gare_estero, 0) > 0");
     } else if (dove === "solo_estero") {
       conditions.push("COALESCE(hr.gare_estero, 0) > 0 AND COALESCE(hr.gare_italia, 0) = 0");
+    } else if (dove === "senza_ospiti" && haOspiti) {
+      // Chi corre davvero in Italia: fuori gli ospiti esteri.
+      conditions.push("NOT EXISTS (SELECT 1 FROM ospiti_esteri o WHERE o.nome = hr.name)");
     }
 
     // ── Filtri arrivati dalla vecchia pagina Cavalli ──────────────────────
@@ -1665,8 +1672,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
     // I filtri su paese e sesso stanno nella tabella dei cavalli, non in
     // quella dei voti: senza la JOIN anche nel conteggio, il totale delle
     // pagine non corrisponderebbe alle righe mostrate.
+    // Ospiti esteri (nightly_update._ospiti_esteri, 22/11/2026): votati sulla
+    // carriera intera ma fuori dalle soglie; si possono togliere dall'elenco.
+    const conOspiti = haOspiti;
     const fromClause = `FROM horse_ratings hr
-      LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year`;
+      LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year
+      ${conOspiti ? "LEFT JOIN ospiti_esteri oe ON oe.nome = hr.name" : ""}`;
     const sortCol =
       sortBy === "earnings" ? "hr.career_earnings"
         : sortBy === "wins" ? "hr.career_wins"
@@ -1704,6 +1715,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.grade_annata, hr.pos_annata, hr.tot_annata,
                ${conParziale ? "hr.carriera_parziale, hr.parziale_dal, hr.parziale_al," : ""}
                h.country, h.sex,
+               ${conOspiti ? "oe.motivo AS ospite_estero, oe.gare_italia AS ospite_gare_italia, oe.gare_totali AS ospite_gare_totali," : ""}
                CASE WHEN h.name IS NULL THEN 1 ELSE 0 END AS fuori_archivio
         ${fromClause}
         WHERE ${where}

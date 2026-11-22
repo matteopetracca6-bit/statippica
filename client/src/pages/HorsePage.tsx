@@ -722,6 +722,13 @@ export default function HorsePage() {
               {" "}Le gare una per una qui sotto sono solo quelle corse in Italia.
               </>; })()}
             </div>
+          ) : (horse as any).ospite_estero ? (
+            <div data-testid="nota-ospite-estero" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(205 70% 78%)",
+                 border: "1px solid hsl(205 60% 45% / .45)", background: "hsl(205 50% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
+              Corre soprattutto all&apos;estero: {(horse as any).ospite_estero.gare_italia} corse in Italia su {(horse as any).ospite_estero.gare_totali}.
+              {" "}Il voto conta tutta la carriera, come per gli altri cavalli, ma non entra nel calcolo delle soglie delle lettere:
+              le corse all&apos;estero pagano in media quasi quattro volte quelle italiane, e i suoi premi alzerebbero l&apos;asticella a chi corre in Italia.
+            </div>
           ) : eStorico && !parziale ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
           : parziale ? (
             <div data-testid="nota-carriera-parziale" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(45 85% 70%)",

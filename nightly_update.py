@@ -2714,6 +2714,35 @@ def phase_parents_coverage(conn: sqlite3.Connection,
 # ─────────────────────────────────────────────
 # FASE 3 — RATINGS cavalli
 # ─────────────────────────────────────────────
+def _ospiti_esteri(conn) -> set:
+    """Ospiti esteri: carriere complete (scripts/carriere_complete.py) piu' i
+    nati all'estero che in Italia hanno corso meno di una volta su cinque, con
+    almeno 5 corse in archivio. Si registrano nella tabella ospiti_esteri,
+    che il sito usa per l'etichetta e per il filtro delle classifiche."""
+    conn.execute("""CREATE TABLE IF NOT EXISTS ospiti_esteri (nome TEXT PRIMARY KEY, motivo TEXT,
+                    gare_italia INTEGER, gare_totali INTEGER)""")
+    conn.execute("DELETE FROM ospiti_esteri")
+    righe = {}
+    for nome_o, gi, gt in conn.execute("""
+        SELECT r.horse_name, SUM(r.track <> 'ESTERO'), COUNT(*)
+          FROM races r JOIN horses h ON h.name = r.horse_name
+         WHERE COALESCE(h.country, 'ITA') NOT IN ('ITA', 'IT', '')
+         GROUP BY r.horse_name
+        HAVING COUNT(*) >= 5 AND SUM(r.track <> 'ESTERO') * 5 < COUNT(*)"""):
+        righe[(nome_o or "").strip().upper()] = ("quasi_solo_estero", gi, gt)
+    try:
+        for nome_c, corse_c in conn.execute("SELECT nome, corse FROM carriere_complete"):
+            k = (nome_c or "").strip().upper()
+            gi = conn.execute("SELECT COUNT(*) FROM races WHERE horse_name = ? AND track <> 'ESTERO'", (nome_c,)).fetchone()[0]
+            righe[k] = ("carriera_completa", gi, corse_c)
+    except sqlite3.Error:
+        pass
+    conn.executemany("INSERT OR REPLACE INTO ospiti_esteri VALUES (?,?,?,?)",
+                     [(k, m, gi, gt) for k, (m, gi, gt) in righe.items()])
+    print(f"[RATINGS] Ospiti esteri (votati ma fuori dalle soglie): {len(righe)}", file=sys.stderr)
+    return set(righe)
+
+
 def _nomi_carriere_complete(conn) -> set:
     """Cavalli con la carriera completa all'estero (scripts/carriere_complete.py)."""
     try:
@@ -2742,7 +2771,12 @@ def phase_ratings(conn: sqlite3.Connection):
     # valutano contro il pool, ma non lo spostano: gli altri hanno solo le
     # corse italiane, e cinquanta campioni stranieri con i totali mondiali
     # avrebbero fatto scendere di una lettera centinaia di cavalli italiani.
-    esteri = _nomi_carriere_complete(conn)
+    # Dal 22/11/2026 la stessa regola vale per tutti gli "ospiti esteri": nati
+    # all'estero che in Italia hanno fatto meno di una corsa su cinque
+    # (DON FANUCCI ZET 1 su 71, GO ON BOY 4 su 78). Il voto conta tutta la
+    # carriera, ma i soldi delle corse estere (che pagano in media quasi
+    # quattro volte quelle italiane) non spostano le soglie degli altri.
+    esteri = _ospiti_esteri(conn)
     pool = [r for r in horses if r[7] != CLASS_BREEDER and (r[0] or "").strip().upper() not in esteri]
     n_breeder = len(horses) - len(pool)
     if n_breeder:
@@ -2852,6 +2886,17 @@ def phase_ratings(conn: sqlite3.Connection):
         FROM races GROUP BY horse_name
     """):
         carriera_divisa[(nome_d or "").strip().upper()] = (gi, ge, vi, ve, pi_, pe)
+    # Carriere complete all'estero: l'estero e' quello che manca per arrivare
+    # ai totali della fonte straniera (le gare estere non sono in archivio).
+    try:
+        for nome_c, corse_c, vitt_c, eur_c in conn.execute(
+                "SELECT nome, corse, vittorie, guadagni_eur FROM carriere_complete"):
+            k = (nome_c or "").strip().upper()
+            gi, ge, vi, ve, pi_, pe = carriera_divisa.get(k, (0, 0, 0, 0, 0.0, 0.0))
+            carriera_divisa[k] = (gi, max(0, (corse_c or 0) - gi), vi, max(0, (vitt_c or 0) - vi),
+                                  pi_, max(0.0, (eur_c or 0) - pi_))
+    except sqlite3.Error:
+        pass
 
     scores = {}
     for row in horses:
@@ -2964,7 +3009,15 @@ def phase_ratings(conn: sqlite3.Connection):
         if len(punti) >= ANNATA_MINIMA_VOTO:
             soglie_annata[anno_a] = _build_percentile_thresholds(punti)
 
-    ordinate_annata = {a: sorted(p) for a, p in per_annata.items()}
+    # La posizione nell'annata si conta su tutti, ospiti esteri compresi (le
+    # soglie no): cosi' DON FANUCCI ZET e GO ON BOY non risultano primi tutti
+    # e due.
+    tutti_annata: dict[int, list[float]] = {}
+    for (nome_a, anno_a), d in scores.items():
+        if (nome_a, anno_a) in backfill_keys or anno_a is None:
+            continue
+        tutti_annata.setdefault(anno_a, []).append(d["score"])
+    ordinate_annata = {a: sorted(p) for a, p in tutti_annata.items()}
 
     for (nome_a, anno_a), d in scores.items():
         soglie = soglie_annata.get(anno_a)

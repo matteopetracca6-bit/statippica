@@ -378,6 +378,7 @@ export default function LeaderboardPage() {
                 <option value="italia">Solo carriera in Italia</option>
                 <option value="estero">Ha corso anche all&apos;estero</option>
                 <option value="solo_estero">Solo carriera all&apos;estero</option>
+                <option value="senza_ospiti">Senza gli ospiti esteri</option>
               </select>
             </label>
           )}
@@ -428,6 +429,12 @@ export default function LeaderboardPage() {
                           <BandieraCavallo nome={r.name} paese={r.country} />
                           <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</span>
                           <GradeBadge grade={lettera} size="sm" />
+                          {(r as any).ospite_estero && (
+                            <span title={`Corre soprattutto all'estero (${(r as any).ospite_gare_italia ?? 0} corse in Italia su ${(r as any).ospite_gare_totali}): votato su tutta la carriera, ma non sposta le soglie degli altri`}
+                              style={{ fontSize: 10, fontWeight: 700, color: "hsl(205 70% 74%)", background: "hsl(205 45% 18%)", border: "1px solid hsl(205 40% 30%)", borderRadius: 5, padding: "1px 5px", flexShrink: 0 }}>
+                              estero
+                            </span>
+                          )}
                           {corse > 0 && corse < MIN_RACES_SOLID && mode !== "pedigree" && (
                             <span title={`Voto calcolato su ${corse} corse: poco affidabile`}
                               style={{ fontSize: 10, fontWeight: 700, color: "hsl(38 85% 62%)", background: "hsl(38 60% 18%)", border: "1px solid hsl(38 50% 28%)", borderRadius: 5, padding: "1px 5px", flexShrink: 0 }}>
