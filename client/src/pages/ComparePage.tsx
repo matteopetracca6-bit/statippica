@@ -68,7 +68,7 @@ const CSS = `
 
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const intero = (v: number) => Math.round(v).toLocaleString("it-IT");
-const euro = (v: number) => "€ " + Math.round(v).toLocaleString("it-IT");
+const euro = (v: number) => "€\u00a0" + Math.round(v).toLocaleString("it-IT");
 const perc = (v: number) => `${v.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 
 /** Record al km in secondi totali (1.13.6 -> 73,6), per sapere chi e' piu' veloce. */

@@ -68,7 +68,7 @@ interface MareDetail {
 
 function eur(v: number | null | undefined): string {
   if (!v) return "—";
-  return "€ " + Math.round(v).toLocaleString("it-IT");
+  return "€\u00a0" + Math.round(v).toLocaleString("it-IT");
 }
 
 const TITOLO_SEZ: React.CSSProperties = {

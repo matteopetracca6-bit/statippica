@@ -19,7 +19,7 @@ import GradeBadge from "./GradeBadge";
 import CavalloCaricamento from "./CavalloCaricamento";
 
 const MUTED = "hsl(210 8% 50%)";
-const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
+const euro = (n: number) => (n < 0 ? "−\u2060" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const k = (n: number) => "€" + Math.round(n / 1000).toLocaleString("it-IT") + "k";
 
 interface Riga {

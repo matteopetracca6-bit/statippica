@@ -18,7 +18,7 @@ import { useScuderia } from "@/lib/scuderia";
 const MUTED = "hsl(210 8% 50%)";
 import { ESITO_COLORE as COLORE, ESITO_NOME as NOME } from "@/lib/esiti";
 import LegendaEsiti from "./LegendaEsiti";
-const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
+const euro = (n: number) => (n < 0 ? "−\u2060" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 
 const pannello: React.CSSProperties = {
   padding: "var(--pad-pannello, 18px 22px)", marginBottom: "var(--spazio-pannello, 22px)",

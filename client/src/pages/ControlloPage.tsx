@@ -30,7 +30,7 @@ const CARD: React.CSSProperties = { padding: "16px 18px" };
 const griglia: React.CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(210px, 100%), 1fr))", marginBottom: 12 };
 
 const num = (n: number | null | undefined) => n == null ? "—" : Math.round(n).toLocaleString("it-IT");
-const euro = (n: number | null | undefined) => n == null ? "—" : `${Math.round(n).toLocaleString("it-IT")} €`;
+const euro = (n: number | null | undefined) => n == null ? "—" : `${Math.round(n).toLocaleString("it-IT")}\u00a0€`;
 const milioni = (n: number) => `${(n / 1e6).toLocaleString("it-IT", { maximumFractionDigits: 1, minimumFractionDigits: 1 })} milioni €`;
 const pct = (n: number | null | undefined) => n == null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
 const data = (s: string) => new Date(s + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" }).replace(/^1 /, "1° ");

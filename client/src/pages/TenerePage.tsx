@@ -30,7 +30,7 @@ import { useScuderia } from "@/lib/scuderia";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/tenere");
-const euro = (n: number | null | undefined) => n == null ? "—" : (n < 0 ? "−" : "") + "€ " + Math.abs(Math.round(n)).toLocaleString("it-IT");
+const euro = (n: number | null | undefined) => n == null ? "—" : (n < 0 ? "−" : "") + "€\u00a0" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const titolo = (s: string) => s.split(" ").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
 const ETICHETTA: Record<string, string> = { profitto: "In utile", pareggio: "In pari", perdita: "In perdita" };
 const SCORRE = { flexWrap: "nowrap" as const, overflowX: "auto" as const, maxWidth: "100%", whiteSpace: "nowrap" as const };

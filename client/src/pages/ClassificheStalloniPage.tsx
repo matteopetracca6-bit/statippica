@@ -125,7 +125,7 @@ function SchedaStagione({ r, d, eta, esteri, onClose }: { r: RigaStagione; d: St
       </div>
       <Soglie titolo="Figli con un record di" etichette={d.soglie_tempo.map(t => `1.${t}`)} valori={r.tempi}
         nota="Record in carriera fino alla fine della stagione. «1.12» vuol dire 1.12,9 o più veloce." />
-      <Soglie titolo={`Figli che nel ${d.anno} hanno vinto almeno`} etichette={d.soglie_vincite.map(v => `€ ${migliaia(v)}`)} valori={r.soglie_vincite}
+      <Soglie titolo={`Figli che nel ${d.anno} hanno vinto almeno`} etichette={d.soglie_vincite.map(v => `€\u00a0${migliaia(v)}`)} valori={r.soglie_vincite}
         nota="Vincite nette della sola stagione." />
       <div className="ed-etich" style={{ margin: "16px 0 6px" }}>I figli nella stagione, da chi ha vinto di più</div>
       {isLoading ? <CavalloCaricamento label="Caricamento" /> : (

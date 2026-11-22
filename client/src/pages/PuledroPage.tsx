@@ -34,7 +34,7 @@ const COLORE = coloreScheda("/puledro");
 const VERDE = "hsl(145 55% 52%)";
 const ROSSO = "hsl(0 60% 62%)";
 const ORO = "hsl(45 85% 60%)";
-const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−€ " : "€ ") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
+const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−\u2060€\u00a0" : "€\u00a0") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
 const pc = (p: number | null | undefined) => (p == null ? "—" : p > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`);
 const pct = (p: number | null | undefined) => (p == null ? "—" : p < 0.01 && p > 0 ? "<1%" : `${Math.round(p * 100)}%`);
 const num = (n: number) => Math.round(n).toLocaleString("it-IT");

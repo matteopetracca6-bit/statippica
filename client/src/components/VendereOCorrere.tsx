@@ -27,7 +27,7 @@ import { ESITO_COLORE } from "@/lib/esiti";
 import LegendaEsiti from "./LegendaEsiti";
 // Stessi colori dei risultati in tutto il sito; il blu e' solo per i pulsanti.
 const VERDE = ESITO_COLORE.profitto, GIALLO = ESITO_COLORE.pareggio, ROSSO = ESITO_COLORE.perdita, BLU = "hsl(200 75% 60%)";
-const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
+const euro = (n: number) => (n < 0 ? "−\u2060" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const pct = (n: number) => n.toLocaleString("it-IT") + "%";
 
 interface Riepilogo { n: number; mediana: number; minimo: number; massimo: number }
