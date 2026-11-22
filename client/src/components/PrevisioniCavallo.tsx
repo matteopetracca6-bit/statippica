@@ -60,7 +60,7 @@ function CurvaCosti({ attesi, percentili, mensile }: { attesi: number; percentil
 
 const MUTED = "hsl(210 8% 52%)";
 const DIM = "hsl(210 8% 40%)";
-const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
+const euro = (n: number) => (n < 0 ? "−\u2060" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const titolo = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 const PISTE: Record<string, string> = {
   BO: "Bologna", MI: "Milano", RM: "Roma", TO: "Torino", NA: "Napoli", CE: "Cesena", SR: "Siracusa", TV: "Treviso",

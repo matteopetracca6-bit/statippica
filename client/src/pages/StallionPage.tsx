@@ -326,7 +326,7 @@ function AnniInMonta({ a, nome }: { a: NonNullable<StallionData["attivita"]>; no
 /* Come nonno paterno: quanto vincono i figli dei suoi figli stalloni. */
 function ComeNonno({ n, nome }: { n: NonNullable<StallionData["nonno"]>; nome: string }) {
   const max = Math.max(1, ...n.figli.map(f => f.vincite));
-  const euro = (v: number) => `€ ${Math.round(v).toLocaleString("it-IT")}`;
+  const euro = (v: number) => `€\u00a0${Math.round(v).toLocaleString("it-IT")}`;
   return (
     <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }} data-testid="come-nonno">
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>

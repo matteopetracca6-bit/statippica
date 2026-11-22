@@ -24,7 +24,7 @@ const MUTO = "hsl(210 8% 58%)";
 const FIOCO = "hsl(210 8% 42%)";
 const BORDO = "hsl(220 10% 16%)";
 const FONDO = "hsl(220 12% 9%)";
-const euro = (n: number) => "€ " + Math.round(n).toLocaleString("it-IT");
+const euro = (n: number) => "€\u00a0" + Math.round(n).toLocaleString("it-IT");
 
 type Strada = { domanda: string; risposta: string; href: string; dove: string };
 type Situazione = { chiave: string; titolo: string; sotto: string; icona: typeof Tag; colore: string; strade: Strada[] };

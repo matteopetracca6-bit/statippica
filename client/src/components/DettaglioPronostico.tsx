@@ -23,7 +23,7 @@ const DIM = "hsl(210 8% 42%)";
 const VERDE = "hsl(150 55% 55%)";
 const ROSSO = "hsl(10 60% 60%)";
 const tempo = (t: number) => tempoKm(t);
-const euro = (n: number) => `${Math.round(n).toLocaleString("it-IT")} €`;
+const euro = (n: number) => `${Math.round(n).toLocaleString("it-IT")}\u00a0€`;
 const pct = (n: number) => `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
 
 type Posto = { posto: number; su: number };

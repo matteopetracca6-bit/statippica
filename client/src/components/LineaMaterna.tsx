@@ -26,7 +26,7 @@ interface Madre {
 
 const VERDE = "hsl(120 55% 52%)";
 const ROSA = "hsl(330 60% 70%)";
-const euro = (v: number | null | undefined) => (v ? `€ ${Math.round(v).toLocaleString("it-IT")}` : "€ 0");
+const euro = (v: number | null | undefined) => (v ? `€\u00a0${Math.round(v).toLocaleString("it-IT")}` : "€ 0");
 const SESSO: Record<string, string> = { M: "maschio", F: "femmina", C: "castrone" };
 
 function Cifra({ titolo, valore, colore, sotto }: { titolo: string; valore: string; colore?: string; sotto?: string }) {

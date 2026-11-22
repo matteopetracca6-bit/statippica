@@ -14,7 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { ESITO_COLORE, coloreSegno } from "@/lib/esiti";
 
 const MUTED = "hsl(210 8% 50%)";
-const euro = (n: number) => (n < 0 ? "−" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
+const euro = (n: number) => (n < 0 ? "−\u2060" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 const COLORI_VOCE: Record<string, string> = {
   mensile: "hsl(200 70% 55%)", allevamento: "hsl(270 45% 62%)", monta: "hsl(30 80% 60%)", prezzo: "hsl(30 80% 60%)",
 };

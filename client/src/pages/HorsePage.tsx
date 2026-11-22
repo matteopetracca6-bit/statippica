@@ -707,7 +707,7 @@ export default function HorsePage() {
           <span className="cifra-extra"><Cifra titolo="Piazzamenti" valore={horse.career_top3 ?? "—"}
             sotto={horse.career_top3 != null && horse.career_races ? `${(horse.career_top3 / horse.career_races * 100).toFixed(1).replace(".", ",")}% nei primi 3` : "arrivi nei primi tre"} /></span>
           <Cifra titolo="Guadagni" colore={horse.career_earnings ? "hsl(51 90% 62%)" : undefined}
-            valore={horse.career_earnings != null ? `€ ${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
+            valore={horse.career_earnings != null ? `€\u00a0${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
           <Cifra titolo="Record al km" valore={horse.record_career ? formatRecord(horse.record_career) : "—"} colore="hsl(183 70% 60%)" />
           {(horse as any).distanza && <span className="cifra-extra">
             <Cifra titolo="Km gara corta" valore={kmTesto((horse as any).distanza.corto)} colore="hsl(28 85% 64%)"

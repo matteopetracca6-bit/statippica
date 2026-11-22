@@ -44,7 +44,7 @@ function num(v: unknown, d = 0): string {
   return isNum(v) ? v.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
 }
 function euro(v: unknown): string {
-  return isNum(v) && v > 0 ? `€ ${num(v)}` : "—";
+  return isNum(v) && v > 0 ? `€\u00a0${num(v)}` : "—";
 }
 
 /* ------------------------------------------------------------------ */

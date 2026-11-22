@@ -66,7 +66,7 @@ const inMonta = (st: string | null) => st === "active" || st === "da_concordare"
 function prezzo(s: StallionEntry): { testo: string; colore: string } {
   const st = s.stud_status || null;
   if (!inMonta(st)) return { testo: st ? STATUS_LABELS[st] || st : "Non in monta 2026", colore: "var(--ed-fioco)" };
-  if (s.stud_fee_eur != null && s.stud_fee_eur > 0) return { testo: `€ ${s.stud_fee_eur.toLocaleString("it-IT")}`, colore: "hsl(51 80% 60%)" };
+  if (s.stud_fee_eur != null && s.stud_fee_eur > 0) return { testo: `€\u00a0${s.stud_fee_eur.toLocaleString("it-IT")}`, colore: "hsl(51 80% 60%)" };
   if (s.stud_fee_eur === 0 || st === "free") return { testo: "Gratuita", colore: "hsl(150 45% 55%)" };
   return { testo: "Da concordare", colore: "hsl(40 70% 55%)" };
 }
@@ -190,8 +190,8 @@ export default function StallionDirectoryPage() {
         <Cifra titolo="Stalloni in elenco" valore={num(stats.total)} />
         <Cifra titolo="Disponibili" valore={num(stats.active)} colore="hsl(120 50% 55%)" sotto="in monta nel 2026" />
         <Cifra titolo="Con prezzo" valore={num(stats.withFee)} colore="hsl(183 60% 55%)" />
-        <Cifra titolo="Monta media" valore={stats.avgFee ? `€ ${stats.avgFee.toLocaleString("it-IT")}` : "—"} colore="hsl(51 80% 60%)" sotto="fra quelli con prezzo" />
-        <Cifra titolo="Monta più cara" valore={stats.maxFee ? `€ ${stats.maxFee.toLocaleString("it-IT")}` : "—"} colore="hsl(0 60% 60%)" />
+        <Cifra titolo="Monta media" valore={stats.avgFee ? `€\u00a0${stats.avgFee.toLocaleString("it-IT")}` : "—"} colore="hsl(51 80% 60%)" sotto="fra quelli con prezzo" />
+        <Cifra titolo="Monta più cara" valore={stats.maxFee ? `€\u00a0${stats.maxFee.toLocaleString("it-IT")}` : "—"} colore="hsl(0 60% 60%)" />
       </div>
 
       {/* Confronto sul prezzo della monta */}

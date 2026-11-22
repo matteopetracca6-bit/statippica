@@ -20,7 +20,7 @@ export function num(v: unknown, d = 0): string {
 /** Euro senza decimali; "—" se manca o e' zero (a meno di `zero`). */
 export function euro(v: unknown, zero = false): string {
   if (!isNum(v) || (!zero && v === 0)) return "—";
-  return (v < 0 ? "−€ " : "€ ") + Math.abs(Math.round(v)).toLocaleString("it-IT");
+  return (v < 0 ? "−\u2060€\u00a0" : "€\u00a0") + Math.abs(Math.round(v)).toLocaleString("it-IT");
 }
 export const nomeBello = (s: string) => (s || "").split(" ").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
 
@@ -77,7 +77,7 @@ export const CSS_DUE_COLONNE = `
 .ed-pannello { border-radius: 14px; background: var(--ed-fondo); border: 1px solid var(--ed-bordo); padding: 16px; }
 .ed-pagine { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; font-size: 12.5px; color: var(--ed-muto); }
 .ed-pagine button { display: flex; align-items: center; background: var(--ed-fondo); border: 1px solid var(--ed-bordo); color: var(--ed-testo);
-  border-radius: 8px; padding: 6px 9px; cursor: pointer; }
+  border-radius: 8px; padding: 6px 9px; cursor: pointer; white-space: nowrap; }
 .ed-pagine button:disabled { color: var(--ed-fioco); cursor: default; }
 .ed-chiudi { background: none; border: 1px solid var(--ed-bordo); border-radius: 8px; color: var(--ed-muto); padding: 5px; cursor: pointer; display: flex; }
 @media (max-width: 1023px) {
