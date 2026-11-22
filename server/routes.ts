@@ -1646,6 +1646,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
       conditions.push("COALESCE(hr.gare_estero, 0) = 0");
     } else if (dove === "estero") {
       conditions.push("COALESCE(hr.gare_estero, 0) > 0");
+    } else if (dove === "misto") {
+      // Carriera divisa: almeno una gara in Italia e almeno una all'estero.
+      conditions.push("COALESCE(hr.gare_estero, 0) > 0 AND COALESCE(hr.gare_italia, 0) > 0");
+    } else if (dove === "ospiti" && haOspiti) {
+      conditions.push("EXISTS (SELECT 1 FROM ospiti_esteri o WHERE o.nome = hr.name)");
     } else if (dove === "solo_estero") {
       conditions.push("COALESCE(hr.gare_estero, 0) > 0 AND COALESCE(hr.gare_italia, 0) = 0");
     } else if (dove === "senza_ospiti" && haOspiti) {
