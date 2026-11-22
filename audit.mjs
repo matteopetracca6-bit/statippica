@@ -11,6 +11,9 @@ const page = await ctx.newPage();
 for (const p of pagine) {
   try {
     await page.goto(B + p, { waitUntil: "networkidle", timeout: 60000 });
+    await page.waitForTimeout(4000);
+    // apre le sezioni chiuse della scheda (SezioneScheda) per controllare anche il contenuto
+    await page.evaluate(() => { document.querySelectorAll("details:not([open]) > summary, [aria-expanded='false']").forEach(e => { try { e.click(); } catch {} }); });
     await page.waitForTimeout(2500);
     const r = await page.evaluate(() => {
       const W = window.innerWidth;
@@ -31,6 +34,15 @@ for (const p of pagine) {
         const rs = Array.from(rg.getClientRects()).filter(x => x.width > 0);
         const righe = new Set(rs.map(x => Math.round(x.top)));
         if (righe.size > 1 && out.spezzate.length < 10) out.spezzate.push(`«${t}» in ${desc(el)} su ${righe.size} righe`);
+      }
+      out.etichette = [];
+      for (const el of document.querySelectorAll("body *")) {
+        if (el.children.length || el.offsetParent === null) continue;
+        const t = (el.textContent || "").trim();
+        if (t.length < 3 || t.length > 26 || !/\s/.test(t)) continue;
+        const cs = getComputedStyle(el); const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3;
+        const b = el.getBoundingClientRect();
+        if (b.height > lh * 1.8 && b.width < 140 && out.etichette.length < 12) out.etichette.push(`«${t}» ${el.tagName.toLowerCase()}.${(el.className && typeof el.className === "string") ? el.className.split(" ")[0] : ""} largo ${Math.round(b.width)} alto ${Math.round(b.height)}`);
       }
       for (const el of document.querySelectorAll(".grade-badge")) {
         const b = el.getBoundingClientRect(); const fs = parseFloat(getComputedStyle(el).fontSize);
