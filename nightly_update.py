@@ -5455,6 +5455,15 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
     report["lordi_armonizzati"] = _armonizza_lordi(conn)
     print(f"  Lordi ricavati dal netto: {report['lordi_armonizzati']}", file=sys.stderr)
 
+    # Le carriere complete all'estero (scripts/carriere_complete.py) hanno i
+    # totali della fonte straniera, non delle gare in archivio: non si
+    # riallineano. Il 22/11/2026 questo passaggio aveva rimesso a FACE TIME
+    # BOURBON la sola corsa italiana (e il voto era sceso da SSS a S).
+    conn.execute("""CREATE TABLE IF NOT EXISTS carriere_complete (nome TEXT PRIMARY KEY, anno INTEGER, corse INTEGER,
+                    vittorie INTEGER, primi_tre INTEGER, guadagni_eur REAL, record TEXT, record_data TEXT, record_luogo TEXT,
+                    stagioni TEXT, n_stagioni INTEGER, stagioni_stimate INTEGER, fonte TEXT, url TEXT,
+                    valuta_originale TEXT, importo_originale REAL, cambio REAL)""")
+
     # 1) Ricalcola career_stats per i cavalli dove non combaciano
     # ATTENZIONE: i RIPRODUTTORI (horse_class='breeder': nati <2012 o recuperati
     # da UNIRE) vanno esclusi da tutto il blocco. Per loro la fonte fornisce i TOTALI di
@@ -5469,6 +5478,7 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
             LEFT JOIN races r ON r.horse_name = h.name
             WHERE COALESCE(h.horse_class, 'athlete') <> 'breeder'
               AND NOT (COALESCE(h.source_role, '') = 'gare_ufficiali' AND COALESCE(h.tw_found, 0) = 0)
+              AND h.name NOT IN (SELECT nome FROM carriere_complete)
             GROUP BY h.name, h.birth_year
             HAVING COALESCE(h.career_races, 0) != COUNT(r.id)
                 OR (COUNT(r.id) > 0 AND COALESCE(h.career_places, 0) !=
@@ -5503,6 +5513,7 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
               -- e senza premi dei primi cinque: niente totali, quindi niente voto.
               AND NOT (COALESCE(horses.source_role, '') = 'gare_ufficiali'
                        AND COALESCE(horses.tw_found, 0) = 0)
+              AND horses.name NOT IN (SELECT nome FROM carriere_complete)
         """)
         # Also reset horses that had stats but have 0 races in the table
         conn.execute("""
@@ -5510,6 +5521,7 @@ def phase_data_quality(conn: sqlite3.Connection) -> dict:
             WHERE name NOT IN (SELECT DISTINCT horse_name FROM races)
               AND COALESCE(career_races, 0) > 0
               AND COALESCE(horse_class, 'athlete') <> 'breeder'
+              AND name NOT IN (SELECT nome FROM carriere_complete)
         """)
         conn.commit()
         report["stats_fixed"] = mismatch

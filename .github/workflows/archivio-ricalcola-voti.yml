@@ -54,8 +54,12 @@ jobs:
 
           conn = sqlite3.connect("data.db")
           nu.init_db(conn)
-          nu.phase_ratings(conn)            # voti dei cavalli
+          import sys; sys.path.insert(0, "scripts")
+          from carriere_complete import applica as carriere_complete
+          carriere_complete(conn)           # carriere complete all'estero, prima dei voti
+          nu.phase_ratings(conn)            # voti dei cavalli (ospiti esteri fuori dalle soglie)
           nu.phase_historic_ratings(conn)   # classifica storica
+          nu.phase_pulisci_voti_pedigree(conn)  # via il voto da pedigree a chi ha corso
           nu.phase_stallion_ratings(conn)   # stalloni, giudicati sui figli
           nu.phase_dam_ratings(conn)        # fattrici, giudicate sui figli
           conn.commit()
