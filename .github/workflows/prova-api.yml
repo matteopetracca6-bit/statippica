@@ -5,7 +5,10 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-      - run: N=6 bash usta.sh
+      - run: |
+          B=https://statippica.onrender.com
+          curl -s "$B/api/home/sorprese" | python3 -c "
+          import json,sys;d=json.load(sys.stdin);print('corse',d.get('corse'),'sorprese',d.get('n_sorprese'),'delusioni',d.get('n_delusioni'))
+          for k in ('sorprese','delusioni'):
+              for v in d[k][:3]: print(' ',k,v['nome'],v['quota'],v['data'],v['pista'],v.get('arrivo'),v['motivi'])"
