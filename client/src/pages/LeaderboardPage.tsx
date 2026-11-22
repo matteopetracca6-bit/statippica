@@ -374,10 +374,12 @@ export default function LeaderboardPage() {
             <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
               <span className="ed-etich">Dove ha corso</span>
               <select value={dove} onChange={e => setDove(e.target.value)} style={stileSelect} data-testid="select-dove">
-                <option value="">Italia ed estero</option>
+                <option value="">Tutti</option>
                 <option value="italia">Solo carriera in Italia</option>
+                <option value="misto">Italia ed estero (misto)</option>
                 <option value="estero">Ha corso anche all&apos;estero</option>
                 <option value="solo_estero">Solo carriera all&apos;estero</option>
+                <option value="ospiti">Ospiti esteri (soprattutto all&apos;estero)</option>
                 <option value="senza_ospiti">Senza gli ospiti esteri</option>
               </select>
             </label>
