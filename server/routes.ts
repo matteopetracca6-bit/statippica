@@ -3,6 +3,7 @@ import { calcolaWright, comparseAlbero } from "./consanguineita";
 import { registraSimulatore } from "./simulatore";
 import { registraElencoCavalli } from "./elencoCavalli";
 import { incrociPerFattrice } from "./incroci";
+import { registraSorprese } from "./sorprese";
 import { distanzaCavallo, distanzaStallone, profiliStalloni, velocitaPiste } from "./distanza";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 import { forzaCavallo } from "./forza";
@@ -324,6 +325,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
   registraSimulatore(app, getDb, NOMI_CALENDARIO, vpTableExists);
   // Schede Tutti e Novita' della pagina Cavalli (elencoCavalli.ts).
   registraElencoCavalli(app, getDb, vpTableExists);
+  // Sorprese e delusioni della settimana, per la Home (sorprese.ts).
+  registraSorprese(app, getDb, vpTableExists, pronta);
   // Velocita' delle piste a parita' di cavallo (scripts/record_distanza.py).
   app.get("/api/piste/velocita", (_req, res) => {
     const db = getDb();

@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import HeroMarchio from "../components/HeroMarchio";
 import GradeBadge from "../components/GradeBadge";
 import CavalliDelMomento from "../components/CavalliDelMomento";
+import SorpreseDelusioni from "../components/SorpreseDelusioni";
 import RiquadroRating from "../components/RiquadroRating";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import EsploraCategorie, { trasparente } from "../components/EsploraCategorie";
@@ -170,7 +171,7 @@ export default function Home() {
         <CavalliDelMomento />
       </div>
 
-      {/* ─── TOP STALLONI + CAMPIONE PER GENERAZIONE ─── */}
+      {/* ─── TOP STALLONI + CAMPIONE PER GENERAZIONE, SORPRESE + DELUSIONI ─── */}
       <div className="page-shell">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))", gap: "16px" }}>
 
@@ -266,6 +267,9 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {/* Sorprese e delusioni della settimana (seconda riga della griglia) */}
+          <SorpreseDelusioni />
 
         </div>
       </div>
