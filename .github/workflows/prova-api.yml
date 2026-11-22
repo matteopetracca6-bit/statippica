@@ -5,14 +5,21 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - run: |
           B=https://statippica.onrender.com
-          for i in $(seq 1 70); do
+          for i in $(seq 1 80); do
             curl -s "$B/api/horse/FACE%20TIME%20BOURBON/2015" -o /tmp/h.json
-            python3 -c "import json,sys;d=json.load(open('/tmp/h.json'));sys.exit(0 if d.get('gare_estero') else 1)" && break; sleep 30
+            curl -s "$B/api/leaderboard?mode=performance&dove=misto&limit=1" -o /tmp/m.json
+            python3 -c "import json,sys;d=json.load(open('/tmp/h.json'));m=json.load(open('/tmp/m.json'));sys.exit(0 if d.get('grade')=='SSS' and d.get('ospite_estero') and m.get('total') else 1)" && break; sleep 30
           done; echo "pronto dopo $i"
-          for h in "FACE%20TIME%20BOURBON/2015" "READY%20CASH/2005" "BIRD%20PARKER/2011" "DIJON/2013"; do
-            curl -s "$B/api/horse/$h" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('name'),d.get('grade'),d.get('score'),d.get('career_races'),'IT',d.get('gare_italia'),d.get('guad_italia'),'EST',d.get('gare_estero'),d.get('vitt_estero'),d.get('guad_estero'),'forza',d.get('forza'),'redirect',d.get('vai_a_pagina'))"
+          for h in "FACE%20TIME%20BOURBON/2015" "DON%20FANUCCI%20ZET%20(S)/2016" "GO%20ON%20BOY%20(F)/2016" "DJANGO%20RIFF/2013"; do
+            curl -s "$B/api/horse/$h" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('name'),d.get('grade'),d.get('score'),d.get('pos_annata'),'/',d.get('tot_annata'),'ospite',d.get('ospite_estero'),'IT',d.get('gare_italia'),'EST',d.get('gare_estero'))"
+          done
+          for dv in "" italia misto estero solo_estero ospiti senza_ospiti; do
+            curl -s "$B/api/leaderboard?mode=performance&dove=$dv&limit=50" | python3 -c "import json,sys;d=json.load(sys.stdin);r=d['rows'];print('$dv'.ljust(13),d['total'],'DJANGO RIFF' in [x['name'] for x in r] and 'django in prima pagina' or '', [x['name']+('*' if x.get('ospite_estero') else '') for x in r[:4]])"
+          done
+          for dv in italia misto solo_estero; do
+            curl -s "$B/api/leaderboard?mode=performance&dove=$dv&cerca=DJANGO%20RIFF" | python3 -c "import json,sys;d=json.load(sys.stdin);print('DJANGO RIFF in $dv:',d['total'])"
           done
