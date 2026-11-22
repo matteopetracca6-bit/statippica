@@ -13,6 +13,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-07"
   },
+  "ABISAI CAF|1997": {
+   "nome": "ABISAI CAF",
+   "anno": 1997,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "ADRI DI JESOLO|1997": {
    "nome": "ADRI DI JESOLO",
    "anno": 1997,
@@ -85,6 +91,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "ALMAHURST OM|1997": {
+   "nome": "ALMAHURST OM",
+   "anno": 1997,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "ALOMA|1997": {
    "nome": "ALOMA",
    "anno": 1997,
@@ -102,6 +114,28 @@
    "anno": 1997,
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
+  },
+  "ANDOVER HALL|1999": {
+   "nome": "ANDOVER HALL",
+   "anno": 1999,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 22,
+   "vittorie": 11,
+   "guadagni": {
+    "importo": 8971549,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Andover Hall",
+     "url": "https://sv.wikipedia.org/wiki/Andover_Hall"
+    }
+   ]
   },
   "ANDREA DI JESOLO|1997": {
    "nome": "ANDREA DI JESOLO",
@@ -215,6 +249,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-18"
   },
+  "BIRD PARKER|2011": {
+   "nome": "BIRD PARKER",
+   "anno": 2011,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "BIRGIT DEL RONCO|1998": {
    "nome": "BIRGIT DEL RONCO",
    "anno": 1998,
@@ -244,6 +284,35 @@
    "anno": 1998,
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
+  },
+  "BOLD EAGLE|2011": {
+   "nome": "BOLD EAGLE",
+   "anno": 2011,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 77,
+   "vittorie": 47,
+   "guadagni": {
+    "importo": 5124087,
+    "valuta": "EUR"
+   },
+   "record": "1.08.4",
+   "fonte_corse": "fr",
+   "altre_corse": [
+    76
+   ],
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Bold Eagle",
+     "url": "https://fr.wikipedia.org/wiki/Bold_Eagle"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Bold Eagle",
+     "url": "https://sv.wikipedia.org/wiki/Bold_Eagle"
+    }
+   ]
   },
   "BONASSOLA|1998": {
    "nome": "BONASSOLA",
@@ -335,6 +404,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "CANTAB HALL|2001": {
+   "nome": "CANTAB HALL",
+   "anno": 2001,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 23,
+   "vittorie": 14,
+   "guadagni": {
+    "importo": 10717829,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Cantab Hall",
+     "url": "https://sv.wikipedia.org/wiki/Cantab_Hall"
+    }
+   ]
+  },
   "CANTATA|1999": {
    "nome": "CANTATA",
    "anno": 1999,
@@ -376,6 +467,28 @@
    "anno": 1999,
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
+  },
+  "CHAPTER SEVEN|2008": {
+   "nome": "CHAPTER SEVEN",
+   "anno": 2008,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 28,
+   "vittorie": 20,
+   "guadagni": {
+    "importo": 1954966,
+    "valuta": "USD"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Chapter Seven",
+     "url": "https://sv.wikipedia.org/wiki/Chapter_Seven"
+    }
+   ]
   },
   "CHARIS DEL RONCO|1999": {
    "nome": "CHARIS DEL RONCO",
@@ -468,6 +581,41 @@
     }
    ]
   },
+  "COKTAIL JET|1990": {
+   "nome": "COKTAIL JET",
+   "anno": 1990,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 63,
+   "vittorie": 24,
+   "guadagni": {
+    "importo": 1896774,
+    "valuta": "EUR"
+   },
+   "record": "1.10.7",
+   "fonte_corse": "fr",
+   "altre_corse": [
+    64
+   ],
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Coktail Jet",
+     "url": "https://fr.wikipedia.org/wiki/Coktail_Jet"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Coktail Jet",
+     "url": "https://sv.wikipedia.org/wiki/Coktail_Jet"
+    }
+   ]
+  },
+  "COMANCHEE WISE|1999": {
+   "nome": "COMANCHEE WISE",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "CONCORD JET|1999": {
    "nome": "CONCORD JET",
    "anno": 1999,
@@ -531,6 +679,28 @@
    "anno": 1992,
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
+  },
+  "CREDIT WINNER|1997": {
+   "nome": "CREDIT WINNER",
+   "anno": 1997,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 23,
+   "vittorie": 9,
+   "guadagni": {
+    "importo": 1495295,
+    "valuta": "USD"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Credit Winner",
+     "url": "https://sv.wikipedia.org/wiki/Credit_Winner"
+    }
+   ]
   },
   "CREUSA DI JESOLO|1999": {
    "nome": "CREUSA DI JESOLO",
@@ -945,6 +1115,34 @@
    "letto_il": "2026-10-30",
    "motivo": "le schede trovate hanno meno corse o vittorie di quelle gia' contate in Italia"
   },
+  "EXPLOIT DEI FIORI|2001": {
+   "nome": "EXPLOIT DEI FIORI",
+   "anno": 2001,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
+  "EXPLOSIVE MATTER|2006": {
+   "nome": "EXPLOSIVE MATTER",
+   "anno": 2006,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 18,
+   "vittorie": 10,
+   "guadagni": {
+    "importo": 1510542,
+    "valuta": "USD"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Explosive Matter",
+     "url": "https://sv.wikipedia.org/wiki/Explosive_Matter"
+    }
+   ]
+  },
   "EXPRESS ROAD|2001": {
    "nome": "EXPRESS ROAD",
    "anno": 2001,
@@ -1007,6 +1205,28 @@
    "anno": 2002,
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
+  },
+  "FATHER PATRICK|2011": {
+   "nome": "FATHER PATRICK",
+   "anno": 2011,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 33,
+   "vittorie": 23,
+   "guadagni": {
+    "importo": 21620061,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Father Patrick",
+     "url": "https://sv.wikipedia.org/wiki/Father_Patrick"
+    }
+   ]
   },
   "FAUVE GRIF|2002": {
    "nome": "FAUVE GRIF",
@@ -1180,6 +1400,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "FROM ABOVE|1998": {
+   "nome": "FROM ABOVE",
+   "anno": 1998,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 38,
+   "vittorie": 23,
+   "guadagni": {
+    "importo": 8344320,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "From Above",
+     "url": "https://sv.wikipedia.org/wiki/From_Above"
+    }
+   ]
+  },
   "FRULLINO JET|2002": {
    "nome": "FRULLINO JET",
    "anno": 2002,
@@ -1270,6 +1512,38 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
   },
+  "GIGANT NEO|1998": {
+   "nome": "GIGANT NEO",
+   "anno": 1998,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 63,
+   "vittorie": 32,
+   "guadagni": {
+    "importo": 2225985,
+    "valuta": "EUR"
+   },
+   "record": "1.10.7",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Gigant Neo",
+     "url": "https://fr.wikipedia.org/wiki/Gigant_Neo"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Gigant Neo",
+     "url": "https://sv.wikipedia.org/wiki/Gigant_Neo"
+    },
+    {
+     "wiki": "en",
+     "titolo": "Gigant Neo",
+     "url": "https://en.wikipedia.org/wiki/Gigant_Neo"
+    }
+   ]
+  },
   "GILLY LB|2003": {
    "nome": "GILLY LB",
    "anno": 2003,
@@ -1347,6 +1621,28 @@
    "anno": 2003,
    "esito": "non_trovato",
    "letto_il": "2026-11-06"
+  },
+  "GOETMALS WOOD|1994": {
+   "nome": "GOETMALS WOOD",
+   "anno": 1994,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 66,
+   "vittorie": 14,
+   "guadagni": {
+    "importo": 894190,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Goetmals Wood",
+     "url": "https://sv.wikipedia.org/wiki/Goetmals_Wood"
+    }
+   ]
   },
   "GOING KRONOS|2003": {
    "nome": "GOING KRONOS",
@@ -1475,6 +1771,28 @@
    "anno": 2004,
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
+  },
+  "ICELAND|2004": {
+   "nome": "ICELAND",
+   "anno": 2004,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 99,
+   "vittorie": 25,
+   "guadagni": {
+    "importo": 9656832,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Iceland (travhäst)",
+     "url": "https://sv.wikipedia.org/wiki/Iceland_%28travh%C3%A4st%29"
+    }
+   ]
   },
   "IDA Y VUELTA|2004": {
    "nome": "IDA Y VUELTA",
@@ -1774,6 +2092,18 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
   },
+  "JULIANO STAR|1997": {
+   "nome": "JULIANO STAR",
+   "anno": 1997,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
+  "KOREAN|1998": {
+   "nome": "KOREAN",
+   "anno": 1998,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "KRAMER BOY|1993": {
    "nome": "KRAMER BOY",
    "anno": 1993,
@@ -1795,6 +2125,12 @@
      "url": "https://sv.wikipedia.org/wiki/Kramer_Boy"
     }
    ]
+  },
+  "L'AS DE BOUSSIERES|1999": {
+   "nome": "L'AS DE BOUSSIERES",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "LA CORUNA|2005": {
    "nome": "LA CORUNA",
@@ -2075,6 +2411,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
   },
+  "LOOK DE STAR|1999": {
+   "nome": "LOOK DE STAR",
+   "anno": 1999,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "LOOK MP|2005": {
    "nome": "LOOK MP",
    "anno": 2005,
@@ -2146,6 +2488,39 @@
    "anno": 2005,
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
+  },
+  "LOVE YOU|1999": {
+   "nome": "LOVE YOU",
+   "anno": 1999,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 59,
+   "vittorie": 22,
+   "guadagni": {
+    "importo": 1416537,
+    "valuta": "EUR"
+   },
+   "record": "1.10.2",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Love You (cheval)",
+     "url": "https://fr.wikipedia.org/wiki/Love_You_%28cheval%29"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Love You",
+     "url": "https://sv.wikipedia.org/wiki/Love_You"
+    }
+   ]
+  },
+  "LOVELY STARLIGHT|2005": {
+   "nome": "LOVELY STARLIGHT",
+   "anno": 2005,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "LOVER POWER|2005": {
    "nome": "LOVER POWER",
@@ -2234,6 +2609,33 @@
    "anno": 2006,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
+  },
+  "MAHARAJAH|2005": {
+   "nome": "MAHARAJAH",
+   "anno": 2005,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 59,
+   "vittorie": 31,
+   "guadagni": {
+    "importo": 2607548,
+    "valuta": "EUR"
+   },
+   "record": "1.10.3",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Maharajah (cheval)",
+     "url": "https://fr.wikipedia.org/wiki/Maharajah_%28cheval%29"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Maharajah",
+     "url": "https://sv.wikipedia.org/wiki/Maharajah"
+    }
+   ]
   },
   "MAIER|2006": {
    "nome": "MAIER",
@@ -2455,6 +2857,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-18"
   },
+  "MONTE FATO|2006": {
+   "nome": "MONTE FATO",
+   "anno": 2006,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "MOON LIGHT BI|2006": {
    "nome": "MOON LIGHT BI",
    "anno": 2006,
@@ -2503,6 +2911,50 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-03"
   },
+  "MUSCLE HILL|2006": {
+   "nome": "MUSCLE HILL",
+   "anno": 2006,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 21,
+   "vittorie": 20,
+   "guadagni": {
+    "importo": 3273342,
+    "valuta": "USD"
+   },
+   "record": "1.08.5",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Muscle Hill",
+     "url": "https://fr.wikipedia.org/wiki/Muscle_Hill"
+    }
+   ]
+  },
+  "MUSCLES YANKEE|1995": {
+   "nome": "MUSCLES YANKEE",
+   "anno": 1995,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 21,
+   "vittorie": 15,
+   "guadagni": {
+    "importo": 11091463,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Muscles Yankee",
+     "url": "https://sv.wikipedia.org/wiki/Muscles_Yankee"
+    }
+   ]
+  },
   "NAD AL SHEBA|2007": {
    "nome": "NAD AL SHEBA",
    "anno": 2007,
@@ -2520,6 +2972,28 @@
    "anno": 2007,
    "esito": "non_trovato",
    "letto_il": "2026-11-07"
+  },
+  "NAGLO|1999": {
+   "nome": "NAGLO",
+   "anno": 1999,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 66,
+   "vittorie": 27,
+   "guadagni": {
+    "importo": 12837145,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Naglo",
+     "url": "https://sv.wikipedia.org/wiki/Naglo"
+    }
+   ]
   },
   "NAKITAST|2007": {
    "nome": "NAKITAST",
@@ -2855,6 +3329,41 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-20"
   },
+  "NUMBER ONE ITALIA|2007": {
+   "nome": "NUMBER ONE ITALIA",
+   "anno": 2007,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
+  "NUNCIO|2011": {
+   "nome": "NUNCIO",
+   "anno": 2011,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 62,
+   "vittorie": 42,
+   "guadagni": {
+    "importo": 2929688,
+    "valuta": "EUR"
+   },
+   "record": "1.08.7",
+   "fonte_corse": "fr",
+   "altre_corse": [
+    63
+   ],
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Nuncio",
+     "url": "https://fr.wikipedia.org/wiki/Nuncio"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Nuncio (travhäst)",
+     "url": "https://sv.wikipedia.org/wiki/Nuncio_%28travh%C3%A4st%29"
+    }
+   ]
+  },
   "NUVOLA DI POGGIO|2007": {
    "nome": "NUVOLA DI POGGIO",
    "anno": 2007,
@@ -2901,6 +3410,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-06"
   },
+  "OFFSHORE DREAM|2002": {
+   "nome": "OFFSHORE DREAM",
+   "anno": 2002,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 47,
+   "vittorie": 13,
+   "guadagni": {
+    "importo": 1997825,
+    "valuta": "EUR"
+   },
+   "record": "1.10.1",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Offshore Dream",
+     "url": "https://fr.wikipedia.org/wiki/Offshore_Dream"
+    }
+   ]
+  },
   "OIBAMBAM EFFE|2008": {
    "nome": "OIBAMBAM EFFE",
    "anno": 2008,
@@ -2918,6 +3449,12 @@
    "anno": 2008,
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
+  },
+  "OKLAHOMA ANS|2008": {
+   "nome": "OKLAHOMA ANS",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "OLAZ|2008": {
    "nome": "OLAZ",
@@ -3078,6 +3615,33 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-17"
   },
+  "ORLANDO VICI|2002": {
+   "nome": "ORLANDO VICI",
+   "anno": 2002,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 32,
+   "vittorie": 12,
+   "guadagni": {
+    "importo": 835990,
+    "valuta": "EUR"
+   },
+   "record": "1.12.7",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Orlando Vici",
+     "url": "https://fr.wikipedia.org/wiki/Orlando_Vici"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Orlando Vici",
+     "url": "https://sv.wikipedia.org/wiki/Orlando_Vici"
+    }
+   ]
+  },
   "ORLEANS OM|2008": {
    "nome": "ORLEANS OM",
    "anno": 2008,
@@ -3138,6 +3702,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-20"
   },
+  "OSCAR BENAL|2008": {
+   "nome": "OSCAR BENAL",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "OSIRIDE GRIF|2008": {
    "nome": "OSIRIDE GRIF",
    "anno": 2008,
@@ -3191,6 +3761,12 @@
    "anno": 2008,
    "esito": "non_trovato",
    "letto_il": "2026-11-21"
+  },
+  "OYSTER KRONOS|2008": {
+   "nome": "OYSTER KRONOS",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "PACE DEL RIO|2009": {
    "nome": "PACE DEL RIO",
@@ -3486,6 +4062,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-21"
   },
+  "PONTIAC TURBO|2009": {
+   "nome": "PONTIAC TURBO",
+   "anno": 2009,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "POSEIDON BAR|2009": {
    "nome": "POSEIDON BAR",
    "anno": 2009,
@@ -3540,6 +4122,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-18"
   },
+  "PRINCE GEDE|2003": {
+   "nome": "PRINCE GEDE",
+   "anno": 2003,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "PRINCE WIND|2009": {
    "nome": "PRINCE WIND",
    "anno": 2009,
@@ -3564,6 +4152,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
   },
+  "PRODIGIOUS|2003": {
+   "nome": "PRODIGIOUS",
+   "anno": 2003,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 61,
+   "vittorie": 8,
+   "guadagni": {
+    "importo": 644130,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Prodigious",
+     "url": "https://sv.wikipedia.org/wiki/Prodigious"
+    }
+   ]
+  },
   "PROFUMO OM|1990": {
    "nome": "PROFUMO OM",
    "anno": 1990,
@@ -3581,6 +4191,12 @@
    "anno": 2009,
    "esito": "non_trovato",
    "letto_il": "2026-11-20"
+  },
+  "QUAKER JET|2004": {
+   "nome": "QUAKER JET",
+   "anno": 2004,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "QUICK STEP|1990": {
    "nome": "QUICK STEP",
@@ -3669,6 +4285,33 @@
    "anno": 2010,
    "esito": "non_trovato",
    "letto_il": "2026-11-01"
+  },
+  "READY CASH|2005": {
+   "nome": "READY CASH",
+   "anno": 2005,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 70,
+   "vittorie": 40,
+   "guadagni": {
+    "importo": 4282300,
+    "valuta": "EUR"
+   },
+   "record": "1.10.3",
+   "fonte_corse": "fr",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Ready Cash",
+     "url": "https://fr.wikipedia.org/wiki/Ready_Cash"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Ready Cash",
+     "url": "https://sv.wikipedia.org/wiki/Ready_Cash"
+    }
+   ]
   },
   "REAL MEDE SM|2010": {
    "nome": "REAL MEDE SM",
@@ -3770,6 +4413,12 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-20"
   },
+  "RICETTATORE|1991": {
+   "nome": "RICETTATORE",
+   "anno": 1991,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "RICK DEL DUOMO|2010": {
    "nome": "RICK DEL DUOMO",
    "anno": 2010,
@@ -3815,6 +4464,12 @@
    "anno": 1991,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "ROB MABEL|2010": {
+   "nome": "ROB MABEL",
+   "anno": 2010,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "ROBERT BI|2010": {
    "nome": "ROBERT BI",
@@ -3886,6 +4541,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-21"
   },
+  "ROLLING D'HERIPRE|2005": {
+   "nome": "ROLLING D'HERIPRE",
+   "anno": 2005,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 39,
+   "vittorie": 9,
+   "guadagni": {
+    "importo": 791100,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Rolling d'Héripré",
+     "url": "https://sv.wikipedia.org/wiki/Rolling_d%27H%C3%A9ripr%C3%A9"
+    }
+   ]
+  },
   "ROMBO DI CANNONE|2010": {
    "nome": "ROMBO DI CANNONE",
    "anno": 2010,
@@ -3939,6 +4616,28 @@
    "anno": 2010,
    "esito": "non_trovato",
    "letto_il": "2026-11-02"
+  },
+  "ROYAL DREAM|2005": {
+   "nome": "ROYAL DREAM",
+   "anno": 2005,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 55,
+   "vittorie": 22,
+   "guadagni": {
+    "importo": 1591310,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Royal Dream",
+     "url": "https://sv.wikipedia.org/wiki/Royal_Dream"
+    }
+   ]
   },
   "RUE DU BAC|2010": {
    "nome": "RUE DU BAC",
@@ -4012,6 +4711,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-18"
   },
+  "SAM BOURBON|2006": {
+   "nome": "SAM BOURBON",
+   "anno": 2006,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 26,
+   "vittorie": 6,
+   "guadagni": {
+    "importo": 373430,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Sam Bourbon",
+     "url": "https://sv.wikipedia.org/wiki/Sam_Bourbon"
+    }
+   ]
+  },
   "SANSONE BAR|2011": {
    "nome": "SANSONE BAR",
    "anno": 2011,
@@ -4053,6 +4774,28 @@
    "anno": 2011,
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
+  },
+  "SAXO DE VANDEL|2006": {
+   "nome": "SAXO DE VANDEL",
+   "anno": 2006,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 27,
+   "vittorie": 8,
+   "guadagni": {
+    "importo": 755450,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Saxo de Vandel",
+     "url": "https://sv.wikipedia.org/wiki/Saxo_de_Vandel"
+    }
+   ]
   },
   "SCARLATTI LUIS|2011": {
    "nome": "SCARLATTI LUIS",
@@ -4123,6 +4866,28 @@
    "anno": 2003,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "SELF POSSESSED|1996": {
+   "nome": "SELF POSSESSED",
+   "anno": 1996,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 24,
+   "vittorie": 13,
+   "guadagni": {
+    "importo": 10831271,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Self Possessed",
+     "url": "https://sv.wikipedia.org/wiki/Self_Possessed"
+    }
+   ]
   },
   "SEMOLA GK|2011": {
    "nome": "SEMOLA GK",
@@ -4400,6 +5165,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-20"
   },
+  "SUPER LIGHT|1998": {
+   "nome": "SUPER LIGHT",
+   "anno": 1998,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 142,
+   "vittorie": 38,
+   "guadagni": {
+    "importo": 11540111,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Super Light",
+     "url": "https://sv.wikipedia.org/wiki/Super_Light"
+    }
+   ]
+  },
   "SUPER STAR REAF|2011": {
    "nome": "SUPER STAR REAF",
    "anno": 2011,
@@ -4411,6 +5198,28 @@
    "anno": 2011,
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
+  },
+  "SUPERGILL|1985": {
+   "nome": "SUPERGILL",
+   "anno": 1985,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 22,
+   "vittorie": 8,
+   "guadagni": {
+    "importo": 4261691,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Supergill",
+     "url": "https://sv.wikipedia.org/wiki/Supergill"
+    }
+   ]
   },
   "SURICATO JET|2011": {
    "nome": "SURICATO JET",
@@ -4454,11 +5263,39 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
   },
+  "TEODORIZ|1993": {
+   "nome": "TEODORIZ",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "TEQUILA TRIO|1993": {
    "nome": "TEQUILA TRIO",
    "anno": 1993,
    "esito": "non_trovato",
    "letto_il": "2026-11-17"
+  },
+  "THE BEST MADRIK|2007": {
+   "nome": "THE BEST MADRIK",
+   "anno": 2007,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 54,
+   "vittorie": 13,
+   "guadagni": {
+    "importo": 1367710,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "The Best Madrik",
+     "url": "https://sv.wikipedia.org/wiki/The_Best_Madrik"
+    }
+   ]
   },
   "THUNDER KRONOS|1993": {
    "nome": "THUNDER KRONOS",
@@ -4559,6 +5396,34 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "TRITON SUND|2001": {
+   "nome": "TRITON SUND",
+   "anno": 2001,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 100,
+   "vittorie": 34,
+   "guadagni": {
+    "importo": 15351275,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Triton Sund",
+     "url": "https://sv.wikipedia.org/wiki/Triton_Sund"
+    }
+   ]
+  },
+  "TRUSTWORTHY|1992": {
+   "nome": "TRUSTWORTHY",
+   "anno": 1992,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "TURBO SUND|2001": {
    "nome": "TURBO SUND",
    "anno": 2001,
@@ -4570,6 +5435,12 @@
    "anno": 1993,
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
+  },
+  "TURNO GAS|1993": {
+   "nome": "TURNO GAS",
+   "anno": 1993,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "UBRESSON LUIS|1994": {
    "nome": "UBRESSON LUIS",
@@ -4635,17 +5506,58 @@
    "esito": "non_trovato",
    "letto_il": "2026-11-05"
   },
+  "UNICLOVE|2008": {
+   "nome": "UNICLOVE",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
+  },
   "UNIFORZ|1994": {
    "nome": "UNIFORZ",
    "anno": 1994,
    "esito": "non_trovato",
    "letto_il": "2026-10-30"
   },
+  "UP AND QUICK|2008": {
+   "nome": "UP AND QUICK",
+   "anno": 2008,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 74,
+   "vittorie": 16,
+   "guadagni": {
+    "importo": 2307674,
+    "valuta": "EUR"
+   },
+   "record": "1.09.4",
+   "fonte_corse": "fr",
+   "altre_corse": [
+    76
+   ],
+   "fonti": [
+    {
+     "wiki": "fr",
+     "titolo": "Up and Quick",
+     "url": "https://fr.wikipedia.org/wiki/Up_and_Quick"
+    },
+    {
+     "wiki": "sv",
+     "titolo": "Up And Quick",
+     "url": "https://sv.wikipedia.org/wiki/Up_And_Quick"
+    }
+   ]
+  },
   "URBEM D'ASOLO|1994": {
    "nome": "URBEM D'ASOLO",
    "anno": 1994,
    "esito": "non_trovato",
    "letto_il": "2026-11-06"
+  },
+  "URIEL SPEED|2008": {
+   "nome": "URIEL SPEED",
+   "anno": 2008,
+   "esito": "non_trovato",
+   "letto_il": "2026-11-22"
   },
   "URLA DI JESOLO|1994": {
    "nome": "URLA DI JESOLO",
@@ -4789,6 +5701,28 @@
     }
    ]
   },
+  "VILLAGE MYSTIC|2009": {
+   "nome": "VILLAGE MYSTIC",
+   "anno": 2009,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 44,
+   "vittorie": 12,
+   "guadagni": {
+    "importo": 844420,
+    "valuta": "EUR"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Village Mystic",
+     "url": "https://sv.wikipedia.org/wiki/Village_Mystic"
+    }
+   ]
+  },
   "VILLEIKA NES|1995": {
    "nome": "VILLEIKA NES",
    "anno": 1995,
@@ -4831,6 +5765,28 @@
    "esito": "non_trovato",
    "letto_il": "2026-10-31"
   },
+  "VOLSTEAD|2011": {
+   "nome": "VOLSTEAD",
+   "anno": 2011,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 72,
+   "vittorie": 23,
+   "guadagni": {
+    "importo": 5875324,
+    "valuta": "SEK"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Volstead",
+     "url": "https://sv.wikipedia.org/wiki/Volstead"
+    }
+   ]
+  },
   "VOLTIGEUR DE MYRT|2009": {
    "nome": "VOLTIGEUR DE MYRT",
    "anno": 2009,
@@ -4864,6 +5820,28 @@
    "anno": 1990,
    "esito": "non_trovato",
    "letto_il": "2026-11-04"
+  },
+  "WISHING STONE|2007": {
+   "nome": "WISHING STONE",
+   "anno": 2007,
+   "esito": "trovato",
+   "letto_il": "2026-11-22",
+   "corse": 83,
+   "vittorie": 24,
+   "guadagni": {
+    "importo": 2357150,
+    "valuta": "USD"
+   },
+   "record": null,
+   "fonte_corse": "sv",
+   "altre_corse": null,
+   "fonti": [
+    {
+     "wiki": "sv",
+     "titolo": "Wishing Stone",
+     "url": "https://sv.wikipedia.org/wiki/Wishing_Stone"
+    }
+   ]
   },
   "ZAGABRIA DEI|1996": {
    "nome": "ZAGABRIA DEI",
@@ -4986,5 +5964,5 @@
    "letto_il": "2026-11-06"
   }
  },
- "aggiornato_il": "2026-11-21"
+ "aggiornato_il": "2026-11-22"
 }
