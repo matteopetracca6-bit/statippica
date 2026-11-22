@@ -5,11 +5,10 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
+      - uses: actions/checkout@v5
       - run: |
-          B=https://statippica.onrender.com
-          for dv in italia misto solo_estero ospiti; do
-            for n in "DJANGO%20RIFF" "FACE%20TIME%20BOURBON" "DON%20FANUCCI"; do
-              curl -s "$B/api/leaderboard?mode=performance&dove=$dv&q=$n" | python3 -c "import json,sys;d=json.load(sys.stdin);print('$dv $n', d['total'])"
-            done
-          done
+          sleep 600
+          npm init -y >/dev/null && npm i playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          node audit.mjs
