@@ -1,5 +1,5 @@
 import AltreProve, { type AltraProva } from "@/components/AltreProve";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import RottureGaloppo from "@/components/RottureGaloppo";
 import BandieraCavallo, { paeseCavallo } from "../components/BandieraCavallo";
 import { PareggioCavallo } from "../components/PareggioScheda";
@@ -476,6 +476,8 @@ function RigaSoldi({ horse, breve = false }: { horse: HorseData; breve?: boolean
 export default function HorsePage() {
   const [match, params] = useRoute("/horse/:name/:year");
   const [, navigate] = useLocation();
+  // Sul telefono la testata mostra 4 cifre; le altre con "Mostra tutte".
+  const [tutteCifre, setTutteCifre] = useState(false);
 
   const name = params?.name ? decodeURIComponent(params.name) : "";
   const year = params?.year ?? "0";
@@ -601,6 +603,15 @@ export default function HorsePage() {
       {/* Intestazione: la stessa delle altre schede singole (cavallo,
           stallone, fattrice, guidatore, allenatore, ippodromo), col colore
           del voto del cavallo. */}
+      <style>{`
+        .cifra-altre { display: none; }
+        @media (max-width: 640px) {
+          .scheda-testata[data-tutte="false"] .cifra-extra { display: none; }
+          .cifra-altre { display: flex; grid-column: 1 / -1; justify-content: center; }
+        }
+        .cifra-extra { display: contents; }
+      `}</style>
+      <div className="scheda-testata" data-tutte={tutteCifre ? "true" : "false"}>
       <IntestazioneScheda
         icona={Trophy} colore={COLORE_VOTO[horse.grade ?? ""] ?? "hsl(51 80% 55%)"}
         tipo={<>Cavallo · {MODE_LABEL}</>}
@@ -693,19 +704,24 @@ export default function HorsePage() {
           <Cifra titolo="Corse" valore={horse.career_races ?? "—"} />
           <Cifra titolo="Vittorie" valore={horse.career_wins ?? "—"}
             sotto={horse.win_rate != null && horse.career_races ? `${horse.win_rate.toFixed(1).replace(".", ",")}% vinte` : undefined} />
-          <Cifra titolo="Piazzamenti" valore={horse.career_top3 ?? "—"}
-            sotto={horse.career_top3 != null && horse.career_races ? `${(horse.career_top3 / horse.career_races * 100).toFixed(1).replace(".", ",")}% nei primi 3` : "arrivi nei primi tre"} />
+          <span className="cifra-extra"><Cifra titolo="Piazzamenti" valore={horse.career_top3 ?? "—"}
+            sotto={horse.career_top3 != null && horse.career_races ? `${(horse.career_top3 / horse.career_races * 100).toFixed(1).replace(".", ",")}% nei primi 3` : "arrivi nei primi tre"} /></span>
           <Cifra titolo="Guadagni" colore={horse.career_earnings ? "hsl(51 90% 62%)" : undefined}
             valore={horse.career_earnings != null ? `€ ${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
           <Cifra titolo="Record al km" valore={horse.record_career ? formatRecord(horse.record_career) : "—"} colore="hsl(183 70% 60%)" />
-          {(horse as any).distanza && <>
+          {(horse as any).distanza && <span className="cifra-extra">
             <Cifra titolo="Km gara corta" valore={kmTesto((horse as any).distanza.corto)} colore="hsl(28 85% 64%)"
               sotto={kmSotto((horse as any).distanza.corto, "corto")} />
             <Cifra titolo="Km gara lunga" valore={kmTesto((horse as any).distanza.lungo)} colore="hsl(205 75% 66%)"
               sotto={(horse as any).distanza.profilo
                 ? <EtichettaProfilo profilo={((horse as any).distanza as Distanza).profilo} />
                 : kmSotto((horse as any).distanza.lungo, "lungo")} />
-          </>}
+          </span>}
+          <button type="button" className="cifra-altre" onClick={() => setTutteCifre(v => !v)} data-testid="cifre-tutte"
+            style={{ background: "none", border: "1px dashed hsl(220 10% 26%)", borderRadius: 10, color: "hsl(183 70% 60%)",
+                     fontSize: 12.5, fontWeight: 700, padding: "8px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+            {tutteCifre ? "Mostra meno" : `Mostra tutte (${(horse as any).distanza ? 3 : 1} in più)`}
+          </button>
         </>}
         avviso={(horse as any).carriera_completa ? (
             <div data-testid="nota-carriera-completa" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(205 70% 78%)",
@@ -742,6 +758,7 @@ export default function HorsePage() {
             </div>
           ) : undefined}
       />
+      </div>
 
       {/* Novembre 2026, scheda compattata. In alto il riepilogo, sempre
           aperto: palmares, il voto in breve, le tre gare migliori e i soldi in

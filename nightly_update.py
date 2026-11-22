@@ -2714,6 +2714,34 @@ def phase_parents_coverage(conn: sqlite3.Connection,
 # ─────────────────────────────────────────────
 # FASE 3 — RATINGS cavalli
 # ─────────────────────────────────────────────
+def controlla_carriere_complete(conn) -> int:
+    """Confronta horses con carriere_complete; se qualcosa li ha cambiati,
+    rimette i totali del file e rifa' i voti, e lo scrive in chiaro nel log
+    (la sentinella del mattino lo legge)."""
+    try:
+        diversi = conn.execute("""
+            SELECT c.nome, h.career_races, c.corse, h.career_earnings, c.guadagni_eur
+              FROM carriere_complete c JOIN horses h ON h.name = c.nome
+             WHERE COALESCE(h.career_races, 0) <> c.corse
+                OR ABS(COALESCE(h.career_earnings, 0) - c.guadagni_eur) > 1""").fetchall()
+    except sqlite3.Error:
+        return 0
+    if not diversi:
+        print("[CARRIERE CONTROLLO] ok: tutte le carriere complete sono intatte", file=sys.stderr)
+        return 0
+    print(f"[CARRIERE CONTROLLO] ATTENZIONE: {len(diversi)} carriere complete cambiate da una fase notturna "
+          f"(es. {diversi[0][0]}: {diversi[0][1]} corse invece di {diversi[0][2]}). Le rimetto e rifaccio i voti.",
+          file=sys.stderr)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+    from carriere_complete import applica
+    applica(conn)
+    phase_ratings(conn)
+    phase_historic_ratings(conn)
+    phase_pulisci_voti_pedigree(conn)
+    conn.commit()
+    return len(diversi)
+
+
 def _ospiti_esteri(conn) -> set:
     """Ospiti esteri: carriere complete (scripts/carriere_complete.py) piu' i
     nati all'estero che in Italia hanno corso meno di una volta su cinque, con
@@ -5986,6 +6014,14 @@ def main():
         except Exception as e:
             print(f"[DISTANZA] errore: {e}", file=sys.stderr)
         phase_data_quality(conn)        # FASE QA: controlla e corregge career_stats
+        try:
+            # Controllo delle carriere complete all'estero (22/11/2026): dopo
+            # tutte le fasi, i totali in archivio devono essere quelli del file.
+            # Il 22/11 una fase aveva rimesso a FACE TIME BOURBON la sola corsa
+            # italiana e il voto era sceso da SSS a S senza avvisi.
+            controlla_carriere_complete(conn)
+        except Exception as e:
+            print(f"[CARRIERE CONTROLLO] errore: {e}", file=sys.stderr)
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:
         conn.close()
