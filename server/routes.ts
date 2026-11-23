@@ -1007,6 +1007,18 @@ export function registerRoutes(httpServer: Server, app: Express) {
       horse.carriera_completa = vpTableExists(db, "carriere_complete")
         ? (db.prepare(`SELECT * FROM carriere_complete WHERE nome = ? AND (anno = ? OR anno IS NULL)`).get(name, year) as any) ?? null : null;
       if (horse.carriera_completa?.primi_tre != null) horse.career_top3 = horse.carriera_completa.primi_tre;
+      // PIAZZATI DEI CAVALLI STORICI (23/11/2026). Il registro UNIRE conta come
+      // "piazzati" gli arrivi dal 2° al 5° (i posti a premio), non dal 2° al
+      // 3°: SAMBA BI 23 contro 16 secondi e terzi (26 dal 2° al 5°), NOODLES
+      // BIEFFE 241 su 548 corse. Per gli storici si mostrano quindi i "primi
+      // cinque" del registro; i primi tre solo se le gare in archivio coprono
+      // tutta la carriera.
+      horse.career_top5 = null;
+      const registro = horse.horse_class === "breeder" && !horse.carriera_completa;
+      if (registro && !(tot?.n && tot.n >= (horse.career_races ?? 0))) {
+        horse.career_top5 = horse.career_races ? (horse.career_wins ?? 0) + (horse.career_places ?? 0) : null;
+        horse.career_top3 = null;
+      }
       // "Dove ha corso": l'Italia dalle gare in archivio, l'estero e' quello che
       // manca per arrivare ai totali della fonte straniera (prima diceva 0 euro
       // all'estero a FACE TIME BOURBON, che all'estero ha vinto 3,3 milioni).

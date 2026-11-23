@@ -52,6 +52,8 @@ interface HorseData {
   career_wins: number;
   career_places: number;
   career_top3?: number | null;
+  /** Storici: arrivi dal 1° al 5° dal registro UNIRE (che conta i piazzati fino al quinto). */
+  career_top5?: number | null;
   career_earnings: number;
   record_career: string;
   record_short: string;
@@ -706,8 +708,13 @@ export default function HorsePage() {
           <Cifra titolo="Corse" valore={horse.career_races ?? "—"} />
           <Cifra titolo="Vittorie" valore={horse.career_wins ?? "—"}
             sotto={horse.win_rate != null && horse.career_races ? `${horse.win_rate.toFixed(1).replace(".", ",")}% vinte` : undefined} />
-          <span className="cifra-extra"><Cifra titolo="Piazzamenti" valore={horse.career_top3 ?? "—"}
-            sotto={horse.career_top3 != null && horse.career_races ? `${(horse.career_top3 / horse.career_races * 100).toFixed(1).replace(".", ",")}% nei primi 3` : "arrivi nei primi tre"} /></span>
+          <span className="cifra-extra">{horse.career_top3 == null && horse.career_top5 != null ? (
+            <Cifra titolo="Nei primi cinque" valore={horse.career_top5}
+              sotto={horse.career_races ? `${(horse.career_top5 / horse.career_races * 100).toFixed(1).replace(".", ",")}% · dal registro, che conta i piazzati fino al 5°` : undefined} />
+          ) : (
+            <Cifra titolo="Piazzamenti" valore={horse.career_top3 ?? "—"}
+              sotto={horse.career_top3 != null && horse.career_races ? `${(horse.career_top3 / horse.career_races * 100).toFixed(1).replace(".", ",")}% nei primi 3` : "arrivi nei primi tre"} />
+          )}</span>
           <Cifra titolo="Guadagni" colore={horse.career_earnings ? "hsl(51 90% 62%)" : undefined}
             valore={horse.career_earnings != null ? `€\u00a0${horse.career_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—"} />
           <Cifra titolo="Record al km" valore={horse.record_career ? formatRecord(horse.record_career) : "—"} colore="hsl(183 70% 60%)" />
