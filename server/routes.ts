@@ -868,7 +868,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT h.name, h.birth_year, h.sex, hr.grade
         FROM horses h
         LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
-                                  AND hr.rating_mode = 'performance'
+                                  AND hr.rating_mode IN ('performance', 'storico')  -- anche gli storici (TRIXTON SSS usciva senza voto)
         WHERE h.name LIKE ?
           ${vpTableExists(db, "cavalli_alias") ? "AND h.name NOT IN (SELECT alias FROM cavalli_alias)" : ""}
         ORDER BY h.name LIKE ? DESC, COALESCE(hr.score, -1) DESC
@@ -920,7 +920,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                COALESCE(h.horse_class, 'athlete') AS horse_class
         FROM horses h
         LEFT JOIN horse_ratings hr ON h.name = hr.name AND h.birth_year = hr.birth_year
-                                  AND hr.rating_mode = 'performance'
+                                  AND hr.rating_mode IN ('performance', 'storico')
         WHERE (? = '' OR h.name LIKE ?)
           ${vpTableExists(db, "cavalli_alias") ? "AND h.name NOT IN (SELECT alias FROM cavalli_alias)" : ""}
         ORDER BY CASE WHEN ? = '' THEN -COALESCE(hr.score, -1) ELSE 0 END,
@@ -1900,7 +1900,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.career_earnings, hr.record_career
         FROM horses h
         LEFT JOIN horse_ratings hr ON hr.name = h.name AND hr.birth_year = h.birth_year
-                                   AND hr.rating_mode = 'performance'
+                                   AND hr.rating_mode IN ('performance', 'storico')
         WHERE UPPER(TRIM(h.dam)) = ?
           -- Stesso cavallo registrato due volte, con e senza sigla del paese
           -- (GO ON BOY e GO ON BOY (F)): la copia senza corse non si mostra.
@@ -2843,7 +2843,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // Get rating if available
       const rating = db.prepare(`
         SELECT grade, score, career_earnings, career_races, career_wins, win_rate
-        FROM horse_ratings WHERE name = ? AND rating_mode = 'performance' LIMIT 1
+        FROM horse_ratings WHERE name = ? AND rating_mode IN ('performance', 'storico') LIMIT 1
       `).get(name) as any;
 
       // Il voto mostrato qui viene dalle corse del cavallo, non dal pedigree:
@@ -4433,7 +4433,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         FROM vp_horse_breeder b
         LEFT JOIN horses h ON h.name = b.horse_name
         LEFT JOIN horse_ratings hr ON hr.name = b.horse_name
-                                   AND hr.rating_mode = 'performance'
+                                   AND hr.rating_mode IN ('performance', 'storico')
         WHERE b.breeder_name = ?
         ORDER BY (hr.score IS NULL), hr.score DESC
         LIMIT 300

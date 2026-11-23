@@ -25,7 +25,7 @@ export function registraSorprese(app: Express, getDb: () => any, esiste: (db: an
       const righe = db.prepare(`
         SELECT r.race_code, r.race_date, r.track, r.horse_name, r.placement, r.placement_raw, r.shoes, r.driver,
                r.distance, r.prize_net, h.birth_year,
-               (SELECT grade FROM horse_ratings x WHERE x.name = r.horse_name AND x.rating_mode = 'performance') AS voto
+               (SELECT grade FROM horse_ratings x WHERE x.name = r.horse_name AND x.rating_mode IN ('performance', 'storico') LIMIT 1) AS voto
           FROM races r LEFT JOIN horses h ON h.name = r.horse_name
          WHERE r.race_date >= date('now', ?) AND r.race_date < date('now') AND r.track <> 'ESTERO'
            AND r.race_code IS NOT NULL`).all(`-${giorni} day`) as any[];

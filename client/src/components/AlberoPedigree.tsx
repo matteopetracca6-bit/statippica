@@ -39,6 +39,38 @@ const ROSA = "hsl(330 75% 68%)";
 const BLU_FONDO = "hsl(212 45% 12%)";
 const ROSA_FONDO = "hsl(330 30% 12%)";
 
+// Antenati ripetuti (23/11/2026): ognuno con un suo colore, sempre visibile,
+// non solo passandoci sopra.
+const COLORI_RIPETUTI = ["hsl(45 90% 58%)", "hsl(160 60% 50%)", "hsl(275 65% 70%)", "hsl(15 85% 62%)", "hsl(190 75% 55%)", "hsl(95 55% 55%)", "hsl(345 80% 66%)", "hsl(230 70% 72%)"];
+
+/** Quante volte compare ogni antenato (escluso il cavallo), e da che lato. */
+export function antenatiRipetuti(root: PedigreeNode, maxGen: number) {
+  const conta = new Map<string, { n: number; padre: number; madre: number; gens: number[] }>();
+  const visita = (x: PedigreeNode | null, g: number, lato: "padre" | "madre" | null) => {
+    if (!x || g > maxGen) return;
+    if (g > 0 && x.name) {
+      const k = x.name.toUpperCase();
+      const c = conta.get(k) ?? { n: 0, padre: 0, madre: 0, gens: [] };
+      c.n++; if (lato) c[lato]++; c.gens.push(g); conta.set(k, c);
+    }
+    visita(x.sire, g + 1, lato ?? "padre");
+    visita(x.dam, g + 1, lato ?? "madre");
+  };
+  visita(root, 0, null);
+  const rip = Array.from(conta.entries()).filter(([, c]) => c.n >= 2)
+    .sort((a, b) => Math.min(...a[1].gens) - Math.min(...b[1].gens) || b[1].n - a[1].n);
+  const colore = new Map<string, string>();
+  rip.forEach(([k], i) => colore.set(k, COLORI_RIPETUTI[i % COLORI_RIPETUTI.length]));
+  return { rip, colore };
+}
+
+/** La linea maschile: padre, padre del padre... */
+function lineaMaschile(x: PedigreeNode | null, max = 6): PedigreeNode[] {
+  const out: PedigreeNode[] = [];
+  while (x && out.length < max) { out.push(x); x = x.sire; }
+  return out;
+}
+
 const GEN_TITOLI = ["Cavallo", "Genitori", "Nonni", "Bisnonni", "Trisavoli", "5ª generazione"];
 
 /** Le generazioni in colonne: per ogni casella prima il padre, poi la madre. */
@@ -68,9 +100,10 @@ function Voto({ etichetta, grado, href, compatto }: { etichetta: string; grado: 
   return href ? <Link href={href}><a style={{ textDecoration: "none" }} onClick={e => e.stopPropagation()}>{badge}</a></Link> : badge;
 }
 
-function Casella({ node, gen, maxGen, hovered, onHover }: {
+function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
   node: PedigreeNode | null; gen: number; maxGen: number;
   hovered: string | null; onHover: (n: string | null) => void;
+  colore?: string; volte?: number;
 }) {
   const compatto = gen >= 4;
   if (!node) {
@@ -97,7 +130,8 @@ function Casella({ node, gen, maxGen, hovered, onHover }: {
         borderRadius: 8,
         background: evidenziato ? "hsl(25 50% 14%)" : maschio ? BLU_FONDO : ROSA_FONDO,
         border: `1.5px solid ${bordo}`,
-        borderLeftWidth: compatto ? 1.5 : 4,
+        borderLeftWidth: compatto ? 3 : 4,
+        borderLeftColor: colore && !evidenziato ? colore : bordo,
         boxShadow: evidenziato ? "0 2px 12px hsl(25 85% 58% / .3)" : "none",
         transition: "background .15s, box-shadow .15s",
         opacity: node.missing && !voti.length ? 0.85 : 1,
@@ -114,6 +148,13 @@ function Casella({ node, gen, maxGen, hovered, onHover }: {
             {node.name}
           </a>
         </Link>
+        {colore && (
+          <span title={`Compare ${volte} volte nell'albero`} className="tabular"
+            style={{ flexShrink: 0, fontSize: compatto ? 8.5 : 9.5, fontWeight: 800, color: "hsl(220 15% 10%)", background: colore,
+                     borderRadius: 999, padding: compatto ? "0 4px" : "0 5px", lineHeight: compatto ? "12px" : "14px", whiteSpace: "nowrap" }}>
+            ×{volte}
+          </span>
+        )}
         {!compatto && node.birth_year && (
           <span style={{ fontSize: 10, color: "hsl(210 8% 48%)", whiteSpace: "nowrap", flexShrink: 0 }}>
             <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto /> {node.birth_year}
@@ -134,6 +175,7 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
   hovered?: string | null; onHover?: (n: string | null) => void;
 }) {
   const righe = righeGenerazioni(root, generazioni);
+  const { rip, colore } = antenatiRipetuti(root, generazioni);
   // Altezza di una riga dell'ultima colonna: deve contenere nome e voti.
   const riga = generazioni >= 5 ? 34 : generazioni === 4 ? 40 : generazioni === 3 ? 56 : 80;
   return (
@@ -152,7 +194,9 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: g >= 4 ? 2 : 4 }}>
                 {col.map((n, i) => (
                   <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", minHeight: 0 }}>
-                    <Casella node={n} gen={g} maxGen={generazioni} hovered={hovered} onHover={onHover} />
+                    <Casella node={n} gen={g} maxGen={generazioni} hovered={hovered} onHover={onHover}
+                      colore={n?.name && g > 0 ? colore.get(n.name.toUpperCase()) : undefined}
+                      volte={n?.name ? rip.find(([k]) => k === n.name.toUpperCase())?.[1].n : undefined} />
                   </div>
                 ))}
               </div>
@@ -167,9 +211,81 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
           <span style={{ width: 12, height: 12, borderRadius: 3, background: ROSA_FONDO, border: `1.5px solid ${ROSA}` }} /> Femmina / fattrice
         </span>
+        {rip.length > 0 && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 12, height: 12, borderRadius: 3, borderLeft: `4px solid ${COLORI_RIPETUTI[0]}`, border: "1.5px solid hsl(210 8% 35%)" }} /> Antenato che compare più volte (×N)
+          </span>
+        )}
         <span>Atleta = voto dalle sue corse · Stallone / Fattrice = voto dai figli</span>
         <span>Clicca un nome per la scheda, un voto da riproduttore per la sua pagina</span>
       </div>
+      <LineeERipetuti root={root} rip={rip} colore={colore} hovered={hovered} onHover={onHover} />
+    </div>
+  );
+}
+
+/** Linee maschili e antenati ripetuti, sotto l'albero (23/11/2026). */
+function LineeERipetuti({ root, rip, colore, hovered, onHover }: {
+  root: PedigreeNode; rip: [string, { n: number; padre: number; madre: number; gens: number[] }][];
+  colore: Map<string, string>; hovered: string | null; onHover: (n: string | null) => void;
+}) {
+  const paterna = lineaMaschile(root.sire);
+  const materna = lineaMaschile(root.dam?.sire ?? null);
+  if (!paterna.length && !materna.length && !rip.length) return null;
+  const nodo = (x: PedigreeNode, i: number, arr: PedigreeNode[]) => {
+    const c = colore.get(x.name.toUpperCase());
+    return (
+      <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <Link href={`/horse/${encodeURIComponent(x.name)}/${x.birth_year ?? 0}`}>
+          <a onMouseEnter={() => onHover(x.name)} onMouseLeave={() => onHover(null)}
+            style={{ color: hovered?.toUpperCase() === x.name.toUpperCase() ? "hsl(25 85% 65%)" : "hsl(210 10% 86%)", fontWeight: i === 0 ? 800 : 600, textDecoration: "none",
+                     borderBottom: c ? `2px solid ${c}` : "none", whiteSpace: "nowrap" }}>
+            {x.name}{x.birth_year ? <span style={{ color: "hsl(210 8% 48%)", fontWeight: 400 }}> {x.birth_year}</span> : null}
+          </a>
+        </Link>
+        {i < arr.length - 1 && <span style={{ color: "hsl(210 8% 40%)" }}>←</span>}
+      </span>
+    );
+  };
+  const box: React.CSSProperties = { padding: "10px 12px", borderRadius: 10, background: "hsl(220 12% 11%)", border: "1px solid hsl(220 10% 18%)", minWidth: 0 };
+  const tit: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: "hsl(210 8% 55%)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 };
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 10, marginTop: 14 }} data-testid="linee-ripetuti">
+      {(paterna.length > 0 || materna.length > 0) && (
+        <div style={box}>
+          <div style={tit}>Linee maschili</div>
+          {paterna.length > 0 && <div style={{ fontSize: 12.5, lineHeight: 1.7, display: "flex", flexWrap: "wrap", gap: "0 6px", alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: "hsl(212 70% 65%)", marginRight: 2 }}>Dal padre:</span>{paterna.map(nodo)}
+          </div>}
+          {materna.length > 0 && <div style={{ fontSize: 12.5, lineHeight: 1.7, display: "flex", flexWrap: "wrap", gap: "0 6px", alignItems: "center", marginTop: 4 }}>
+            <span style={{ fontSize: 11, color: "hsl(330 60% 70%)", marginRight: 2 }}>Dal padre della madre:</span>{materna.map(nodo)}
+          </div>}
+          <div style={{ fontSize: 11, color: "hsl(210 8% 48%)", marginTop: 6 }}>
+            La linea maschile è la catena padre → padre del padre → … fino a dove arriva l'albero.
+          </div>
+        </div>
+      )}
+      {rip.length > 0 && (
+        <div style={box}>
+          <div style={tit}>Antenati ripetuti</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {rip.slice(0, 10).map(([k, c]) => (
+              <div key={k} onMouseEnter={() => onHover(k)} onMouseLeave={() => onHover(null)}
+                style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, cursor: "default" }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: colore.get(k), flexShrink: 0, alignSelf: "center" }} />
+                <span style={{ fontWeight: 700, color: hovered?.toUpperCase() === k ? "hsl(25 85% 65%)" : "hsl(210 10% 86%)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k}</span>
+                <span className="tabular" style={{ color: "hsl(210 8% 55%)", fontSize: 11.5, whiteSpace: "nowrap", marginLeft: "auto" }}>
+                  {c.n} volte · {c.padre > 0 && c.madre > 0 ? `${c.padre} dal padre, ${c.madre} dalla madre` : c.padre > 0 ? "solo dal padre" : "solo dalla madre"}
+                  {" "}· gen. {Array.from(new Set(c.gens)).sort().join(", ")}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: "hsl(210 8% 48%)", marginTop: 6 }}>
+            Comparire sia dal padre sia dalla madre è consanguineità; più vicina è la generazione, più conta.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
