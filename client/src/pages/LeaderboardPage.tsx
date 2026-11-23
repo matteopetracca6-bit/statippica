@@ -40,6 +40,8 @@ interface LeaderboardRow {
   earn_percentile: number | null;
   time_percentile: number | null;
   sire_percentile: number | null;
+  primi_tre?: number | null;
+  primi_cinque?: number | null;
   career_races: number;
   career_wins: number;
   career_earnings: number;
@@ -268,7 +270,7 @@ export default function LeaderboardPage() {
     setTesto(""); setCerca(""); setPaese(""); setSesso(""); setDove("");
   };
   const ordini: [string, string][] = [
-    ["score", "Punti"], ["earnings", "Guadagni"], ["wins", "Vittorie"], ["races", "Gare"], ["name", "Nome"],
+    ["score", "Punti"], ["earnings", "Guadagni"], ["wins", "Vittorie"], ["top3", "Primi tre"], ["top5", "Primi cinque"], ["races", "Gare"], ["name", "Nome"],
     ...(mode === "performance" && voto === "annata" ? [["annata", "Primi d'annata"] as [string, string]] : []),
   ];
 
@@ -467,7 +469,7 @@ export default function LeaderboardPage() {
                         </span>
                         <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={r.score} max={100} /></span>
                         <span className="ed-sotto" style={{ display: "block" }}>
-                          {r.birth_year}{r.sire ? ` · da ${r.sire}` : ""}{corse ? ` · ${corse} corse, ${r.career_wins ?? 0} vinte` : ""}{r.career_earnings ? ` · ${euro(r.career_earnings)}` : ""}
+                          {r.birth_year}{r.sire ? ` · da ${r.sire}` : ""}{corse ? ` · ${corse} corse, ${r.career_wins ?? 0} vinte` : ""}{corse && r.primi_tre != null ? `, ${r.primi_tre} nei primi 3` : ""}{corse && r.primi_cinque != null ? `, ${r.primi_cinque} nei primi 5` : ""}{r.career_earnings ? ` · ${euro(r.career_earnings)}` : ""}
                         </span>
                       </span>
                       <span style={{ textAlign: "right" }}>
