@@ -2749,11 +2749,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // padre di un antenato di DANEA (1974). Sono omonimi: resta il nome,
       // senza anno ne' voti.
       const annoMax = annoFiglio ? annoFiglio - 2 : (annoMaxFiglio ? annoMaxFiglio - 2 : null);
-      const omonimo = !!(annoMax && h.birth_year && h.birth_year > annoMax);
+      let omonimo = !!(annoMax && h.birth_year && h.birth_year > annoMax);
       // L'anno del cavallo dell'archivio che porta lo stesso nome, per dire
       // nella pagina perche' questo e' un altro cavallo (CHICCA ROSS, 23/11).
-      const annoOmonimo = omonimo ? h.birth_year : null;
-      if (omonimo) h = { name: h.name, birth_year: null, sire: null, dam: null, missing: true };
+      let annoOmonimo = omonimo ? h.birth_year : null;
+      if (omonimo) {
+        // Se il cavallo vero c'e' nell'archivio con l'anno nel nome
+        // ("GIADA WINNER (2005)", omonimi.py), si usa lui (23/11/2026).
+        const vero = vpTableExists(db, "omonimi")
+          ? db.prepare(`SELECT nome_omonimo FROM omonimi WHERE nome = ? AND anno_omonimo <= ? ORDER BY anno_omonimo DESC LIMIT 1`).get(h.name, annoMax) as any
+          : null;
+        if (vero?.nome_omonimo) { h = getHorse(vero.nome_omonimo); omonimo = false; annoOmonimo = null; }
+        else h = { name: h.name, birth_year: null, sire: null, dam: null, missing: true };
+      }
 
       const own = omonimo ? new Map<string, string>() : mapOf(h.name || n);
       let useName = srcName, useChain = srcChain;
