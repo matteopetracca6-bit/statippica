@@ -52,6 +52,9 @@ jobs:
       - name: Pubblica l'archivio aggiornato
         env:
           GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+          # 23/11/2026: ripara_corse toglie le copie delle gare senza data
+          # (21.914 la prima volta): il calo e' voluto.
+          CONSENTI_CALO: "1"
         run: |
           set -euo pipefail
           GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")

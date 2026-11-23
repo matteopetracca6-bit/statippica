@@ -6004,7 +6004,7 @@ def main():
             import completa_genitori as _cg
             _cg.completa(conn)
             import ripara_corse as _rc   # numero della corsa e date dal codice
-            _rc.ripara(conn)
+            _rc.ripara(conn, max_copie=1500)
         except Exception as e:
             print(f"[GENITORI] saltata: {e}", file=sys.stderr)
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi

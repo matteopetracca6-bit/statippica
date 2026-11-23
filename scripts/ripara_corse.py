@@ -41,7 +41,7 @@ def _data_valida(s: str) -> bool:
         return False
 
 
-def ripara(conn: sqlite3.Connection, prova: bool = False) -> dict:
+def ripara(conn: sqlite3.Connection, prova: bool = False, max_copie: int | None = None) -> dict:
     esito = {}
     esito["numeri_mancanti"] = conn.execute(
         f"SELECT COUNT(*) FROM races WHERE race_number IS NULL AND ({NUMERO_DAL_CODICE}) IS NOT NULL").fetchone()[0]
@@ -64,7 +64,7 @@ def ripara(conn: sqlite3.Connection, prova: bool = False) -> dict:
     if not prova:
         conn.commit()
     print(f"[CORSE] numero della corsa completato: {esito['numeri_mancanti']}; date prese dal codice: {date_messe}")
-    esito.update(gare_senza_data(conn, prova))
+    esito.update(gare_senza_data(conn, prova, max_copie))
     return esito
 
 
@@ -72,7 +72,7 @@ def _chiave(n: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", (n or "").upper())
 
 
-def gare_senza_data(conn: sqlite3.Connection, prova: bool = False) -> dict:
+def gare_senza_data(conn: sqlite3.Connection, prova: bool = False, max_copie: int | None = None) -> dict:
     """23/11/2026. Le gare senza data (26.000, quasi tutte rotture "r.p.") sono
     per lo piu' COPIE di gare gia' in archivio con la data: la scheda del
     cavallo le ripete senza data. D DAY NOF: 22 corse in archivio, 20 nella
@@ -112,6 +112,15 @@ def gare_senza_data(conn: sqlite3.Connection, prova: bool = False) -> dict:
         if ch in chiavi and cod in pista:
             uff[chiavi[ch]].add((d, pista[cod], corsa))
     toccati = set()
+    # Nel notturno le copie da togliere sono poche (la pulizia grande si fa a
+    # mano, archivio-genitori.yml): se fossero tante, la pubblicazione si
+    # fermerebbe per il calo di gare. Oltre il limite si mettono solo le date.
+    togli_copie = True
+    if max_copie is not None:
+        stima = gare_senza_data(conn, True)["senza_data_copie"] if not prova else 0
+        if stima > max_copie:
+            print(f"[CORSE] {stima} copie senza data: troppe per il notturno, le toglie il lavoro a mano")
+            togli_copie = False
     for h, rs in per_cavallo.items():
         O = uff.get(h)
         if not O:
@@ -130,7 +139,7 @@ def gare_senza_data(conn: sqlite3.Connection, prova: bool = False) -> dict:
                 if not prova:
                     conn.execute("UPDATE races SET race_date = ? WHERE id = ?", (cand[0][0], rid))
                 continue
-            if not cand and (t, n, raw, sp, ts, dist) in identita:
+            if not cand and togli_copie and (t, n, raw, sp, ts, dist) in identita:
                 toccati.add(h); esito["senza_data_copie"] += 1
                 if not prova:
                     conn.execute("DELETE FROM races WHERE id = ?", (rid,))
