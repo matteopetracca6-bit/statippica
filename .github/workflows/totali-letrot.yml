@@ -1,0 +1,50 @@
+name: StatIppica — Totali LeTrot dei campioni storici (a mano)
+
+# 23/11/2026 (scripts/totali_letrot.py). Per i campioni storici che non sono
+# su Wikipedia legge la scheda francese LeTrot (corse e vittorie in Francia,
+# guadagni Italia + Francia, record), solo se anno e padre coincidono, e i
+# cambi medi annui BCE. Scrive dati/totali_letrot.json e dati/cambi_bce.json
+# su main: il notturno li usa (scripts/carriere_mondiali.py) per la classifica
+# storica "tutta la carriera" e per il voto. Non tocca l'archivio.
+
+on:
+  workflow_dispatch:
+    inputs:
+      minuti:
+        description: "Minuti al massimo"
+        required: false
+        default: "90"
+
+permissions:
+  contents: write
+
+jobs:
+  letrot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GH_NIGHTLY_TOKEN }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q requests
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Leggi LeTrot
+        run: python3 scripts/totali_letrot.py --db data.db --minuti "${{ inputs.minuti || '90' }}"
+      - name: Pubblica i file
+        run: |
+          git config user.email "nightly@statippica.bot"
+          git config user.name "StatIppica Nightly"
+          git add dati/totali_letrot.json dati/cambi_bce.json
+          if git diff --cached --quiet; then echo "Nessun cambiamento."; exit 0; fi
+          git commit -q -m "Totali LeTrot dei campioni storici $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3; do
+            if git pull -q --rebase origin main && git push -q origin main; then echo "Pubblicato."; exit 0; fi
+            sleep 10
+          done
+          echo "::error::non sono riuscito a pubblicare"; exit 1

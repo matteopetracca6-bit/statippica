@@ -208,6 +208,8 @@ export default function LeaderboardPage() {
 
   // Dove ha corso. Filtra soltanto, non tocca il voto.
   const [dove, setDove] = useState<string>("");
+  // Storici: tutta la carriera (anche all'estero) o solo le corse in Italia (23/11/2026).
+  const [ambito, setAmbito] = useState<"carriera" | "italia">("carriera");
 
   // Quale delle due letture del voto mostrare. "globale" confronta con tutti,
   // "annata" solo con i nati nello stesso anno. Stesso punteggio, due letture:
@@ -228,7 +230,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => { const id = setTimeout(() => setCerca(testo.trim().toUpperCase()), 400); return () => clearTimeout(id); }, [testo]);
   useEffect(() => { const id = setTimeout(() => setSireFilter(sireTesto.trim().toUpperCase()), 400); return () => clearTimeout(id); }, [sireTesto]);
-  useEffect(() => { setPage(1); setAperto(null); }, [year, grade, sireFilter, mode, sort, solidOnly, dove, voto, cerca, paese, sesso]);
+  useEffect(() => { setPage(1); setAperto(null); }, [year, grade, sireFilter, mode, sort, solidOnly, dove, voto, cerca, paese, sesso, ambito]);
 
   const params = new URLSearchParams();
   if (year) params.set("year", year);
@@ -240,13 +242,14 @@ export default function LeaderboardPage() {
   params.set("limit", String(LIMIT));
   if (solidOnly) params.set("min_races", String(MIN_RACES_SOLID));
   if (dove) params.set("dove", dove);
+  if (mode === "storico" && ambito === "italia") params.set("ambito", "italia");
   if (voto === "annata") params.set("voto", "annata");
   if (cerca) params.set("q", cerca);
   if (paese) params.set("country", paese);
   if (sesso) params.set("sex", sesso);
 
   const { data, isLoading } = useQuery<LeaderboardData>({
-    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove, voto, cerca, paese, sesso],
+    queryKey: ["/api/leaderboard", year, grade, sireFilter, mode, sort, page, solidOnly, dove, voto, cerca, paese, sesso, mode === "storico" ? ambito : ""],
     queryFn: async () => (await apiRequest("GET", `/api/leaderboard?${params}`)).json(),
     placeholderData: prev => prev,
     enabled: !ELENCHI.has(mode),
@@ -300,6 +303,11 @@ export default function LeaderboardPage() {
             &laquo;carriera parziale&raquo; non hanno i totali ufficiali: il voto è calcolato
             sulle sole gare presenti nell&apos;archivio (di solito dal 2016), sulla stessa
             scala, quindi è probabilmente più basso di quello che meriterebbero.
+            {" "}&laquo;Tutta la carriera&raquo; conta anche le corse all&apos;estero, quando le conosciamo
+            (Wikipedia e la scheda ufficiale francese LeTrot, guadagni in euro al cambio medio di
+            quegli anni): Varenne 73 corse e 6 milioni invece delle 46 corse e 2,3 milioni corsi
+            in Italia. &laquo;Solo in Italia&raquo; mostra i totali del registro italiano. Il voto
+            usa sempre tutta la carriera.
           </Spiegazione>
         </div>
       )}
@@ -324,6 +332,13 @@ export default function LeaderboardPage() {
         {/* Le due letture del voto, in evidenza accanto alla scelta della
             classifica: e' una decisione su COSA si sta guardando. Non compare
             per gli storici ne' per il pedigree. */}
+        {mode === "storico" && (
+          <div className="ed-segm" role="group" aria-label="Quali corse contare" data-testid="toggle-ambito">
+            {[{ v: "carriera", l: "Tutta la carriera" }, { v: "italia", l: "Solo in Italia" }].map(({ v, l }) => (
+              <button key={v} aria-pressed={ambito === v} onClick={() => setAmbito(v as any)}>{l}</button>
+            ))}
+          </div>
+        )}
         {mode === "performance" && (
           <div className="ed-segm" role="group" aria-label="Lettura del voto" data-testid="toggle-voto">
             {[{ v: "globale", l: "Contro tutti" }, { v: "annata", l: "Nella sua annata" }].map(({ v, l }) => (

@@ -3177,6 +3177,38 @@ def phase_historic_ratings(conn: sqlite3.Connection):
         or [r[:7] for r in tutte]
     nuovi = {(r[0], r[1]) for r in tutte if r[7] == "unire_blocco" or (r[0] or "").strip().upper() in esteri}
 
+    # 23/11/2026: i campioni storici con la carriera di tutto il mondo
+    # (scripts/carriere_mondiali.py: VARENNE 73 corse e 6.035.666 euro contro
+    # le 46 corse e 2.344.173 euro italiani del registro) si valutano su
+    # quella. La scala (percentili e soglie delle lettere) resta quella dei
+    # totali italiani: si aggiungono a `nuovi`, come le carriere complete.
+    mondiali: dict = {}
+    try:
+        for n_m, a_m, c_m, v_m, e_m, r_m in conn.execute(
+                "SELECT nome, anno, corse, vittorie, guadagni_eur, record FROM carriere_mondiali"):
+            mondiali[(n_m, a_m)] = (c_m, v_m, e_m, r_m)
+    except sqlite3.Error:
+        pass
+    italia_storici = {(r[0], r[1]): (r[3], r[4], r[5]) for r in tutte}
+    if mondiali:
+        def _rec_migliore(a, b):
+            ta = _time_to_seconds(a or "") or None
+            tb = _time_to_seconds(b or "") or None
+            ta = ta if ta and ta > 1 else None
+            tb = tb if tb and tb > 1 else None
+            if ta is None: return b if tb is not None else a
+            if tb is None: return a
+            return a if ta <= tb else b
+        nuove = []
+        for r in tutte:
+            m = mondiali.get((r[0], r[1]))
+            if m:
+                nuove.append((r[0], r[1], r[2], m[0], m[1], m[2], _rec_migliore(r[6], m[3]), r[7]))
+                nuovi.add((r[0], r[1]))
+            else:
+                nuove.append(r)
+        tutte = nuove
+
     guadagni = sorted(r[5] for r in righe if r[5])
 
     # Il record va trattato con prudenza: alcune schede storiche riportano
@@ -3325,6 +3357,29 @@ def phase_historic_ratings(conn: sqlite3.Connection):
               c["pct_guadagni"], c["pct_record"], c["win_rate"],
               c["corse"], c["vitt"], c["euro"], c["rec"],
               CLASS_BREEDER, ora, c["dal"], c["al"]))
+
+    # Carriera divisa fra Italia e resto del mondo, per la classifica storica
+    # ("tutta la carriera" / "solo in Italia", 23/11/2026). Italia: i totali
+    # del registro (horses); per le carriere complete degli esteri, le gare
+    # italiane in archivio. Il resto del mondo e' la differenza.
+    try:
+        for c in calcolati:
+            k = (c["name"], c["birth_year"])
+            if k in mondiali:
+                ci, vi, ei = italia_storici.get(k, (0, 0, 0))
+            elif (c["name"] or "").strip().upper() in esteri:
+                ci, vi, ei = conn.execute("""SELECT COUNT(*), SUM(placement = 1), SUM(COALESCE(prize_net, 0)) FROM races
+                                             WHERE horse_name = ? AND track <> 'ESTERO'""", (c["name"],)).fetchone()
+            else:
+                ci, vi, ei = c["corse"], c["vitt"], c["euro"]
+            ci, vi, ei = ci or 0, vi or 0, ei or 0
+            conn.execute("""UPDATE horse_ratings SET gare_italia = ?, vitt_italia = ?, guad_italia = ?,
+                                   gare_estero = ?, vitt_estero = ?, guad_estero = ?
+                             WHERE name = ? AND birth_year IS ? AND rating_mode = 'storico'""",
+                         (ci, vi, round(ei, 2), max(0, (c["corse"] or 0) - ci), max(0, (c["vitt"] or 0) - vi),
+                          round(max(0.0, (c["euro"] or 0) - ei), 2), c["name"], c["birth_year"]))
+    except sqlite3.Error as e:
+        print(f"[RATINGS] carriera divisa degli storici non scritta: {e}", file=sys.stderr)
 
     # Il vecchio voto sulla scala atleti va rimosso, altrimenti la scheda del
     # cavallo continuerebbe a mostrarlo accanto a quello nuovo.
@@ -5967,6 +6022,11 @@ def main():
             print(f"[CARRIERE COMPLETE] {phase_carriere_complete(conn)}", file=sys.stderr)
         except Exception as e:
             print(f"[NAZIONALITA] errore: {e}", file=sys.stderr)
+        try:  # totali di tutta la carriera dei campioni storici (VARENNE)
+            from carriere_mondiali import costruisci as phase_carriere_mondiali
+            phase_carriere_mondiali(conn)
+        except Exception as e:
+            print(f"[CARRIERE MONDIALI] errore: {e}", file=sys.stderr)
         try:
             # Omonimi (omonimi.py): i figli nuovi arrivano con il nome del
             # genitore senza anno; si rimettono al genitore giusto.
