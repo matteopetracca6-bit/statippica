@@ -2649,6 +2649,35 @@ export function registerRoutes(httpServer: Server, app: Express) {
    * per circa un cavallo su dieci mostrava caselle vuote che nella pagina
    * Pedigree erano piene.
    */
+  // Genealogie lette dalla banca dati UNIRE (scripts/genealogie_unire.py):
+  // il file arriva con il codice, si rilegge se cambia.
+  let UNIRE: { mt: number; visto: number; m: Map<string, { padre: string; madre: string }> } = { mt: -1, visto: 0, m: new Map() };
+  function genealogiaUnire(n: string): { padre: string; madre: string } | null {
+    const f = path.join(process.cwd(), "dati", "genealogie_unire.csv");
+    let mt = UNIRE.mt;
+    if (Date.now() - UNIRE.visto > 60_000) {
+      try { mt = fs.statSync(f).mtimeMs; } catch { mt = 0; }
+      UNIRE.visto = Date.now();
+      if (!mt) { UNIRE = { mt: 0, visto: Date.now(), m: new Map() }; return null; }
+    }
+    if (mt !== UNIRE.mt) {
+      const m = new Map<string, { padre: string; madre: string }>();
+      try {
+        const righe = fs.readFileSync(f, "utf8").split(/\r?\n/);
+        const t = righe[0].split(";");
+        const ip = t.indexOf("padre"), im = t.indexOf("madre"), inn = t.indexOf("nome");
+        for (const r of righe.slice(1)) {
+          if (!r) continue;
+          const c = r.split(";");
+          if (c[inn]) m.set(c[inn].trim().toUpperCase(), { padre: (c[ip] || "").trim().toUpperCase(), madre: (c[im] || "").trim().toUpperCase() });
+        }
+      } catch (e) { console.error("[genealogie unire]", e); }
+      UNIRE = { mt, visto: Date.now(), m };
+    }
+    const g = UNIRE.m.get(String(n).trim().toUpperCase());
+    return g && (g.padre || g.madre) ? g : null;
+  }
+
   function sessoDaFigli(db: any, n: string): string | null {
     const padre = !!db.prepare(`SELECT 1 FROM horses WHERE sire = ? LIMIT 1`).get(n);
     const madre = !!db.prepare(`SELECT 1 FROM horses WHERE dam = ? LIMIT 1`).get(n);
@@ -2724,8 +2753,11 @@ export function registerRoutes(httpServer: Server, app: Express) {
       if (own.size > 0) { useName = (h.name || n); useChain = ""; }
       const srcMap = useName === name ? vp : mapOf(useName);
 
-      const sireName = h.sire || srcMap.get(vpPath(useChain + "p")) || null;
-      const damName  = h.dam  || srcMap.get(vpPath(useChain + "m")) || null;
+      // Dopo l'archivio, la banca dati UNIRE (dati/genealogie_unire.csv,
+      // letta per id lungo il ramo), poi la seconda fonte.
+      const un = omonimo ? null : genealogiaUnire(h.name || n);
+      const sireName = h.sire || un?.padre || srcMap.get(vpPath(useChain + "p")) || null;
+      const damName  = h.dam  || un?.madre || srcMap.get(vpPath(useChain + "m")) || null;
       return {
         name: h.name,
         birth_year: h.birth_year,
