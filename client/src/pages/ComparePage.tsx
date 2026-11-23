@@ -306,6 +306,9 @@ export default function ComparePage() {
     const corse = usaAnni ? sc : h?.career_races ?? null;
     const vitt = usaAnni ? ys.reduce((t, y) => t + (y.wins || 0), 0) : h?.career_wins ?? null;
     const piazz = usaAnni ? ys.reduce((t, y) => t + (y.places || 0), 0)
+      // Il registro UNIRE degli storici conta i piazzati fino al 5°: non sono
+      // "primi tre" (23/11/2026). Si usano i primi tre della scheda, se ci sono.
+      : h?.career_top3 != null ? h.career_top3 : h?.career_top5 != null ? null
       : h?.career_places > 0 ? h.career_places + (h.career_wins ?? 0) : null;
     const guad = Math.max(h?.career_earnings || 0, usaAnni ? ys.reduce((t, y) => t + (y.earnings || 0), 0) : 0) || (h?.career_earnings ?? null);
     const bestAnni = ys.map(y => y.best_time).filter(isNum);
