@@ -2649,6 +2649,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
    * per circa un cavallo su dieci mostrava caselle vuote che nella pagina
    * Pedigree erano piene.
    */
+  function sessoDaFigli(db: any, n: string): string | null {
+    const padre = !!db.prepare(`SELECT 1 FROM horses WHERE sire = ? LIMIT 1`).get(n);
+    const madre = !!db.prepare(`SELECT 1 FROM horses WHERE dam = ? LIMIT 1`).get(n);
+    return padre && !madre ? "M" : madre && !padre ? "F" : null;
+  }
+
   function alberoGenealogico(db: any, name: string): { tree: any; vp: Map<string, string>; MAX_GEN: number } {
     // Build pedigree tree recursively (4 generations)
     // I nomi nell'archivio sono gia' maiuscoli e senza spazi ai bordi, quindi
@@ -2723,7 +2729,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
       return {
         name: h.name,
         birth_year: h.birth_year,
-        sex: h.sex ?? (depth > 0 ? (chain.slice(-1) === "p" ? "M" : "F") : null),
+        // Il sesso: quello dell'archivio, se no la posizione nell'albero; per
+        // il cavallo della pagina, se e' padre di qualcuno e' un maschio
+        // (GIMPANZEE, SOUTHWIND FRANK erano senza sesso e uscivano in rosa).
+        sex: h.sex ?? (depth > 0 ? (chain.slice(-1) === "p" ? "M" : "F") : sessoDaFigli(db, h.name || n)),
         country: h.country,
         career_earnings: h.career_earnings,
         career_wins: h.career_wins,
@@ -4038,7 +4047,77 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const path = String(r.path || "").trim().toLowerCase();
       if (path && r.name) out.set(path, r.name);
     }
+    if (out.size === 0) return alberoDaDiscendente(db, horseName) ?? alberoDaStallionPedigree(db, horseName) ?? out;
     return out;
+  }
+
+  /**
+   * GENEALOGIA DEGLI STALLONI ESTERI (23/11/2026). La seconda fonte ha
+   * l'albero solo dei cavalli nati in Italia: di GIMPANZEE, SOUTHWIND FRANK,
+   * TRIXTON, PINE CHIP, MAHARAJAH... non c'era nulla, e la pagina pedigree
+   * restava vuota. Ma ognuno di loro compare come padre nell'albero di un suo
+   * figlio italiano, che arriva a cinque generazioni: da li' si leggono quattro
+   * generazioni dello stallone. Per ogni antenato si prende la comparsa piu'
+   * vicina al cavallo della fonte (il percorso piu' corto), cosi' le
+   * generazioni sono il piu' possibile. Il percorso si legge da destra a
+   * sinistra: gli antenati dell'antenato che sta in P sono quelli il cui
+   * percorso finisce con P, e quel che resta davanti e' il percorso da lui.
+   */
+  // Memoria fra una richiesta e l'altra, finche' l'archivio e' lo stesso.
+  let DERIVATI: { versione: number; m: Map<string, Map<string, string> | null> } = { versione: -1, m: new Map() };
+  function alberoDaDiscendente(db: any, horseName: string): Map<string, string> | null {
+    if (!vpTableExists(db, "vp_names")) return null;
+    const nome = horseName.trim().toUpperCase();
+    const v = mtimeDb();
+    if (DERIVATI.versione !== v || DERIVATI.m.size > 20000) DERIVATI = { versione: v, m: new Map() };
+    if (DERIVATI.m.has(nome)) return DERIVATI.m.get(nome)!;
+    // Le comparse piu' vicine al cavallo della fonte (al massimo 12): alcune
+    // fonti hanno solo il lato materno, quindi si mettono insieme, e a parita'
+    // di casella vince la comparsa piu' vicina.
+    const occ = db.prepare(`SELECT p.horse_id AS h, p.path AS path FROM vp_names n JOIN vp_pedigree p ON p.ancestor_id = n.id
+                             WHERE n.name = ? AND length(p.path) < 5 ORDER BY length(p.path) LIMIT 12`).all(nome) as any[];
+    const sotto = db.prepare(`SELECT p.path AS path, n.name AS name FROM vp_pedigree p JOIN vp_names n ON n.id = p.ancestor_id
+                               WHERE p.horse_id = ? AND length(p.path) > ? AND substr(p.path, -?) = ?`);
+    let out = new Map<string, string>();
+    for (const o of occ) {
+      const P = String(o.path).toLowerCase();
+      const qui = new Map<string, string>();
+      for (const r of sotto.all(o.h, P.length, P.length, o.path) as any[]) {
+        const rel = String(r.path).toLowerCase().slice(0, -P.length);
+        if (rel && r.name) qui.set(rel, r.name);
+      }
+      // Un omonimo con un altro padre non si mescola.
+      if (out.get("p") && qui.get("p") && out.get("p") !== qui.get("p")) continue;
+      qui.forEach((v, k) => { if (!out.has(k)) out.set(k, v); });
+    }
+    const fine = controllaDerivato(db, nome, out);
+    DERIVATI.m.set(nome, fine);
+    return fine;
+  }
+  function controllaDerivato(db: any, horseName: string, out: Map<string, string>): Map<string, string> | null {
+    if (!out.size) return null;
+    // Contro gli omonimi: se l'archivio ha un cavallo con questo nome, lo si
+    // completa cosi' solo se e' genitore di qualcuno e se il padre combacia
+    // (un puledro di oggi che si chiama come un antenato non e' lui).
+    const righe = db.prepare(`SELECT sire, dam FROM horses WHERE name = ?`).all(horseName.trim().toUpperCase()) as any[];
+    if (righe.length) {
+      if (!db.prepare(`SELECT 1 FROM horses WHERE sire = ? OR dam = ? LIMIT 1`).get(horseName.trim().toUpperCase(), horseName.trim().toUpperCase())) return null;
+      const conPadre = righe.filter(r => r.sire);
+      if (conPadre.length && out.get("p") && !conPadre.some(r => String(r.sire).toUpperCase() === out.get("p"))) return null;
+    }
+    return out;
+  }
+  /** Ultima risorsa: padre, madre e nonni dalla tabella degli stalloni. */
+  function alberoDaStallionPedigree(db: any, horseName: string): Map<string, string> | null {
+    if (!vpTableExists(db, "stallion_pedigree")) return null;
+    const r = db.prepare(`SELECT * FROM stallion_pedigree WHERE name = ?`).get(horseName.trim().toUpperCase()) as any;
+    if (!r) return null;
+    const out = new Map<string, string>();
+    const metti = (k: string, v: any) => { if (v && String(v).trim()) out.set(k, String(v).trim().toUpperCase()); };
+    metti("p", r.sire); metti("m", r.dam); metti("pp", r.sire_sire); metti("mp", r.sire_dam); metti("pm", r.dam_sire); metti("mm", r.dam_dam);
+    const h = db.prepare(`SELECT sire FROM horses WHERE name = ? AND sire IS NOT NULL AND sire <> '' LIMIT 1`).get(horseName.trim().toUpperCase()) as any;
+    if (h && out.get("p") && String(h.sire).toUpperCase() !== out.get("p")) return null;
+    return out.size ? out : null;
   }
 
   /** Percorso della fonte per una catena di passi a partire dal cavallo. */
