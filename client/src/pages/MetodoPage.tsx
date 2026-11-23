@@ -18,6 +18,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { BookMarked, Database, RefreshCw, CheckCircle2, AlertTriangle, Clock, ChevronDown } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { Caricamento } from "../components/Caricamento";
+import QualitaDati from "../components/QualitaDati";
 
 const MUTED = "hsl(210 8% 58%)";
 const DIM = "hsl(210 8% 42%)";
@@ -151,6 +152,10 @@ export default function MetodoPage() {
           </>
         )}
       </section>
+
+      <Sezione titolo="Qualità dei dati: cosa c'è e cosa manca">
+        <QualitaDati />
+      </Sezione>
 
       <Sezione titolo="Da dove vengono i dati">
         <ul>

@@ -6,6 +6,7 @@ import { PareggioCavallo } from "../components/PareggioScheda";
 import PrevisioniCavallo from "../components/PrevisioniCavallo";
 import VendereOCorrere from "../components/VendereOCorrere";
 import AggiungiScuderia from "../components/AggiungiScuderia";
+import StellinaSegui from "../components/StellinaSegui";
 import SezioneScheda, { ListaCorta } from "../components/SezioneScheda";
 import MantoSesso from "../components/MantoSesso";
 import { useRoute, useLocation, Link } from "wouter";
@@ -678,6 +679,7 @@ export default function HorsePage() {
           })()}
           {/* Collegamenti all'economia: la scuderia e, per i giovani, il valore del puledro. */}
           <span style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
+            <StellinaSegui nome={horse.name} anno={horse.birth_year} />
             <AggiungiScuderia voce={{ tipo: "cavallo", nome: horse.name, anno: horse.birth_year }} />
             <Link href={`/compare?a=${encodeURIComponent(`${horse.name}__${horse.birth_year}`)}`} data-testid="link-confronta"
                   title="Apri la Comparazione con questo cavallo già scelto" style={{

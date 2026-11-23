@@ -4,6 +4,8 @@ import { registraSimulatore } from "./simulatore";
 import { registraElencoCavalli } from "./elencoCavalli";
 import { incrociPerFattrice } from "./incroci";
 import { registraSorprese } from "./sorprese";
+import { registraSeguiti } from "./seguiti";
+import { registraQualita } from "./qualitaDati";
 import { formaPersona } from "./forma";
 import { distanzaCavallo, distanzaStallone, profiliStalloni, velocitaPiste } from "./distanza";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
@@ -328,6 +330,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
   registraElencoCavalli(app, getDb, vpTableExists);
   // Sorprese e delusioni della settimana, per la Home (sorprese.ts).
   registraSorprese(app, getDb, vpTableExists, pronta);
+  registraSeguiti(app, getDb, vpTableExists);
+  registraQualita(app, getDb, vpTableExists, pronta, mtimeDb);
   // Velocita' delle piste a parita' di cavallo (scripts/record_distanza.py).
   app.get("/api/piste/velocita", (_req, res) => {
     const db = getDb();

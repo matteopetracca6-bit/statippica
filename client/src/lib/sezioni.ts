@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass, Flag } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass, Flag, Star } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -41,6 +41,8 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" },
     { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(46 95% 54%)",
       descrizione: "Confronta due cavalli su statistiche, carriera e genealogia" },
+    { href: "/seguiti", label: "Cavalli seguiti", nota: "I tuoi cavalli: prossime corse e ultimi arrivi", icon: Star, colore: "hsl(54 88% 62%)",
+      descrizione: "I cavalli che segui con la stellina: quando corrono, dove, con chi, e come sono andati" },
   ] },
   { nome: "Corse", icon: Calendar, colore: "hsl(0 60% 55%)",
     descrizione: "Calendario con i pronostici, piste italiane, guidatori, allenatori e proprietari",
