@@ -2746,6 +2746,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // senza anno ne' voti.
       const annoMax = annoFiglio ? annoFiglio - 2 : (annoMaxFiglio ? annoMaxFiglio - 2 : null);
       const omonimo = !!(annoMax && h.birth_year && h.birth_year > annoMax);
+      // L'anno del cavallo dell'archivio che porta lo stesso nome, per dire
+      // nella pagina perche' questo e' un altro cavallo (CHICCA ROSS, 23/11).
+      const annoOmonimo = omonimo ? h.birth_year : null;
       if (omonimo) h = { name: h.name, birth_year: null, sire: null, dam: null, missing: true };
 
       const own = omonimo ? new Map<string, string>() : mapOf(h.name || n);
@@ -2773,6 +2776,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m", h.birth_year ?? null, annoMax) : null,
         anno_max: h.birth_year ? null : annoMax,
         omonimo,
+        omonimo_anno: annoOmonimo,
         missing: h.missing || false,
         from_source: !!h.missing,
       };

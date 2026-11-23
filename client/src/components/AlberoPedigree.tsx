@@ -31,6 +31,10 @@ export interface PedigreeNode {
   dam: PedigreeNode | null;
   missing?: boolean;
   from_source?: boolean;
+  /** Stesso nome di un cavallo dell'archivio, ma e' un altro (troppo giovane per stare qui). */
+  omonimo?: boolean;
+  omonimo_anno?: number | null;
+  anno_max?: number | null;
   voti?: VotiNodo;
 }
 
@@ -43,13 +47,40 @@ const ROSA_FONDO = "hsl(330 30% 12%)";
 // non solo passandoci sopra.
 const COLORI_RIPETUTI = ["hsl(45 90% 58%)", "hsl(160 60% 50%)", "hsl(275 65% 70%)", "hsl(15 85% 62%)", "hsl(190 75% 55%)", "hsl(95 55% 55%)", "hsl(345 80% 66%)", "hsl(230 70% 72%)"];
 
-/** Quante volte compare ogni antenato (escluso il cavallo), e da che lato. */
+/** Chiave di un antenato: il nome, piu' l'anno quando nell'albero lo stesso
+ *  nome compare con anni diversi (due cavalli diversi). */
+function chiavi(root: PedigreeNode, maxGen: number) {
+  const anni = new Map<string, Set<number>>();
+  const giro = (x: PedigreeNode | null, g: number) => {
+    if (!x || g > maxGen) return;
+    if (g > 0 && x.name && !x.omonimo && x.birth_year) {
+      const k = x.name.toUpperCase();
+      if (!anni.has(k)) anni.set(k, new Set());
+      anni.get(k)!.add(x.birth_year);
+    }
+    giro(x.sire, g + 1); giro(x.dam, g + 1);
+  };
+  giro(root, 0);
+  return (x: PedigreeNode): string | null => {
+    if (!x.name || x.omonimo) return null;          // un omonimo non e' mai "lo stesso"
+    const k = x.name.toUpperCase();
+    const a = anni.get(k);
+    if (a && a.size > 1) return x.birth_year ? `${k}|${x.birth_year}` : null;  // ambiguo: non si conta
+    return k;
+  };
+}
+
+/** Quante volte compare ogni antenato (escluso il cavallo), e da che lato.
+ *  23/11/2026: si conta lo STESSO cavallo, non lo stesso nome. In CHICCA ROSS
+ *  il LEMON DRA antenato di DANEA (1974) non e' il LEMON DRA del 1986 nonno
+ *  paterno: il server lo segna come omonimo e qui non si somma. */
 export function antenatiRipetuti(root: PedigreeNode, maxGen: number) {
   const conta = new Map<string, { n: number; padre: number; madre: number; gens: number[] }>();
+  const chiave = chiavi(root, maxGen);
   const visita = (x: PedigreeNode | null, g: number, lato: "padre" | "madre" | null) => {
     if (!x || g > maxGen) return;
-    if (g > 0 && x.name) {
-      const k = x.name.toUpperCase();
+    const k = g > 0 ? chiave(x) : null;
+    if (k) {
       const c = conta.get(k) ?? { n: 0, padre: 0, madre: 0, gens: [] };
       c.n++; if (lato) c[lato]++; c.gens.push(g); conta.set(k, c);
     }
@@ -61,7 +92,7 @@ export function antenatiRipetuti(root: PedigreeNode, maxGen: number) {
     .sort((a, b) => Math.min(...a[1].gens) - Math.min(...b[1].gens) || b[1].n - a[1].n);
   const colore = new Map<string, string>();
   rip.forEach(([k], i) => colore.set(k, COLORI_RIPETUTI[i % COLORI_RIPETUTI.length]));
-  return { rip, colore };
+  return { rip, colore, chiave };
 }
 
 /** La linea maschile: padre, padre del padre... */
@@ -110,8 +141,15 @@ function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
     return <div style={{ flex: 1, minHeight: compatto ? 24 : 36, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "hsl(210 8% 24%)" }}>—</div>;
   }
   const maschio = node.sex === "M";
-  const evidenziato = !!(hovered && node.name && node.name.toUpperCase() === hovered.toUpperCase());
-  const bordo = evidenziato ? "hsl(25 85% 58%)" : maschio ? BLU : ROSA;
+  // Omonimo: stesso nome di un cavallo dell'archivio, ma e' un altro cavallo
+  // (troppo vecchio per esserlo). Grigio, senza link alla scheda sbagliata.
+  const om = !!node.omonimo;
+  const spiegaOm = om
+    ? `Non è il ${node.name}${node.omonimo_anno ? ` nato nel ${node.omonimo_anno}` : " dell'archivio"}: qui è un altro cavallo con lo stesso nome, ` +
+      `antenato di un cavallo nato${node.anno_max ? ` entro il ${node.anno_max + 2}` : " prima"}. Non si conta fra gli antenati ripetuti.`
+    : undefined;
+  const evidenziato = !node.omonimo && !!(hovered && node.name && node.name.toUpperCase() === hovered.toUpperCase());
+  const bordo = evidenziato ? "hsl(25 85% 58%)" : om ? "hsl(210 8% 38%)" : maschio ? BLU : ROSA;
   const v = node.voti;
   const voti: { etichetta: string; grado: string; href?: string }[] = [];
   if (v?.atleta) voti.push({ etichetta: "Atleta", grado: v.atleta });
@@ -122,32 +160,46 @@ function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
 
   return (
     <div
-      onMouseEnter={() => node.name && onHover(node.name)}
+      onMouseEnter={() => node.name && !om && onHover(node.name)}
       onMouseLeave={() => onHover(null)}
+      title={spiegaOm}
       style={{
         width: "100%", minWidth: 0,
         padding: compatto ? "2px 6px" : gen === 0 ? "10px 11px" : "6px 9px",
         borderRadius: 8,
-        background: evidenziato ? "hsl(25 50% 14%)" : maschio ? BLU_FONDO : ROSA_FONDO,
+        background: evidenziato ? "hsl(25 50% 14%)" : om ? "hsl(220 8% 13%)" : maschio ? BLU_FONDO : ROSA_FONDO,
         border: `1.5px solid ${bordo}`,
         borderLeftWidth: compatto ? 3 : 4,
         borderLeftColor: colore && !evidenziato ? colore : bordo,
+        borderStyle: om ? "dashed" : "solid",
         boxShadow: evidenziato ? "0 2px 12px hsl(25 85% 58% / .3)" : "none",
         transition: "background .15s, box-shadow .15s",
         opacity: node.missing && !voti.length ? 0.85 : 1,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-        <Link href={linkCavallo}>
-          <a style={{
-            fontSize: nomeSize, fontWeight: 700, color: "hsl(210 10% 88%)", textDecoration: "none",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0,
-          }}
-            onMouseEnter={e => e.currentTarget.style.color = maschio ? BLU : ROSA}
-            onMouseLeave={e => e.currentTarget.style.color = "hsl(210 10% 88%)"}>
+        {om ? (
+          <span style={{ fontSize: nomeSize, fontWeight: 700, color: "hsl(210 8% 62%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {node.name}
-          </a>
-        </Link>
+          </span>
+        ) : (
+          <Link href={linkCavallo}>
+            <a style={{
+              fontSize: nomeSize, fontWeight: 700, color: "hsl(210 10% 88%)", textDecoration: "none",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0,
+            }}
+              onMouseEnter={e => e.currentTarget.style.color = maschio ? BLU : ROSA}
+              onMouseLeave={e => e.currentTarget.style.color = "hsl(210 10% 88%)"}>
+              {node.name}
+            </a>
+          </Link>
+        )}
+        {om && (
+          <span style={{ flexShrink: 0, fontSize: compatto ? 8.5 : 9.5, fontWeight: 700, color: "hsl(210 8% 70%)", border: "1px solid hsl(210 8% 40%)",
+                         borderRadius: 999, padding: "0 5px", lineHeight: compatto ? "12px" : "14px", whiteSpace: "nowrap" }}>
+            {compatto ? "omonimo" : "omonimo – altro cavallo"}
+          </span>
+        )}
         {colore && (
           <span title={`Compare ${volte} volte nell'albero`} className="tabular"
             style={{ flexShrink: 0, fontSize: compatto ? 8.5 : 9.5, fontWeight: 800, color: "hsl(220 15% 10%)", background: colore,
@@ -175,7 +227,7 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
   hovered?: string | null; onHover?: (n: string | null) => void;
 }) {
   const righe = righeGenerazioni(root, generazioni);
-  const { rip, colore } = antenatiRipetuti(root, generazioni);
+  const { rip, colore, chiave } = antenatiRipetuti(root, generazioni);
   // Altezza di una riga dell'ultima colonna: deve contenere nome e voti.
   const riga = generazioni >= 5 ? 34 : generazioni === 4 ? 40 : generazioni === 3 ? 56 : 80;
   return (
@@ -195,8 +247,8 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
                 {col.map((n, i) => (
                   <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", minHeight: 0 }}>
                     <Casella node={n} gen={g} maxGen={generazioni} hovered={hovered} onHover={onHover}
-                      colore={n?.name && g > 0 ? colore.get(n.name.toUpperCase()) : undefined}
-                      volte={n?.name ? rip.find(([k]) => k === n.name.toUpperCase())?.[1].n : undefined} />
+                      colore={n && g > 0 ? colore.get(chiave(n) ?? "") : undefined}
+                      volte={n && g > 0 ? rip.find(([k]) => k === chiave(n))?.[1].n : undefined} />
                   </div>
                 ))}
               </div>
@@ -216,24 +268,33 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
             <span style={{ width: 12, height: 12, borderRadius: 3, borderLeft: `4px solid ${COLORI_RIPETUTI[0]}`, border: "1.5px solid hsl(210 8% 35%)" }} /> Antenato che compare più volte (×N)
           </span>
         )}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: "hsl(220 8% 13%)", border: "1.5px dashed hsl(210 8% 38%)" }} /> Omonimo: stesso nome, altro cavallo
+        </span>
         <span>Atleta = voto dalle sue corse · Stallone / Fattrice = voto dai figli</span>
         <span>Clicca un nome per la scheda, un voto da riproduttore per la sua pagina</span>
       </div>
-      <LineeERipetuti root={root} rip={rip} colore={colore} hovered={hovered} onHover={onHover} />
+      <LineeERipetuti root={root} rip={rip} colore={colore} chiave={chiave} hovered={hovered} onHover={onHover} />
     </div>
   );
 }
 
 /** Linee maschili e antenati ripetuti, sotto l'albero (23/11/2026). */
-function LineeERipetuti({ root, rip, colore, hovered, onHover }: {
+function LineeERipetuti({ root, rip, colore, chiave, hovered, onHover }: {
   root: PedigreeNode; rip: [string, { n: number; padre: number; madre: number; gens: number[] }][];
-  colore: Map<string, string>; hovered: string | null; onHover: (n: string | null) => void;
+  colore: Map<string, string>; chiave: (x: PedigreeNode) => string | null; hovered: string | null; onHover: (n: string | null) => void;
 }) {
   const paterna = lineaMaschile(root.sire);
   const materna = lineaMaschile(root.dam?.sire ?? null);
   if (!paterna.length && !materna.length && !rip.length) return null;
   const nodo = (x: PedigreeNode, i: number, arr: PedigreeNode[]) => {
-    const c = colore.get(x.name.toUpperCase());
+    const c = colore.get(chiave(x) ?? "");
+    if (x.omonimo) return (
+      <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span title="Omonimo: stesso nome di un altro cavallo dell'archivio" style={{ color: "hsl(210 8% 62%)", fontStyle: "italic", whiteSpace: "nowrap" }}>{x.name} (omonimo)</span>
+        {i < arr.length - 1 && <span style={{ color: "hsl(210 8% 40%)" }}>←</span>}
+      </span>
+    );
     return (
       <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
         <Link href={`/horse/${encodeURIComponent(x.name)}/${x.birth_year ?? 0}`}>
@@ -270,10 +331,10 @@ function LineeERipetuti({ root, rip, colore, hovered, onHover }: {
           <div style={tit}>Antenati ripetuti</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {rip.slice(0, 10).map(([k, c]) => (
-              <div key={k} onMouseEnter={() => onHover(k)} onMouseLeave={() => onHover(null)}
+              <div key={k} onMouseEnter={() => onHover(k.split("|")[0])} onMouseLeave={() => onHover(null)}
                 style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, cursor: "default" }}>
                 <span style={{ width: 10, height: 10, borderRadius: 3, background: colore.get(k), flexShrink: 0, alignSelf: "center" }} />
-                <span style={{ fontWeight: 700, color: hovered?.toUpperCase() === k ? "hsl(25 85% 65%)" : "hsl(210 10% 86%)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k}</span>
+                <span style={{ fontWeight: 700, color: hovered?.toUpperCase() === k.split("|")[0] ? "hsl(25 85% 65%)" : "hsl(210 10% 86%)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.split("|")[0]}{k.includes("|") ? ` (${k.split("|")[1]})` : ""}</span>
                 <span className="tabular" style={{ color: "hsl(210 8% 55%)", fontSize: 11.5, whiteSpace: "nowrap", marginLeft: "auto" }}>
                   {c.n} volte · {c.padre > 0 && c.madre > 0 ? `${c.padre} dal padre, ${c.madre} dalla madre` : c.padre > 0 ? "solo dal padre" : "solo dalla madre"}
                   {" "}· gen. {Array.from(new Set(c.gens)).sort().join(", ")}
