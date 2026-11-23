@@ -1,0 +1,54 @@
+name: StatIppica — Genealogie degli stalloni da UNIRE (a mano)
+
+# 23/11/2026 (scripts/genealogie_unire.py). Per gli stalloni con l'albero
+# quasi vuoto legge le schede UNIRE (tre generazioni per scheda, piu' quelle
+# degli otto bisnonni) e aggiorna dati/genealogie_unire.csv. Il push fa
+# ripartire il sito, che legge il file. Non tocca l'archivio.
+# UNIRE la usa anche il notturno: da lanciare solo fuori dalle 23-09.
+
+on:
+  workflow_dispatch:
+    inputs:
+      stalloni:
+        description: "Quanti stalloni (dal piu' prolifico)"
+        required: false
+        default: "50"
+      minuti:
+        description: "Minuti al massimo"
+        required: false
+        default: "120"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  genealogie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GH_NIGHTLY_TOKEN }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q requests beautifulsoup4
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Leggi le schede UNIRE
+        run: python3 scripts/genealogie_unire.py --db data.db --stalloni "${{ inputs.stalloni || '50' }}" --minuti "${{ inputs.minuti || '120' }}"
+      - name: Pubblica il file aggiornato
+        run: |
+          git config user.email "nightly@statippica.bot"
+          git config user.name "StatIppica Nightly"
+          git add dati/genealogie_unire.csv
+          if git diff --cached --quiet; then echo "Nessun cambiamento."; exit 0; fi
+          git commit -q -m "Genealogie UNIRE degli stalloni $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3; do
+            if git pull -q --rebase origin main && git push -q origin main; then echo "Pubblicato."; exit 0; fi
+            sleep 10
+          done
+          echo "::error::non sono riuscito a pubblicare il file"; exit 1
