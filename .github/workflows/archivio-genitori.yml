@@ -16,7 +16,7 @@ permissions:
 jobs:
   genitori:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -28,8 +28,27 @@ jobs:
         run: bash scripts/ottieni_archivio.sh
       - name: Calcola
         run: |
+          pip install -q requests beautifulsoup4
           python3 scripts/ripara_corse.py --db data.db
           python3 scripts/completa_genitori.py --db data.db
+          python3 scripts/omonimi_unire.py --db data.db --minuti 60 || echo "::warning::omonimi da UNIRE non fatti"
+      - name: Ricalcola voti (carriere senza le copie, figli al genitore giusto)
+        run: |
+          pip install numpy pandas >/dev/null 2>&1 || true
+          python3 - <<'PY' || echo "::warning::voti non ricalcolati: li rifa' il notturno"
+          import importlib.util, sqlite3
+          spec = importlib.util.spec_from_file_location("nu", "nightly_update.py")
+          nu = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nu)
+          conn = sqlite3.connect("data.db")
+          nu.phase_ratings(conn)
+          nu.phase_historic_ratings(conn)
+          nu.phase_stallion_ratings(conn)
+          nu.phase_dam_ratings(conn)
+          nu.phase_voti_pedigree(conn)
+          conn.commit()
+          conn.close()
+          PY
       - name: Pubblica l'archivio aggiornato
         env:
           GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}

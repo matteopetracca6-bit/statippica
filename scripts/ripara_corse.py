@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import re
 import sqlite3
+from collections import defaultdict
 from datetime import date
 
 NUMERO_DAL_CODICE = """CASE WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_R[0-9]*' THEN CAST(substr(race_code, 16) AS INTEGER)
@@ -63,6 +64,99 @@ def ripara(conn: sqlite3.Connection, prova: bool = False) -> dict:
     if not prova:
         conn.commit()
     print(f"[CORSE] numero della corsa completato: {esito['numeri_mancanti']}; date prese dal codice: {date_messe}")
+    esito.update(gare_senza_data(conn, prova))
+    return esito
+
+
+def _chiave(n: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", (n or "").upper())
+
+
+def gare_senza_data(conn: sqlite3.Connection, prova: bool = False) -> dict:
+    """23/11/2026. Le gare senza data (26.000, quasi tutte rotture "r.p.") sono
+    per lo piu' COPIE di gare gia' in archivio con la data: la scheda del
+    cavallo le ripete senza data. D DAY NOF: 22 corse in archivio, 20 nella
+    fonte ufficiale; le due in piu' sono le rotture del 24/09 e del 12/11/2021
+    ripetute senza data. Contavano nella carriera: corse, rotture e premi in
+    piu', e percentuale di vittorie piu' bassa.
+
+    Per ogni gara senza data di un cavallo, con i partenti ufficiali MASAF
+    (allenatori_corse, dal 2016):
+      - se fra le corse ufficiali del cavallo che in archivio NON hanno ancora
+        una gara datata ce n'e' UNA sola con la stessa pista e lo stesso numero
+        di corsa, la gara prende quella data;
+      - altrimenti, se e' identica a una gara gia' datata (pista, numero di
+        corsa, esito, numero di partenza, partenti, distanza), e' una copia e
+        si toglie;
+      - altrimenti resta com'e'.
+    Le gare all'estero non si toccano (la fonte ufficiale e' solo italiana).
+    Poi si rifanno i totali di carriera dei cavalli toccati (non degli storici,
+    i cui totali vengono dal registro)."""
+    esito = {"senza_data_datate": 0, "senza_data_copie": 0, "senza_data_restano": 0}
+    if not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='allenatori_corse'").fetchone() or \
+       not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='gare_ufficiali_mappa'").fetchone():
+        return esito
+    pista = {}
+    for uff, arch, _n in conn.execute("SELECT ufficiale, archivio, n FROM gare_ufficiali_mappa WHERE tipo='ippodromo' ORDER BY n DESC"):
+        pista.setdefault(uff, arch.split("|")[0])
+    und = conn.execute("""SELECT id, horse_name, track, race_number, placement_raw, start_pos, total_starters, distance
+                          FROM races WHERE (race_date IS NULL OR TRIM(race_date) = '') AND track <> 'ESTERO'""").fetchall()
+    if not und:
+        return esito
+    per_cavallo = defaultdict(list)
+    for r in und:
+        per_cavallo[r[1]].append(r)
+    chiavi = {_chiave(h): h for h in per_cavallo}
+    uff = defaultdict(set)
+    for d, cod, corsa, ch in conn.execute("SELECT data, codice, corsa, chiave FROM allenatori_corse"):
+        if ch in chiavi and cod in pista:
+            uff[chiavi[ch]].add((d, pista[cod], corsa))
+    toccati = set()
+    for h, rs in per_cavallo.items():
+        O = uff.get(h)
+        if not O:
+            esito["senza_data_restano"] += len(rs)
+            continue
+        datate = conn.execute("""SELECT race_date, track, race_number, placement_raw, start_pos, total_starters, distance
+                                 FROM races WHERE horse_name = ? AND race_date IS NOT NULL AND TRIM(race_date) <> ''""", (h,)).fetchall()
+        giorni = {x[0] for x in datate}
+        identita = {(x[1], x[2], x[3], x[4], x[5], x[6]) for x in datate}
+        libere = [o for o in O if o[0] not in giorni]
+        usate = set()
+        for rid, _h, t, n, raw, sp, ts, dist in rs:
+            cand = [o for o in libere if o[1] == t and o[2] == n and o not in usate]
+            if len(cand) == 1:
+                usate.add(cand[0]); toccati.add(h); esito["senza_data_datate"] += 1
+                if not prova:
+                    conn.execute("UPDATE races SET race_date = ? WHERE id = ?", (cand[0][0], rid))
+                continue
+            if not cand and (t, n, raw, sp, ts, dist) in identita:
+                toccati.add(h); esito["senza_data_copie"] += 1
+                if not prova:
+                    conn.execute("DELETE FROM races WHERE id = ?", (rid,))
+                continue
+            esito["senza_data_restano"] += 1
+    if not prova and toccati:
+        conn.commit()
+        try:
+            import importlib.util
+            import sys
+            from pathlib import Path
+            radice = Path(__file__).resolve().parent.parent
+            for x in (str(radice), str(radice / "scripts")):
+                if x not in sys.path:
+                    sys.path.insert(0, x)
+            spec = importlib.util.spec_from_file_location("nu_rc", Path(__file__).resolve().parent.parent / "nightly_update.py")
+            nu = importlib.util.module_from_spec(spec); spec.loader.exec_module(nu)
+            storici = {x for (x,) in conn.execute("SELECT name FROM horses WHERE birth_year < 2012")}
+            for h in toccati:
+                if h not in storici:
+                    nu._update_horse_career_stats(conn, h)
+        except Exception as e:
+            print(f"[CORSE] totali di carriera non rifatti ({e}): li rifa' il notturno")
+        conn.commit()
+    esito["cavalli_toccati"] = len(toccati)
+    print(f"[CORSE] gare senza data: {esito}")
     return esito
 
 
