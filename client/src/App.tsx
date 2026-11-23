@@ -31,6 +31,7 @@ const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const AdvisorPage = lazy(() => import("./pages/AdvisorPage"));
 const ValidazionePage = lazy(() => import("./pages/ValidazionePage"));
 const ComparePage = lazy(() => import("./pages/ComparePage"));
+const SeguitiPage = lazy(() => import("./pages/SeguitiPage"));
 const StudFarmsPage = lazy(() => import("./pages/StudFarmsPage"));
 const AllevamentoHubPage = lazy(() => import("./pages/AllevamentoHubPage"));
 const TrendsPage = lazy(() => import("./pages/TrendsPage"));
@@ -83,6 +84,7 @@ export default function App() {
               <Route path="/validazione" component={ValidazionePage} />
               <Route path="/validazione-advisor" component={ValidazionePage} />
               <Route path="/compare" component={ComparePage} />
+              <Route path="/seguiti" component={SeguitiPage} />
               <Route path="/stallioni" component={StallionDirectoryPage} />
               {/* "stalloni" e' la parola giusta: l'indirizzo con la doppia i
                   resta valido per non rompere i link gia' salvati. */}

@@ -4,7 +4,7 @@ name: StatIppica — Storici dal registro UNIRE (ogni giorno)
 # nati dal 1990 al 2011 che hanno corso, con anagrafica e totali di carriera dal
 # registro ufficiale UNIRE: entrano fra gli storici, valutati sulla scala di
 # prima (nightly_update.phase_historic_ratings). Ogni giorno lavora per al
-# massimo 150 minuti a una richiesta al secondo e riprende la notte dopo dal
+# massimo 270 minuti (23/11/2026, prima 150) a una richiesta al secondo e riprende la notte dopo dal
 # punto esatto. Lo lancia per ultimo la regia notturna
 # (scripts/regia_notturna.sh): aspetta che gli altri lavori finiscano
 # (aspetta_turno.sh) e si ferma comunque alle 8:00 italiane, cosi' archivio e
@@ -17,14 +17,29 @@ on:
       minuti:
         description: "Minuti di lavoro"
         required: false
-        default: "150"
+        default: "270"
 
 permissions:
   contents: write
   actions: read
 
 jobs:
+  # 23/11/2026: l'attesa del turno sta in un lavoro a parte. Prima contava nel
+  # limite di 355 minuti dello stesso lavoro: il lunedi' (catalogo e genealogie
+  # in coda) aspettava 2 ore e 20 e poteva lavorare solo 150 minuti. Ora il
+  # limite riparte da zero quando tocca agli storici, e si lavora fino alle
+  # 8:00 italiane.
+  turno:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v5
+      - name: Aspetta che gli altri lavori sull'archivio finiscano
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/aspetta_turno.sh
   storici:
+    needs: turno
     runs-on: ubuntu-latest
     # Il limite conta anche l'attesa del turno dietro gli altri lavori: il
     # 18/11/2026 un giro ha aspettato 71 minuti, poi ha lavorato i suoi 220 ed
@@ -48,7 +63,7 @@ jobs:
       - name: Recupera gli storici
         id: storici
         env:
-          MINUTI: ${{ inputs.minuti || '150' }}
+          MINUTI: ${{ inputs.minuti || '270' }}
         run: |
           set -euo pipefail
           # Di notte (lancio della regia) si lavora al massimo fino alle 8:00
