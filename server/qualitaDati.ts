@@ -22,11 +22,11 @@ export function registraQualita(app: Express, getDb: () => any, esiste: (db: any
       const g = uno(`SELECT COUNT(*) n, MIN(race_date) dal, MAX(race_date) al,
                             SUM(placement IS NOT NULL) arrivo, SUM(time_km IS NOT NULL) km,
                             SUM(trainer IS NOT NULL AND trainer <> '') allenatore, SUM(owner IS NOT NULL AND owner <> '') proprietario,
-                            COUNT(DISTINCT race_date || '|' || track || '|' || CASE WHEN instr(race_code, '_R') > 0 THEN CAST(substr(race_code, instr(race_code, '_R') + 2) AS INTEGER) ELSE race_number END) corse
+                            COUNT(DISTINCT race_date || '|' || track || '|' || CASE WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_R[0-9]*' THEN CAST(substr(race_code, 16) AS INTEGER)   WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_[0-9]*' THEN CAST(substr(race_code, 15) AS INTEGER)   ELSE race_number END) corse
                        FROM races WHERE track <> 'ESTERO' AND race_date IS NOT NULL`) ?? {};
       const senzaData = uno(`SELECT COUNT(*) n, COUNT(DISTINCT horse_name) cavalli FROM races WHERE race_date IS NULL`) ?? {};
       const estero = uno(`SELECT COUNT(*) n FROM races WHERE track = 'ESTERO'`)?.n ?? 0;
-      const perAnno = tutti(`SELECT CAST(substr(race_date, 1, 4) AS INTEGER) anno, COUNT(*) partenze, COUNT(DISTINCT race_date || '|' || track || '|' || CASE WHEN instr(race_code, '_R') > 0 THEN CAST(substr(race_code, instr(race_code, '_R') + 2) AS INTEGER) ELSE race_number END) corse,
+      const perAnno = tutti(`SELECT CAST(substr(race_date, 1, 4) AS INTEGER) anno, COUNT(*) partenze, COUNT(DISTINCT race_date || '|' || track || '|' || CASE WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_R[0-9]*' THEN CAST(substr(race_code, 16) AS INTEGER)   WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_[0-9]*' THEN CAST(substr(race_code, 15) AS INTEGER)   ELSE race_number END) corse,
                                     SUM(trainer IS NOT NULL AND trainer <> '') allenatore
                                FROM races WHERE track <> 'ESTERO' AND race_date IS NOT NULL GROUP BY 1 ORDER BY 1`)
         .map(r => ({ anno: r.anno, partenze: r.partenze, corse: r.corse, pct_allenatore: pct(r.allenatore, r.partenze) }));
@@ -39,7 +39,7 @@ export function registraQualita(app: Express, getDb: () => any, esiste: (db: any
       let quote: any = null;
       if (esiste(db, "quote_totalizzatore")) {
         const q = uno(`SELECT MIN(race_date) dal, COUNT(*) n FROM (SELECT DISTINCT race_date, pista, corsa FROM quote_totalizzatore)`);
-        const c = uno(`SELECT COUNT(DISTINCT race_date || '|' || track || '|' || CASE WHEN instr(race_code, '_R') > 0 THEN CAST(substr(race_code, instr(race_code, '_R') + 2) AS INTEGER) ELSE race_number END) n FROM races WHERE race_date >= ? AND track <> 'ESTERO'`, q?.dal ?? "9999");
+        const c = uno(`SELECT COUNT(DISTINCT race_date || '|' || track || '|' || CASE WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_R[0-9]*' THEN CAST(substr(race_code, 16) AS INTEGER)   WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_[0-9]*' THEN CAST(substr(race_code, 15) AS INTEGER)   ELSE race_number END) n FROM races WHERE race_date >= ? AND track <> 'ESTERO'`, q?.dal ?? "9999");
         quote = { dal: q?.dal ?? null, corse_con_quote: q?.n ?? 0, corse: c?.n ?? 0, pct: pct(Math.min(q?.n ?? 0, c?.n ?? 0), c?.n ?? 0) };
       }
 

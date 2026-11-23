@@ -3625,7 +3625,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT s.pista, s.race_date, s.corsa, s.horse_name, s.prob, s.affidabile, s.tipo,
                r.placement AS arrivo,
                COALESCE(r.placement_raw, ${vpTableExists(db, "partenti_ritirati") ? "(SELECT 'n.p.' FROM partenti_ritirati p WHERE p.horse_name = s.horse_name AND p.race_date = s.race_date LIMIT 1)" : "NULL"}) AS arrivo_testo,
-               r.race_code AS codice, h.birth_year
+               r.race_code AS codice, r.race_number AS numero_corsa, h.birth_year
           FROM pronostico_top3_storico s
           LEFT JOIN races r ON r.horse_name = s.horse_name AND r.race_date = s.race_date AND r.track = s.pista
           LEFT JOIN horses h ON h.name = s.horse_name
@@ -3698,13 +3698,20 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // cavalli accoppiati (stessa scuderia) non venivano letti dal
         // calendario, e una corsa poteva essere vinta da un cavallo mai
         // stimato. Si mostrano e la corsa non entra nella media.
-        const codici = g.map(e => e.codice).filter(Boolean);
-        const codice = codici.sort((a: string, b: string) => codici.filter((x: string) => x === b).length - codici.filter((x: string) => x === a).length)[0];
+        // Il numero della corsa: dal codice ("..._R4", "..._4") o, per le gare
+        // fino a giugno 2026 (codice = sigla della pista), da race_number.
+        // Cercare per il solo codice "RO" prendeva tutte le corse di Roma (23/11/2026).
+        const numeri = g.map(e => { const m = String(e.codice ?? "").match(/_R?(\d+)$/); return m ? Number(m[1]) : (e.numero_corsa ?? null); })
+          .filter((x: any) => x != null) as number[];
+        const nCorsaNum = numeri.sort((a, b) => numeri.filter(x => x === b).length - numeri.filter(x => x === a).length)[0] ?? null;
+        const codice = nCorsaNum != null ? `${g[0].race_date}|${g[0].pista}|${nCorsaNum}` : null;
         const stimati = new Set(g.map(e => e.horse_name));
-        const mancanti = codice ? (db.prepare(`
+        const mancanti = nCorsaNum != null ? (db.prepare(`
             SELECT r.horse_name, r.placement AS arrivo, r.placement_raw AS arrivo_testo, h.birth_year
               FROM races r LEFT JOIN horses h ON h.name = r.horse_name
-             WHERE r.race_code = ? ORDER BY COALESCE(r.placement, 99)`).all(codice) as any[])
+             WHERE r.race_date = ? AND r.track = ?
+               AND (r.race_number = ? OR r.race_code GLOB ('*_' || ?) OR r.race_code GLOB ('*_R' || ?))
+             ORDER BY COALESCE(r.placement, 99)`).all(g[0].race_date, g[0].pista, nCorsaNum, String(nCorsaNum), String(nCorsaNum)) as any[])
             .filter(r => !stimati.has(r.horse_name) && !nonPartito(r))
             .map(r => ({ horse_name: r.horse_name, birth_year: r.birth_year,
                          arrivo_testo: r.arrivo != null ? `${r.arrivo}°` : esitoInParole(r.arrivo_testo),
@@ -3717,7 +3724,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // I tre favoriti del pubblico: le tre quote piu' basse fra chi e' partito.
         let favMercato: string[] | null = null;
         let segnoMercato: number | null = null;
-        const nCorsa = String(codice ?? "").match(/_R?(\d+)$/);
+        const nCorsa = nCorsaNum != null ? [String(nCorsaNum), String(nCorsaNum)] : null;
         // Quote finali del totalizzatore per nome; Hippoweb scrive "-S-" dove
         // l'archivio scrive "(S)": si confrontano i nomi senza segni.
         const qq = new Map<string, number>();

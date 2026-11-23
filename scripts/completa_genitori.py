@@ -24,8 +24,10 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import csv
 import re
 import sqlite3
+from pathlib import Path
 
 
 def _tabella(conn, n):
@@ -87,10 +89,75 @@ def unisci_nomi_con_sigla(conn: sqlite3.Connection, prova: bool = False) -> int:
     return n
 
 
+FILE_UNIRE = Path(__file__).resolve().parent.parent / "dati" / "genealogie_unire.csv"
+
+
+def da_unire(conn: sqlite3.Connection, prova: bool = False) -> dict:
+    """23/11/2026: padre e madre dalle schede UNIRE (dati/genealogie_unire.csv,
+    scripts/genealogie_unire.py), lette per id lungo il ramo.
+      - Cavallo dell'archivio senza padre o senza madre: si completa se la
+        scheda e' la sua (stesso anno), o, quando l'anno non si sa, se il
+        genitore che l'archivio conosce gia' e' lo stesso della scheda.
+      - Genitore di un cavallo dell'archivio che nell'archivio non c'e': entra
+        come riproduttore (anagrafica e genitori, senza carriera), solo se
+        della sua scheda si sa l'anno.
+    Contro gli omonimi (la BOSA del 2017 non e' la BOSA madre di ACERO):
+    niente si scrive senza un anno o un genitore che combaciano."""
+    esito = {"padri": 0, "madri": 0, "inseriti": 0}
+    if not FILE_UNIRE.exists():
+        return esito
+    U = {}
+    with FILE_UNIRE.open(newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f, delimiter=";"):
+            U[r["nome"].strip().upper()] = r
+    for rid, n, y, s_, d_ in conn.execute("""SELECT rowid, name, birth_year, sire, dam FROM horses
+                                            WHERE (sire IS NULL OR TRIM(sire) = '' OR dam IS NULL OR TRIM(dam) = '')""").fetchall():
+        r = U.get(str(n).upper())
+        if not r or not (r.get("padre") or r.get("madre")):
+            continue
+        anno = int(r["anno"]) if (r.get("anno") or "").isdigit() else None
+        if anno is not None:
+            ok = y is None or int(y) == anno
+        else:
+            ok = (s_ and r.get("padre") and s_.upper() == r["padre"]) or (d_ and r.get("madre") and d_.upper() == r["madre"])
+        if not ok:
+            continue
+        if not s_ and r.get("padre") and r["padre"] != n:
+            esito["padri"] += 1
+            if not prova:
+                conn.execute("UPDATE horses SET sire = ? WHERE rowid = ?", (r["padre"], rid))
+        if not d_ and r.get("madre") and r["madre"] != n:
+            esito["madri"] += 1
+            if not prova:
+                conn.execute("UPDATE horses SET dam = ? WHERE rowid = ?", (r["madre"], rid))
+        if anno and y is None and not prova:
+            conn.execute("UPDATE horses SET birth_year = ? WHERE rowid = ? AND birth_year IS NULL", (anno, rid))
+    presenti = {x for (x,) in conn.execute("SELECT name FROM horses")}
+    citati = {x for (x,) in conn.execute(
+        "SELECT sire FROM horses WHERE sire <> '' UNION SELECT dam FROM horses WHERE dam <> ''") if x}
+    for g in sorted(citati - presenti):
+        r = U.get(g)
+        if not r or not (r.get("anno") or "").isdigit():
+            continue
+        anno = int(r["anno"])
+        esito["inseriti"] += 1
+        if not prova:
+            conn.execute("""INSERT INTO horses (name, birth_year, sex, sire, dam, career_races, career_wins, career_places,
+                                                career_earnings, source, source_role, horse_class, backfill_status, tw_found, last_updated)
+                            VALUES (?,?,?,?,?, 0,0,0,0, 'unire_genealogia', 'parent_backfill', ?, 'done', 0, datetime('now'))""",
+                         (g, anno, r.get("sesso") or None, r.get("padre") or None, r.get("madre") or None,
+                          "breeder" if anno < 2012 else "athlete"))
+    if not prova:
+        conn.commit()
+    print(f"[GENITORI] dalle schede UNIRE: {esito}")
+    return esito
+
+
 def completa(conn: sqlite3.Connection, prova: bool = False) -> dict:
     sigle = unisci_nomi_con_sigla(conn, prova)
     if sigle:
         print(f"[GENITORI] nomi con la sigla del paese uniti: {sigle}")
+    da_unire(conn, prova)
     conto = {"catalogo": 0, "vp": 0, "vp_figli": 0, "padri_catalogo": 0, "sesso_m": 0, "sesso_f": 0}
     righe = conn.execute("""SELECT rowid, name, birth_year, sire FROM horses
                              WHERE (dam IS NULL OR TRIM(dam) = '')
