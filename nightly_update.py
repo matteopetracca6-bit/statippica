@@ -3693,6 +3693,27 @@ def phase_correggi_genealogie_stalloni(conn: sqlite3.Connection) -> None:
         print(f"[GENEALOGIE] saltata: {e}", file=sys.stderr)
 
 
+def phase_sesso_dai_figli(conn: sqlite3.Connection) -> None:
+    """23/11/2026: GIMPANZEE, SOUTHWIND FRANK e altri stalloni esteri entrati
+    nell'archivio solo come padri avevano il sesso vuoto, e la pagina pedigree
+    li mostrava in rosa come femmine. Chi e' padre di qualcuno (e non anche
+    madre, che vorrebbe dire un errore di dati) e' un maschio; chi e' solo
+    madre e' una femmina. Si tocca solo il sesso vuoto."""
+    try:
+        m = conn.execute("""UPDATE horses SET sex = 'M'
+                             WHERE (sex IS NULL OR TRIM(sex) = '')
+                               AND name IN (SELECT sire FROM horses WHERE sire IS NOT NULL AND sire <> '')
+                               AND name NOT IN (SELECT dam FROM horses WHERE dam IS NOT NULL AND dam <> '')""").rowcount
+        f = conn.execute("""UPDATE horses SET sex = 'F'
+                             WHERE (sex IS NULL OR TRIM(sex) = '')
+                               AND name IN (SELECT dam FROM horses WHERE dam IS NOT NULL AND dam <> '')
+                               AND name NOT IN (SELECT sire FROM horses WHERE sire IS NOT NULL AND sire <> '')""").rowcount
+        conn.commit()
+        print(f"[SESSO] dai figli: {m} maschi, {f} femmine")
+    except Exception as e:
+        print(f"[SESSO] saltato: {e}", file=sys.stderr)
+
+
 def phase_normalize_country(conn: sqlite3.Connection) -> None:
     """Riporta il campo paese a una scrittura sola, la sigla di tre lettere."""
     totale = 0
@@ -5922,6 +5943,7 @@ def main():
         phase_vp_qualifiche(conn)       # FASE 2f: qualifiche giovani + allevatori
         phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
         phase_correggi_genealogie_stalloni(conn)  # FASE 2g-bis: genealogie web -> registro UNIRE
+        phase_sesso_dai_figli(conn)  # sesso vuoto: padre = maschio, madre = femmina
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi
         try:
             # Paese degli stalloni cercato a mano (dati/nazionalita_stalloni.csv).
