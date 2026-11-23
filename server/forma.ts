@@ -34,22 +34,32 @@ function mercato(db: Database.Database, versione: number): Mercato {
   });
   // Come vanno in generale i favoriti del pubblico (per il confronto).
   const fav = { n: 0, v: 0, t3: 0 };
-  const righe = db.prepare(`SELECT race_date, track, race_code, horse_name, placement FROM races
+  const righe = db.prepare(`SELECT race_date, track, race_code, race_number, horse_name, placement FROM races
                              WHERE race_date >= '2025-01-01' AND race_code IS NOT NULL AND track <> 'ESTERO'`).all() as any[];
   for (const r of righe) {
-    const m = String(r.race_code).match(/_R?(\d+)$/); if (!m) continue;
-    const q = quote.get(`${r.race_date}|${r.track}|${Number(m[1])}|${nomeQuota(r.horse_name)}`);
+    const nc = numeroCorsa(r); if (nc == null) continue;
+    const q = quote.get(`${r.race_date}|${r.track}|${nc}|${nomeQuota(r.horse_name)}`);
     if (q?.posto === 1) { fav.n++; if (r.placement === 1) fav.v++; if (r.placement != null && r.placement <= 3) fav.t3++; }
   }
   MERCATO = { versione, quote, fav };
   return MERCATO;
 }
 
+// Il numero della corsa: fino a giugno 2026 il codice e' solo la sigla della
+// pista ("RO") e il numero sta in race_number; da luglio il codice e'
+// "2026-11-20_FI_R1". Leggendo solo il codice si perdevano le corse 2025-26
+// con le quote (23/11/2026).
+function numeroCorsa(r: any): number | null {
+  const m = String(r.race_code ?? "").match(/_R?(\d+)$/);
+  if (m) return Number(m[1]);
+  return r.race_number != null && Number.isFinite(Number(r.race_number)) ? Number(r.race_number) : null;
+}
+
 const pct = (a: number, b: number) => (b ? Math.round(1000 * a / b) / 10 : null);
 
 export function formaPersona(db: Database.Database, colonna: "driver" | "trainer", nome: string, versione: number) {
   const corse = db.prepare(`
-    SELECT race_date, track, race_code, horse_name, placement, placement_raw, COALESCE(prize_net, 0) premio
+    SELECT race_date, track, race_code, race_number, horse_name, placement, placement_raw, COALESCE(prize_net, 0) premio
       FROM races WHERE ${colonna} = ? AND race_date >= date('now', '-24 months') AND race_date < date('now')
      ORDER BY race_date DESC`).all(nome) as any[];
   if (!corse.length) return null;
@@ -92,8 +102,8 @@ export function formaPersona(db: Database.Database, colonna: "driver" | "trainer
     const M = mercato(db, versione);
     let n = 0, vinte = 0, attese = 0, fn = 0, fv = 0, ft3 = 0, sorprese = 0;
     for (const r of corse) {
-      const m = String(r.race_code ?? "").match(/_R?(\d+)$/); if (!m) continue;
-      const q = M.quote.get(`${r.race_date}|${r.track}|${Number(m[1])}|${nomeQuota(r.horse_name)}`);
+      const nc = numeroCorsa(r); if (nc == null) continue;
+      const q = M.quote.get(`${r.race_date}|${r.track}|${nc}|${nomeQuota(r.horse_name)}`);
       if (!q) continue;
       n++; attese += q.p; if (r.placement === 1) { vinte++; if (q.quota >= 10) sorprese++; }
       if (q.posto === 1) { fn++; if (r.placement === 1) fv++; if (r.placement != null && r.placement <= 3) ft3++; }
