@@ -77,7 +77,7 @@ export default function CavalliDelMomento() {
           <button style={bottone(giovani)} onClick={() => setGiovani(true)}>Giovani (2-3 anni)</button>
         </span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))", gap: "16px" }}>
+      <div className="griglia-due-home">
         <div className="pannello" style={CARD}>
           {titolo(Flame, "In forma", "hsl(25 90% 58%)")}
           <div style={{ fontSize: "12px", color: MUTED, marginBottom: "10px" }}>Più vittorie e piazzamenti nei primi tre nell'ultimo mese, con almeno 2 corse.</div>

@@ -1347,3 +1347,10 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .box-rotture .esiti span { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; background: hsl(220 10% 15%); color: hsl(210 8% 60%); }
 .box-rotture .esiti span.gal { background: hsl(8 50% 35% / 0.25); color: hsl(8 70% 70%); }
 .box-rotture .nota { font-size: 11.5px; color: hsl(210 8% 52%); margin-top: 8px; line-height: 1.5; }
+
+/* Home (23/11/2026): i riquadri sempre due per riga su desktop (In forma e
+   Nuovo record; Top stalloni e Campione per generazione; Sorprese e
+   Delusioni), uno per riga su schermi stretti. Con auto-fit, su uno schermo
+   largo finivano tutti in fila. */
+.griglia-due-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .griglia-due-home { grid-template-columns: minmax(0, 1fr); } }

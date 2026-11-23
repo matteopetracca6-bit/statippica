@@ -173,7 +173,7 @@ export default function Home() {
 
       {/* ─── TOP STALLONI + CAMPIONE PER GENERAZIONE, SORPRESE + DELUSIONI ─── */}
       <div className="page-shell">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))", gap: "16px" }}>
+        <div className="griglia-due-home">
 
           {/* Top stallions */}
           <div className="pannello" style={{ ["--colore-pannello" as any]: "hsl(120 60% 50%)", padding: "22px 24px" }}>
