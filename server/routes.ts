@@ -998,9 +998,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // totale salvato nella scheda, che per 922 cavalli non era aggiornato
       // (Don Fanucci Zet: 0 invece di 54). Solo per i cavalli senza gare in
       // archivio (gli storici) resta il totale preso dalla fonte.
-      const tot = db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) p
+      const tot = db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) p,
+                                     SUM(CASE WHEN placement BETWEEN 1 AND 5 THEN 1 ELSE 0 END) p5
                               FROM races WHERE horse_name = ?`).get(name) as any;
       horse.career_top3 = tot?.n ? (tot.p ?? 0) : ((horse.career_wins ?? 0) + (horse.career_places ?? 0));
+      // Primi cinque dalle gare (23/11/2026), quando le gare ci sono.
+      horse.career_top5_gare = tot?.n ? (tot.p5 ?? 0) : null;
       // Carriera completa di chi ha corso soprattutto all'estero
       // (scripts/carriere_complete.py): i totali vengono dalla fonte ufficiale
       // straniera, le gare una per una restano solo quelle italiane.
@@ -1013,12 +1016,21 @@ export function registerRoutes(httpServer: Server, app: Express) {
       // BIEFFE 241 su 548 corse. Per gli storici si mostrano quindi i "primi
       // cinque" del registro; i primi tre solo se le gare in archivio coprono
       // tutta la carriera.
-      horse.career_top5 = null;
+      // Vittorie, primi tre e primi cinque per tutti (23/11/2026):
+      //  - gare che coprono tutta la carriera: tutti e due dalle gare;
+      //  - storici con i totali del registro: primi cinque dal registro, primi
+      //    tre non si sanno;
+      //  - carriere complete dall'estero: primi tre dalla fonte (LeTrot, USTA),
+      //    primi cinque solo se la fonte li da'.
       const registro = horse.horse_class === "breeder" && !horse.carriera_completa;
-      if (registro && !(tot?.n && tot.n >= (horse.career_races ?? 0))) {
+      const gareComplete = !!(tot?.n && tot.n >= (horse.career_races ?? 0));
+      horse.career_top5 = gareComplete ? horse.career_top5_gare : null;
+      if (registro && !gareComplete) {
         horse.career_top5 = horse.career_races ? (horse.career_wins ?? 0) + (horse.career_places ?? 0) : null;
         horse.career_top3 = null;
       }
+      if (horse.carriera_completa) horse.career_top5 = horse.carriera_completa.primi_cinque ?? null;
+      delete horse.career_top5_gare;
       // "Dove ha corso": l'Italia dalle gare in archivio, l'estero e' quello che
       // manca per arrivare ai totali della fonte straniera (prima diceva 0 euro
       // all'estero a FACE TIME BOURBON, che all'estero ha vinto 3,3 milioni).
