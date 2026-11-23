@@ -4033,6 +4033,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
    * solo i cavalli che hanno corso in Italia in anni recenti, quindi i nonni
    * materni e gli antenati esteri mancano quasi sempre.
    */
+  // "TRIXTON -USA-": qualche antenato nella fonte ha la sigla del paese e
+  // diventava un cavallo a parte, senza carriera (23/11/2026).
+  const senzaSigla = (n: string) => String(n).replace(/\s*-\s*[A-Z]{1,3}\s*-\s*$/, "").trim() || String(n);
   function vpAncestorMap(db: any, horseName: string): Map<string, string> {
     const out = new Map<string, string>();
     if (!vpTableExists(db, "vp_pedigree")) return out;
@@ -4045,7 +4048,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     `).all(horseName.trim().toUpperCase()) as any[];
     for (const r of rows) {
       const path = String(r.path || "").trim().toLowerCase();
-      if (path && r.name) out.set(path, r.name);
+      if (path && r.name) out.set(path, senzaSigla(r.name));
     }
     if (out.size === 0) return alberoDaDiscendente(db, horseName) ?? alberoDaStallionPedigree(db, horseName) ?? out;
     return out;
@@ -4084,7 +4087,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const qui = new Map<string, string>();
       for (const r of sotto.all(o.h, P.length, P.length, o.path) as any[]) {
         const rel = String(r.path).toLowerCase().slice(0, -P.length);
-        if (rel && r.name) qui.set(rel, r.name);
+        if (rel && r.name) qui.set(rel, senzaSigla(r.name));
       }
       // Un omonimo con un altro padre non si mescola.
       if (out.get("p") && qui.get("p") && out.get("p") !== qui.get("p")) continue;
