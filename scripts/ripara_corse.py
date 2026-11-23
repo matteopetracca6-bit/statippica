@@ -117,6 +117,15 @@ def gare_senza_data(conn: sqlite3.Connection, prova: bool = False, max_copie: in
     for d, cod, corsa, ch in conn.execute("SELECT data, codice, corsa, chiave FROM allenatori_corse"):
         if ch in chiavi and cod in pista:
             uff[chiavi[ch]].add((d, pista[cod], corsa))
+    # Distanza delle corse ufficiali, dove la fonte la scrive (gare in attesa).
+    dist_uff = {}
+    try:
+        for d, cod, corsa, ch, dist in conn.execute(
+                "SELECT data, codice, corsa, chiave, distanza FROM gare_ufficiali_attesa WHERE distanza IS NOT NULL"):
+            if ch in chiavi and cod in pista:
+                dist_uff[(chiavi[ch], d, corsa)] = dist
+    except sqlite3.Error:
+        pass
     toccati = set()
     # Nel notturno le copie da togliere sono poche (la pulizia grande si fa a
     # mano, archivio-genitori.yml): se fossero tante, la pubblicazione si
@@ -140,6 +149,16 @@ def gare_senza_data(conn: sqlite3.Connection, prova: bool = False, max_copie: in
         usate = set()
         for rid, _h, t, n, raw, sp, ts, dist in rs:
             cand = [o for o in libere if o[1] == t and o[2] == n and o not in usate]
+            if n is None:
+                # Senza numero di corsa (CHICCA ROSS, Torino, r.p., 1600 m): si
+                # cerca fra le corse ufficiali libere sulla stessa pista quella
+                # con la stessa distanza; se e' una sola, prende data e numero.
+                cand = [o for o in libere if o[1] == t and o not in usate and dist_uff.get((h, o[0], o[2])) == dist]
+                if len(cand) == 1:
+                    usate.add(cand[0]); toccati.add(h); esito["senza_data_datate"] += 1
+                    if not prova:
+                        conn.execute("UPDATE races SET race_date = ?, race_number = ? WHERE id = ?", (cand[0][0], cand[0][2], rid))
+                    continue
             if len(cand) == 1:
                 usate.add(cand[0]); toccati.add(h); esito["senza_data_datate"] += 1
                 if not prova:
