@@ -1644,6 +1644,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, parseInt(req.query.limit as string) || 25);
     const haOspiti = (() => { const d = getDb(); try { return vpTableExists(d, "ospiti_esteri"); } finally { d.close(); } })();
+    // Primi tre e primi cinque (23/11/2026): le colonne nascono con il primo
+    // notturno che le calcola.
+    const haPrimi = (() => { const d = getDb(); try { return (d.prepare("PRAGMA table_info(horse_ratings)").all() as any[]).some(c => c.name === "primi_cinque"); } finally { d.close(); } })();
     const offset = (page - 1) * limit;
     const sortBy = req.query.sort as string || "score";
 
@@ -1738,6 +1741,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
       sortBy === "earnings" ? C("career_earnings")
         : sortBy === "wins" ? C("career_wins")
           : sortBy === "races" ? C("career_races")
+            : sortBy === "top3" && haPrimi ? "COALESCE(hr.primi_tre, -1)"
+            : sortBy === "top5" && haPrimi ? "COALESCE(hr.primi_cinque, -1)"
             : sortBy === "name" ? "hr.name"
               // Primi della loro annata: mette in cima il migliore di ogni
               // generazione invece dei soli cavalli maturi. Senza questo,
@@ -1768,6 +1773,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
                hr.sire_percentile, ${C("career_races")} AS career_races, ${C("career_wins")} AS career_wins,
                ${C("career_earnings")} AS career_earnings, hr.record_career, hr.win_rate,
                hr.career_races AS carriera_corse, hr.career_earnings AS carriera_guadagni,
+               ${haPrimi ? "hr.primi_tre, hr.primi_cinque," : ""}
                hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
                hr.guad_italia, hr.guad_estero,
                hr.grade_annata, hr.pos_annata, hr.tot_annata,
