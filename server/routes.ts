@@ -1616,6 +1616,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
     // l'archivio conosce solo i totali di carriera, senza le singole gare.
     // Vanno confrontati fra loro, quindi il filtro sugli atleti non si applica.
     const storico = mode === "storico";
+    // Classifica storica: "tutta la carriera" (predefinita) o "solo in Italia"
+    // (23/11/2026). I totali italiani stanno in gare_italia/vitt_italia/guad_italia.
+    const soloItalia = storico && req.query.ambito === "italia";
+    const C = (campo: "career_races" | "career_wins" | "career_earnings") =>
+      !soloItalia ? `hr.${campo}`
+        : `COALESCE(hr.${campo === "career_races" ? "gare_italia" : campo === "career_wins" ? "vitt_italia" : "guad_italia"}, hr.${campo})`;
     const conditions: string[] = storico
       ? ["hr.rating_mode = ?"]
       : ["hr.rating_mode = ?", ONLY_ATHLETES];
@@ -1692,9 +1698,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       LEFT JOIN horses h ON h.name = hr.name AND h.birth_year = hr.birth_year
       ${conOspiti ? "LEFT JOIN ospiti_esteri oe ON oe.nome = hr.name" : ""}`;
     const sortCol =
-      sortBy === "earnings" ? "hr.career_earnings"
-        : sortBy === "wins" ? "hr.career_wins"
-          : sortBy === "races" ? "hr.career_races"
+      sortBy === "earnings" ? C("career_earnings")
+        : sortBy === "wins" ? C("career_wins")
+          : sortBy === "races" ? C("career_races")
             : sortBy === "name" ? "hr.name"
               // Primi della loro annata: mette in cima il migliore di ogni
               // generazione invece dei soli cavalli maturi. Senza questo,
@@ -1722,7 +1728,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
         .some(c => c.name === "carriera_parziale");
       const rows = db.prepare(`
         SELECT hr.name, hr.birth_year, hr.sire, hr.grade, hr.score, hr.earn_percentile, hr.time_percentile,
-               hr.sire_percentile, hr.career_races, hr.career_wins, hr.career_earnings, hr.record_career, hr.win_rate,
+               hr.sire_percentile, ${C("career_races")} AS career_races, ${C("career_wins")} AS career_wins,
+               ${C("career_earnings")} AS career_earnings, hr.record_career, hr.win_rate,
+               hr.career_races AS carriera_corse, hr.career_earnings AS carriera_guadagni,
                hr.gare_italia, hr.gare_estero, hr.vitt_italia, hr.vitt_estero,
                hr.guad_italia, hr.guad_estero,
                hr.grade_annata, hr.pos_annata, hr.tot_annata,
