@@ -5944,6 +5944,12 @@ def main():
         phase_vp_pedigree(conn)         # FASE 2g: genealogia 5 generazioni + incroci
         phase_correggi_genealogie_stalloni(conn)  # FASE 2g-bis: genealogie web -> registro UNIRE
         phase_sesso_dai_figli(conn)  # sesso vuoto: padre = maschio, madre = femmina
+        try:  # madri mancanti (TRIXTON "MUSCLE HILL x ???") e nomi con la sigla del paese
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+            import completa_genitori as _cg
+            _cg.completa(conn)
+        except Exception as e:
+            print(f"[GENITORI] saltata: {e}", file=sys.stderr)
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi
         try:
             # Paese degli stalloni cercato a mano (dati/nazionalita_stalloni.csv).

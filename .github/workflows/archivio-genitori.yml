@@ -1,0 +1,40 @@
+name: StatIppica — Madri mancanti e sesso (a mano)
+
+# 23/11/2026 (scripts/completa_genitori.py). Mette le madri che mancavano
+# (TRIXTON usciva "MUSCLE HILL x ???"), unisce i nomi con la sigla del paese
+# ("TRIXTON -USA-") e il sesso vuoto, poi pubblica l'archivio. Lo fa anche il
+# notturno: questo serve a non aspettare la notte. Da lanciare solo fuori
+# dalle ore dei lavori notturni (23-09).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  genitori:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Calcola
+        run: |
+          python3 scripts/completa_genitori.py --db data.db
+      - name: Pubblica l'archivio aggiornato
+        env:
+          GH_TOKEN: ${{ secrets.GH_NIGHTLY_TOKEN }}
+        run: |
+          set -euo pipefail
+          GARE=$(python3 -c "import sqlite3;print(sqlite3.connect('data.db').execute('select count(*) from races').fetchone()[0])")
+          if [ "$GARE" -lt 500000 ]; then echo "::error::solo $GARE gare: non lo pubblico."; exit 1; fi
+          gzip -9 -c data.db > data.db.gz
+          bash scripts/pubblica_archivio.sh
