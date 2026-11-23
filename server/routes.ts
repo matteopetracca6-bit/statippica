@@ -4,6 +4,7 @@ import { registraSimulatore } from "./simulatore";
 import { registraElencoCavalli } from "./elencoCavalli";
 import { incrociPerFattrice } from "./incroci";
 import { registraSorprese } from "./sorprese";
+import { formaPersona } from "./forma";
 import { distanzaCavallo, distanzaStallone, profiliStalloni, velocitaPiste } from "./distanza";
 import { potenzialeCavallo, verificaPotenziale, etichettaStadio, contestoMadre, potenzialeNascita } from "./potenziale";
 import { forzaCavallo } from "./forza";
@@ -4485,6 +4486,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   });
 
   app.get("/api/driver/:name", (req, res) => {
+    assicuraIndici();
     const db = getDb();
     try {
       const nome = decodeURIComponent(req.params.name);
@@ -4541,7 +4543,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
         ORDER BY anno
       `).all(nome) as any[];
 
-      res.json({ ...d, piste, cavalli, anni });
+      // Forma, piste migliori e rendimento con i favoriti (forma.ts).
+      const forma = (() => { try { return formaPersona(db, "driver", nome, mtimeDb()); } catch { return null; } })();
+      res.json({ ...d, piste, cavalli, anni, forma });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally { db.close(); }
@@ -4637,7 +4641,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         SELECT race_date AS data, horse_name AS cavallo FROM races
         WHERE trainer = ? AND placement = 1 AND COALESCE(prize_gross, prize_net, 0) >= 10000`).all(nome);
 
-      res.json({ ...t, anni, piste, cavalli, guidatori, ultime, vittorie });
+      const forma = (() => { try { return formaPersona(db, "trainer", nome, mtimeDb()); } catch { return null; } })();
+      res.json({ ...t, anni, piste, cavalli, guidatori, ultime, vittorie, forma });
     } catch (e: any) {
       res.status(500).json({ error: e?.message });
     } finally { db.close(); }

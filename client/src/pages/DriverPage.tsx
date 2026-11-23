@@ -1,5 +1,6 @@
 import NomePista from "@/components/NomePista";
 import RottureGaloppo from "@/components/RottureGaloppo";
+import FormaPersona from "@/components/FormaPersona";
 /**
  * Scheda di un singolo guidatore.
  *
@@ -103,6 +104,8 @@ export default function DriverPage() {
       )}
 
       <RottureGaloppo tipo="guidatore" nome={nome} />
+
+      <FormaPersona f={(d as any).forma} chi="guidatore" />
 
       <Spiegazione titolo="Cosa vuol dire &quot;rende meglio&quot;" compatta>
         Non e' la percentuale di vittorie, che dipende soprattutto da quali cavalli

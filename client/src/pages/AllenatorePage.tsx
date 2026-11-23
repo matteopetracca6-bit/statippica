@@ -5,6 +5,7 @@
  */
 
 import { useRoute, Link } from "wouter";
+import FormaPersona from "@/components/FormaPersona";
 import { quotaStimata } from "../lib/quotePremi";
 import RottureGaloppo from "@/components/RottureGaloppo";
 import { useQuery } from "@tanstack/react-query";
@@ -125,6 +126,8 @@ export default function AllenatorePage() {
       />
 
       <RottureGaloppo tipo="allenatore" nome={chiave.toUpperCase()} />
+
+      <FormaPersona f={d.forma} chi="allenatore" />
 
       <Spiegazione titolo="Come leggere questi numeri" compatta>
         Vittorie e premi dicono soprattutto quali cavalli ha in scuderia questo allenatore.
