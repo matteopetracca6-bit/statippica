@@ -57,6 +57,11 @@ function mediana(a: number[]): number | null {
   return s.length % 2 ? s[k] : (s[k - 1] + s[k]) / 2;
 }
 
+/** Il numero della corsa in SQL: dal codice ("..._R4" o "..._4"), altrimenti race_number. */
+export const NUMERO_SQL = `CASE WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_R[0-9]*' THEN CAST(substr(race_code, 16) AS INTEGER)
+  WHEN race_code GLOB '????-??-??_[A-Z][A-Z]_[0-9]*' THEN CAST(substr(race_code, 15) AS INTEGER)
+  ELSE race_number END`;
+
 export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Record<string, string>,
                                    esiste: (db: any, t: string) => boolean) {
   const nomePista = (p: string) => nomiPiste[p] ?? p;
@@ -70,14 +75,16 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
                                      GROUP BY track, race_date, race_time ORDER BY race_date, track, race_time`).all() as any[])
         .map(r => ({ tipo: "prossima", pista: nomePista(r.track), sigla: r.track, data: r.race_date, ora: r.race_time,
                      partenti: r.n, distanza: r.distanza }));
-      const passate = (db.prepare(`SELECT race_code, race_date, track, COUNT(*) AS n, MIN(distance) AS distanza
-                                     FROM races WHERE race_date >= date('now', '-14 day') AND race_code IS NOT NULL
-                                    GROUP BY race_code ORDER BY race_date DESC, track, race_code`).all() as any[])
-        .map(r => {
-          const m = String(r.race_code).match(/_R?(\d+)$/);
-          return { tipo: "passata", codice: r.race_code, pista: r.track, data: r.race_date, numero: m ? Number(m[1]) : null,
-                   partenti: r.n, distanza: r.distanza };
-        })
+      // Una corsa e' data + pista + numero (23/11/2026): il numero sta nel
+      // codice ("..._R4", "..._4") o, per le gare fino a giugno 2026 (codice =
+      // sigla della pista), in race_number. Raggruppare per codice metteva
+      // insieme tutte le corse di una giornata.
+      const passate = (db.prepare(`SELECT race_date, track, ${NUMERO_SQL} AS numero, COUNT(*) AS n, MIN(distance) AS distanza
+                                     FROM races WHERE race_date >= date('now', '-14 day') AND track <> 'ESTERO'
+                                    GROUP BY race_date, track, numero HAVING numero IS NOT NULL
+                                    ORDER BY race_date DESC, track, numero`).all() as any[])
+        .map(r => ({ tipo: "passata", codice: `${r.race_date}|${r.track}|${r.numero}`, pista: r.track, data: r.race_date, numero: r.numero,
+                     partenti: r.n, distanza: r.distanza }))
         .sort((a, b) => (b.data.localeCompare(a.data)) || a.pista.localeCompare(b.pista) || (a.numero ?? 0) - (b.numero ?? 0));
       res.json({ prossime, passate });
     } finally { db.close(); }
@@ -91,12 +98,17 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       let pista = "", data = "", ora: string | null = null, numero: number | null = null, sigla: string | null = null;
       if (tipo === "passata") {
         const codice = String(req.query.codice || "");
-        partenti = db.prepare(`SELECT horse_name AS nome, start_pos AS numero, distance AS distanza, driver AS guidatore,
-                                      placement AS arrivo, placement_raw AS arrivo_testo, time_km, race_date, track, shoes
-                                 FROM races WHERE race_code = ?`).all(codice) as any[];
+        const id = codice.split("|");
+        partenti = id.length === 3
+          ? db.prepare(`SELECT horse_name AS nome, start_pos AS numero, distance AS distanza, driver AS guidatore,
+                               placement AS arrivo, placement_raw AS arrivo_testo, time_km, race_date, track, shoes
+                          FROM races WHERE race_date = ? AND track = ? AND ${NUMERO_SQL} = ?`).all(id[0], id[1], Number(id[2])) as any[]
+          : db.prepare(`SELECT horse_name AS nome, start_pos AS numero, distance AS distanza, driver AS guidatore,
+                               placement AS arrivo, placement_raw AS arrivo_testo, time_km, race_date, track, shoes
+                          FROM races WHERE race_code = ? AND race_code GLOB '*_*'`).all(codice) as any[];
         if (!partenti.length) return res.status(404).json({ error: "Corsa non trovata" });
         pista = partenti[0].track; data = partenti[0].race_date;
-        const m = codice.match(/_R?(\d+)$/); numero = m ? Number(m[1]) : null;
+        const m = id.length === 3 ? [id[2], id[2]] : codice.match(/_R?(\d+)$/); numero = m ? Number(m[1]) : null;
         // L'ora della corsa dal pronostico salvato quel giorno (stessi cavalli).
         if (esiste(db, "pronostico_top3_storico")) {
           const segna = db.prepare(`SELECT corsa FROM pronostico_top3_storico WHERE race_date = ? AND pista = ? AND horse_name = ?`);

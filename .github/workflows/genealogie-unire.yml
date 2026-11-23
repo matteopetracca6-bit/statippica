@@ -13,6 +13,10 @@ on:
         description: "Quanti stalloni (dal piu' prolifico)"
         required: false
         default: "50"
+      genitori:
+        description: "Quanti genitori di atleti senza padre o madre completare (0 = nessuno)"
+        required: false
+        default: "0"
       minuti:
         description: "Minuti al massimo"
         required: false
@@ -39,7 +43,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ottieni_archivio.sh
       - name: Leggi le schede UNIRE
-        run: python3 scripts/genealogie_unire.py --db data.db --stalloni "${{ inputs.stalloni || '50' }}" --minuti "${{ inputs.minuti || '120' }}"
+        run: python3 scripts/genealogie_unire.py --db data.db --stalloni "${{ inputs.stalloni || '50' }}" --genitori "${{ inputs.genitori || '0' }}" --minuti "${{ inputs.minuti || '120' }}"
       - name: Pubblica il file aggiornato
         run: |
           git config user.email "nightly@statippica.bot"

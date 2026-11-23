@@ -42,7 +42,7 @@ import unire_source as u  # noqa: E402
 from correggi_genealogie_stalloni import trova_id  # noqa: E402
 
 FILE = Path(__file__).resolve().parent.parent / "dati" / "genealogie_unire.csv"
-CAMPI = ["nome", "padre", "madre", "id_unire", "id_padre", "id_madre"]
+CAMPI = ["nome", "padre", "madre", "id_unire", "id_padre", "id_madre", "anno", "sesso"]
 # Ordine dei 14 link della scheda: catena di passi dal cavallo.
 ORDINE = ["p", "pp", "pm", "ppp", "ppm", "pmp", "pmm", "m", "mp", "mm", "mpp", "mpm", "mmp", "mmm"]
 
@@ -65,6 +65,9 @@ def scrivi(righe: dict) -> None:
             w.writerow({c: righe[k].get(c, "") for c in CAMPI})
 
 
+ULTIMA_TESTA: dict = {}   # anno e sesso del cavallo dell'ultima scheda letta
+
+
 def scheda(id_cav: str) -> tuple[str, dict] | None:
     """Nome del cavallo e i suoi antenati {catena: (nome, id)} dalla scheda."""
     r = u._get(u.UNIRE_LIST, params={"id_cav": id_cav})
@@ -74,6 +77,10 @@ def scheda(id_cav: str) -> tuple[str, dict] | None:
     if "La scheda" not in testo or "Genealogia" not in testo:
         return None
     nome = u._norm(testo.split("Banca dati Trotto", 1)[1].split("La scheda", 1)[0]) if "Banca dati Trotto" in testo else ""
+    h = u._HEADER_RE.search(testo)
+    ULTIMA_TESTA.clear()
+    if h:
+        ULTIMA_TESTA.update(anno=int(h.group(3)), sesso={"maschio": "M", "femmina": "F", "castrone": "C"}[h.group(1).lower()])
     link = [(u._norm(a.get_text()), a["href"].split("id_cav=")[-1].strip())
             for a in soup.find_all("a", href=True) if "id_cav=" in a["href"] and a.get_text(strip=True)]
     if len(link) != 14:
@@ -99,6 +106,13 @@ def registra(righe: dict, nome: str, id_cav: str, ant: dict, fino: int) -> list[
             r["id_unire"] = i
         righe[n] = r
     metti(nome, id_cav, "")
+    if ULTIMA_TESTA and nome in righe:
+        righe[nome].setdefault("anno", ULTIMA_TESTA.get("anno"))
+        righe[nome].setdefault("sesso", ULTIMA_TESTA.get("sesso"))
+        if not righe[nome].get("anno"):
+            righe[nome]["anno"] = ULTIMA_TESTA.get("anno")
+        if not righe[nome].get("sesso"):
+            righe[nome]["sesso"] = ULTIMA_TESTA.get("sesso")
     for cat in ("p", "m", "pp", "pm", "mp", "mm"):
         if len(cat) < fino and ant.get(cat):
             metti(ant[cat][0], ant[cat][1], cat)
@@ -118,15 +132,72 @@ def profondita(righe: dict, conn, nome: str, g: int = 0, visti=None) -> int:
     return min(profondita(righe, conn, p, g + 1), profondita(righe, conn, m, g + 1))
 
 
+def genitori_degli_atleti(conn, righe: dict, fine: float, massimo: int) -> None:
+    """23/11/2026: i genitori degli atleti che non hanno padre o madre
+    nell'archivio (o che nell'archivio non ci sono). Si arriva alla loro scheda
+    UNIRE da un figlio (nome, sesso, anno), si leggono tre generazioni sopra di
+    loro e anno e sesso del genitore stesso."""
+    H = {}
+    for n, s_, d_ in conn.execute("SELECT name, sire, dam FROM horses"):
+        H.setdefault(n, (s_, d_))
+    cand: dict = {}
+    for figlio, sesso, anno, padre, madre in conn.execute(
+            """SELECT name, sex, birth_year, sire, dam FROM horses
+               WHERE birth_year >= 2012 AND career_races > 0 AND sex IS NOT NULL AND sex <> ''"""):
+        for ruolo, g in (("sire", padre), ("dam", madre)):
+            if not g:
+                continue
+            r = righe.get(g) or {}
+            if r.get("padre") and r.get("madre"):
+                continue
+            h = H.get(g)
+            if h and h[0] and h[1]:
+                continue
+            cand.setdefault(g, (ruolo, figlio, sesso, anno))
+    print(f"[UNIRE] genitori degli atleti da completare: {len(cand)}")
+    fatti = 0
+    for g, (ruolo, figlio, sesso, anno) in cand.items():
+        if time.time() > fine or fatti >= massimo:
+            break
+        try:
+            ids = u.find_parent_ids(figlio, sesso, anno)
+        except u.UnireUnavailable:
+            print("[UNIRE] non raggiungibile: mi fermo.")
+            break
+        except Exception:
+            ids = None
+        if not ids or not ids.get(ruolo) or ids[ruolo][0] != g or not ids[ruolo][1]:
+            continue
+        try:
+            sc = scheda(ids[ruolo][1])
+        except u.UnireUnavailable:
+            print("[UNIRE] non raggiungibile: mi fermo.")
+            break
+        except Exception:
+            continue
+        if not sc or not sc[1] or (sc[0] and sc[0] != g):
+            continue
+        registra(righe, g, ids[ruolo][1], sc[1], 3)
+        fatti += 1
+        if fatti % 25 == 0:
+            scrivi(righe)
+            print(f"[UNIRE] genitori completati {fatti}")
+    print(f"[UNIRE] genitori completati {fatti} su {len(cand)}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default="data.db")
     ap.add_argument("--stalloni", type=int, default=50)
+    ap.add_argument("--genitori", type=int, default=0, help="quanti genitori di atleti completare (0 = nessuno)")
     ap.add_argument("--minuti", type=float, default=300)
     a = ap.parse_args()
     conn = sqlite3.connect(a.db)
     righe = leggi()
     fine = time.time() + a.minuti * 60
+    if a.genitori:
+        genitori_degli_atleti(conn, righe, fine, a.genitori)
+        scrivi(righe)
     stalloni = [r[0] for r in conn.execute(
         "SELECT sire, COUNT(*) k FROM horses WHERE sire IS NOT NULL AND sire <> '' GROUP BY sire ORDER BY k DESC")]
     fatti = saltati = senza_id = 0

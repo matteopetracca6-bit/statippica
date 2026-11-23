@@ -5948,6 +5948,8 @@ def main():
             sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
             import completa_genitori as _cg
             _cg.completa(conn)
+            import ripara_corse as _rc   # numero della corsa e date dal codice
+            _rc.ripara(conn)
         except Exception as e:
             print(f"[GENITORI] saltata: {e}", file=sys.stderr)
         phase_normalize_country(conn)   # FASE 2h: uniforma la scrittura dei paesi

@@ -28,6 +28,7 @@ jobs:
         run: bash scripts/ottieni_archivio.sh
       - name: Calcola
         run: |
+          python3 scripts/ripara_corse.py --db data.db
           python3 scripts/completa_genitori.py --db data.db
       - name: Pubblica l'archivio aggiornato
         env:

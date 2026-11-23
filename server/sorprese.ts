@@ -23,14 +23,22 @@ export function registraSorprese(app: Express, getDb: () => any, esiste: (db: an
     try {
       if (!esiste(db, "quote_totalizzatore")) return res.json({ giorni, sorprese: [], delusioni: [] });
       const righe = db.prepare(`
-        SELECT r.race_code, r.race_date, r.track, r.horse_name, r.placement, r.placement_raw, r.shoes, r.driver,
+        SELECT r.race_code, r.race_number, r.race_date, r.track, r.horse_name, r.placement, r.placement_raw, r.shoes, r.driver,
                r.distance, r.prize_net, h.birth_year,
                (SELECT grade FROM horse_ratings x WHERE x.name = r.horse_name AND x.rating_mode IN ('performance', 'storico') LIMIT 1) AS voto
           FROM races r LEFT JOIN horses h ON h.name = r.horse_name
          WHERE r.race_date >= date('now', ?) AND r.race_date < date('now') AND r.track <> 'ESTERO'
-           AND r.race_code IS NOT NULL`).all(`-${giorni} day`) as any[];
+`).all(`-${giorni} day`) as any[];
       const corse = new Map<string, any[]>();
-      for (const r of righe) { if (!corse.has(r.race_code)) corse.set(r.race_code, []); corse.get(r.race_code)!.push(r); }
+      // Una corsa e' data + pista + numero: il numero dal codice ("..._R4") o
+      // da race_number (codice = sigla della pista, gare fino a giugno 2026).
+      for (const r of righe) {
+        const m = String(r.race_code ?? "").match(/_R?(\d+)$/);
+        const n = m ? Number(m[1]) : r.race_number;
+        if (n == null) continue;
+        const k = `${r.race_date}|${r.track}|_R${n}`;
+        if (!corse.has(k)) corse.set(k, []); corse.get(k)!.push(r);
+      }
       const quote = db.prepare(`SELECT horse_name, quota FROM quote_totalizzatore WHERE race_date = ? AND pista = ? AND corsa = ?`);
       const pron = esiste(db, "pronostico_top3_storico")
         ? db.prepare(`SELECT prob FROM pronostico_top3_storico WHERE pista = ? AND race_date = ? AND horse_name = ? LIMIT 1`) : null;
