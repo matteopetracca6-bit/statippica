@@ -40,6 +40,8 @@ interface LeaderboardRow {
   earn_percentile: number | null;
   time_percentile: number | null;
   sire_percentile: number | null;
+  primi_tre?: number | null;
+  primi_cinque?: number | null;
   career_races: number;
   career_wins: number;
   career_earnings: number;
