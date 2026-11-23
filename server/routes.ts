@@ -113,10 +113,23 @@ async function statoGitHub(): Promise<any> {
     const run = x?.workflow_runs?.[0];
     return run ? { esito: run.conclusion, quando: run.updated_at } : null;
   };
+  // Quando GitHub non risponde al sito (Render condivide l'indirizzo con
+  // molti altri), l'esito si legge dall'archivio: il notturno lo scrive alla
+  // fine (tabella stato_notturni, 23/11/2026).
+  const dallArchivio = (lavoro: string) => {
+    try {
+      const d = new Database(DB_PATH, { readonly: true });
+      try {
+        const t = d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='stato_notturni'").get();
+        const r = t ? d.prepare("SELECT esito, quando FROM stato_notturni WHERE lavoro = ?").get(lavoro) as any : null;
+        return r ? { esito: r.esito, quando: r.quando } : null;
+      } finally { d.close(); }
+    } catch { return null; }
+  };
   const dati = {
     archivio_pubblicato: pubblicato,
-    notturno_risultati: ultimo(risultati),
-    notturno_manutenzione: ultimo(manutenzione),
+    notturno_risultati: ultimo(risultati) ?? dallArchivio("results"),
+    notturno_manutenzione: ultimo(manutenzione) ?? dallArchivio("maintenance"),
     github_raggiungibile: !!(rilascio || risultati),
   };
   // Anche la risposta mancata si tiene per quindici minuti: riprovare a ogni

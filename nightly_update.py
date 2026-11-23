@@ -6112,6 +6112,23 @@ def main():
             controlla_carriere_complete(conn)
         except Exception as e:
             print(f"[CARRIERE CONTROLLO] errore: {e}", file=sys.stderr)
+        try:
+            # 23/11/2026: voti da atleta rimasti a cavalli che non hanno piu'
+            # nessuna gara (gare tolte perche' non partiti o copie): erano 86,
+            # in classifica con un voto e zero corse.
+            n_vecchi = conn.execute("""DELETE FROM horse_ratings WHERE rating_mode = 'performance'
+                AND EXISTS (SELECT 1 FROM horses h WHERE h.name = horse_ratings.name AND h.birth_year IS horse_ratings.birth_year
+                            AND COALESCE(h.career_races, 0) = 0)
+                AND NOT EXISTS (SELECT 1 FROM races r WHERE r.horse_name = horse_ratings.name)""").rowcount
+            print(f"[RATINGS] voti da atleta senza piu' gare tolti: {n_vecchi}", file=sys.stderr)
+            # Come e' andata la notte, scritto nell'archivio: la pagina Metodo
+            # lo legge quando GitHub non risponde al sito (succede spesso).
+            conn.execute("CREATE TABLE IF NOT EXISTS stato_notturni (lavoro TEXT PRIMARY KEY, esito TEXT, quando TEXT)")
+            conn.execute("INSERT OR REPLACE INTO stato_notturni VALUES (?, 'success', ?)",
+                         (mode, datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")))
+            conn.commit()
+        except Exception as e:
+            print(f"[FINE] errore: {e}", file=sys.stderr)
         phase_compact(conn)             # FASE FINALE: compatta il file del database
     finally:
         conn.close()

@@ -64,6 +64,12 @@ def ripara(conn: sqlite3.Connection, prova: bool = False, max_copie: int | None 
     if not prova:
         conn.commit()
     print(f"[CORSE] numero della corsa completato: {esito['numeri_mancanti']}; date prese dal codice: {date_messe}")
+    # Gare all'estero: la scheda del cavallo non dice quanti erano i partenti
+    # e l'archivio scriveva 1 ("4° su 1" in 2.434 gare). Meglio "non si sa".
+    esito["partenti_esteri_azzerati"] = 0 if prova else conn.execute(
+        "UPDATE races SET total_starters = NULL WHERE track = 'ESTERO' AND total_starters = 1 AND placement > 1").rowcount
+    if not prova:
+        conn.commit()
     esito.update(gare_senza_data(conn, prova, max_copie))
     return esito
 
