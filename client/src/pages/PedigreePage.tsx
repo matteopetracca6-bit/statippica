@@ -36,7 +36,9 @@ function sessoSoggetto(d: PedigreeData) {
 
 export default function PedigreePage() {
   const [search, setSearch] = useState("");
-  const [gens, setGens] = useState(5);
+  // Sul telefono si parte da tre generazioni, che stanno nello schermo; le
+  // altre si scelgono con i bottoni e si scorrono di lato (24/11/2026).
+  const [gens, setGens] = useState(() => (typeof window !== "undefined" && window.innerWidth < 700 ? 3 : 5));
   const [hoveredAncestor, setHoveredAncestor] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<PedigreeData>({
