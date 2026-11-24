@@ -21,7 +21,7 @@ import { CSS_DUE_COLONNE } from "../components/DueColonne";
 import { Spiegazione } from "../components/Spiegazione";
 import CavalloCaricamento from "@/components/CavalloCaricamento";
 import {
-  nuovaSimulazione, passo, geometria, simulaMolte, formatoKm, LARGHEZZA_CORSIA, pesaMercato,
+  nuovaSimulazione, passo, geometria, simulaMolte, formatoKm, LARGHEZZA_CORSIA, pesaMercato, pesaPronostico,
   type CorsaDati, type Simulazione, type Riepilogo, type Corridore,
 } from "@/lib/simulaCorsa";
 
@@ -321,6 +321,8 @@ export default function SimulatorePage() {
   const [seme, setSeme] = useState(() => Number(iniziali.seme) || Math.floor(Math.random() * 1e9));
   const [segui, setSegui] = useState<number | null>(null);
   const [mercato, setMercato] = useState(0);
+  // Pesa il pronostico XGBoost (24/11/2026): acceso di serie quando c'e'.
+  const [conPronostico, setConPronostico] = useState(true);
   const [cronaca, setCronaca] = useState<{ t: number; testo: string }[]>([]);
   const statoCronaca = useRef<{ testa: number | null; ultimaTesta: number; stati: string[]; punti: Set<number> }>({ testa: null, ultimaTesta: -99, stati: [], punti: new Set() });
   const [copiato, setCopiato] = useState(false);
@@ -333,7 +335,9 @@ export default function SimulatorePage() {
   const velRef = useRef(velocita); velRef.current = velocita;
 
   const conQuote = !!corsa && corsa.cavalli.every(c => c.quota != null && c.quota > 1);
-  const corsaSim = useMemo<CorsaDati | null>(() => !corsa ? null : (mercato && conQuote ? pesaMercato(corsa, mercato) : corsa), [corsa, mercato, conQuote]);
+  const haPronostico = !!corsa && corsa.cavalli.length >= 4 && corsa.cavalli.filter(c => c.pronostico_top3 != null).length >= Math.ceil(0.75 * corsa.cavalli.length);
+  const corsaTarata = useMemo<CorsaDati | null>(() => !corsa ? null : (conPronostico && haPronostico ? pesaPronostico(corsa) : corsa), [corsa, conPronostico, haPronostico]);
+  const corsaSim = useMemo<CorsaDati | null>(() => !corsaTarata ? null : (mercato && conQuote ? pesaMercato(corsaTarata, mercato) : corsaTarata), [corsaTarata, mercato, conQuote]);
   const azzeraCronaca = () => { statoCronaca.current = { testa: null, ultimaTesta: -99, stati: [], punti: new Set() }; setCronaca([]); };
   useEffect(() => {
     if (!corsaSim) return;
@@ -493,6 +497,11 @@ export default function SimulatorePage() {
                 <Selettore etichetta="Segui un cavallo" valore={seguiValido == null ? "" : String(seguiValido)}
                   opzioni={[["", "Tutta la pista"], ...corsa.cavalli.map((c, i) => [String(i), `${c.numero ?? i + 1} ${c.nome}`] as [string, string])]}
                   cambia={v => setSegui(v === "" ? null : Number(v))} />
+                {haPronostico && (
+                  <Selettore etichetta="Pesa il pronostico XGBoost" valore={conPronostico ? "1" : "0"}
+                    opzioni={[["1", "Sì: tarato sul pronostico"], ["0", "No: solo tempi e corsa"]]}
+                    cambia={v => setConPronostico(v === "1")} />
+                )}
                 {conQuote && (
                   <Selettore etichetta="Pesa il mercato (quote finali)" valore={String(mercato)}
                     opzioni={[["0", "No: solo i nostri dati"], ["0.5", "A metà"], ["1", "Tutto il mercato"]]}
@@ -543,7 +552,10 @@ export default function SimulatorePage() {
               numero 9. Il <b>numero</b> pesa quanto dicono le vittorie con quel numero su quella pista. In curva chi è in seconda o terza ruota fa più
               strada; chi è chiuso dietro un cavallo più lento esce se c'è spazio, altrimenti aspetta. Il <b>galoppo</b> usa il rischio del modello del
               calendario: più facile in partenza e nel finale; alla seconda rottura, se resta al galoppo o se rompe negli ultimi 200 metri è squalificato.
-              Con <b>"pesa il mercato"</b> (solo quando ci sono le quote finali) il tempo di ogni cavallo si sposta finché le vittorie simulate si
+              Con <b>"pesa il pronostico XGBoost"</b> (acceso di serie quando la corsa ha il pronostico) il tempo di ogni cavallo si sposta finché
+              le volte in cui arriva nei primi tre, nelle simulazioni, sono quelle del pronostico del calendario: il modello che legge anche voto,
+              premi, guidatore e avversari. Così simulatore e pronostico dicono la stessa cosa sui primi tre, e il simulatore aggiunge le vittorie,
+              i distacchi e le squalifiche. Con <b>"pesa il mercato"</b> (solo quando ci sono le quote finali) il tempo di ogni cavallo si sposta finché le vittorie simulate si
               avvicinano a quelle date dal pubblico. Le piste con la misura ufficiale (schede MASAF/ASSI) sono disegnate alla lunghezza vera, le altre
               a una lunghezza indicativa; il tipo di partenza si ricava dalle distanze dei partenti.
             </Spiegazione>
@@ -705,8 +717,8 @@ function TabellaMille({ corsa, r }: { corsa: CorsaApi; r: Riepilogo }) {
         </tbody>
       </table>
       <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8 }}>
-        Se il simulatore e il pronostico dicono cose molto diverse su un cavallo, di solito è perché il pronostico guarda anche cose che il
-        simulatore non vede (forma, ferratura, allenatore, voto) e il simulatore guarda la corsa metro per metro (penalità, numero, galoppo).
+        Con «pesa il pronostico XGBoost» acceso, la colonna «Primi 3» segue il pronostico: le differenze rimaste vengono dalla corsa metro per
+        metro (penalità, numero, galoppo). Spento, il simulatore usa solo tempi, ferri, forma e numero, e può dire cose molto diverse.
       </div>
     </div>
   );
@@ -717,25 +729,38 @@ function TabellaMille({ corsa, r }: { corsa: CorsaApi; r: Riepilogo }) {
 const PROVA = {
   corse: 461, dal: "25/10", al: "20/11/2026",
   squalificheSim: 17.6, squalificheVere: 17.6, scartoKm: 0.1,
-  alVincitore: { simulatore: 13, conMercato: 16, totalizzatore: 21 },
-  favoritoVince: { simulatore: 17, conMercato: 25 },
-  errorePrimiTre: { simulatore: 0.197, pronostico: 0.184, conMercato: 0.181 },
+};
+// Prova del 24/11/2026 della taratura sul pronostico XGBoost: 222 corse vere
+// con almeno 6 partenti degli ultimi 14 giorni (187 con le quote finali), 250
+// simulazioni a corsa, prima e dopo la taratura (prova/sim.ts).
+const PROVA_XGB = {
+  corse: 222, conQuote: 187,
+  alVincitore: { solo: 17.3, tarato: 21.5, conMercato: 23.1, totalizzatore: 24.8 },
+  favoritoVince: { solo: 24.8, tarato: 35.6, conMercato: 39.6, totalizzatore: 43.3 },
+  errorePrimiTre: { solo: 0.192, tarato: 0.182, pronostico: 0.182 },
+  erroreVince: { solo: 0.090, tarato: 0.085, totalizzatore: 0.083 },
 };
 function Precisione() {
-  const p = PROVA;
-  const riga = (t: string, v: React.ReactNode) => <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 10px", padding: "4px 0", fontSize: 12.5 }}><span style={{ color: MUTED, minWidth: 260 }}>{t}</span><span>{v}</span></div>;
+  const p = PROVA, x = PROVA_XGB;
+  const v = (n: number) => n.toFixed(3).replace(".", ",");
+  const riga = (t: string, val: React.ReactNode) => <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 10px", padding: "4px 0", fontSize: 12.5 }}><span style={{ color: MUTED, minWidth: 260 }}>{t}</span><span>{val}</span></div>;
   return (
     <div className="pannello" style={{ padding: "14px 16px", marginTop: 16 }}>
       <b style={{ fontSize: 14 }}>Quanto ci azzecca</b>
-      <div style={{ fontSize: 12, color: MUTED, margin: "4px 0 8px" }}>Prova su {p.corse} corse vere dal {p.dal} al {p.al}, simulate prima di conoscere l'arrivo.</div>
-      {riga("Squalificati per galoppo", <>simulati {p.squalificheSim}% · veri {p.squalificheVere}%</>)}
+      <div style={{ fontSize: 12, color: MUTED, margin: "4px 0 8px" }}>
+        Prova su {x.corse} corse vere degli ultimi 14 giorni ({x.conQuote} con le quote finali), simulate senza conoscere l'arrivo:
+        il simulatore da solo, tarato sul pronostico XGBoost, e tarato più metà del mercato.
+      </div>
+      {riga("Probabilità data al vincitore vero", <>da solo {x.alVincitore.solo}% · <b>tarato {x.alVincitore.tarato}%</b> · con metà mercato {x.alVincitore.conMercato}% · totalizzatore {x.alVincitore.totalizzatore}%</>)}
+      {riga("Il più vincente nelle simulazioni ha vinto", <>da solo {x.favoritoVince.solo}% · <b>tarato {x.favoritoVince.tarato}%</b> · con metà mercato {x.favoritoVince.conMercato}% · favorito del pubblico {x.favoritoVince.totalizzatore}%</>)}
+      {riga("Errore sui primi tre (più basso è meglio)", <>da solo {v(x.errorePrimiTre.solo)} · <b>tarato {v(x.errorePrimiTre.tarato)}</b> · pronostico {v(x.errorePrimiTre.pronostico)}</>)}
+      {riga("Errore sul vincitore (più basso è meglio)", <>da solo {v(x.erroreVince.solo)} · <b>tarato {v(x.erroreVince.tarato)}</b> · totalizzatore {v(x.erroreVince.totalizzatore)}</>)}
+      {riga("Squalificati per galoppo", <>simulati {p.squalificheSim}% · veri {p.squalificheVere}% (prova del {p.al} su {p.corse} corse)</>)}
       {riga("Tempo al km del vincitore", <>{p.scartoKm >= 0 ? "+" : ""}{p.scartoKm.toFixed(1).replace(".", ",")} secondi dal vero, in media</>)}
-      {riga("Probabilità data al vincitore vero", <>simulatore {p.alVincitore.simulatore}% · pesando il mercato {p.alVincitore.conMercato}% · totalizzatore {p.alVincitore.totalizzatore}%</>)}
-      {riga("Il più vincente nelle simulazioni ha vinto", <>{p.favoritoVince.simulatore}% delle corse · pesando il mercato {p.favoritoVince.conMercato}%</>)}
-      {riga("Errore sui primi tre (più basso è meglio)", <>simulatore {p.errorePrimiTre.simulatore.toFixed(3).replace(".", ",")} · nostro pronostico {p.errorePrimiTre.pronostico.toFixed(3).replace(".", ",")} · simulatore con il mercato {p.errorePrimiTre.conMercato.toFixed(3).replace(".", ",")}</>)}
       <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8 }}>
-        Da solo il simulatore sa meno del pronostico e del pubblico: vede tempi, ferri, numero e galoppo, non il voto, l'allenatore o le voci di scuderia.
-        Pesando le quote finali indovina i primi tre un po' meglio del pronostico. È uno strumento per capire la corsa, non un consiglio di gioco.
+        Tarato sul pronostico, il simulatore indovina il vincitore molto più spesso (36 corse su 100 invece di 25) e sui primi tre è preciso quanto il
+        pronostico. Il pubblico, con le quote finali, resta un po' più bravo sul vincitore: sa cose che la sera prima non si conoscono.
+        È uno strumento per capire la corsa, non un consiglio di gioco.
       </div>
     </div>
   );
