@@ -1267,11 +1267,14 @@ if __name__ == "__main__":
                 print(f"[RIALLENA] {fm.name}: vecchio {ll_vecchio}, nuovo {ll_nuovo}", flush=True)
                 if ll_nuovo >= ll_vecchio:
                     print(f"[RIALLENA] {fm.name}: il nuovo non e' meglio, resta il vecchio", flush=True)
-                    return
+                    return False
             allena(c, d, variabili, salva=True, file_modello=fm, file_verifica=fv, nome=nome)
-        _prova_e_salva(VARIABILI + VARIABILI_V5, FILE_MODELLO, FILE_VERIFICA, "top3-xgb-v5")
-        _prova_e_salva(VARIABILI + VARIABILI_V5 + VARIABILI_FERRI, FILE_MATTINO, FILE_VERIFICA_MATTINO, "top3-xgb-v5-mattino")
-        allena_vince(c, d, VARIABILI + VARIABILI_V5)
+            return True
+        n1 = _prova_e_salva(VARIABILI + VARIABILI_V5, FILE_MODELLO, FILE_VERIFICA, "top3-xgb-v5")
+        n2 = _prova_e_salva(VARIABILI + VARIABILI_V5 + VARIABILI_FERRI, FILE_MATTINO, FILE_VERIFICA_MATTINO, "top3-xgb-v5-mattino")
+        # La vittoria si rifa' insieme al modello della notte (stesse variabili, stesso periodo).
+        if n1 or not cauto or not FILE_VINCE.exists():
+            allena_vince(c, d, VARIABILI + VARIABILI_V5)
     elif "--allena" in sys.argv:
         allena()
     elif "--prova-varianti" in sys.argv:
