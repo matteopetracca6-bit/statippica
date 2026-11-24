@@ -18,12 +18,10 @@ import ErrorBoundary from "./components/ErrorBoundary";
 // unico file di oltre un milione di caratteri, da scaricare tutto anche per
 // guardare la pagina iniziale (lento soprattutto sul telefono).
 const IppodromiTrendPage = lazy(() => import("./pages/IppodromiTrendPage"));
-const MercatoPage = lazy(() => import("./pages/MercatoPage"));
+const ContoPage = lazy(() => import("./pages/ContoPage"));
 const RendePage = lazy(() => import("./pages/RendePage"));
 const GenerazioniPage = lazy(() => import("./pages/GenerazioniPage"));
-const TenerePage = lazy(() => import("./pages/TenerePage"));
 const ScuderiaPage = lazy(() => import("./pages/ScuderiaPage"));
-const PuledroPage = lazy(() => import("./pages/PuledroPage"));
 const ControlloPage = lazy(() => import("./pages/ControlloPage"));
 const HorsePage = lazy(() => import("./pages/HorsePage"));
 const StallionPage = lazy(() => import("./pages/StallionPage"));
@@ -114,24 +112,25 @@ export default function App() {
               <Route path="/proprietari" component={ProprietariPage} />
               <Route path="/proprietario/:name" component={ProprietarioPage} />
               <Route path="/ippodromi" component={IppodromiTrendPage} />
-              <Route path="/mercato" component={MercatoPage} />
+              <Route path="/mercato" component={RendePage} />
+              <Route path="/conto" component={ContoPage} />
               <Route path="/rende" component={RendePage} />
               <Route path="/generazioni" component={GenerazioniPage} />
               <Route path="/annate" component={GenerazioniPage} />
               <Route path="/chi-rende" component={RendePage} />
-              <Route path="/pareggio" component={MercatoPage} />
-              <Route path="/tenere" component={TenerePage} />
-              <Route path="/generazione-m" component={MercatoPage} />
-              <Route path="/aste" component={MercatoPage} />
+              <Route path="/pareggio" component={RendePage} />
+              <Route path="/tenere" component={ContoPage} />
+              <Route path="/generazione-m" component={GenerazioniPage} />
+              <Route path="/aste" component={RendePage} />
               <Route path="/controllo" component={ControlloPage} />
               <Route path="/controllo-a-posteriori" component={ControlloPage} />
-              <Route path="/economia" component={PuledroPage} />
+              <Route path="/economia" component={ContoPage} />
               <Route path="/scuderia" component={ScuderiaPage} />
               <Route path="/portafoglio" component={ScuderiaPage} />
-              <Route path="/puledro" component={PuledroPage} />
-              <Route path="/prezzo-massimo" component={PuledroPage} />
-              <Route path="/vendere" component={PuledroPage} />
-              <Route path="/break-even" component={MercatoPage} />
+              <Route path="/puledro" component={ContoPage} />
+              <Route path="/prezzo-massimo" component={ContoPage} />
+              <Route path="/vendere" component={ContoPage} />
+              <Route path="/break-even" component={RendePage} />
               <Route path="/ippodromo/:code" component={TrackPage} />
               <Route path="/piste" component={IppodromiTrendPage} />
               <Route path="/metodo" component={MetodoPage} />

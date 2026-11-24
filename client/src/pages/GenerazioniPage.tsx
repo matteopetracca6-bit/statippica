@@ -19,6 +19,7 @@ import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 import GradeBadge from "../components/GradeBadge";
 import { CSS_DUE_COLONNE, Cifra, nomeBello } from "../components/DueColonne";
 import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
+import { GenerazioneM, CSS_PULEDRO } from "../components/MercatoSezioni";
 
 const COLORE = coloreScheda("/generazioni");
 const ORDINE = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
@@ -168,6 +169,7 @@ function Annata({ g, totale }: { g: any; totale: any[] }) {
 
 export default function GenerazioniPage() {
   const { data: d, error } = useQuery<any>({ queryKey: ["/api/generazioni"], queryFn: () => get("/api/generazioni"), staleTime: 3600_000 });
+  const { data: genM } = useQuery<any>({ queryKey: ["/api/generazione-m"], queryFn: () => get("/api/generazione-m"), staleTime: 3600_000 });
   const [anno, setAnno] = useState<number | null>(() => {
     const a = Number(new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("anno"));
     return Number.isInteger(a) && a > 1900 ? a : null;
@@ -185,7 +187,7 @@ export default function GenerazioniPage() {
 
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
-      <style>{CSS_DUE_COLONNE}</style>
+      <style>{CSS_DUE_COLONNE + CSS_PULEDRO}</style>
       <IntestazionePagina icona={Layers} colore={COLORE} titolo="Generazioni" margineSotto={14}
         sottotitolo="Ogni annata di nascita a confronto: quanti nati, quanti corrono, voti, premi, velocità e campioni.">
         {d ? <>Ci sono {gen.length} annate, dai nati nel {gen[0]?.anno} ai nati nel {gen[gen.length - 1]?.anno}. Le annate prima del 2012 vengono dal registro UNIRE:
@@ -272,6 +274,13 @@ export default function GenerazioniPage() {
             </tbody>
           </table>
         </div>
+
+        {genM && (
+          <div id="generazione-m">
+            <div className="ed-tit" style={{ marginTop: 26 }}>La prossima generazione: i nati nel 2025</div>
+            <GenerazioneM d={genM} />
+          </div>
+        )}
 
         <div style={{ marginTop: 16 }}>
           <Spiegazione titolo="Da dove vengono i numeri e cosa non dicono">

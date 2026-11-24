@@ -335,7 +335,7 @@ export default function ProprietariPage() {
       <CollegamentiCorrelati voci={[
         { href: "/allenatori", titolo: "Allenatori", descrizione: "Chi allena i cavalli, con il confronto a parità di cavallo." },
         { href: "/guidatori", titolo: "Guidatori", descrizione: "Chi porta i cavalli a rendere più del loro solito." },
-        { href: "/mercato", titolo: "Mercato", descrizione: "Quanto rende ogni voto e quanto deve vincere un cavallo per ripagarsi." },
+        { href: "/rende", titolo: "Chi rende di più", descrizione: "Stalloni, allenatori, ippodromi e aste in fila per quanto rendono." },
       ]} />
     </div>
   );

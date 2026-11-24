@@ -26,13 +26,10 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/guidatori") return percorso.startsWith("/guidator");
   if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend")
     || percorso.startsWith("/gran-premi") || percorso.startsWith("/albo-doro") || percorso.startsWith("/palmares");
-  if (href === "/mercato") return percorso.startsWith("/mercato") || percorso.startsWith("/pareggio") || percorso.startsWith("/break-even")
-    || percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
-  if (href === "/generazioni") return percorso.startsWith("/generazioni") || percorso.startsWith("/annate");
-  if (href === "/rende") return percorso.startsWith("/rende") || percorso.startsWith("/chi-rende");
+  if (href === "/generazioni") return percorso.startsWith("/generazioni") || percorso.startsWith("/annate") || percorso.startsWith("/generazione-m");
+  if (href === "/rende") return ["/rende", "/chi-rende", "/mercato", "/aste", "/pareggio", "/break-even"].some(p => percorso.startsWith(p));
   if (href === "/scuderia") return percorso.startsWith("/scuderia") || percorso.startsWith("/portafoglio");
-  if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere")
-    || percorso.startsWith("/economia");
+  if (href === "/conto") return ["/conto", "/puledro", "/prezzo-massimo", "/vendere", "/economia", "/tenere"].some(p => percorso.startsWith(p));
   if (href === "/metodo") return percorso.startsWith("/metodo");
   if (href === "/controllo") return percorso.startsWith("/controllo");
   if (href === "/advisor") return percorso.startsWith("/advisor");
