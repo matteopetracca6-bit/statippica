@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
       let tagliati = 0, alte = 0, ex = [];
       for (const c of cells) {
         const nome = c.children[0]?.querySelector('span[style*="font-weight: 700"]');
-        if (nome && nome.scrollWidth > nome.clientWidth + 1) { tagliati++; if (ex.length < 5) ex.push(nome.innerText); }
+        if (nome && nome.scrollWidth > nome.clientWidth + 1) { tagliati++; if (ex.length < 12) ex.push(nome.innerText); }
         if (c.scrollHeight > c.clientHeight + 1) alte++;
       }
       return { caselle: cells.length, bollini: document.querySelectorAll('button .grade-badge').length, nomi_tagliati: tagliati, es: ex, troppo_alte: alte };
