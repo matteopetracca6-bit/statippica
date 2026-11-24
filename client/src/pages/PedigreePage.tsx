@@ -35,7 +35,10 @@ function sessoSoggetto(d: PedigreeData) {
 }
 
 export default function PedigreePage() {
-  const [search, setSearch] = useState("");
+  // Si puo' aprire gia' su un cavallo: #/pedigree?nome=CHICCA%20ROSS (24/11/2026).
+  const [search, setSearch] = useState(() => {
+    try { return (new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("nome") ?? "").toUpperCase(); } catch { return ""; }
+  });
   // Sul telefono si parte da tre generazioni, che stanno nello schermo; le
   // altre si scelgono con i bottoni e si scorrono di lato (24/11/2026).
   const [gens, setGens] = useState(() => (typeof window !== "undefined" && window.innerWidth < 700 ? 3 : 5));
