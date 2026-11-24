@@ -18,11 +18,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 // unico file di oltre un milione di caratteri, da scaricare tutto anche per
 // guardare la pagina iniziale (lento soprattutto sul telefono).
 const IppodromiTrendPage = lazy(() => import("./pages/IppodromiTrendPage"));
-const PareggioPage = lazy(() => import("./pages/PareggioPage"));
+const MercatoPage = lazy(() => import("./pages/MercatoPage"));
 const TenerePage = lazy(() => import("./pages/TenerePage"));
-const GenerazionePage = lazy(() => import("./pages/GenerazionePage"));
 const ScuderiaPage = lazy(() => import("./pages/ScuderiaPage"));
-const EconomiaPage = lazy(() => import("./pages/EconomiaPage"));
 const PuledroPage = lazy(() => import("./pages/PuledroPage"));
 const ControlloPage = lazy(() => import("./pages/ControlloPage"));
 const HorsePage = lazy(() => import("./pages/HorsePage"));
@@ -114,19 +112,20 @@ export default function App() {
               <Route path="/proprietari" component={ProprietariPage} />
               <Route path="/proprietario/:name" component={ProprietarioPage} />
               <Route path="/ippodromi" component={IppodromiTrendPage} />
-              <Route path="/pareggio" component={PareggioPage} />
+              <Route path="/mercato" component={MercatoPage} />
+              <Route path="/pareggio" component={MercatoPage} />
               <Route path="/tenere" component={TenerePage} />
-              <Route path="/generazione-m" component={GenerazionePage} />
-              <Route path="/aste" component={GenerazionePage} />
+              <Route path="/generazione-m" component={MercatoPage} />
+              <Route path="/aste" component={MercatoPage} />
               <Route path="/controllo" component={ControlloPage} />
               <Route path="/controllo-a-posteriori" component={ControlloPage} />
-              <Route path="/economia" component={EconomiaPage} />
+              <Route path="/economia" component={PuledroPage} />
               <Route path="/scuderia" component={ScuderiaPage} />
               <Route path="/portafoglio" component={ScuderiaPage} />
               <Route path="/puledro" component={PuledroPage} />
               <Route path="/prezzo-massimo" component={PuledroPage} />
               <Route path="/vendere" component={PuledroPage} />
-              <Route path="/break-even" component={PareggioPage} />
+              <Route path="/break-even" component={MercatoPage} />
               <Route path="/ippodromo/:code" component={TrackPage} />
               <Route path="/piste" component={IppodromiTrendPage} />
               <Route path="/metodo" component={MetodoPage} />

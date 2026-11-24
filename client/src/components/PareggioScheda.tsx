@@ -29,7 +29,7 @@ function Titolo({ testo }: { testo: string }) {
     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
       <Scale size={15} style={{ color: "hsl(160 60% 50%)" }} />
       <span style={{ fontSize: "12px", fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>{testo}</span>
-      <Link href="/pareggio"><a style={{ marginLeft: "auto", fontSize: "11.5px", color: "hsl(160 60% 55%)", textDecoration: "none" }}>Cambia le ipotesi</a></Link>
+      <Link href="/tenere"><a style={{ marginLeft: "auto", fontSize: "11.5px", color: "hsl(160 60% 55%)", textDecoration: "none" }}>Cambia le spese</a></Link>
     </div>
   );
 }
@@ -162,7 +162,7 @@ export function PareggioStallone({ nome }: { nome: string }) {
           nota={d.monta_massima_di_pareggio > 0 ? "Il prezzo di monta che porta il figlio medio in pari." : "Con fattrice qualunque il figlio medio non va in pari neanche con la monta gratis."} />
       </div>
       <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "10px" }}>
-        Ipotesi: {euro(d.mensile)} al mese, fattrice qualunque. Con una fattrice precisa il conto cambia: provalo nella scheda Punto di pareggio.
+        Ipotesi: {euro(d.mensile)} al mese, fattrice qualunque. Con una fattrice precisa il conto cambia: provalo in Prima di correre, «Un incrocio conviene?».
       </div>
       <LegendaEsiti style={{ marginTop: "8px" }} />
     </div>

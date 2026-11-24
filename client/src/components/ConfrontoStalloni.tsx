@@ -146,7 +146,7 @@ export default function ConfrontoStalloni() {
                 "Resa per €" è quanto vince in media un figlio per ogni euro di monta.
                 {righe.length > 0 && righe.every(r => r.utile_atteso < 0) && <> Con questo costo mensile nessuno stallone, con fattrice
                 qualunque, porta il figlio medio in utile: pesa soprattutto il costo di allenamento, non la monta.</>}
-                {" "}I conti sono gli stessi della scheda <Link href="/pareggio"><a style={{ color: "hsl(160 60% 55%)" }}>Punto di pareggio</a></Link>.
+                {" "}I conti sono gli stessi della scheda <Link href="/puledro?modo=incrocio"><a style={{ color: "hsl(160 60% 55%)" }}>Un incrocio conviene?</a></Link>.
               </Spiegazione>
             </>
           )}

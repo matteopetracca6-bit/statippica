@@ -14,6 +14,8 @@ import NameSelect from "../components/NameSelect";
 import GradeBadge from "../components/GradeBadge";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
+import SpeseBar from "../components/SpeseBar";
+import { Periodo } from "../components/Periodo";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { useScuderia } from "@/lib/scuderia";
 import BandieraCavallo from "@/components/BandieraCavallo";
@@ -330,8 +332,7 @@ function TenereVendere({ d }: { d: any }) {
 }
 
 export default function ScuderiaPage() {
-  const { scuderia, togli, impostaMensile, sostituisci, svuota } = useScuderia();
-  const [mensileScritto, setMensileScritto] = useState(String(scuderia.mensile));
+  const { scuderia, togli, sostituisci, svuota } = useScuderia();
   const corpo = JSON.stringify({ mensile: scuderia.mensile, voci: scuderia.voci });
   const { data: d, isFetching, error } = useQuery<any>({
     queryKey: ["/api/scuderia", corpo],
@@ -356,15 +357,9 @@ export default function ScuderiaPage() {
         quanto è rischiosa nel suo insieme e quanto vale la carriera che i cavalli hanno ancora davanti. L'elenco resta salvato in questo browser.
       </IntestazionePagina>
 
+      <SpeseBar periodo="i prossimi 12 mesi e il resto della carriera" colore={ACCENTO} />
+
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
-        <label style={{ fontSize: 12.5, color: MUTED, display: "flex", alignItems: "center", gap: 8 }}>
-          Costo per cavallo al mese (€)
-          <input type="number" min={100} step={50} inputMode="numeric" value={mensileScritto}
-                 onChange={e => setMensileScritto(e.target.value)}
-                 onBlur={() => { const n = Number(mensileScritto); if (n >= 100) impostaMensile(Math.round(n)); else setMensileScritto(String(scuderia.mensile)); }}
-                 onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                 style={{ background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 22%)", borderRadius: 8, color: TESTO, padding: "6px 9px", fontSize: 13, width: 90, fontFamily: "inherit" }} />
-        </label>
         <button style={bottoneLeggero} onClick={caricaEsempio}>{vuota ? "Prova con una scuderia d'esempio" : "Sostituisci con l'esempio"}</button>
         {!vuota && <button style={bottoneLeggero} onClick={() => { if (confirm("Togliere tutti i cavalli dalla scuderia?")) svuota(); }}>Svuota</button>}
       </div>
@@ -375,8 +370,8 @@ export default function ScuderiaPage() {
       {vuota && (
         <div className="pannello" style={{ ...CARD, marginTop: 14, color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.7 }}>
           La scuderia è vuota. Aggiungi un cavallo qui sopra, oppure usa il bottone «Aggiungi alla scuderia» nella scheda di un cavallo,
-          in <Link href="/tenere" style={{ color: ORO }}>Tenere o fermare</Link>, e in <Link href="/puledro" style={{ color: ORO }}>Puledri e aste</Link>
-          (sia nel conto di un puledro sia nei lotti delle aste).
+          in <Link href="/tenere" style={{ color: ORO }}>In corsa</Link>, in <Link href="/puledro" style={{ color: ORO }}>Prima di correre</Link>
+          e nei lotti delle aste in <Link href="/mercato" style={{ color: ORO }}>Mercato</Link>.
         </div>
       )}
       {!vuota && !d && isFetching && <div style={{ marginTop: 14 }}><Sagoma riquadri={4} grafico={120} /></div>}
@@ -384,7 +379,7 @@ export default function ScuderiaPage() {
 
       {!vuota && d && !d.vuota && t && <>
         <Titoletto nota={<>Ogni cavallo è simulato {d.simulazioni.toLocaleString("it-IT")} volte, con quanto hanno vinto davvero i cavalli con una stima simile alla sua. Poi si sommano i cavalli.</>}>
-          I prossimi 12 mesi
+          I prossimi 12 mesi <Periodo testo="prossimi 12 mesi" />
         </Titoletto>
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))" }}>
           <Riquadro titolo="Spese" valore={euro(t.costo_12)} nota={<>{t.cavalli} cavalli a {euro(d.mensile)} al mese</>} />
@@ -478,7 +473,7 @@ export default function ScuderiaPage() {
         <TenereVendere d={d} />
 
         <Titoletto nota="Quanto vale, in media, quello che i cavalli possono ancora fare in carriera, al netto dell'allenamento che costeranno. Per i puledri è il valore di «Quanto vale un puledro».">
-          Il valore della scuderia
+          Il valore della scuderia <Periodo testo="tutta la carriera" />
         </Titoletto>
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))" }}>
           <Riquadro titolo="Valore di carriera" colore={colSaldo(ca.valore_atteso)} valore={euro(ca.valore_atteso)} nota={<>su {ca.cavalli_con_stima} cavalli con una stima</>} />
@@ -489,7 +484,7 @@ export default function ScuderiaPage() {
 
       <div style={{ marginTop: 18 }}>
         <Spiegazione titolo="Come è fatto il conto e cosa non dice">
-          <p>Cavalli in attività: i premi attesi nei prossimi 12 mesi sono la stima del sito, la stessa di «Tenere o fermare». Il modo in cui possono andare davvero
+          <p>Cavalli in attività: i premi attesi nei prossimi 12 mesi sono la stima del sito, la stessa di «In corsa». Il modo in cui possono andare davvero
           viene da come sono andati, nel periodo di prova, i cavalli con una stima simile, dal 5% peggiore al 5% migliore. Un cavallo che non ha corso nell'ultimo anno conta solo come costo.</p>
           <p>Puledri: si pesca un cavallo vero tra i figli dello stesso padre nati 2018-2022 (con pochi figli, tra tutti i nati) e si prendono i suoi premi a 2 e 3 anni,
           solo la parte di stagione che cade nei prossimi 12 mesi. Per un nato dell'anno scorso è l'inizio della stagione dei 2 anni. «Comprato all'asta» moltiplica i premi per {d?.ipotesi?.fattore_asta?.toLocaleString("it-IT") ?? "1,4"},
@@ -502,13 +497,13 @@ export default function ScuderiaPage() {
           valore da riproduttore e premi all'allevatore, tutti a favore.</p>
           <p>Tenere o vendere: si confronta l'offerta con il valore di carriera (per chi non ha una stima di carriera, con il saldo dei prossimi 12 mesi).
           È una media: un cavallo può andare meglio o peggio, e il conto non sa niente delle condizioni fisiche che conosci tu. Sotto il 10% di differenza
-          le due scelte si equivalgono, come nel Punto di pareggio. Il sito non stima quanto vale un cavallo sul mercato: l'offerta la scrivi tu.</p>
+          le due scelte si equivalgono. Il sito non stima quanto vale un cavallo sul mercato: l'offerta la scrivi tu.</p>
         </Spiegazione>
       </div>
       <CollegamentiCorrelati voci={[
-        { href: "/tenere", titolo: "Tenere o fermare", descrizione: "Tutti i cavalli in attività, con premi attesi e spese" },
-        { href: "/puledro", titolo: "Puledri e aste", descrizione: "Prezzo massimo, vendere o far correre, aste 2026" },
-        { href: "/pareggio", titolo: "Punto di pareggio", descrizione: "Quanto costa un cavallo e quali voti si ripagano" },
+        { href: "/tenere", titolo: "In corsa", descrizione: "Lo tengo o lo fermo: tutti i cavalli in attività" },
+        { href: "/puledro", titolo: "Prima di correre", descrizione: "Prezzo massimo, vendere o far correre, incroci" },
+        { href: "/mercato", titolo: "Mercato", descrizione: "Aste 2026 e quanto rende ogni voto" },
       ]} />
     </div>
   );
