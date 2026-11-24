@@ -1,0 +1,477 @@
+{
+  "modello": {
+    "auc": 0.7493,
+    "log_loss": 0.5407,
+    "brier": 0.1826,
+    "tre_scelti_a_segno": 0.5159
+  },
+  "solo_partenza": {
+    "auc": 0.6317,
+    "log_loss": 0.6084,
+    "brier": 0.2091,
+    "tre_scelti_a_segno": 0.3822
+  },
+  "solo_forma": {
+    "auc": 0.6315,
+    "log_loss": 0.6264,
+    "brier": 0.2162,
+    "tre_scelti_a_segno": 0.4407
+  },
+  "voto_attuale": {
+    "auc": 0.691,
+    "log_loss": 0.68,
+    "brier": 0.2147,
+    "tre_scelti_a_segno": 0.4783
+  },
+  "campo_completo": {
+    "corse": 7650,
+    "modello": {
+      "auc": 0.7537,
+      "log_loss": 0.5382,
+      "brier": 0.1816,
+      "tre_scelti_a_segno": 0.5479
+    },
+    "modello_normalizzato": {
+      "auc": 0.7562,
+      "log_loss": 0.5359,
+      "brier": 0.1807,
+      "tre_scelti_a_segno": 0.5479
+    },
+    "modello_normalizzato_senza_taratura": {
+      "auc": 0.7561,
+      "log_loss": 0.5361,
+      "brier": 0.1808,
+      "tre_scelti_a_segno": 0.5479
+    },
+    "solo_partenza": {
+      "auc": 0.6364,
+      "log_loss": 0.6077,
+      "brier": 0.2089,
+      "tre_scelti_a_segno": 0.3878
+    },
+    "voto_attuale": {
+      "auc": 0.7132,
+      "log_loss": 0.5679,
+      "brier": 0.1927,
+      "tre_scelti_a_segno": 0.5058
+    }
+  },
+  "fasce": [
+    {
+      "da": 0,
+      "a": 0.1,
+      "n": 9692,
+      "stimato": 0.056,
+      "reale": 0.057
+    },
+    {
+      "da": 0.1,
+      "a": 0.2,
+      "n": 12383,
+      "stimato": 0.151,
+      "reale": 0.153
+    },
+    {
+      "da": 0.2,
+      "a": 0.3,
+      "n": 12543,
+      "stimato": 0.25,
+      "reale": 0.249
+    },
+    {
+      "da": 0.3,
+      "a": 0.4,
+      "n": 11127,
+      "stimato": 0.349,
+      "reale": 0.349
+    },
+    {
+      "da": 0.4,
+      "a": 0.5,
+      "n": 9507,
+      "stimato": 0.448,
+      "reale": 0.439
+    },
+    {
+      "da": 0.5,
+      "a": 0.6,
+      "n": 7248,
+      "stimato": 0.547,
+      "reale": 0.55
+    },
+    {
+      "da": 0.6,
+      "a": 0.7,
+      "n": 4763,
+      "stimato": 0.645,
+      "reale": 0.647
+    },
+    {
+      "da": 0.7,
+      "a": 1,
+      "n": 2922,
+      "stimato": 0.763,
+      "reale": 0.768
+    }
+  ],
+  "fasce_senza_taratura": [
+    {
+      "da": 0,
+      "a": 0.1,
+      "n": 8984,
+      "stimato": 0.058,
+      "reale": 0.054
+    },
+    {
+      "da": 0.1,
+      "a": 0.2,
+      "n": 12462,
+      "stimato": 0.151,
+      "reale": 0.147
+    },
+    {
+      "da": 0.2,
+      "a": 0.3,
+      "n": 12948,
+      "stimato": 0.25,
+      "reale": 0.247
+    },
+    {
+      "da": 0.3,
+      "a": 0.4,
+      "n": 11509,
+      "stimato": 0.349,
+      "reale": 0.348
+    },
+    {
+      "da": 0.4,
+      "a": 0.5,
+      "n": 9800,
+      "stimato": 0.448,
+      "reale": 0.442
+    },
+    {
+      "da": 0.5,
+      "a": 0.6,
+      "n": 7333,
+      "stimato": 0.547,
+      "reale": 0.559
+    },
+    {
+      "da": 0.6,
+      "a": 0.7,
+      "n": 4573,
+      "stimato": 0.645,
+      "reale": 0.657
+    },
+    {
+      "da": 0.7,
+      "a": 1,
+      "n": 2576,
+      "stimato": 0.76,
+      "reale": 0.774
+    }
+  ],
+  "temperatura": 1.05,
+  "peso_variabili": [
+    {
+      "variabile": "r_top3",
+      "peso": 0.117
+    },
+    {
+      "variabile": "h_ult_top3",
+      "peso": 0.1
+    },
+    {
+      "variabile": "s_ind_med5",
+      "peso": 0.0828
+    },
+    {
+      "variabile": "partenti",
+      "peso": 0.0819
+    },
+    {
+      "variabile": "h_ult5_top3",
+      "peso": 0.0751
+    },
+    {
+      "variabile": "r_ult5_top3",
+      "peso": 0.0403
+    },
+    {
+      "variabile": "r_d_top3",
+      "peso": 0.0378
+    },
+    {
+      "variabile": "d_top3",
+      "peso": 0.0372
+    },
+    {
+      "variabile": "partenza",
+      "peso": 0.0308
+    },
+    {
+      "variabile": "r_tempo_migl",
+      "peso": 0.03
+    },
+    {
+      "variabile": "r_premi_365",
+      "peso": 0.0271
+    },
+    {
+      "variabile": "s_premi_365",
+      "peso": 0.0179
+    },
+    {
+      "variabile": "s_tempo_migl",
+      "peso": 0.0151
+    },
+    {
+      "variabile": "h_ult3_pos",
+      "peso": 0.0144
+    },
+    {
+      "variabile": "h_pista_top3",
+      "peso": 0.014
+    },
+    {
+      "variabile": "h_giorni",
+      "peso": 0.0121
+    },
+    {
+      "variabile": "r_classe5",
+      "peso": 0.0116
+    },
+    {
+      "variabile": "r_d_top3_30",
+      "peso": 0.0114
+    },
+    {
+      "variabile": "s_classe5",
+      "peso": 0.0111
+    },
+    {
+      "variabile": "h2h",
+      "peso": 0.0111
+    },
+    {
+      "variabile": "h_top3",
+      "peso": 0.0108
+    },
+    {
+      "variabile": "dist_handicap",
+      "peso": 0.0107
+    },
+    {
+      "variabile": "r_a_top3",
+      "peso": 0.0107
+    },
+    {
+      "variabile": "r_ind_migl",
+      "peso": 0.0101
+    },
+    {
+      "variabile": "h_classe_top3",
+      "peso": 0.01
+    },
+    {
+      "variabile": "r_fascia_top3",
+      "peso": 0.0087
+    },
+    {
+      "variabile": "s_ult5_top3",
+      "peso": 0.0086
+    },
+    {
+      "variabile": "maschio",
+      "peso": 0.0085
+    },
+    {
+      "variabile": "h_tempo_ult",
+      "peso": 0.0077
+    },
+    {
+      "variabile": "h_vitt",
+      "peso": 0.0075
+    },
+    {
+      "variabile": "partenza_rel",
+      "peso": 0.0073
+    },
+    {
+      "variabile": "campo_vs_solito",
+      "peso": 0.0069
+    },
+    {
+      "variabile": "h_gare_365",
+      "peso": 0.0066
+    },
+    {
+      "variabile": "d_top3_30",
+      "peso": 0.0065
+    },
+    {
+      "variabile": "campo_premi",
+      "peso": 0.0064
+    },
+    {
+      "variabile": "h_n",
+      "peso": 0.0061
+    },
+    {
+      "variabile": "eta",
+      "peso": 0.0058
+    },
+    {
+      "variabile": "d_n_30",
+      "peso": 0.0056
+    },
+    {
+      "variabile": "d_n",
+      "peso": 0.0053
+    },
+    {
+      "variabile": "distanza",
+      "peso": 0.0053
+    },
+    {
+      "variabile": "dist_vs_solita",
+      "peso": 0.0049
+    },
+    {
+      "variabile": "h_premi_365",
+      "peso": 0.0048
+    },
+    {
+      "variabile": "a_top3",
+      "peso": 0.0048
+    },
+    {
+      "variabile": "h_ind_med5",
+      "peso": 0.0048
+    },
+    {
+      "variabile": "h_pista_n",
+      "peso": 0.0046
+    },
+    {
+      "variabile": "a_top3_30",
+      "peso": 0.0046
+    },
+    {
+      "variabile": "h_classe5",
+      "peso": 0.0044
+    },
+    {
+      "variabile": "h_fascia_n",
+      "peso": 0.0043
+    },
+    {
+      "variabile": "a_top3_365",
+      "peso": 0.0043
+    },
+    {
+      "variabile": "h_ind_migl",
+      "peso": 0.0043
+    },
+    {
+      "variabile": "a_n_30",
+      "peso": 0.0042
+    },
+    {
+      "variabile": "h_tempo_migl",
+      "peso": 0.0041
+    },
+    {
+      "variabile": "a_n",
+      "peso": 0.0041
+    },
+    {
+      "variabile": "h_fascia_top3",
+      "peso": 0.004
+    },
+    {
+      "variabile": "h2h_n",
+      "peso": 0.004
+    }
+  ],
+  "supera_i_metodi_semplici": true,
+  "periodo_prova": {
+    "da": "2025-01-01",
+    "a": "2026-11-23",
+    "partenze": 110293,
+    "corse": 15142
+  },
+  "periodo_allenamento": {
+    "da": "2015-01-01",
+    "a": "2024-12-31",
+    "partenze": 627173
+  },
+  "alberi": 573,
+  "modello_precedente": {
+    "nome": "top3-xgb-v4",
+    "auc": 0.7448,
+    "log_loss": 0.5443,
+    "brier": 0.1839,
+    "tre_scelti_a_segno": 0.5138
+  },
+  "nome": "top3-xgb-v5",
+  "allenato_il": "2026-11-24",
+  "variabili": [
+    "h_n",
+    "h_top3",
+    "h_vitt",
+    "h_ult5_top3",
+    "h_ult3_pos",
+    "h_ult_top3",
+    "h_giorni",
+    "h_premi_365",
+    "h_gare_365",
+    "h_tempo_migl",
+    "h_tempo_ult",
+    "h_pista_top3",
+    "h_pista_n",
+    "eta",
+    "maschio",
+    "d_top3",
+    "d_n",
+    "partenza",
+    "partenti",
+    "partenza_rel",
+    "r_ult5_top3",
+    "r_premi_365",
+    "r_top3",
+    "r_tempo_migl",
+    "r_d_top3",
+    "s_ult5_top3",
+    "s_premi_365",
+    "s_tempo_migl",
+    "distanza",
+    "dist_handicap",
+    "dist_vs_solita",
+    "h_fascia_top3",
+    "h_fascia_n",
+    "r_fascia_top3",
+    "a_top3",
+    "a_n",
+    "a_top3_365",
+    "r_a_top3",
+    "h_classe5",
+    "h_classe_top3",
+    "r_classe5",
+    "s_classe5",
+    "h_ind_migl",
+    "h_ind_med5",
+    "r_ind_migl",
+    "s_ind_med5",
+    "h2h",
+    "h2h_n",
+    "campo_premi",
+    "campo_vs_solito",
+    "d_top3_30",
+    "d_n_30",
+    "r_d_top3_30",
+    "a_top3_30",
+    "a_n_30"
+  ]
+}
