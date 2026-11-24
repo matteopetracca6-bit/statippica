@@ -52,6 +52,7 @@ const PAGINE: { titolo: string; href: string; sotto: string; parole: string }[] 
   { titolo: "Ippodromi e Gran Premi", href: "/ippodromi", sotto: "piste, albo d'oro e andamenti negli anni", parole: "ippodromi piste trend andamenti numero partenza gran premi albo d oro vincitori derby lotteria nazioni" },
   { titolo: "Prima di correre", href: "/puledro", sotto: "un puledro: prezzo massimo, vendere, incrocio", parole: "puledro prezzo massimo vendere asta incrocio conviene monta economia soldi" },
   { titolo: "In corsa", href: "/tenere", sotto: "lo tengo o lo fermo", parole: "tenere fermare premi attesi spese costi economia" },
+  { titolo: "Generazioni", href: "/generazioni", sotto: "ogni annata di nascita con grafici", parole: "generazioni annate annata nati anno nascita statistiche andamenti grafici storici" },
   { titolo: "Chi rende di più", href: "/rende", sotto: "stalloni, allenatori, ippodromi e aste", parole: "rende rendimento premi per figlio monta allenatori ippodromi aste conviene economia" },
   { titolo: "Mercato", href: "/mercato", sotto: "aste 2026, generazione M, quanto rende ogni voto", parole: "mercato aste generazione m pareggio break even costi utile profitto perdita voto economia" },
   { titolo: "Metodo e dati", href: "/metodo", sotto: "come si calcolano i voti", parole: "metodo dati fonti come funziona voto" },
