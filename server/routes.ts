@@ -4049,6 +4049,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
       }
 
       const haPronostico = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pronostico_top3'").get();
+      // Dalla versione 5 del pronostico: la probabilita' di vincere.
+      const conVince = haPronostico && (db.prepare("PRAGMA table_info(pronostico_top3)").all() as any[]).some(c => c.name === "prob_vince");
       const haGaloppo = !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rischio_galoppo'").get();
       const verifica = leggiVerificaTop3();
 
@@ -4089,7 +4091,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         // dalla fase 3g). Se la tabella non c'e' ancora resta la stima vecchia.
         // Con tre partenti o meno arrivano tutti nei primi tre: niente stima.
         if (haPronostico && entries.length > 3) {
-          const righe = db.prepare(`SELECT horse_name, prob, affidabile, n_corse, motivi
+          const righe = db.prepare(`SELECT horse_name, prob, affidabile, n_corse, motivi${conVince ? ", prob_vince" : ", NULL AS prob_vince"}, modello
                                       FROM pronostico_top3 WHERE track = ? AND race_date = ? AND race_time = ?`)
             .all(ev.track, ev.race_date, ev.race_time) as any[];
           const perNome = new Map(righe.map(r => [r.horse_name, r]));
@@ -4098,7 +4100,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
             if (!r) return;
             let motivi: any[] = [];
             try { motivi = JSON.parse(r.motivi || "[]"); } catch { motivi = []; }
-            e.top3 = { prob: Math.round(r.prob * 1000) / 10, affidabile: !!r.affidabile, n_corse: r.n_corse, motivi };
+            e.top3 = { prob: Math.round(r.prob * 1000) / 10, affidabile: !!r.affidabile, n_corse: r.n_corse, motivi,
+                       vince: r.prob_vince != null ? Math.round(r.prob_vince * 1000) / 10 : null,
+                       mattino: String(r.modello ?? "").includes("mattino") };
           });
         }
 

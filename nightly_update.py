@@ -4765,6 +4765,18 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
         if not race_time:
             race_time = f"corsa {n_tab}"
         n_tab += 1
+        # Tipo di partenza (24/11/2026): la fonte lo scrive nella nota della
+        # corsa ("CATEGORIA G / F E - NASTRI") o nelle condizioni. Serve al
+        # simulatore, che prima lo indovinava dalle distanze.
+        tipo_partenza = None
+        try:
+            testo_corsa = (parent.get_text(" ", strip=True) if parent else "").upper()
+            if "AUTOSTART" in testo_corsa or "AUTO-START" in testo_corsa:
+                tipo_partenza = "autostart"
+            elif "NASTRI" in testo_corsa:
+                tipo_partenza = "nastri"
+        except Exception:  # noqa: BLE001
+            tipo_partenza = None
 
         for tr in table.find_all("tr"):
             # Il numero ha classi diverse: num_part per i cavalli singoli,
@@ -4809,6 +4821,7 @@ def _parse_hpart_soup(soup: BeautifulSoup, track: str, race_date: str) -> list:
                 "driver": driver or None,
                 "distance": distance,
                 "shoes": shoes or None,
+                "start_type": tipo_partenza,
             })
     return entries
 
@@ -5010,6 +5023,9 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     colonne = {r[1] for r in conn.execute("PRAGMA table_info(upcoming_races)")}
     if "shoes" not in colonne:
         conn.execute("ALTER TABLE upcoming_races ADD COLUMN shoes TEXT")
+    # Tipo di partenza, nastri o autostart (24/11/2026).
+    if "start_type" not in colonne:
+        conn.execute("ALTER TABLE upcoming_races ADD COLUMN start_type TEXT")
     conn.commit()
 
     # Pulisci gare passate
@@ -5147,15 +5163,16 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     inserted_races = 0
     for e in all_entries:
         cur = conn.execute(
-            """INSERT INTO upcoming_races (track, race_date, race_time, horse_name, start_pos, driver, distance, shoes, fetched_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """INSERT INTO upcoming_races (track, race_date, race_time, horse_name, start_pos, driver, distance, shoes, fetched_at, start_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(track, race_date, race_time, horse_name) DO UPDATE SET
                  start_pos=excluded.start_pos, driver=excluded.driver,
                  distance=excluded.distance,
                  shoes=COALESCE(excluded.shoes, upcoming_races.shoes),
+                 start_type=COALESCE(excluded.start_type, upcoming_races.start_type),
                  fetched_at=excluded.fetched_at""",
             (e["track"], e["race_date"], e["race_time"], e["horse_name"],
-             e.get("start_pos"), e.get("driver"), e.get("distance"), e.get("shoes"), now)
+             e.get("start_pos"), e.get("driver"), e.get("distance"), e.get("shoes"), now, e.get("start_type"))
         )
         if cur.rowcount == 1:
             inserted_races += 1

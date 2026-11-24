@@ -1,0 +1,43 @@
+name: StatIppica — Riallena il pronostico (ogni mese)
+# Lo lancia il giro del mattino il 2 di ogni mese (scripts/giro_mattino.sh), o a mano.
+# Rifa' i modelli del pronostico con i mesi nuovi: allenamento fino a 18 mesi
+# fa, verifica sui 12 mesi dopo, prova sugli ultimi 6 (mai visti). Il modello
+# nuovo sostituisce quello in uso solo se sulle stesse corse di prova sbaglia
+# meno (pronostico_top3.py --allena-v5 --solo-se-meglio).
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  riallena:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q xgboost==2.1.3 scikit-learn pandas numpy
+      - name: Procura l'archivio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ottieni_archivio.sh
+      - name: Riallena (tiene il nuovo solo se e' meglio)
+        run: |
+          export TAGLIO_PROVA=$(date -u -d "-6 months" +%Y-%m-01)
+          export TAGLIO_VERIFICA=$(date -u -d "-18 months" +%Y-%m-01)
+          echo "verifica dal $TAGLIO_VERIFICA, prova dal $TAGLIO_PROVA" >> "$GITHUB_STEP_SUMMARY"
+          NTHREAD=4 DB_PATH=data.db python3 pronostico_top3.py --allena-v5 --solo-se-meglio 2>&1 | grep -E "RIALLENA|log_loss|alberi|temperatura" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Pubblica i modelli nuovi
+        run: |
+          git config user.email "nightly@statippica.bot"
+          git config user.name "StatIppica Nightly"
+          git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
+          git add modelli/top3_xgb.json modelli/top3_verifica.json modelli/top3_mattino_xgb.json modelli/top3_mattino_verifica.json modelli/vince_xgb.json modelli/vince_verifica.json
+          if git diff --cached --quiet; then echo "Nessun modello nuovo." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          # "nightly update" in testa: niente deploy di giorno, i modelli li usa il notturno.
+          git commit -q -m "nightly update modelli del pronostico $(date -u '+%Y-%m-%d')"
+          git pull -q --rebase --autostash origin main
+          git push -q origin main && echo "Modelli pubblicati." >> "$GITHUB_STEP_SUMMARY"
