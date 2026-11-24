@@ -6,9 +6,15 @@ jobs:
   api:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
+          set +e
           B=https://statippica.onrender.com
-          curl -s "$B/api/home/sorprese" | python3 -c "
-          import json,sys;d=json.load(sys.stdin);print('corse',d.get('corse'),'sorprese',d.get('n_sorprese'),'delusioni',d.get('n_delusioni'))
-          for k in ('sorprese','delusioni'):
-              for v in d[k][:3]: print(' ',k,v['nome'],v['quota'],v['data'],v['pista'],v.get('arrivo'),v['motivi'])"
+          for i in $(seq 1 60); do
+            curl -s $B/ > idx.html
+            for f in $(grep -o 'assets/[^"]*\.js' idx.html); do curl -s "$B/$f" | grep -o 'assets/[^"]*\.js' ; echo $f; done | sort -u > js.txt
+            for f in $(cat js.txt); do curl -s "$B/$f" | grep -q "anno solo\|gen <= 2\|dettaglio-antenato" && curl -s "$B/$f" | grep -q "dettaglio-antenato" && echo "$f" > ok; done
+            [ -s ok ] && break; sleep 20; done
+          echo "attese $i"
+          npm i playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          node prova/ped.js
