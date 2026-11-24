@@ -1,29 +1,22 @@
 const { chromium } = require('playwright');
 const B = 'https://statippica.onrender.com';
 (async () => {
-  for (const t of ['stalloni', 'allenatori?mensile=1200', 'ippodromi', 'aste']) {
-    const t0 = Date.now(); const r = await (await fetch(`${B}/api/rende/${t}`)).json(); const ms = Date.now() - t0;
-    const v = (r.voci || []);
-    const k = { stalloni: 'premi_per_nato', 'allenatori?mensile=1200': 'premi_per_cavallo', ippodromi: 'premi_per_partente', aste: 'saldo' }[t];
-    const top = [...v].sort((a, b) => b[k] - a[k]).slice(0, 5).map(x => `${x.nome}:${x[k]}`);
-    console.log('API', t, ms + 'ms', 'voci', v.length, r.message || '', JSON.stringify(top), t === 'aste' ? `padri ${r.per_padre?.length} ritrovati ${r.ritrovati}/${r.lotti_venduti}` : '');
-  }
-  for (const [p, m] of [['VARENNE', ''], ['FACE TIME BOURBON', ''], ['ORLANDO VICI', '']]) {
-    const r = await (await fetch(`${B}/api/pareggio/incrocio?padre=${encodeURIComponent(p)}&madre=${m}&mensile=1200`)).json();
-    console.log('INCROCIO', p, 'peso_figli', r.peso_figli, (r.probabilita || []).map(x => `${x.voto}:${x.p}`).join(' '), 'utile', r.utile_atteso);
+  const t0 = Date.now(); const d = await (await fetch(`${B}/api/generazioni`)).json(); console.log('API elenco', Date.now() - t0 + 'ms', d.message || '', 'anni', JSON.stringify(d.anni), 'storiche', JSON.stringify(d.storiche_complete), 'recupero', JSON.stringify(d.in_recupero));
+  for (const g of d.generazioni || []) console.log('GEN', g.anno, `nati ${g.nati} corsi ${g.corsi} (${g.quota_corsi}%) vinc ${g.quota_vincitori}% premi ${g.premi_totali} medi ${g.premi_medi} tip ${g.premi_mediani} rec ${g.record_mediano}/${g.record_migliore} (${g.con_record}) corse ${g.corse_medie} F ${g.quota_femmine}% top10 ${g.quota_top10}% padri ${g.padri} camp ${g.campione?.nome} ${g.campione?.premi} voti ${JSON.stringify(g.voti)}`);
+  for (const a of [2008, 2011, 2016]) {
+    const t1 = Date.now(); const x = await (await fetch(`${B}/api/generazioni/${a}`)).json();
+    console.log('DETT', a, Date.now() - t1 + 'ms', 'copertura', x.copertura_corse, 'per_eta', x.per_eta ? x.per_eta.length : null, 'migliori', (x.migliori || []).slice(0, 3).map(m => m.nome + ':' + m.premi).join(','), 'stalloni', (x.stalloni || []).slice(0, 3).map(m => m.nome).join(','), 'fasce', (x.record || []).length);
   }
   const b = await chromium.launch();
   for (const [w, h] of [[390, 844], [1280, 900]]) {
     const pg = await (await b.newContext({ viewport: { width: w, height: h } })).newPage();
-    const errori = []; pg.on('pageerror', e => errori.push(e.message.slice(0, 120)));
-    for (const v of ['stalloni', 'allenatori', 'ippodromi', 'aste']) {
-      await pg.goto(`${B}/#/rende?vista=${v}`, { waitUntil: 'networkidle', timeout: 120000 }); await pg.waitForTimeout(5000);
-      const r = await pg.evaluate(() => ({ h1: document.querySelector('h1')?.innerText, tab: document.querySelector('[role=tab][aria-selected=true]')?.innerText.split('\n')[0],
-        righe: document.querySelectorAll('.ed-riga').length, prima: document.querySelector('.ed-riga')?.innerText.replace(/\n/g, ' | ').slice(0, 150),
-        scorre: document.documentElement.scrollWidth > innerWidth + 1 }));
-      console.log(w, v, JSON.stringify(r));
-    }
-    console.log(w, 'errori', JSON.stringify(errori));
+    const errori = []; pg.on('pageerror', e => errori.push(e.message.slice(0, 160)));
+    await pg.goto(`${B}/#/generazioni`, { waitUntil: 'networkidle', timeout: 120000 }); await pg.waitForTimeout(6000);
+    const r = await pg.evaluate(() => ({ h1: document.querySelector('h1')?.innerText, chip: document.querySelectorAll('[aria-label="Scegli l\'annata"] button').length,
+      scheda: !!document.querySelector('[data-testid=scheda-annata]'), linee: document.querySelectorAll('.recharts-line').length, svg: document.querySelectorAll('.recharts-surface').length,
+      righe_tab: document.querySelectorAll('table tbody tr').length, scorre: document.documentElement.scrollWidth > innerWidth + 1,
+      testa: document.querySelector('[data-testid=scheda-annata]')?.innerText.replace(/\n/g, ' | ').slice(0, 300) }));
+    console.log(w, JSON.stringify(r)); console.log(w, 'errori', JSON.stringify(errori));
   }
   await b.close();
 })();
