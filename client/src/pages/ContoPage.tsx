@@ -196,6 +196,48 @@ function Puledro({ iniziale }: { iniziale: { padre: string; madre: string; prezz
 /** Il conto completo di un cavallo che corre: come possono andare i prossimi
  *  12 mesi, cosa cambia con la spesa, perche' la stima, la carriera fin qui,
  *  stagione per stagione e il cavallo tipico del suo voto. */
+/** Quanto gli resta in carriera: modello XGBoost di carriera_futura.py. */
+function Futuro({ f }: { f: any }) {
+  const pp = (x: number) => Math.round(100 * x);
+  const col = (x: number) => (x >= 0.75 ? VERDE : x >= 0.45 ? GIALLO : ROSSO);
+  const valore = (m: any) => {
+    if (m.valore == null) return "";
+    if (/premi/.test(m.variabile)) return `: ${euro(m.valore)}`;
+    if (m.variabile === "giorni_ultima") return `: ${Math.round(m.valore)} giorni`;
+    if (m.variabile === "eta") return `: ${Math.round(m.valore)} anni`;
+    if (m.variabile === "maschio") return m.valore ? ": maschio" : ": femmina";
+    if (/^n_/.test(m.variabile)) return `: ${Math.round(m.valore)}`;
+    if (/_365$|top3|vitt|non_class/.test(m.variabile) && m.valore <= 1) return `: ${Math.round(100 * m.valore)}%`;
+    return `: ${String(m.valore).replace(".", ",")}`;
+  };
+  return (
+    <div className="ed-pannello" data-testid="carriera-futura">
+      <div className="ed-tit" style={{ marginTop: 0 }}>Quanto gli resta in carriera</div>
+      <div className="ed-cifre">
+        <Cifra titolo="Corre nei prossimi 6 mesi" valore={`${pp(f.p_6)}%`} colore={col(f.p_6)} sotto="almeno una corsa" />
+        <Cifra titolo="Ancora in pista fra un anno" valore={`${pp(f.p_12)}%`} colore={col(f.p_12)} sotto="corre fra 6 e 12 mesi da oggi" />
+        <Cifra titolo="Corse nei prossimi 12 mesi" valore={String(Math.round(f.corse))} colore={NEUTRO} sotto={`nell'ultimo anno ne ha fatte ${f.corse_365}`} />
+      </div>
+      {f.motivi?.length > 0 && (
+        <div style={{ display: "grid", gap: 5, marginTop: 12 }}>
+          {f.motivi.map((m: any, i: number) => (
+            <div key={i} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 13, color: "var(--ed-testo)" }}>
+              <span style={{ color: m.effetto > 0 ? VERDE : ROSSO, fontWeight: 900 }}>{m.effetto > 0 ? "▲" : "▼"}</span>
+              <span>{m.testo}{valore(m)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", margin: "10px 0 0", lineHeight: 1.5 }}>
+        ▲ alza la probabilità di essere ancora in pista fra un anno, ▼ la abbassa. Stima di un modello XGBoost che guarda età, corse e premi recenti,
+        da quanto non corre e come va; {f.prova ? <>provato su {Number(f.prova.fotografie).toLocaleString("it-IT")} situazioni di {Number(f.prova.cavalli).toLocaleString("it-IT")} cavalli
+        dal {new Date(f.prova.da).getFullYear()} al {new Date(f.prova.a).getFullYear()}, distingue chi continua da chi smette meglio del confronto con i cavalli simili
+        (AUC {String(f.prova.auc).replace(".", ",")} contro {String(f.prova.auc_simili).replace(".", ",")}).</> : null} Non sa niente di infortuni o di vendite all'estero.
+      </p>
+    </div>
+  );
+}
+
 function ContoCavallo({ r, mensile, costo }: { r: any; mensile: number; costo: number }) {
   const anno = r.anno || 0;
   const { data: pv } = useQuery<any>({ queryKey: ["previsioni", r.nome, anno, mensile],
@@ -279,6 +321,8 @@ function ContoCavallo({ r, mensile, costo }: { r: any; mensile: number; costo: n
           <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", margin: "8px 0 0" }}>▲ alza la stima, ▼ la abbassa. Ultimi 12 mesi: {euro(st.ultimo_anno)} in {st.corse_ultimo_anno ?? 0} corse.</p>
         </div>
       )}
+
+      {pc2?.futuro && <Futuro f={pc2.futuro} />}
 
       <div className="ed-pannello">
         <div className="ed-tit" style={{ marginTop: 0 }}>La carriera fin qui</div>

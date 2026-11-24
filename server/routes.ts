@@ -545,7 +545,24 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const r = valutaCavallo(db, nome, anno, mensile,
         Number.isFinite(ingresso as number) ? ingresso : null, Number.isFinite(monta as number) ? monta : null);
       if (!r) return res.status(404).json({ message: "cavallo non trovato" });
-      res.json({ mensile, ...r });
+      // Quanto gli resta in carriera (carriera_futura.py, ogni notte).
+      let futuro: any = null;
+      try {
+        const t = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='carriera_futura'").get();
+        const f: any = t ? db.prepare("SELECT * FROM carriera_futura WHERE horse_name = ?").get(nome) : null;
+        if (f) {
+          const v = leggiJsonModelli("carriera_verifica.json");
+          const m12 = v?.modelli?.p_12;
+          futuro = {
+            p_6: f.p_6, p_12: f.p_12, corse: f.corse, eta: f.eta, corse_365: f.corse_365, giorni_ultima: f.giorni_ultima,
+            motivi: JSON.parse(f.motivi || "[]"), calcolato_il: f.calcolato_il,
+            prova: m12 ? { auc: m12.modello?.auc, auc_simili: m12.simili?.auc, fotografie: v.fotografie?.prova,
+              cavalli: v.fotografie?.cavalli_prova, da: v.fotografie?.prova_da, a: v.fotografie?.prova_a,
+              errore_corse: v.modelli?.corse?.modello?.errore_medio, errore_corse_simili: v.modelli?.corse?.simili?.errore_medio } : null,
+          };
+        }
+      } catch { /* senza tabella: niente riquadro */ }
+      res.json({ mensile, ...r, futuro });
     } finally {
       db.close();
     }
