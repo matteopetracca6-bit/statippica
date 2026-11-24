@@ -243,8 +243,51 @@ export function valutaCavallo(db: Database.Database, nome: string, anno: number 
 
 /** Un incrocio: la probabilita' di ogni esito, pesata sui figli dello
  *  stallone (e della fattrice, se indicata). */
+/**
+ * Probabilita' di ogni voto dal modello del potenziale alla nascita (24/11/2026).
+ * Il modello (alberi di boosting, potenziale.py) da' la posizione attesa del
+ * puledro fra tutti i nati del suo anno, da 0 a 100, con un intervallo 10-90.
+ * Si legge come una curva morbida (normale a due lati: piu' larga dal lato
+ * dove l'intervallo e' piu' largo) e si taglia con le soglie del sito: chi non
+ * corre occupa il fondo della fila, i corridori il resto, divisi come i voti
+ * (SSS primo 1% dei corridori, SS 5%, S 10%, A 25%, B 40%, C 60%, D 75%, E 90%).
+ */
+export function probabilitaDaPotenziale(pot: { p10: number; p50: number; p90: number }, quotaNonCorsi: number) {
+  const Z90 = 1.2816;
+  const sGiu = Math.max(4, (pot.p50 - pot.p10) / Z90), sSu = Math.max(4, (pot.p90 - pot.p50) / Z90);
+  const phi = (z: number) => 0.5 * (1 + erf(z / Math.SQRT2));
+  // Funzione di ripartizione della normale a due lati (stessa densita' al centro).
+  const peso = 2 / (sGiu + sSu);
+  const F = (x: number) => x <= pot.p50 ? peso * sGiu * phi((x - pot.p50) / sGiu) : peso * (sGiu / 2 + sSu * (phi((x - pot.p50) / sSu) - 0.5));
+  // Sopra il 100 non si va: la coda si ridistribuisce (altrimenti finirebbe
+  // tutta sul SSS, che sembrerebbe piu' probabile dell'SS). Sotto lo 0 resta
+  // fra chi non corre, che occupa davvero il fondo della fila.
+  const tot = F(100);
+  const ripart = (x: number) => Math.min(1, Math.max(0, F(x) / tot));
+  const nc = 100 * quotaNonCorsi;
+  const corr = 100 - nc;
+  const soglie: [string, number][] = [["SSS", 0.01], ["SS", 0.05], ["S", 0.10], ["A", 0.25], ["B", 0.40], ["C", 0.60], ["D", 0.75], ["E", 0.90], ["F", 1]];
+  const prob: Record<string, number> = { NON_CORSO: ripart(nc) };
+  let alto = 1;   // quota di ripartizione sopra la fascia precedente
+  for (const [v, quota] of soglie) {
+    const basso = v === "F" ? nc : 100 - quota * corr;
+    const pBasso = ripart(basso);
+    prob[v] = Math.max(0, alto - pBasso);
+    alto = pBasso;
+  }
+  return prob;
+}
+function erf(x: number) {
+  // Abramowitz-Stegun 7.1.26: errore sotto 1,5e-7, basta per delle percentuali.
+  const s = Math.sign(x); x = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return s * y;
+}
+
 export function valutaIncrocio(db: Database.Database, padre: string, madre: string | null,
-                               mensile: number, montaOverride: number | null) {
+                               mensile: number, montaOverride: number | null,
+                               potenziale: { p10: number; p50: number; p90: number; etichetta?: any } | null = null) {
   const b = datiBase(db);
   const s = db.prepare(`SELECT name, stud_fee_eur f FROM stallions WHERE name = ?`).get(padre) as any;
   // Se la monta non e' nel catalogo e non la indica l'utente, non la si
@@ -283,8 +326,12 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
 
   // Pochi figli = poco affidabile: ci si appoggia alla popolazione.
   const k = IPOTESI.k_prior;
-  const prob: Record<string, number> = {};
-  for (const g of [...ORDINE_VOTI, "NON_CORSO"]) prob[g] = ((conta[g] ?? 0) + k * pop[g]) / (n + k);
+  const probFigli: Record<string, number> = {};
+  for (const g of [...ORDINE_VOTI, "NON_CORSO"]) probFigli[g] = ((conta[g] ?? 0) + k * pop[g]) / (n + k);
+  // Dal 24/11/2026 le probabilita' vengono dal modello del potenziale alla
+  // nascita quando c'e' (piu' morbide: non saltano per un figlio in piu' o in
+  // meno); il conto sui soli figli resta come riserva.
+  const prob = potenziale ? probabilitaDaPotenziale(potenziale, pop.NON_CORSO) : probFigli;
 
   // Per ogni voto: utile medio e quota in utile, con l'ingresso di questo incrocio.
   const esiti = ORDINE_VOTI.filter(v => b.perVoto[v]?.length).map(v => {
@@ -312,6 +359,8 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
     affidabilita: Math.round(100 * n / (n + k)) / 100,
     probabilita: [...esiti.map(x => ({ voto: x.voto, p: Math.round(1000 * x.p) / 10 })),
                   { voto: "Non corre", p: Math.round(1000 * prob.NON_CORSO) / 10 }],
+    fonte_probabilita: potenziale ? "modello" : "figli",
+    potenziale: potenziale ? { p10: potenziale.p10, p50: potenziale.p50, p90: potenziale.p90, etichetta: potenziale.etichetta ?? null } : null,
     costo_atteso: ignoto ? null : Math.round(costoAtteso),
     utile_atteso: ignoto ? null : Math.round(utileAtteso),
     prob_profitto: ignoto ? null : Math.round(1000 * probProfitto) / 10,

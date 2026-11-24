@@ -33,12 +33,13 @@ import { useScuderia } from "@/lib/scuderia";
 import { CSS_DUE_COLONNE, Cifra, Barretta, nomeBello as titolo } from "../components/DueColonne";
 import SpeseBar from "../components/SpeseBar";
 import IncrocioConviene from "../components/IncrocioConviene";
-import { Periodo } from "../components/Periodo";
+import { Periodo, Risposta } from "../components/Periodo";
 
 const COLORE = coloreScheda("/puledro");
-const VERDE = "hsl(145 55% 52%)";
-const ROSSO = "hsl(0 60% 62%)";
-const ORO = "hsl(45 85% 60%)";
+import { VERDE, ROSSO, GIALLO, NEUTRO } from "@/lib/coloriEconomia";
+import GradeBadge from "../components/GradeBadge";
+// I voti di ogni caso del conto (gli stessi di SCENARI in server/pareggio.ts).
+const VOTI_CASO: Record<string, string[]> = { campione: ["SSS", "SS", "S"], buono: ["A", "B"], discreto: ["C", "D"], poco: ["E", "F"] };
 const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−\u2060€\u00a0" : "€\u00a0") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
 const pc = (p: number | null | undefined) => (p == null ? "—" : p > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`);
 
@@ -133,39 +134,28 @@ function QuantoVale({ iniziale, vaiAste }: { iniziale: Scelta; vaiAste: () => vo
         {padre && !d && isFetching && <Sagoma riquadri={4} />}
         {d?.message && <div className="ed-pannello" style={{ color: "var(--ed-muto)", fontSize: 13 }}>{d.message}</div>}
         {d && r && !d.message && <>
-          <div className="pu-hero" data-testid="hero-prezzo-massimo"
-            style={{ borderColor: ok ? "color-mix(in srgb, " + VERDE + " 45%, transparent)" : "color-mix(in srgb, " + ROSSO + " 45%, transparent)",
-              background: ok ? "color-mix(in srgb, " + VERDE + " 7%, var(--ed-fondo))" : "color-mix(in srgb, " + ROSSO + " 7%, var(--ed-fondo))" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span className="ed-etich">Puoi pagarlo al massimo</span><Periodo testo="tutta la carriera" /></div>
-                <div className="tabular" style={{ fontSize: 34, fontWeight: 900, color: ok ? VERDE : ROSSO, lineHeight: 1.1, marginTop: 4 }}>
-                  {ok ? euro(r.prezzo_massimo) : "nessuno"}
-                </div>
-                <div style={{ fontSize: 12.5, color: "var(--ed-testo)", marginTop: 6, lineHeight: 1.5, maxWidth: 440 }}>
-                  {ok ? <>Pagandolo così, in media sei in pari{margine ? ` con il ${margine}% di utile` : ""}.</>
-                    : <>Anche regalato, in media perde {euro(-r.valore_atteso)}: i premi attesi non coprono l'allenamento.</>}
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-                <AggiungiScuderia voce={{ tipo: "puledro", nome: nome || null, padre: d.padre, madre: d.madre, anno: new Date().getFullYear() - 1, prezzo: prezzoN, asta }} />
-                <Link href={`/stallion/${encodeURIComponent(d.padre)}`} style={{ fontSize: 12, color: COLORE }}>scheda di {titolo(d.padre)}</Link>
-              </div>
-            </div>
-            <div style={{ fontSize: 12, color: "var(--ed-muto)", marginTop: 10, borderTop: "1px solid var(--ed-bordo)", paddingTop: 8 }}>
+          <Risposta etichetta="Puoi pagarlo al massimo" periodo="tutta la carriera" colore={ok ? VERDE : ROSSO}
+            valore={ok ? euro(r.prezzo_massimo) : "nessun prezzo"}
+            verdetto={ok ? (margine ? `con il ${margine}% di utile` : "per stare in pari") : "non si ripaga"}
+            testo={ok ? <>Pagandolo così, in media sei in pari{margine ? ` con il ${margine}% di utile` : ""}.</>
+              : <>Anche regalato, in media perde {euro(-r.valore_atteso)}: i premi attesi non coprono l'allenamento.</>}
+            destra={<>
+              <AggiungiScuderia voce={{ tipo: "puledro", nome: nome || null, padre: d.padre, madre: d.madre, anno: new Date().getFullYear() - 1, prezzo: prezzoN, asta }} />
+              <Link href={`/stallion/${encodeURIComponent(d.padre)}`} style={{ fontSize: 12, color: COLORE }}>scheda di {titolo(d.padre)}</Link>
+            </>}
+            sotto={<>
               <b style={{ color: "var(--ed-testo)" }}>{titolo(d.padre)}</b>{d.madre && <> × <b style={{ color: "var(--ed-testo)" }}>{titolo(d.madre)}</b></>}
               {" · "}{d.figli_osservati.padre} figli del padre{d.madre ? `, ${d.figli_osservati.madre} della madre` : ""} · affidabilità {Math.round(d.affidabilita * 100)}%
               {d.affidabilita < 0.4 && " (pochi figli: conta di più la media di tutti i cavalli)"}
-            </div>
-          </div>
+            </>} />
 
           <div className="ed-cifre">
-            <Cifra titolo="Premi attesi" valore={euro(r.premi_attesi)} colore={ORO} sotto="in tutta la carriera" />
+            <Cifra titolo="Premi attesi" valore={euro(r.premi_attesi)} colore={NEUTRO} sotto="in tutta la carriera" />
             <Cifra titolo="Allenamento" valore={euro(r.allenamento_atteso)} sotto="e mantenimento, in media" />
             {d.prezzo != null ? <>
               <Cifra titolo={`Pagato ${euro(d.prezzo)}`} valore={euro(r.con_prezzo.utile_atteso)} colore={r.con_prezzo.utile_atteso >= 0 ? VERDE : ROSSO}
                 sotto={<>utile atteso; si ripaga in {pc(r.con_prezzo.prob_ripaga)} dei casi</>} />
-              <Cifra titolo="In pari se al mese" valore={d.mensile_di_pareggio ? `< ${euro(d.mensile_di_pareggio)}` : "mai"} colore={d.mensile_di_pareggio ? ORO : ROSSO}
+              <Cifra titolo="In pari se al mese" valore={d.mensile_di_pareggio ? `< ${euro(d.mensile_di_pareggio)}` : "mai"} colore={d.mensile_di_pareggio ? GIALLO : ROSSO}
                 sotto={d.mensile_di_pareggio ? "a quel prezzo" : "nemmeno a 100 € al mese"} />
             </> : (
               <Cifra titolo="Si ripaga, regalato" valore={pc(r.prob_ripaga_gratis)} sotto="casi su 100 in cui i premi coprono l'allenamento" />
@@ -182,8 +172,11 @@ function QuantoVale({ iniziale, vaiAste }: { iniziale: Scelta; vaiAste: () => vo
               {r.scenari.map((s: any) => (
                 <div key={s.chiave} className="pu-caso" data-testid={`caso-${s.chiave}`}>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ed-testo)" }}>{s.nome}</div>
-                    <div style={{ fontSize: 11, color: "var(--ed-muto)", marginTop: 1 }}>{s.nota}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: "var(--ed-testo)" }}>{s.nome}</span>
+                      {(VOTI_CASO[s.chiave] ?? []).map(v => <GradeBadge key={v} grade={v} size="sm" />)}
+                      {s.chiave === "non_corre" && <span style={{ fontSize: 11, color: "var(--ed-muto)" }}>non arriva mai a correre</span>}
+                    </div>
                     <div style={{ fontSize: 11, color: "var(--ed-fioco)", marginTop: 3 }}>
                       premi {euro(s.premi_medi)} (tipico {euro(s.premi_tipici)}) · {s.anni_medi.toLocaleString("it-IT")} anni · allenamento {euro(s.allenamento)}
                     </div>

@@ -22,9 +22,8 @@ import BandieraCavallo from "@/components/BandieraCavallo";
 
 const MUTED = "hsl(210 8% 55%)";
 const TESTO = "hsl(210 10% 90%)";
-const VERDE = "hsl(145 55% 52%)";
-const ROSSO = "hsl(0 60% 62%)";
-const ORO = "hsl(38 80% 58%)";
+import { VERDE, ROSSO, GIALLO } from "@/lib/coloriEconomia";
+import { CSS_DUE_COLONNE } from "../components/DueColonne";
 const ACCENTO = coloreScheda("/scuderia");
 const CARD: React.CSSProperties = { padding: "16px 18px" };
 const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−€" : "€") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
@@ -34,17 +33,18 @@ const colSaldo = (n: number) => (n >= 0 ? VERDE : ROSSO);
 
 function Riquadro({ titolo, valore, nota, colore }: { titolo: string; valore: React.ReactNode; nota?: React.ReactNode; colore?: string }) {
   return (
-    <div className="pannello" style={{ ...CARD, padding: "13px 15px" }}>
-      <div style={{ fontSize: 11.5, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{titolo}</div>
-      <div className="tabular" style={{ fontSize: 23, fontWeight: 800, color: colore ?? TESTO, marginTop: 4, lineHeight: 1.15 }}>{valore}</div>
-      {nota && <div style={{ fontSize: 11.5, color: MUTED, marginTop: 5, lineHeight: 1.5 }}>{nota}</div>}
+    // Stesso riquadro delle altre pagine di Economia (ed-cifra di DueColonne).
+    <div className="ed-cifra">
+      <div className="ed-etich">{titolo}</div>
+      <div className="v" style={{ color: colore ?? "var(--ed-testo)" }}>{valore}</div>
+      {nota && <div className="s">{nota}</div>}
     </div>
   );
 }
 function Titoletto({ children, nota }: { children: React.ReactNode; nota?: React.ReactNode }) {
   return (
-    <div style={{ margin: "24px 0 10px" }}>
-      <h2 style={{ fontSize: 16, fontWeight: 800, color: TESTO, margin: 0 }}>{children}</h2>
+    <div style={{ margin: "22px 0 10px" }}>
+      <h2 className="ed-tit" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{children}</h2>
       {nota && <Spiegazione compatta>{nota}</Spiegazione>}
     </div>
   );
@@ -94,7 +94,7 @@ function Aggiungi() {
   };
   const anni = [0, 1, 2].map(k => new Date().getFullYear() - k);
   return (
-    <div className="pannello" style={CARD}>
+    <div className="ed-pannello" style={CARD}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
         <b style={{ fontSize: 13.5, color: TESTO, marginRight: 4 }}>Aggiungi</b>
         <button style={scheda(tipo === "cavallo")} onClick={() => setTipo("cavallo")}>un cavallo dell'archivio</button>
@@ -166,7 +166,7 @@ function ImportaProprietario() {
 
   if (elenco && !elenco.disponibile) {
     return (
-      <div className="pannello" style={{ ...CARD, marginTop: 12, fontSize: 12.5, color: MUTED }}>
+      <div className="ed-pannello" style={{ ...CARD, marginTop: 12, fontSize: 12.5, color: MUTED }}>
         <KeyRound size={13} style={{ verticalAlign: -2, marginRight: 6, color: ACCENTO }} />
         Presto potrai riempire la scuderia scrivendo il nome del proprietario: i dati dei proprietari si stanno raccogliendo.
       </div>
@@ -176,7 +176,7 @@ function ImportaProprietario() {
   const nomeProp = cav?.nome ?? (elenco?.proprietari as any[] | undefined)?.find(p => p.proprietario === scelto)?.nome ?? scelto;
   const bott: React.CSSProperties = { background: "hsl(220 10% 14%)", border: "1px solid hsl(220 10% 22%)", color: "hsl(210 10% 86%)", borderRadius: 8, padding: "7px 12px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" };
   return (
-    <div className="pannello" style={{ ...CARD, marginTop: 12 }} data-testid="importa-proprietario">
+    <div className="ed-pannello" style={{ ...CARD, marginTop: 12 }} data-testid="importa-proprietario">
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <KeyRound size={15} color={ACCENTO} />
         <b style={{ fontSize: 13.5, color: TESTO }}>Prendi i cavalli di un proprietario</b>
@@ -255,7 +255,7 @@ function CampoOfferta({ id, valore }: { id: string; valore: number | null }) {
 
 const ESITI: Record<string, { testo: string; colore: string }> = {
   vendere: { testo: "Vendere conviene", colore: VERDE },
-  tenere: { testo: "Tenerlo conviene", colore: ORO },
+  tenere: { testo: "Tenerlo conviene", colore: ACCENTO },
   pari: { testo: "Circa uguale", colore: MUTED },
 };
 
@@ -311,7 +311,7 @@ function TenereVendere({ d }: { d: any }) {
         </table>
       </div>
       {vd && vd.cavalli.length > 0 && (
-        <div className="pannello" style={{ ...CARD, marginTop: 10 }} data-testid="riassunto-vendite">
+        <div className="ed-pannello" style={{ ...CARD, marginTop: 10 }} data-testid="riassunto-vendite">
           <b style={{ fontSize: 13.5, color: TESTO }}>Se vendi {vd.cavalli.length === 1 ? "questo cavallo" : `questi ${vd.cavalli.length} cavalli`}</b>
           <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>
             {vd.cavalli.map((n: string) => titolo(n)).join(", ")}: incassi <b style={{ color: TESTO }}>{euro(vd.incasso)}</b>
@@ -350,7 +350,8 @@ export default function ScuderiaPage() {
   const bottoneLeggero: React.CSSProperties = { background: "hsl(220 10% 14%)", border: "1px solid hsl(220 10% 22%)", color: "hsl(210 10% 82%)", borderRadius: 8, padding: "6px 11px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" };
 
   return (
-    <div className="page-shell">
+    <div className="page-shell ed" style={{ ["--ed-acc" as any]: ACCENTO }}>
+      <style>{CSS_DUE_COLONNE}</style>
       <IntestazionePagina icona={Briefcase} colore={ACCENTO} titolo="La tua scuderia" margineSotto={14}
         sottotitolo="I tuoi cavalli e puledri insieme: cassa dei prossimi 12 mesi, rischio, valore di carriera e quando conviene vendere.">
         Metti insieme i tuoi cavalli e i tuoi puledri. Il sito guarda la scuderia come un'azienda: quanto entra e quanto esce nei prossimi 12 mesi,
@@ -368,14 +369,14 @@ export default function ScuderiaPage() {
       <ImportaProprietario />
 
       {vuota && (
-        <div className="pannello" style={{ ...CARD, marginTop: 14, color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.7 }}>
+        <div className="ed-pannello" style={{ ...CARD, marginTop: 14, color: "hsl(210 10% 82%)", fontSize: 13, lineHeight: 1.7 }}>
           La scuderia è vuota. Aggiungi un cavallo qui sopra, oppure usa il bottone «Aggiungi alla scuderia» nella scheda di un cavallo,
-          in <Link href="/tenere" style={{ color: ORO }}>In corsa</Link>, in <Link href="/puledro" style={{ color: ORO }}>Prima di correre</Link>
-          e nei lotti delle aste in <Link href="/mercato" style={{ color: ORO }}>Mercato</Link>.
+          in <Link href="/tenere" style={{ color: ACCENTO }}>In corsa</Link>, in <Link href="/puledro" style={{ color: ACCENTO }}>Prima di correre</Link>
+          e nei lotti delle aste in <Link href="/mercato" style={{ color: ACCENTO }}>Mercato</Link>.
         </div>
       )}
       {!vuota && !d && isFetching && <div style={{ marginTop: 14 }}><Sagoma riquadri={4} grafico={120} /></div>}
-      {!vuota && error && <div className="pannello" style={{ ...CARD, marginTop: 14, color: ROSSO, fontSize: 13 }}>Non riesco a calcolare la scuderia adesso. Riprova tra poco.</div>}
+      {!vuota && error && <div className="ed-pannello" style={{ ...CARD, marginTop: 14, color: ROSSO, fontSize: 13 }}>Non riesco a calcolare la scuderia adesso. Riprova tra poco.</div>}
 
       {!vuota && d && !d.vuota && t && <>
         <Titoletto nota={<>Ogni cavallo è simulato {d.simulazioni.toLocaleString("it-IT")} volte, con quanto hanno vinto davvero i cavalli con una stima simile alla sua. Poi si sommano i cavalli.</>}>
@@ -386,10 +387,10 @@ export default function ScuderiaPage() {
           <Riquadro titolo="Premi attesi" valore={euro(t.premi_attesi_12)} nota="la parte del proprietario" />
           <Riquadro titolo="Saldo atteso" colore={colSaldo(t.saldo_atteso_12)} valore={euro(t.saldo_atteso_12)}
                     nota={<>metà degli anni va peggio di {euro(t.saldo_mediano)}: pochi anni buoni alzano la media</>} />
-          <Riquadro titolo="Chiude in pari" colore={t.prob_in_pari >= 50 ? VERDE : t.prob_in_pari >= 25 ? ORO : ROSSO} valore={`${pc(t.prob_in_pari)} dei casi`}
+          <Riquadro titolo="Chiude in pari" colore={t.prob_in_pari >= 50 ? VERDE : t.prob_in_pari >= 25 ? GIALLO : ROSSO} valore={`${pc(t.prob_in_pari)} dei casi`}
                     nota={<>perde più di metà delle spese nel {pc(t.prob_perde_meta)} dei casi</>} />
         </div>
-        <div className="pannello" style={{ ...CARD, marginTop: 10 }}>
+        <div className="ed-pannello" style={{ ...CARD, marginTop: 10 }}>
           <Istogramma colonne={t.istogramma} />
           <p style={{ fontSize: 12.5, color: MUTED, margin: "10px 0 0", lineHeight: 1.6 }}>
             In un anno su dieci va peggio di <b style={{ color: TESTO }}>{euro(t.saldo_basso)}</b>, in uno su dieci meglio di <b style={{ color: TESTO }}>{euro(t.saldo_alto)}</b>.
@@ -398,7 +399,7 @@ export default function ScuderiaPage() {
 
         <Titoletto nota="Quanto la scuderia dipende da pochi cavalli, e cosa cambia se si fermano quelli che non coprono il loro costo.">Il rischio della scuderia</Titoletto>
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))" }}>
-          <div className="pannello" style={CARD}>
+          <div className="ed-pannello" style={CARD}>
             <b style={{ fontSize: 13.5, color: TESTO }}>Quanto dipende da un cavallo</b>
             <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>
               Il <b>{pc(rs.quota_migliore)}</b> dei premi attesi viene da <b>{titolo(rs.migliore)}</b>.
@@ -406,14 +407,14 @@ export default function ScuderiaPage() {
               {rs.quota_migliore >= 50 && " Un infortunio o un calo di quel cavallo pesa su tutto il bilancio."}
             </p>
           </div>
-          <div className="pannello" style={CARD}>
+          <div className="ed-pannello" style={CARD}>
             <b style={{ fontSize: 13.5, color: TESTO }}>Più cavalli non vuol dire meno rischio</b>
             <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>
               Un cavallo di questa scuderia copre il suo costo in media nel {pc(t.prob_media_singolo)} dei casi; la scuderia intera chiude in pari nel {pc(t.prob_in_pari)}.
               Avere più cavalli rende il risultato meno ballerino, ma se ognuno in media perde, la scuderia perde con più sicurezza.
             </p>
           </div>
-          <div className="pannello" style={CARD}>
+          <div className="ed-pannello" style={CARD}>
             <b style={{ fontSize: 13.5, color: TESTO }}>Se fermi chi non rende</b>
             {rs.da_fermare.length && rs.dopo_aver_fermato ? (
               <p style={{ fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "6px 0 0", lineHeight: 1.65 }}>
@@ -458,7 +459,7 @@ export default function ScuderiaPage() {
                   <td className="num tabular nascondi-mobile">{euro(v.premi_attesi_12)}</td>
                   <td className="num tabular nascondi-mobile">{euro(v.premi_12_alto)}</td>
                   <td className="num tabular" style={{ fontWeight: 700, color: colSaldo(v.saldo_atteso_12) }}>{euro(v.saldo_atteso_12)}</td>
-                  <td className="num tabular" style={{ color: v.prob_copre >= 50 ? VERDE : v.prob_copre >= 25 ? ORO : ROSSO, fontWeight: 700 }}>{pc(v.prob_copre)}</td>
+                  <td className="num tabular" style={{ color: v.prob_copre >= 50 ? VERDE : v.prob_copre >= 25 ? GIALLO : ROSSO, fontWeight: 700 }}>{pc(v.prob_copre)}</td>
                   <td className="num tabular nascondi-mobile" style={{ color: v.carriera ? colSaldo(v.carriera.valore) : MUTED }}>{v.carriera ? euro(v.carriera.valore) : "—"}</td>
                   <td className="num tabular nascondi-mobile">{euro(v.prezzo)}</td>
                   <td><button onClick={() => togli(v.id)} title="Togli dalla scuderia" aria-label={`Togli ${v.nome}`}
@@ -468,7 +469,7 @@ export default function ScuderiaPage() {
             </tbody>
           </table>
         </div>
-        {d.non_trovati?.length > 0 && <p style={{ fontSize: 12, color: ORO, marginTop: 8 }}>Non trovati in archivio: {d.non_trovati.join(", ")}.</p>}
+        {d.non_trovati?.length > 0 && <p style={{ fontSize: 12, color: GIALLO, marginTop: 8 }}>Non trovati in archivio: {d.non_trovati.join(", ")}.</p>}
 
         <TenereVendere d={d} />
 
