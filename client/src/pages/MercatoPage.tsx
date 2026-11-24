@@ -562,10 +562,19 @@ type Tab = "aste" | "generazione" | "voti";
 
 export default function MercatoPage() {
   const [percorso, naviga] = useLocation();
-  const q = parametri();
-  const iniz: Tab = percorso.startsWith("/generazione-m") || q.get("vista") === "generazione" ? "generazione"
-    : percorso.startsWith("/pareggio") || percorso.startsWith("/break-even") || q.get("vista") === "voti" ? "voti" : "aste";
-  const [tab, setTab] = useState<Tab>(iniz);
+  const daIndirizzo = (perc: string): Tab => {
+    const q = parametri();
+    return perc.startsWith("/generazione-m") || q.get("vista") === "generazione" ? "generazione"
+      : perc.startsWith("/pareggio") || perc.startsWith("/break-even") || q.get("vista") === "voti" ? "voti" : "aste";
+  };
+  const [tab, setTab] = useState<Tab>(() => daIndirizzo(percorso));
+  // Un collegamento che cambia solo la linguetta (stessa pagina) non rimonta
+  // la pagina: si segue l'indirizzo.
+  useEffect(() => {
+    const f = () => setTab(daIndirizzo(window.location.hash.replace(/^#/, "").split("?")[0]));
+    window.addEventListener("hashchange", f);
+    return () => window.removeEventListener("hashchange", f);
+  }, []);
   useEffect(() => { window.scrollTo?.(0, 0); }, [tab]);
   const { data: gen, error } = useQuery<any>({
     queryKey: ["/api/generazione-m"],
