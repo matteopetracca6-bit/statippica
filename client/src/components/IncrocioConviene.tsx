@@ -85,7 +85,7 @@ export default function IncrocioConviene({ padreIniziale = "", madreIniziale = "
               }))} />
             <p style={{ fontSize: 11.5, color: "var(--ed-muto)", margin: "10px 0 0", lineHeight: 1.55 }}>
               {inc.fonte_probabilita === "modello"
-                ? <>Le probabilità vengono dal modello del potenziale alla nascita (alberi di boosting, la famiglia di XGBoost): legge come vanno i figli maturi
+                ? <>Le probabilità mettono insieme i figli veri ({Math.round(100 * (inc.peso_figli ?? 0))}% del peso: più figli ha lo stallone, più contano) e il modello del potenziale alla nascita (alberi di boosting, la famiglia di XGBoost): legge come vanno i figli maturi
                   del padre, della madre e del padre della madre, l'età e la carriera della madre, e dà una posizione attesa fra i nati del suo anno
                   ({Math.round(inc.potenziale.p50)} su 100, fra {Math.round(inc.potenziale.p10)} e {Math.round(inc.potenziale.p90)} 8 volte su 10).
                   La curva è morbida: un figlio in più o in meno non la fa saltare. Stadio «nascita» {inc.potenziale.etichetta?.esito ?? "in verifica"}.</>
