@@ -140,7 +140,7 @@ function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
 }) {
   const compatto = gen >= 4;
   if (!node) {
-    return <div style={{ flex: 1, minHeight: compatto ? 24 : 36, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "hsl(210 8% 24%)" }}>—</div>;
+    return <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "hsl(210 8% 24%)", borderRadius: 8, border: "1px dashed hsl(220 10% 18%)" }}>—</div>;
   }
   const maschio = node.sex === "M";
   // Omonimo: stesso nome di un cavallo dell'archivio, ma e' un altro cavallo
@@ -166,7 +166,8 @@ function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
       onMouseLeave={() => onHover(null)}
       title={spiegaOm}
       style={{
-        width: "100%", minWidth: 0,
+        width: "100%", minWidth: 0, height: "100%", overflow: "hidden", boxSizing: "border-box",
+        display: "flex", flexDirection: "column", justifyContent: "center",
         padding: compatto ? "2px 6px" : gen === 0 ? "10px 11px" : "6px 9px",
         borderRadius: 8,
         background: evidenziato ? "hsl(25 50% 14%)" : om ? "hsl(220 8% 13%)" : maschio ? BLU_FONDO : ROSA_FONDO,
@@ -216,7 +217,7 @@ function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
         )}
       </div>
       {voti.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: compatto ? 5 : 8, marginTop: compatto ? 1 : 4 }}>
+        <div style={{ display: "flex", flexWrap: "nowrap", overflow: "hidden", gap: compatto ? 5 : 8, marginTop: compatto ? 1 : 4, minWidth: 0 }}>
           {voti.map(x => <Voto key={x.etichetta} {...x} compatto={compatto} />)}
         </div>
       )}
@@ -230,32 +231,45 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
 }) {
   const righe = righeGenerazioni(root, generazioni);
   const { rip, colore, chiave } = antenatiRipetuti(root, generazioni);
-  // Altezza di una riga dell'ultima colonna: deve contenere nome e voti.
-  const riga = generazioni >= 5 ? 34 : generazioni === 4 ? 40 : generazioni === 3 ? 56 : 80;
+  // 24/11/2026: griglia vera invece di colonne indipendenti. Ogni casella
+  // occupa esattamente le righe dei suoi antenati (2^(ultima-gen) righe), quindi
+  // il padre sta sempre a meta' fra i suoi due genitori e le famiglie restano
+  // allineate anche quando una casella ha piu' voti o etichette. Le caselle di
+  // una stessa generazione hanno tutte la stessa altezza e il testo che non ci
+  // sta si accorcia con i puntini invece di allargarle.
+  const riga = generazioni >= 5 ? 36 : generazioni === 4 ? 44 : generazioni === 3 ? 58 : 80;
+  const righeTot = Math.pow(2, generazioni);
+  const altezzaCasella = (g: number) => {
+    const spazio = Math.pow(2, generazioni - g) * riga - 4;
+    return Math.min(spazio, g === 0 ? 96 : g === 1 ? 76 : g === 2 ? 64 : 52);
+  };
+  const colonne = righe.map((_, g) => g === 0 ? (generazioni <= 3 ? "minmax(120px, 0.9fr)" : "165px") : g >= 4 ? "minmax(125px, 1fr)" : "minmax(130px, 1fr)").join(" ");
+  const larghezzaMin = generazioni >= 5 ? 980 : generazioni === 4 ? 860 : generazioni === 3 ? 560 : 360;
   return (
     <div>
       <div style={{ overflowX: "auto" }}>
-        <div style={{
-          display: "flex", gap: 8, alignItems: "stretch",
-          minWidth: generazioni >= 5 ? 980 : generazioni === 4 ? 860 : generazioni === 3 ? 680 : 520,
-          height: Math.max(generazioni <= 2 ? 300 : 380, Math.pow(2, generazioni) * riga),
-        }}>
-          {righe.map((col, g) => (
-            <div key={g} style={{ flex: g === 0 ? "0 0 165px" : g >= 4 ? "1 1 125px" : "1 1 150px", display: "flex", flexDirection: "column", minWidth: 0 }}>
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", color: "hsl(210 8% 40%)", textAlign: "center", marginBottom: 8, whiteSpace: "nowrap" }}>
+        <div style={{ minWidth: larghezzaMin }}>
+          <div style={{ display: "grid", gridTemplateColumns: colonne, columnGap: 8, marginBottom: 8 }}>
+            {righe.map((_, g) => (
+              <div key={g} style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", color: "hsl(210 8% 40%)", textAlign: "center", whiteSpace: "nowrap" }}>
                 {GEN_TITOLI[g] || `${g}ª gen.`}
               </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: g >= 4 ? 2 : 4 }}>
-                {col.map((n, i) => (
-                  <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", minHeight: 0 }}>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: colonne, gridTemplateRows: `repeat(${righeTot}, ${riga}px)`, columnGap: 8 }}>
+            {righe.map((col, g) => col.map((n, i) => {
+              const span = Math.pow(2, generazioni - g);
+              return (
+                <div key={`${g}-${i}`} style={{ gridColumn: g + 1, gridRow: `${i * span + 1} / span ${span}`, display: "flex", alignItems: "center", minWidth: 0, minHeight: 0 }}>
+                  <div style={{ width: "100%", height: altezzaCasella(g), display: "flex", minWidth: 0 }}>
                     <Casella node={n} gen={g} maxGen={generazioni} hovered={hovered} onHover={onHover}
                       colore={n && g > 0 ? colore.get(chiave(n) ?? "") : undefined}
                       volte={n && g > 0 ? rip.find(([k]) => k === chiave(n))?.[1].n : undefined} />
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                </div>
+              );
+            }))}
+          </div>
         </div>
       </div>
       <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 11, color: "hsl(210 8% 48%)", flexWrap: "wrap", alignItems: "center" }}>
