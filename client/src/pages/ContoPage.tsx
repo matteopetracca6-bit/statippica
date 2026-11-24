@@ -26,7 +26,7 @@ import GraficoColonne, { COLORI_GRAFICO } from "../components/GraficoColonne";
 import { Risposta } from "../components/Periodo";
 import { CSS_DUE_COLONNE, Cifra, Barretta, nomeBello } from "../components/DueColonne";
 import { useScuderia } from "@/lib/scuderia";
-import { testoProb } from "@/lib/probCopre";
+import { testoProb, probDaPercentili } from "@/lib/probCopre";
 import { VERDE, GIALLO, ROSSO, NEUTRO, SPENTO, COLORE_VOTO } from "@/lib/coloriEconomia";
 
 const COLORE = coloreScheda("/conto");
@@ -185,6 +185,149 @@ function Puledro({ iniziale }: { iniziale: { padre: string; madre: string; prezz
 
 /* ------------------------------ CAVALLO ------------------------------ */
 
+/** Il conto completo di un cavallo che corre: come possono andare i prossimi
+ *  12 mesi, cosa cambia con la spesa, perche' la stima, la carriera fin qui,
+ *  stagione per stagione e il cavallo tipico del suo voto. */
+function ContoCavallo({ r, mensile, costo }: { r: any; mensile: number; costo: number }) {
+  const anno = r.anno || 0;
+  const { data: pv } = useQuery<any>({ queryKey: ["previsioni", r.nome, anno, mensile],
+    queryFn: () => get(`/api/horse/${encodeURIComponent(r.nome)}/${anno}/previsioni?mensile=${mensile}`), staleTime: 30 * 60_000 });
+  const { data: pc2 } = useQuery<any>({ queryKey: ["/api/pareggio/cavallo", r.nome, anno, mensile],
+    queryFn: () => get(`/api/pareggio/cavallo?nome=${encodeURIComponent(r.nome)}&anno=${anno}&mensile=${mensile}`), staleTime: 30 * 60_000 });
+  const st = pv?.premi;
+  const q: number[] | null = st?.simili?.percentili?.length >= 18 ? st.simili.percentili : null;
+  const fasce = q ? [["1 volta su 10 vince meno di", q[1]], ["1 volta su 4 meno di", q[4]], ["metà delle volte meno di", q[9]],
+    ["1 volta su 4 più di", q[14]], ["1 volta su 10 più di", q[17]]] as [string, number][] : [];
+  const maxF = q ? Math.max(costo, q[17], 1) : 1;
+  const ca = pc2?.carriera, tip = pc2?.tipico_del_voto, stag: any[] = pc2?.stagioni_premi ?? [];
+  const oggi = new Date().getFullYear();
+  return (
+    <>
+      <div className="ed-pannello">
+        <div className="ed-tit" style={{ marginTop: 0 }}>Come possono andare i prossimi 12 mesi</div>
+        {!pv ? <Sagoma righe={4} /> : !q ? <p style={{ fontSize: 12.5, color: "var(--ed-muto)", margin: 0 }}>Per questo cavallo non c'è ancora la stima del modello.</p> : <>
+          <p style={{ fontSize: 12.5, color: "var(--ed-muto)", margin: "0 0 10px", lineHeight: 1.5 }}>
+            Quanto hanno vinto davvero nei 12 mesi dopo {st.simili.n.toLocaleString("it-IT")} cavalli con una stima simile alla sua ({euro(r.attesi)}).
+            La linea è la tua spesa di un anno, {euro(costo)}.
+          </p>
+          <div style={{ display: "grid", gap: 6 }}>
+            {fasce.map(([t, v]) => (
+              <div key={t} style={{ display: "grid", gridTemplateColumns: "minmax(0, 190px) minmax(0, 1fr) 90px", gap: 10, alignItems: "center", fontSize: 12.5 }}>
+                <span style={{ color: "var(--ed-muto)" }}>{t}</span>
+                <span style={{ position: "relative", display: "block" }}>
+                  <Barretta valore={v} max={maxF} colore={v >= costo ? VERDE : SPENTO} alta={10} />
+                  <span style={{ position: "absolute", top: -3, bottom: -3, left: `${Math.min(100, 100 * costo / maxF)}%`, borderLeft: `2px solid ${GIALLO}` }} />
+                </span>
+                <span className="tabular" style={{ textAlign: "right", fontWeight: 700, color: v >= costo ? VERDE : "var(--ed-testo)" }}>{euro(v)}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: "var(--ed-muto)", margin: "10px 0 0" }}>
+            Non vince niente {Math.round(100 * (st.simili.zero ?? 0))} volte su 100. Copre la spesa {testoProb(r.prob, r.estremo)} delle volte.
+          </p>
+        </>}
+      </div>
+
+      {q && (
+        <div className="ed-pannello">
+          <div className="ed-tit" style={{ marginTop: 0 }}>Se cambi la spesa</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, fontVariantNumeric: "tabular-nums", minWidth: 420 }}>
+              <thead><tr style={{ color: "var(--ed-muto)", fontSize: 11 }}>
+                {["Al mese", "In un anno", "In media", "Copre la spesa"].map((t, i) => <th key={t} style={{ textAlign: i ? "right" : "left", padding: "6px 8px", fontWeight: 600, borderBottom: "1px solid var(--ed-bordo)" }}>{t}</th>)}
+              </tr></thead>
+              <tbody>
+                {[800, 1000, 1200, 1500, 1800, 2200].map(m => {
+                  const sp = 12 * m, sal = r.attesi - sp, pr = probDaPercentili(q, sp);
+                  return (
+                    <tr key={m} style={{ borderBottom: "1px solid var(--ed-bordo)", background: m === mensile ? "color-mix(in srgb, var(--ed-acc) 10%, transparent)" : undefined }}>
+                      <td style={{ padding: "6px 8px", fontWeight: m === mensile ? 800 : 500 }}>{euro(m)}{m === mensile ? " (la tua)" : ""}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{euro(sp)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right", color: sal >= 0 ? VERDE : ROSSO }}>{sal >= 0 ? "guadagni" : "perdi"} {euro(Math.abs(sal))}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{testoProb(100 * pr.p, pr.estremo)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {st?.motivi?.length > 0 && (
+        <div className="ed-pannello">
+          <div className="ed-tit" style={{ marginTop: 0 }}>Perché questa stima</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {st.motivi.map((m: any, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 13, color: "var(--ed-testo)" }}>
+                <span style={{ color: m.verso > 0 ? VERDE : m.verso < 0 ? ROSSO : "var(--ed-muto)", fontWeight: 900 }}>{m.verso > 0 ? "▲" : m.verso < 0 ? "▼" : "•"}</span>
+                <span>{m.testo}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", margin: "8px 0 0" }}>▲ alza la stima, ▼ la abbassa. Ultimi 12 mesi: {euro(st.ultimo_anno)} in {st.corse_ultimo_anno ?? 0} corse.</p>
+        </div>
+      )}
+
+      <div className="ed-pannello">
+        <div className="ed-tit" style={{ marginTop: 0 }}>La carriera fin qui</div>
+        {!pc2 ? <Sagoma righe={3} /> : <>
+          <div className="ed-cifre">
+            <Cifra titolo="Ha vinto" valore={euro(pc2.guadagni_carriera)} colore={NEUTRO} sotto={`in ${pc2.gare} corse, ${pc2.stagioni} stagioni`} />
+            {ca ? <>
+              <Cifra titolo="È costato" valore={euro(ca.speso_stimato)} colore={NEUTRO} sotto={`allevamento${pc2.monta != null ? ` e monta (${euro(pc2.monta)})` : ""} più l'allenamento a ${euro(mensile)} al mese`} />
+              <Cifra titolo="Bilancio" valore={`${ca.bilancio >= 0 ? "+" : "−"}${euro(Math.abs(ca.bilancio))}`} colore={ca.bilancio >= 0 ? VERDE : ROSSO}
+                sotto={ca.bilancio >= 0 ? "si è già ripagato" : `mancano ${euro(ca.mancano_per_pareggio)} per andare in pari`} />
+            </> : <Cifra titolo="Bilancio" valore="—" sotto="la monta del padre non è nel catalogo: il costo d'ingresso non si sa" />}
+          </div>
+          {stag.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div className="ed-etich" style={{ marginBottom: 6 }}>Stagione per stagione · in verde gli anni che hanno coperto la spesa</div>
+              <GraficoColonne altezza={140} colore={COLORI_GRAFICO.euro} nomeAsse="premi per stagione"
+                dati={stag.map(x => ({ chiave: x.anno, etichetta: String(x.anno), valore: x.premi, testo: x.premi >= 1000 ? `${Math.round(x.premi / 1000)}k` : String(x.premi),
+                  colore: x.premi >= costo ? VERDE : COLORI_GRAFICO.euro, tratteggio: x.anno === oggi,
+                  scheda: [{ testo: `${x.anno}${x.anno === oggi ? " (in corso)" : ""}` }, { testo: `${euro(x.premi)} vinti` }, { testo: `${x.corse} corse, ${x.vittorie} vittorie, ${x.primi_tre} nei primi tre` }] }))} />
+            </div>
+          )}
+        </>}
+      </div>
+
+      {tip && (
+        <div className="ed-pannello">
+          <div className="ed-tit" style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}>Il cavallo tipico con il suo voto <GradeBadge grade={tip.voto} size="sm" /></div>
+          <div className="ed-cifre">
+            <Cifra titolo="Vince in carriera" valore={euro(tip.guadagno_mediano)} colore={NEUTRO} sotto={`in ${tip.stagioni_mediane} stagioni, ${euro(tip.guadagno_per_stagione)} a stagione`} />
+            <Cifra titolo="Costa" valore={euro(tip.costo_mediano)} colore={NEUTRO} sotto="dalla nascita a fine carriera" />
+            <Cifra titolo="Si ripaga" valore={`${Math.round(tip.pct_in_utile)}%`} colore={tip.pct_in_utile >= 50 ? VERDE : tip.pct_in_utile >= 25 ? GIALLO : ROSSO} sotto={`dei ${tip.n.toLocaleString("it-IT")} cavalli con il voto ${tip.voto}`} />
+          </div>
+        </div>
+      )}
+
+      {pv?.prossima && (
+        <div className="ed-pannello" style={{ fontSize: 13, color: "var(--ed-testo)" }}>
+          <div className="ed-tit" style={{ marginTop: 0 }}>La prossima corsa</div>
+          {pv.prossima.pista} · {new Date(pv.prossima.data).toLocaleDateString("it-IT")}{pv.prossima.ora ? ` alle ${pv.prossima.ora}` : ""} · {pv.prossima.partenti} partenti
+          {pv.prossima.prob != null && <> · nei primi tre {Math.round(pv.prossima.prob)} volte su 100</>}
+        </div>
+      )}
+
+      <div className="ed-pannello" style={{ fontSize: 13, color: "var(--ed-testo)", lineHeight: 1.6 }}>
+        {r.padre && <>Figlio di <Link href={`/stallion/${encodeURIComponent(r.padre)}`} style={{ color: COLORE }}>{nomeBello(r.padre)}</Link>, </>}
+        {r.eta ? `${r.eta} anni. ` : ""}Tutta la sua storia è nella <Link href={`/horse/${encodeURIComponent(r.nome)}/${anno}`} style={{ color: COLORE }}>sua scheda</Link>.
+        Se ti hanno fatto un'offerta, mettilo nella <Link href="/scuderia" style={{ color: COLORE }}>scuderia</Link> e scrivila accanto: ti dice se vendere.
+      </div>
+      <Spiegazione titolo="Come è fatto il conto">
+        <p>Quanto vincerà nei prossimi 12 mesi lo stima un modello XGBoost allenato sui cavalli fra il 2016 e il 2023 e provato sul 2025
+        {pv?.verifica_premi?.modello?.errore_medio ? <> (sbaglia in media di {euro(pv.verifica_premi.modello.errore_medio)})</> : null}.
+        Come possono andare i 12 mesi e quante volte copre la spesa si leggono da come sono andati davvero i cavalli con una stima simile.
+        Le spese già fatte non contano per decidere se tenerlo: contano solo nel bilancio della carriera.</p>
+        <p>Il bilancio usa il costo fino ai 2 anni (allevamento più la monta del padre dal catalogo) e un anno di allenamento per ogni stagione più quello prima del debutto.
+        Non conta la rivendita, il valore da riproduttore, gli infortuni e le spese straordinarie.</p>
+      </Spiegazione>
+    </>
+  );
+}
+
 function Cavallo({ iniziale }: { iniziale: string }) {
   const { scuderia } = useScuderia();
   const mensile = scuderia.mensile || 1200;
@@ -221,17 +364,7 @@ function Cavallo({ iniziale }: { iniziale: string }) {
           <Cifra titolo="Ultimi 12 mesi" valore={euro(r.ultimo)} colore={NEUTRO} sotto="già vinti" />
         </div>
         <Completo>
-          <div className="ed-pannello" style={{ fontSize: 13, color: "var(--ed-testo)", lineHeight: 1.6 }}>
-            {r.padre && <>Figlio di <Link href={`/stallion/${encodeURIComponent(r.padre)}`} style={{ color: COLORE }}>{nomeBello(r.padre)}</Link>, </>}
-            {r.eta ? `${r.eta} anni, ` : ""}{r.corse ?? 0} corse nell'ultimo anno.{" "}
-            I motivi della stima e la curva dei costi sono nella <Link href={`/horse/${encodeURIComponent(r.nome)}/${r.anno || 0}`} style={{ color: COLORE }}>sua scheda</Link>.
-            Se ti hanno fatto un'offerta, mettilo nella <Link href="/scuderia" style={{ color: COLORE }}>scuderia</Link> e scrivila accanto: ti dice se vendere.
-          </div>
-          <Spiegazione titolo="Come è fatto il conto">
-            <p>Quanto vincerà nei prossimi 12 mesi lo stima un modello XGBoost allenato sui cavalli fra il 2016 e il 2023 e provato sul 2025 (sbaglia in media di circa 4.200 €).
-            Quante volte copre la spesa si legge da come sono andati davvero i cavalli con una stima simile. Le spese già fatte non contano: si guarda solo da oggi in avanti.</p>
-            <p>Non conta la rivendita, il valore da riproduttore, gli infortuni e le spese straordinarie.</p>
-          </Spiegazione>
+          <ContoCavallo r={r} mensile={mensile} costo={costo} />
         </Completo>
       </>}
     </>

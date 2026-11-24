@@ -239,6 +239,14 @@ export function valutaCavallo(db: Database.Database, nome: string, anno: number 
       mancano_per_pareggio: Math.max(0, Math.round(-bilancio)),
     },
     tipico_del_voto: tab ?? null,
+    // Stagione per stagione (24/11/2026, per "Fai il conto"): premi, corse e
+    // vittorie anno per anno, con la spesa di un anno a confronto.
+    stagioni_premi: (db.prepare(`
+      SELECT CAST(substr(race_date, 1, 4) AS INTEGER) anno, SUM(COALESCE(prize_net, 0)) premi, COUNT(*) corse,
+             SUM(placement = 1) vittorie, SUM(placement BETWEEN 1 AND 3) primi_tre
+        FROM races WHERE horse_name = ? AND race_date IS NOT NULL AND CAST(substr(race_date, 1, 4) AS INTEGER) >= ?
+       GROUP BY 1 ORDER BY 1`).all(h.name, (h.birth_year ?? 0) + 2) as any[]).map(x => ({
+        anno: x.anno, premi: Math.round(x.premi), corse: x.corse, vittorie: x.vittorie, primi_tre: x.primi_tre })),
   };
 }
 
