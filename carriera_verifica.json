@@ -1,0 +1,596 @@
+{
+ "nome": "carriera-xgb-v1",
+ "allenato_il": "2026-11-24",
+ "fotografie": {
+  "allenamento": 164553,
+  "prova": 71659,
+  "prova_da": "2023-01-01",
+  "prova_a": "2025-10-01",
+  "cavalli_prova": 10515
+ },
+ "variabili": [
+  "eta",
+  "maschio",
+  "mese",
+  "n_carriera",
+  "n_365",
+  "n_182",
+  "n_91",
+  "premi_365",
+  "premi_182",
+  "premi_prima_182",
+  "premi_carriera",
+  "top3_365",
+  "vitt_365",
+  "non_class_365",
+  "giorni_ultima",
+  "km_ult",
+  "km_med_365",
+  "km_ult_vs_med",
+  "anni_attivo",
+  "n_365_anno_prima",
+  "premi_365_anno_prima",
+  "cambi_allenatore_365"
+ ],
+ "modelli": {
+  "p_6": {
+   "modello": {
+    "log_loss": 0.3177,
+    "auc": 0.9225,
+    "brier": 0.0972
+   },
+   "simili": {
+    "log_loss": 0.4292,
+    "auc": 0.8517,
+    "brier": 0.1362
+   },
+   "quota_vera": 0.697,
+   "fasce": [
+    {
+     "da": 0,
+     "a": 0.2,
+     "n": 10941,
+     "stimato": 0.093,
+     "reale": 0.079
+    },
+    {
+     "da": 0.2,
+     "a": 0.4,
+     "n": 5850,
+     "stimato": 0.294,
+     "reale": 0.273
+    },
+    {
+     "da": 0.4,
+     "a": 0.6,
+     "n": 4897,
+     "stimato": 0.502,
+     "reale": 0.483
+    },
+    {
+     "da": 0.6,
+     "a": 0.8,
+     "n": 7270,
+     "stimato": 0.712,
+     "reale": 0.693
+    },
+    {
+     "da": 0.8,
+     "a": 0.9,
+     "n": 7780,
+     "stimato": 0.856,
+     "reale": 0.835
+    },
+    {
+     "da": 0.9,
+     "a": 1,
+     "n": 34921,
+     "stimato": 0.965,
+     "reale": 0.962
+    }
+   ],
+   "per_eta": {
+    "2": {
+     "n": 1485,
+     "stimato": 0.955,
+     "reale": 0.935,
+     "auc_modello": 0.747,
+     "auc_simili": 0.606
+    },
+    "3": {
+     "n": 15302,
+     "stimato": 0.869,
+     "reale": 0.854,
+     "auc_modello": 0.861,
+     "auc_simili": 0.733
+    },
+    "4": {
+     "n": 16405,
+     "stimato": 0.721,
+     "reale": 0.71,
+     "auc_modello": 0.928,
+     "auc_simili": 0.858
+    },
+    "5": {
+     "n": 12458,
+     "stimato": 0.644,
+     "reale": 0.636,
+     "auc_modello": 0.934,
+     "auc_simili": 0.866
+    },
+    "6": {
+     "n": 8310,
+     "stimato": 0.674,
+     "reale": 0.671,
+     "auc_modello": 0.926,
+     "auc_simili": 0.854
+    },
+    "7": {
+     "n": 5871,
+     "stimato": 0.667,
+     "reale": 0.661,
+     "auc_modello": 0.921,
+     "auc_simili": 0.851
+    },
+    "8": {
+     "n": 4125,
+     "stimato": 0.637,
+     "reale": 0.626,
+     "auc_modello": 0.917,
+     "auc_simili": 0.837
+    },
+    "9": {
+     "n": 2837,
+     "stimato": 0.615,
+     "reale": 0.577,
+     "auc_modello": 0.904,
+     "auc_simili": 0.822
+    },
+    "10": {
+     "n": 2017,
+     "stimato": 0.547,
+     "reale": 0.528,
+     "auc_modello": 0.898,
+     "auc_simili": 0.816
+    },
+    "11": {
+     "n": 1399,
+     "stimato": 0.459,
+     "reale": 0.458,
+     "auc_modello": 0.891,
+     "auc_simili": 0.745
+    },
+    "12": {
+     "n": 1450,
+     "stimato": 0.381,
+     "reale": 0.361,
+     "auc_modello": 0.912,
+     "auc_simili": 0.813
+    }
+   },
+   "supera": true,
+   "peso_variabili": [
+    {
+     "variabile": "giorni_ultima",
+     "peso": 0.3864
+    },
+    {
+     "variabile": "n_91",
+     "peso": 0.3355
+    },
+    {
+     "variabile": "premi_182",
+     "peso": 0.0976
+    },
+    {
+     "variabile": "premi_365",
+     "peso": 0.0231
+    },
+    {
+     "variabile": "maschio",
+     "peso": 0.0177
+    },
+    {
+     "variabile": "eta",
+     "peso": 0.0176
+    },
+    {
+     "variabile": "top3_365",
+     "peso": 0.0154
+    },
+    {
+     "variabile": "n_182",
+     "peso": 0.0132
+    },
+    {
+     "variabile": "premi_prima_182",
+     "peso": 0.0101
+    },
+    {
+     "variabile": "mese",
+     "peso": 0.009
+    },
+    {
+     "variabile": "anni_attivo",
+     "peso": 0.0081
+    },
+    {
+     "variabile": "premi_365_anno_prima",
+     "peso": 0.0078
+    },
+    {
+     "variabile": "km_ult",
+     "peso": 0.0072
+    },
+    {
+     "variabile": "km_ult_vs_med",
+     "peso": 0.0069
+    },
+    {
+     "variabile": "n_365",
+     "peso": 0.0068
+    },
+    {
+     "variabile": "vitt_365",
+     "peso": 0.0063
+    },
+    {
+     "variabile": "cambi_allenatore_365",
+     "peso": 0.006
+    },
+    {
+     "variabile": "n_365_anno_prima",
+     "peso": 0.0059
+    },
+    {
+     "variabile": "premi_carriera",
+     "peso": 0.0054
+    },
+    {
+     "variabile": "km_med_365",
+     "peso": 0.0053
+    },
+    {
+     "variabile": "n_carriera",
+     "peso": 0.0047
+    },
+    {
+     "variabile": "non_class_365",
+     "peso": 0.0041
+    }
+   ],
+   "alberi": 226
+  },
+  "p_12": {
+   "modello": {
+    "log_loss": 0.442,
+    "auc": 0.8678,
+    "brier": 0.1419
+   },
+   "simili": {
+    "log_loss": 0.5134,
+    "auc": 0.8188,
+    "brier": 0.1689
+   },
+   "quota_vera": 0.5799,
+   "fasce": [
+    {
+     "da": 0,
+     "a": 0.2,
+     "n": 13714,
+     "stimato": 0.084,
+     "reale": 0.069
+    },
+    {
+     "da": 0.2,
+     "a": 0.4,
+     "n": 7018,
+     "stimato": 0.299,
+     "reale": 0.27
+    },
+    {
+     "da": 0.4,
+     "a": 0.6,
+     "n": 8193,
+     "stimato": 0.505,
+     "reale": 0.469
+    },
+    {
+     "da": 0.6,
+     "a": 0.8,
+     "n": 14024,
+     "stimato": 0.713,
+     "reale": 0.679
+    },
+    {
+     "da": 0.8,
+     "a": 0.9,
+     "n": 13939,
+     "stimato": 0.854,
+     "reale": 0.838
+    },
+    {
+     "da": 0.9,
+     "a": 1,
+     "n": 14771,
+     "stimato": 0.934,
+     "reale": 0.926
+    }
+   ],
+   "per_eta": {
+    "2": {
+     "n": 1485,
+     "stimato": 0.917,
+     "reale": 0.889,
+     "auc_modello": 0.659,
+     "auc_simili": 0.66
+    },
+    "3": {
+     "n": 15302,
+     "stimato": 0.779,
+     "reale": 0.745,
+     "auc_modello": 0.794,
+     "auc_simili": 0.721
+    },
+    "4": {
+     "n": 16405,
+     "stimato": 0.594,
+     "reale": 0.581,
+     "auc_modello": 0.87,
+     "auc_simili": 0.822
+    },
+    "5": {
+     "n": 12458,
+     "stimato": 0.542,
+     "reale": 0.53,
+     "auc_modello": 0.884,
+     "auc_simili": 0.83
+    },
+    "6": {
+     "n": 8310,
+     "stimato": 0.576,
+     "reale": 0.566,
+     "auc_modello": 0.87,
+     "auc_simili": 0.821
+    },
+    "7": {
+     "n": 5871,
+     "stimato": 0.56,
+     "reale": 0.544,
+     "auc_modello": 0.869,
+     "auc_simili": 0.805
+    },
+    "8": {
+     "n": 4125,
+     "stimato": 0.53,
+     "reale": 0.5,
+     "auc_modello": 0.861,
+     "auc_simili": 0.804
+    },
+    "9": {
+     "n": 2837,
+     "stimato": 0.495,
+     "reale": 0.437,
+     "auc_modello": 0.848,
+     "auc_simili": 0.798
+    },
+    "10": {
+     "n": 2017,
+     "stimato": 0.418,
+     "reale": 0.373,
+     "auc_modello": 0.845,
+     "auc_simili": 0.775
+    },
+    "11": {
+     "n": 1399,
+     "stimato": 0.337,
+     "reale": 0.308,
+     "auc_modello": 0.838,
+     "auc_simili": 0.735
+    },
+    "12": {
+     "n": 1450,
+     "stimato": 0.242,
+     "reale": 0.222,
+     "auc_modello": 0.849,
+     "auc_simili": 0.777
+    }
+   },
+   "supera": true,
+   "peso_variabili": [
+    {
+     "variabile": "premi_182",
+     "peso": 0.4285
+    },
+    {
+     "variabile": "giorni_ultima",
+     "peso": 0.231
+    },
+    {
+     "variabile": "n_91",
+     "peso": 0.0771
+    },
+    {
+     "variabile": "premi_365",
+     "peso": 0.043
+    },
+    {
+     "variabile": "maschio",
+     "peso": 0.0298
+    },
+    {
+     "variabile": "eta",
+     "peso": 0.0295
+    },
+    {
+     "variabile": "top3_365",
+     "peso": 0.0175
+    },
+    {
+     "variabile": "n_182",
+     "peso": 0.0165
+    },
+    {
+     "variabile": "premi_prima_182",
+     "peso": 0.0156
+    },
+    {
+     "variabile": "anni_attivo",
+     "peso": 0.0134
+    },
+    {
+     "variabile": "mese",
+     "peso": 0.0113
+    },
+    {
+     "variabile": "n_365",
+     "peso": 0.0113
+    },
+    {
+     "variabile": "premi_365_anno_prima",
+     "peso": 0.01
+    },
+    {
+     "variabile": "cambi_allenatore_365",
+     "peso": 0.0098
+    },
+    {
+     "variabile": "n_365_anno_prima",
+     "peso": 0.0084
+    },
+    {
+     "variabile": "km_ult_vs_med",
+     "peso": 0.0082
+    },
+    {
+     "variabile": "km_ult",
+     "peso": 0.008
+    },
+    {
+     "variabile": "km_med_365",
+     "peso": 0.0075
+    },
+    {
+     "variabile": "premi_carriera",
+     "peso": 0.0066
+    },
+    {
+     "variabile": "n_carriera",
+     "peso": 0.0059
+    },
+    {
+     "variabile": "vitt_365",
+     "peso": 0.0056
+    },
+    {
+     "variabile": "non_class_365",
+     "peso": 0.0055
+    }
+   ],
+   "alberi": 177
+  },
+  "corse": {
+   "modello": {
+    "errore_medio": 4.257,
+    "media_stimata": 9.05
+   },
+   "simili": {
+    "errore_medio": 5.015,
+    "media_stimata": 9.5
+   },
+   "media_vera": 8.37,
+   "supera": true,
+   "peso_variabili": [
+    {
+     "variabile": "n_91",
+     "peso": 0.3107
+    },
+    {
+     "variabile": "giorni_ultima",
+     "peso": 0.2526
+    },
+    {
+     "variabile": "premi_182",
+     "peso": 0.0948
+    },
+    {
+     "variabile": "n_182",
+     "peso": 0.088
+    },
+    {
+     "variabile": "eta",
+     "peso": 0.0345
+    },
+    {
+     "variabile": "n_365",
+     "peso": 0.0272
+    },
+    {
+     "variabile": "premi_365",
+     "peso": 0.027
+    },
+    {
+     "variabile": "maschio",
+     "peso": 0.021
+    },
+    {
+     "variabile": "premi_prima_182",
+     "peso": 0.0158
+    },
+    {
+     "variabile": "anni_attivo",
+     "peso": 0.0154
+    },
+    {
+     "variabile": "n_365_anno_prima",
+     "peso": 0.0126
+    },
+    {
+     "variabile": "top3_365",
+     "peso": 0.0125
+    },
+    {
+     "variabile": "mese",
+     "peso": 0.0111
+    },
+    {
+     "variabile": "vitt_365",
+     "peso": 0.0107
+    },
+    {
+     "variabile": "premi_365_anno_prima",
+     "peso": 0.0107
+    },
+    {
+     "variabile": "km_med_365",
+     "peso": 0.0092
+    },
+    {
+     "variabile": "cambi_allenatore_365",
+     "peso": 0.0091
+    },
+    {
+     "variabile": "km_ult",
+     "peso": 0.0083
+    },
+    {
+     "variabile": "premi_carriera",
+     "peso": 0.0082
+    },
+    {
+     "variabile": "km_ult_vs_med",
+     "peso": 0.0076
+    },
+    {
+     "variabile": "n_carriera",
+     "peso": 0.0066
+    },
+    {
+     "variabile": "non_class_365",
+     "peso": 0.0064
+    }
+   ],
+   "alberi": 693
+  }
+ }
+}
