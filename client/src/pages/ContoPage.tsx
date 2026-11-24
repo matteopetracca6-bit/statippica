@@ -46,7 +46,7 @@ const CSS_CONTO = `
 .co-scelta b { display: block; font-size: 14.5px; color: var(--ed-testo); }
 .co-scelta small { display: block; font-size: 11.5px; color: var(--ed-muto); margin-top: 2px; }
 .co-modulo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px; align-items: end; }
-.co-modulo label { font-size: 12px; color: var(--ed-muto); display: flex; flex-direction: column; gap: 5px; }
+.co-modulo label, .co-campo { font-size: 12px; color: var(--ed-muto); display: flex; flex-direction: column; gap: 5px; }
 .co-modulo input[type=number] { background: hsl(220 12% 7%); border: 1px solid var(--ed-bordo); border-radius: 8px; color: var(--ed-testo);
   padding: 8px 10px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box; }
 .co-domanda { font-size: 21px; font-weight: 900; color: var(--ed-testo); margin: 18px 0 10px; line-height: 1.25; }
@@ -91,8 +91,8 @@ function Puledro({ iniziale }: { iniziale: { padre: string; madre: string; prezz
   return (
     <>
       <div className="ed-pannello co-modulo" data-testid="modulo-puledro">
-        <label>Padre<NameSelect value={padre} endpoint="/api/search/stallion" placeholder="Stallone" onChange={n => setPadre((n || "").toUpperCase())} /></label>
-        <label>Madre (facoltativa)<NameSelect value={madre} endpoint="/api/search/mare" placeholder="Fattrice" onChange={n => setMadre((n || "").toUpperCase())} /></label>
+        <div className="co-campo">Padre<NameSelect value={padre} endpoint="/api/search/stallion" placeholder="Stallone" onChange={n => setPadre((n || "").toUpperCase())} /></div>
+        <div className="co-campo">Madre (facoltativa)<NameSelect value={madre} endpoint="/api/search/mare" placeholder="Fattrice" onChange={n => setMadre((n || "").toUpperCase())} /></div>
         <label>Prezzo che ti chiedono (facoltativo)
           <input type="number" min={0} step={1000} inputMode="numeric" value={prezzo} placeholder="€" onChange={e => setPrezzo(e.target.value)} />
         </label>
@@ -200,7 +200,7 @@ function Cavallo({ iniziale }: { iniziale: string }) {
   return (
     <>
       <div className="ed-pannello co-modulo" data-testid="modulo-cavallo">
-        <label>Il cavallo<NameSelect value={nome} endpoint="/api/search/horse" placeholder="Scrivi il nome" onChange={n => setNome((n || "").toUpperCase())} /></label>
+        <div className="co-campo">Il cavallo<NameSelect value={nome} endpoint="/api/search/horse" placeholder="Scrivi il nome" onChange={n => setNome((n || "").toUpperCase())} /></div>
       </div>
       {esempio && <p style={{ fontSize: 12, color: "var(--ed-fioco)", margin: "8px 0 0" }}>Esempio: {nomeBello(r.nome)}. Scrivi il nome del tuo cavallo.</p>}
       <div className="co-domanda">Lo tengo o lo fermo?</div>
