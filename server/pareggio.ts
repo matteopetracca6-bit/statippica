@@ -30,6 +30,7 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 import { stimaPremiCavallo } from "./previsioni";
+import { potenzialeNascita, contestoMadre } from "./potenziale";
 
 export const IPOTESI = {
   /** Allevamento dalla monta ai 2 anni, monta esclusa: gestazione, parto,
@@ -326,20 +327,11 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
 
   // Pochi figli = poco affidabile: ci si appoggia alla popolazione.
   const k = IPOTESI.k_prior;
-  const probFigli: Record<string, number> = {};
-  for (const g of [...ORDINE_VOTI, "NON_CORSO"]) probFigli[g] = ((conta[g] ?? 0) + k * pop[g]) / (n + k);
-  // Dal 24/11/2026 le probabilita' vengono dal modello del potenziale alla
-  // nascita quando c'e' (piu' morbide: non saltano per un figlio in piu' o in
-  // meno); il conto sui soli figli resta come riserva.
-  // 24/11/2026, via di mezzo: la curva del modello vale come 60 figli. Chi ha
-  // tanti figli veri (Varenne, 948) pesa soprattutto su quelli; chi ne ha
-  // pochi si appoggia al modello invece che alla media di tutti i cavalli.
-  const K_MODELLO = 60;
-  const probModello = potenziale ? probabilitaDaPotenziale(potenziale, pop.NON_CORSO) : null;
-  const prob: Record<string, number> = {};
-  for (const g of [...ORDINE_VOTI, "NON_CORSO"])
-    prob[g] = probModello ? ((conta[g] ?? 0) + K_MODELLO * probModello[g]) / (n + K_MODELLO) : probFigli[g];
-  const pesoFigli = probModello ? n / (n + K_MODELLO) : null;
+  // Stesse probabilita' del prezzo massimo (probabilitaFiglio).
+  const pf = probabilitaFiglio(db, padre, madre);
+  const prob = pf.prob;
+  const pesoFigli = pf.pesoFigli;
+  potenziale = pf.potenziale ?? potenziale;
 
   // Per ogni voto: utile medio e quota in utile, con l'ingresso di questo incrocio.
   const esiti = ORDINE_VOTI.filter(v => b.perVoto[v]?.length).map(v => {
@@ -467,10 +459,21 @@ function calcolaProbabilitaFiglio(db: Database.Database, padre: string, madre: s
   for (const v of ORDINE_VOTI) pop[v] = (b.perVoto[v]?.length ?? 0) / totPop;
   pop.NON_CORSO = b.nonCorsi / totPop;
   const k = IPOTESI.k_prior;
+  // 24/11/2026: un solo modo di stimare il voto del puledro in tutto il sito
+  // (prezzo massimo, vendere o correre, incrocio): i figli veri insieme alla
+  // curva del modello del potenziale alla nascita, che vale come K_MODELLO
+  // figli. Prima il prezzo massimo usava i soli figli e l'incrocio anche il
+  // modello, e "come puo' andare" e "che voto puo' prendere" non tornavano.
+  let potenziale: { p10: number; p50: number; p90: number; etichetta?: any } | null = null;
+  try { potenziale = potenzialeNascita(db, padre, contestoMadre(db, madre ?? "")); } catch { potenziale = null; }
+  const probModello = potenziale ? probabilitaDaPotenziale(potenziale, pop.NON_CORSO) : null;
   const prob: Record<string, number> = {};
-  for (const g of [...ORDINE_VOTI, "NON_CORSO"]) prob[g] = ((conta[g] ?? 0) + k * pop[g]) / (n + k);
-  return { prob, nPadre, nMadre, affidabilita: Math.round(100 * n / (n + k)) / 100 };
+  for (const g of [...ORDINE_VOTI, "NON_CORSO"])
+    prob[g] = probModello ? ((conta[g] ?? 0) + K_MODELLO * probModello[g]) / (n + K_MODELLO) : ((conta[g] ?? 0) + k * pop[g]) / (n + k);
+  const peso = probModello ? n / (n + K_MODELLO) : n / (n + k);
+  return { prob, nPadre, nMadre, affidabilita: Math.round(100 * peso) / 100, potenziale, pesoFigli: probModello ? peso : null };
 }
+const K_MODELLO = 60;
 
 function riepilogoPrezzi(p: number[]) {
   if (!p.length) return null;
