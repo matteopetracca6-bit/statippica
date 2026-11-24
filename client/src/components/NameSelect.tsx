@@ -68,10 +68,16 @@ export default function NameSelect({ value, onChange, endpoint, placeholder, lab
     onChange(o.name, o);
     setQuery("");
     setOpen(false);
+    inputRef.current?.blur();
   }
 
   return (
-    <div ref={boxRef} style={{ position: "relative", minWidth: "260px", flex: 1 }}>
+    // 24/11/2026: niente larghezza minima fissa (sul telefono, in una griglia
+    // stretta, la tendina usciva dalla colonna) e i clic sulla tendina non
+    // risalgono: dentro un <label> il clic su un nome rimetteva a fuoco il
+    // campo e la tendina si riapriva subito dopo la scelta.
+    <div ref={boxRef} style={{ position: "relative", minWidth: 0, width: "100%", flex: 1 }}
+      onClick={e => e.stopPropagation()}>
       {label && (
         <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(210 8% 50%)", marginBottom: "6px" }}>
           {label}
@@ -79,7 +85,7 @@ export default function NameSelect({ value, onChange, endpoint, placeholder, lab
       )}
 
       <div
-        onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+        onClick={e => { e.preventDefault(); setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
         style={{
           display: "flex", alignItems: "center", gap: "8px",
           padding: "10px 12px", borderRadius: "8px", cursor: "text",
@@ -91,7 +97,7 @@ export default function NameSelect({ value, onChange, endpoint, placeholder, lab
         <input
           ref={inputRef}
           value={open ? query : value}
-          placeholder={placeholder || "Scegli o scrivi un nome"}
+          placeholder={open && value ? `${value} · scrivi per cambiare` : placeholder || "Scegli o scrivi un nome"}
           onChange={e => { setQuery(e.target.value.toUpperCase()); setOpen(true); setHighlight(0); }}
           onFocus={() => setOpen(true)}
           onKeyDown={e => {
@@ -104,13 +110,14 @@ export default function NameSelect({ value, onChange, endpoint, placeholder, lab
             } else if (e.key === "Escape") setOpen(false);
           }}
           style={{
-            flex: 1, background: "transparent", border: "none", outline: "none",
+            flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none",
             color: "hsl(210 10% 92%)", fontSize: "14px", fontWeight: 600, letterSpacing: "0.02em",
           }}
         />
         {value && !open && (
           <button
-            onClick={e => { e.stopPropagation(); onChange(""); }}
+            type="button"
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onChange(""); setQuery(""); setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
             title="Cancella"
           >
@@ -141,7 +148,9 @@ export default function NameSelect({ value, onChange, endpoint, placeholder, lab
             <div
               key={`${o.name}-${o.birth_year ?? i}`}
               onMouseEnter={() => setHighlight(i)}
-              onClick={() => choose(o)}
+              // mousedown, non click: si sceglie prima che il campo perda il fuoco
+              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); choose(o); }}
+              role="option" aria-selected={i === highlight}
               style={{
                 padding: "9px 12px", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
@@ -158,10 +167,7 @@ export default function NameSelect({ value, onChange, endpoint, placeholder, lab
                 </div>
               </div>
               {o.grade && (
-                <span style={{
-                  fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "4px",
-                  background: "hsl(220 14% 18%)", color: "hsl(183 60% 62%)", flexShrink: 0,
-                }}>{o.grade}</span>
+                <span className={`grade-badge grade-${o.grade}`} style={{ fontSize: "10px", padding: "1px 6px", flexShrink: 0 }}>{o.grade}</span>
               )}
             </div>
           ))}
