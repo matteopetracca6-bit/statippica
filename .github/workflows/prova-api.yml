@@ -20,7 +20,9 @@ jobs:
       - run: git show origin/main:modelli/top3_xgb.json > /dev/null 2>&1 || true; NTHREAD=4 python3 pronostico_top3.py --allena-v5 2>&1 | grep -v "^\[[0-9]*\]\s*verifica" > allena.log; tail -5 allena.log
       - run: |
           git config user.email "prova@statippica.bot"; git config user.name "Prova"
-          git checkout -b modelli-v5-allenati
-          git add -f modelli/top3_xgb.json modelli/top3_verifica.json modelli/top3_mattino_xgb.json modelli/top3_mattino_verifica.json modelli/vince_xgb.json modelli/vince_verifica.json allena.log
+          mkdir -p /tmp/out && cp modelli/top3_xgb.json modelli/top3_verifica.json modelli/top3_mattino_xgb.json modelli/top3_mattino_verifica.json modelli/vince_xgb.json modelli/vince_verifica.json allena.log /tmp/out/
+          git checkout -q --orphan modelli-v5-allenati
+          git rm -rq --cached . ; rm -rf ./* .github 2>/dev/null; cp /tmp/out/* .
+          git add -f *.json allena.log
           git commit -q -m "modelli v5 allenati"
           git push -q -f origin modelli-v5-allenati
