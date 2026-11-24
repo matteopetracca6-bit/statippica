@@ -1,5 +1,6 @@
 /**
- * MERCATO (24/11/2026): i dati, senza calcolatori.
+ * Pezzi della vecchia pagina MERCATO (24/11/2026), ora usati in "Chi rende di
+ * piu'" (aste 2026, quanto rende ogni voto) e in "Generazioni" (generazione M).
  *
  * Tre linguette:
  *  - ASTE 2026: i puledri M delle aste di settembre, lotto per lotto;
@@ -13,25 +14,22 @@
  */
 import { coloreScheda } from "@/lib/sezioni";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Store, Search, ChevronLeft, ChevronRight, X, Calculator, Gavel, Sparkles, BarChart3 } from "lucide-react";
-import Sagoma from "../components/Sagoma";
-import { Spiegazione } from "../components/Spiegazione";
-import { lettera } from "../components/PotenzialeCavallo";
-import IntestazionePagina from "../components/IntestazionePagina";
-import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
-import AggiungiScuderia from "../components/AggiungiScuderia";
-import GradeBadge from "../components/GradeBadge";
-import PesoCosti from "../components/PesoCosti";
-import SpeseBar from "../components/SpeseBar";
-import { Periodo, Risposta } from "../components/Periodo";
+import { Search, ChevronLeft, ChevronRight, X, Calculator } from "lucide-react";
+import Sagoma from "./Sagoma";
+import { Spiegazione } from "./Spiegazione";
+import { lettera } from "./PotenzialeCavallo";
+import AggiungiScuderia from "./AggiungiScuderia";
+import GradeBadge from "./GradeBadge";
+import PesoCosti from "./PesoCosti";
+import { Periodo, Risposta } from "./Periodo";
 import { ESITO_COLORE } from "@/lib/esiti";
 import { useScuderia } from "@/lib/scuderia";
-import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, nomeBello as titolo } from "../components/DueColonne";
+import { Cifra, Barretta, useDesktop, nomeBello as titolo } from "./DueColonne";
 
-const COLORE = coloreScheda("/mercato");
+const COLORE = coloreScheda("/rende");
 import { VERDE, ROSSO, GIALLO, NEUTRO } from "@/lib/coloriEconomia";
 const GRIGIO_BARRA = "hsl(210 10% 58%)";
 const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−\u2060€\u00a0" : "€\u00a0") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
@@ -46,10 +44,9 @@ const NOME_ASTA: Record<string, string> = {
 const PER_PAGINA = 30;
 
 
-const parametri = () => new URLSearchParams((typeof window !== "undefined" ? window.location.hash.split("?")[1] : "") ?? "");
-interface Scelta { padre: string; madre: string; prezzo: string; asta: boolean; nome: string }
+export interface Scelta { padre: string; madre: string; prezzo: string; asta: boolean; nome: string }
 
-const CSS_PULEDRO = `
+export const CSS_PULEDRO = `
 .pu-griglia { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .pu-sticky { position: sticky; top: 12px; }
 @media (max-width: 1023px) { .pu-griglia { grid-template-columns: minmax(0, 1fr); } .pu-sticky { position: static; } }
@@ -145,7 +142,7 @@ function SchedaLotto({ l, onConto, onClose }: { l: any; onConto: () => void; onC
   );
 }
 
-function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
+export function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
   const desktop = useDesktop();
   const a = d.puledri_in_asta;
   const lotti: any[] = a.lotti_elenco;
@@ -273,7 +270,7 @@ function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
         <Spiegazione titolo="Cosa vogliono dire i numeri">
           «Premi tipici»: quanto vince a 2 e 3 anni il puledro a metà della fila delle simulazioni. «Si ripaga»: quante volte su cento la sua
           quota di premi copre prezzo e allenamento fino ai 3 anni. «Prezzo massimo»: quanto si poteva pagare per essere in pari in media su tutta
-          la carriera, fermandolo quando non rende, a 1.200 € al mese («Vedi il conto caso per caso» apre la linguetta Quanto vale già compilata).
+          la carriera, fermandolo quando non rende, a 1.200 € al mese («Vedi il conto caso per caso» apre «Fai il conto» già compilato).
           «In pari sotto»: il costo mensile a cui il prezzo pagato va in pari.
         </Spiegazione>
       </div>
@@ -285,7 +282,7 @@ function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
 /* GENERAZIONE M                                                        */
 /* ------------------------------------------------------------------ */
 
-function GenerazioneM({ d }: { d: any }) {
+export function GenerazioneM({ d }: { d: any }) {
   const g = d.generazione_intera, pr = d.prova_sul_passato;
   const ult = g.confronto_generazioni[g.confronto_generazioni.length - 1];
   const piu2 = ult ? Math.round(100 * (g.premi_2_anni_per_nato / ult.premi_2_anni_per_nato - 1)) : null;
@@ -445,7 +442,7 @@ function Esito({ e }: { e: string | null | undefined }) {
 const COLORE_ESITO = ESITO_COLORE;
 const euroP = (n: number) => (n < 0 ? "\u2212" : "") + "\u20ac" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 
-function RendeOgniVoto() {
+export function RendeOgniVoto() {
   const { scuderia } = useScuderia();
   const mensile = scuderia.mensile || 1200;
   const [modo, setModo] = useState<"allevo" | "compro">("allevo");
@@ -552,72 +549,3 @@ function RendeOgniVoto() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* PAGINA                                                               */
-/* ------------------------------------------------------------------ */
-
-type Tab = "aste" | "generazione" | "voti";
-
-export default function MercatoPage() {
-  const [percorso, naviga] = useLocation();
-  const daIndirizzo = (perc: string): Tab => {
-    const q = parametri();
-    return perc.startsWith("/generazione-m") || q.get("vista") === "generazione" ? "generazione"
-      : perc.startsWith("/pareggio") || perc.startsWith("/break-even") || q.get("vista") === "voti" ? "voti" : "aste";
-  };
-  const [tab, setTab] = useState<Tab>(() => daIndirizzo(percorso));
-  // Un collegamento che cambia solo la linguetta (stessa pagina) non rimonta
-  // la pagina: si segue l'indirizzo.
-  useEffect(() => {
-    const f = () => setTab(daIndirizzo(window.location.hash.replace(/^#/, "").split("?")[0]));
-    window.addEventListener("hashchange", f);
-    return () => window.removeEventListener("hashchange", f);
-  }, []);
-  useEffect(() => { window.scrollTo?.(0, 0); }, [tab]);
-  const { data: gen, error } = useQuery<any>({
-    queryKey: ["/api/generazione-m"],
-    queryFn: async () => (await apiRequest("GET", "/api/generazione-m")).json(),
-    staleTime: 60 * 60_000,
-  });
-  const apriConto = (s: Scelta) => {
-    const p = new URLSearchParams({ padre: s.padre, madre: s.madre, prezzo: s.prezzo, asta: s.asta ? "1" : "0", nome: s.nome });
-    naviga(`/puledro?${p.toString()}`);
-  };
-  const tabs: { key: Tab; label: string; hint: string; icon: any }[] = [
-    { key: "aste", label: "Aste 2026", hint: "I puledri M lotto per lotto", icon: Gavel },
-    { key: "generazione", label: "Generazione M", hint: "I nati 2025, sperimentale", icon: Sparkles },
-    { key: "voti", label: "Quanto rende ogni voto", hint: "Il cavallo tipico contro i costi", icon: BarChart3 },
-  ];
-  const periodo = tab === "aste" ? "fino ai 3 anni e tutta la carriera" : tab === "generazione" ? "le stagioni dei 2 e 3 anni" : "tutta la carriera, media storica";
-  const senzaDati = error ? <div className="ed-pannello" style={{ color: "var(--ed-muto)", fontSize: 13 }}>La simulazione non è ancora disponibile.</div> : <Sagoma cornice righe={8} />;
-  return (
-    <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
-      <style>{CSS_DUE_COLONNE + CSS_PULEDRO}</style>
-      <IntestazionePagina icona={Store} colore={COLORE} titolo="Mercato" margineSotto={14}
-        sottotitolo="I dati: le aste 2026 lotto per lotto, la generazione M e quanto rende davvero ogni voto.">
-        Qui non ci sono calcolatori: sono i numeri del mercato e delle carriere passate. Per fare il conto di un puledro preciso c'è «Prima di correre»,
-        per un cavallo che corre «In corsa».
-      </IntestazionePagina>
-      <SpeseBar periodo={periodo} conMonta={tab === "voti"} colore={COLORE} />
-      <div className="ed-linguette" role="tablist">
-        {tabs.map(t => {
-          const Icon = t.icon;
-          return (
-            <button key={t.key} role="tab" className="ed-linguetta" aria-selected={tab === t.key} onClick={() => setTab(t.key)} data-testid={`tab-${t.key}`}>
-              <Icon size={17} color={tab === t.key ? COLORE : "hsl(210 8% 50%)"} />
-              <span><b>{t.label}</b><small>{t.hint}</small></span>
-            </button>
-          );
-        })}
-      </div>
-      {tab === "aste" && (gen ? <Aste d={gen} apriConto={apriConto} /> : senzaDati)}
-      {tab === "generazione" && (gen ? <GenerazioneM d={gen} /> : senzaDati)}
-      {tab === "voti" && <RendeOgniVoto />}
-      <CollegamentiCorrelati voci={[
-        { href: "/puledro", titolo: "Prima di correre", descrizione: "Quanto pagare un puledro, venderlo o farlo correre, un incrocio" },
-        { href: "/tenere", titolo: "In corsa", descrizione: "Lo tengo o lo fermo: i prossimi 12 mesi" },
-        { href: "/controllo", titolo: "Controllo a posteriori", descrizione: "Le stime rifatte sul passato e confrontate con com'è andata" },
-      ]} />
-    </div>
-  );
-}

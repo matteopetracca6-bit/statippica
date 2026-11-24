@@ -6,8 +6,7 @@ import { colorePista } from "./piste";
  * colori: prima la pagina iniziale aveva un suo elenco di riquadri, e ogni
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
-import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass, Flag, Star, Store, Layers } from "lucide-react";
+import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale, Briefcase, History, Medal, Timer, GitBranch, Crown, KeyRound, Flag, Star, Layers, Calculator } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -89,16 +88,12 @@ export const GRUPPI: Gruppo[] = [
   { nome: "Economia", icon: Scale, colore: "hsl(160 60% 50%)",
     descrizione: "Costi, premi attesi, prezzo dei puledri e rischio della scuderia",
     schede: [
-    { href: "/puledro", label: "Prima di correre", nota: "Un puledro: quanto pagarlo, venderlo, un incrocio", icon: Tag, colore: "hsl(160 60% 50%)",
-      descrizione: "Un puledro che non ha ancora corso: il prezzo massimo, se conviene venderlo e se un incrocio si ripaga" },
-    { href: "/tenere", label: "In corsa", nota: "Lo tengo o lo fermo: i prossimi 12 mesi", icon: TrendingUp, colore: "hsl(160 60% 50%)",
-      descrizione: "Per ogni cavallo in attività: premi attesi nei prossimi 12 mesi contro la spesa di un anno" },
+    { href: "/conto", label: "Fai il conto", nota: "Un puledro o un cavallo: conviene?", icon: Calculator, colore: "hsl(160 60% 50%)",
+      descrizione: "Hai un puledro o un cavallo che corre? Quanto pagarlo, se venderlo, se tenerlo: una risposta sola, con le tue spese" },
+    { href: "/rende", label: "Chi rende di più", nota: "Stalloni, allenatori, ippodromi e aste in fila", icon: Trophy, colore: "hsl(160 60% 50%)",
+      descrizione: "Stalloni, allenatori, ippodromi, aste e voti messi in fila per quanto rendono davvero" },
     { href: "/scuderia", label: "La tua scuderia", nota: "I tuoi cavalli insieme: cassa, rischio e valore", icon: Briefcase, colore: "hsl(160 60% 50%)",
       descrizione: "Entrate e spese dei prossimi 12 mesi, rischio della scuderia, valore di carriera e offerte" },
-    { href: "/rende", label: "Chi rende di più", nota: "Stalloni, allenatori, ippodromi e aste in fila", icon: Trophy, colore: "hsl(160 60% 50%)",
-      descrizione: "Chi rende di più fra stalloni, allenatori, ippodromi e puledri d'asta: numeri misurati, non previsioni" },
-    { href: "/mercato", label: "Mercato", nota: "Aste 2026, generazione M, quanto rende ogni voto", icon: Store, colore: "hsl(160 60% 50%)",
-      descrizione: "I dati, senza calcolatori: le aste lotto per lotto, i nati 2025 e il cavallo tipico di ogni voto contro i costi" },
   ] },
   { nome: "Metodo", icon: BookMarked, colore: "hsl(40 40% 72%)",
     descrizione: "Da dove vengono i numeri e le prove che le stime funzionano",
@@ -131,9 +126,9 @@ const ALIAS: Record<string, string> = {
   "/proprietario": "/proprietari",
   "/controllo-a-posteriori": "/controllo",
   "/portafoglio": "/scuderia",
-  "/prezzo-massimo": "/puledro", "/vendere": "/puledro", "/economia": "/puledro",
-  "/break-even": "/mercato", "/pareggio": "/mercato", "/chi-rende": "/rende", "/annate": "/generazioni",
-  "/aste": "/mercato", "/generazione-m": "/mercato",
+  "/prezzo-massimo": "/conto", "/vendere": "/conto", "/economia": "/conto", "/puledro": "/conto", "/tenere": "/conto",
+  "/break-even": "/rende", "/pareggio": "/rende", "/mercato": "/rende", "/chi-rende": "/rende", "/annate": "/generazioni",
+  "/aste": "/rende", "/generazione-m": "/generazioni",
   "/metodo-e-dati": "/metodo",
   "/gran-premi": "/ippodromi", "/albo-doro": "/ippodromi", "/palmares": "/ippodromi",
 };

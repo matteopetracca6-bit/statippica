@@ -691,7 +691,7 @@ export default function HorsePage() {
               <GitCompare size={13} /> Confronta con…
             </Link>
             {!horse.career_races && horse.birth_year >= new Date().getFullYear() - 3 && horse.pedigree?.sire && (
-              <Link href={`/puledro?padre=${encodeURIComponent(horse.pedigree.sire)}&madre=${encodeURIComponent(horse.pedigree.dam ?? "")}&nome=${encodeURIComponent(horse.name)}`}
+              <Link href={`/conto?modo=puledro&padre=${encodeURIComponent(horse.pedigree.sire)}&madre=${encodeURIComponent(horse.pedigree.dam ?? "")}&nome=${encodeURIComponent(horse.name)}`}
                     style={{ fontSize: "12.5px", color: "hsl(25 75% 62%)" }}>
                 Quanto vale questo puledro →
               </Link>
