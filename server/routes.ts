@@ -621,6 +621,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const vince = leggiJsonModelli("vince_verifica.json");
     const galoppo = leggiJsonModelli("galoppo_verifica.json");
     const quote = leggiJsonModelli("confronto_quote.json");
+    const tempo = leggiJsonModelli("tempo_km_verifica.json");
     let archivio: any = null;
     const db = getDb();
     try {
@@ -635,7 +636,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     } catch { /* senza archivio restano i file dei modelli */ } finally { db.close(); }
     const v = {
       notte: togli(notte, "variabili"), mattino: togli(mattino, "variabili"), vince,
-      galoppo: togli(galoppo, "regole", "taratura"), quote, archivio,
+      galoppo: togli(galoppo, "regole", "taratura"), quote, archivio, tempo: togli(tempo, "variabili"),
     };
     memoMetodo = { t: Date.now(), v };
     res.json(v);

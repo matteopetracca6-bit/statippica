@@ -199,7 +199,7 @@ export default function MetodoPronosticoPage() {
   const { data: live } = useQuery<any>({ queryKey: ["/api/calendar/verifica?giorni=30"], staleTime: 10 * 60_000 });
   const { data: ctrl } = useQuery<{ mesi: any[] }>({ queryKey: ["/api/controllo-modelli"], staleTime: 30 * 60_000 });
 
-  const notte = d?.notte, mattino = d?.mattino, vince = d?.vince, gal = d?.galoppo, q = d?.quote, arch = d?.archivio;
+  const notte = d?.notte, mattino = d?.mattino, vince = d?.vince, gal = d?.galoppo, q = d?.quote, arch = d?.archivio, tk = d?.tempo;
   const cc = notte?.campo_completo, ccM = mattino?.campo_completo;
   const ld = live?.sintesi?.del_giorno ?? live?.sintesi?.tutte;
   const mesi = (ctrl?.mesi ?? []).filter(m => m.modello === "primi_tre").slice().reverse();
@@ -280,6 +280,8 @@ export default function MetodoPronosticoPage() {
                 <td>come la notte</td><td>{vince?.periodo_prova ? `${n0(vince.periodo_prova.corse)} corse` : "stesse corse"}</td><td className="n">{pc(vince?.modello?.primo_scelto_vince)} primo favorito vince</td></tr>
               <tr><td><b>Galoppo</b> <small style={{ color: MUTED }}>{gal?.nome}</small></td><td>squalifica per galoppo</td><td className="n">{n0(gal?.alberi)}</td><td className="n">—</td>
                 <td>{gal?.periodi?.impara ?? "—"}</td><td>{n0(gal?.partenze_prova)} partenze {gal?.periodi?.prova}</td><td className="n">AUC {dec(gal?.auc_modello, 2)}</td></tr>
+              {tk && <tr><td><b>Tempo al km</b> <small style={{ color: MUTED }}>{tk.nome}</small></td><td>il tempo al km di ogni partente</td><td className="n">{n0(tk.alberi)}</td><td className="n">{(notte?.peso_variabili?.length ?? 55) + 1}</td>
+                <td>come la notte</td><td>{n0(tk.partenze_prova)} arrivi dal {data(tk.periodo_prova?.da)}</td><td className="n">sbaglia di {dec(tk.modello?.errore_medio, 2)} s/km</td></tr>}
               <tr><td><b>Simulatore</b></td><td>la corsa metro per metro</td><td className="n">—</td><td className="n">—</td>
                 <td>tempi al km dell'archivio</td><td>{PROVA_XGB.corse} corse vere</td><td className="n">{pcN(PROVA_XGB.favoritoVince.tarato)} favorito vince</td></tr>
             </tbody>
@@ -472,6 +474,32 @@ export default function MetodoPronosticoPage() {
                 il {pc(gal.fasce_sito.basso?.vera, 0)} delle volte; <b>medio</b> per il {pc(gal.fasce_sito.medio?.quota_partenze, 0)} ({pc(gal.fasce_sito.medio?.vera, 0)});
                 <b> alto</b> (dal {Math.round((gal.soglie_fasce?.alto_da ?? 0.3) * 100)}%) per il {pc(gal.fasce_sito.alto?.quota_partenze, 0)} ({pc(gal.fasce_sito.alto?.vera, 0)}).</p>}
               {gal.debutti && <p>Sui debuttanti, senza storia, è più difficile: AUC {dec(gal.debutti.auc, 2)} su {n0(gal.debutti.partenze)} debutti.</p>}
+            </div>
+          </div>
+        </>}
+
+        {/* TEMPO AL KM */}
+        {tk && <>
+          <Titolo sotto="Un modello XGBoost stima di quanto ogni partente starà sopra o sotto il tempo tipico di quella pista e di quella distanza. Dà il passo di partenza al simulatore.">Il tempo al km previsto</Titolo>
+          <div className="mp-griglia2">
+            <div className="ed-pannello">
+              <GraficoColonne altezza={170} nomeAsse="errore medio sul tempo al km, in secondi (più basso è meglio)" formatoGuida={v => v.toFixed(1).replace(".", ",")}
+                dati={[
+                  ["solo", "tempo tipico della pista", tk.metodi_semplici?.solo_pista?.errore_medio, COLORI_GRAFICO.spento],
+                  ["ult", "ultimo tempo del cavallo", tk.metodi_semplici?.ultimo_tempo?.errore_medio, COLORI_GRAFICO.spento],
+                  ["ind", "pista + suo indice medio", tk.metodi_semplici?.pista_piu_indice_medio?.errore_medio, COLORI_GRAFICO.medio],
+                  ["xgb", "XGBoost", tk.modello?.errore_medio, NOI],
+                ].filter(r => r[2] != null).map(([k, t, v, c]) => ({ chiave: k as string, etichetta: t as string, valore: v as number, colore: c as string,
+                  testo: dec(v as number, 2), scheda: [{ testo: t as string }, { testo: `sbaglia in media di ${dec(v as number, 2)} secondi al km` }] }))} />
+            </div>
+            <div className="ed-pannello mp-testo" style={{ fontSize: 12.5 }}>
+              <p>Su {n0(tk.partenze_prova)} arrivi dal {data(tk.periodo_prova?.da)}, mai visti dal modello, il tempo previsto sbaglia in media di <b>{dec(tk.modello?.errore_medio, 2)} secondi al km</b>,
+                contro {dec(tk.metodi_semplici?.pista_piu_indice_medio?.errore_medio, 2)} del metodo semplice migliore (tempo tipico della pista più l'indice medio del cavallo).
+                Sul vincitore sbaglia di {dec(tk.modello?.errore_tempo_vincitore, 2)} secondi.</p>
+              <p>Il cavallo con il tempo previsto più basso vince il {pc(tk.modello?.piu_veloce_vince)} delle corse ({pc(tk.metodi_semplici?.pista_piu_indice_medio?.piu_veloce_vince)} con il metodo semplice):
+                meno del modello della vittoria ({pc(vince?.modello?.primo_scelto_vince)}), perché il tempo non vede la partenza, la tattica e il galoppo. Serve al simulatore come passo
+                di partenza, prima della taratura sul pronostico.</p>
+              {tk.peso_variabili && <p style={{ marginBottom: 0 }}>Pesano di più: {tk.peso_variabili.slice(0, 5).map((v: any) => `${v.variabile === "rif_km" ? "il tempo tipico della pista" : (NOMI[v.variabile] ?? v.variabile)} (${pcN(v.peso * 100, 0)})`).join(", ")}.</p>}
             </div>
           </div>
         </>}
