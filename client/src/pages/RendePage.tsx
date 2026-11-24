@@ -131,7 +131,7 @@ function Stalloni() {
 function Allenatori() {
   const { scuderia } = useScuderia();
   const m = scuderia.mensile || 1200;
-  const { data: d } = useQuery<any>({ queryKey: ["/api/rende/allenatori", m], queryFn: () => get(`/api/rende/allenatori?mensile=${m}`), staleTime: 3600_000, placeholderData: p => p });
+  const { data: d } = useQuery<any>({ queryKey: ["/api/rende/allenatori", m], queryFn: () => get(`/api/rende/allenatori?mensile=${m}`), staleTime: 3600_000, placeholderData: (p: any) => p });
   if (!d) return <Sagoma cornice righe={8} />;
   const col = (e: number) => (e >= d.spesa_anno ? VERDE : e >= 0.6 * d.spesa_anno ? GIALLO : ROSSO);
   const coprono = d.voci.filter((x: any) => x.premi_per_cavallo >= d.spesa_anno).length;
