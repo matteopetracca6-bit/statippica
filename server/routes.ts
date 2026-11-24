@@ -592,6 +592,37 @@ export function registerRoutes(httpServer: Server, app: Express) {
     if (!cacheControllo || cacheControllo.mtime !== mtime) cacheControllo = { mtime, dati: JSON.parse(fs.readFileSync(f, "utf8")) };
     res.json(cacheControllo.dati);
   });
+  // Pagina "Come si fa il pronostico": tutto quello che i modelli scrivono
+  // all'allenamento (pesi delle variabili, prove, taratura) piu' due conti
+  // dall'archivio (da quando c'e' lo storico, quante corse in calendario).
+  let memoMetodo: { t: number; v: unknown } | null = null;
+  app.get("/api/metodo/pronostico", (_req, res) => {
+    if (memoMetodo && Date.now() - memoMetodo.t < 30 * 60_000) return res.json(memoMetodo.v);
+    const togli = (o: any, ...k: string[]) => { if (!o) return null; const c = { ...o }; for (const x of k) delete c[x]; return c; };
+    const notte = leggiJsonModelli("top3_verifica.json");
+    const mattino = leggiJsonModelli("top3_mattino_verifica.json");
+    const vince = leggiJsonModelli("vince_verifica.json");
+    const galoppo = leggiJsonModelli("galoppo_verifica.json");
+    const quote = leggiJsonModelli("confronto_quote.json");
+    let archivio: any = null;
+    const db = getDb();
+    try {
+      const ha = (t: string) => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(t);
+      archivio = {
+        storico: ha("pronostico_top3_storico") ? db.prepare(
+          "SELECT MIN(race_date) AS da, MAX(race_date) AS a, COUNT(*) AS stime, COUNT(DISTINCT race_date||'|'||pista||'|'||corsa) AS corse FROM pronostico_top3_storico").get() : null,
+        calendario: ha("upcoming_races") ? db.prepare(
+          "SELECT MIN(race_date) AS da, MAX(race_date) AS a, COUNT(*) AS partenti, COUNT(DISTINCT race_date||'|'||track||'|'||race_time) AS corse, COUNT(DISTINCT race_date||'|'||track) AS riunioni FROM upcoming_races WHERE race_date >= date('now')").get() : null,
+        corse_archivio: ha("races") ? (db.prepare("SELECT COUNT(*) AS n, MIN(race_date) AS da FROM races").get() as any) : null,
+      };
+    } catch { /* senza archivio restano i file dei modelli */ } finally { db.close(); }
+    const v = {
+      notte: togli(notte, "variabili"), mattino: togli(mattino, "variabili"), vince,
+      galoppo: togli(galoppo, "regole", "taratura"), quote, archivio,
+    };
+    memoMetodo = { t: Date.now(), v };
+    res.json(v);
+  });
   app.get("/api/controllo-modelli", (_req, res) => {
     const db = getDb();
     try { res.json(controlloModelli(db)); } finally { db.close(); }

@@ -6,7 +6,7 @@ import { colorePista } from "./piste";
  * colori: prima la pagina iniziale aveva un suo elenco di riquadri, e ogni
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
-import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale, Briefcase, History, Medal, Timer, GitBranch, Crown, KeyRound, Flag, Star, Layers, Calculator } from "lucide-react";
+import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, Network, Award, Building2, FlaskConical, Heart, MapPin, BookMarked, Scale, Briefcase, History, Medal, Timer, GitBranch, Crown, KeyRound, Flag, Star, Layers, Calculator, Target } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -100,6 +100,8 @@ export const GRUPPI: Gruppo[] = [
     schede: [
     { href: "/metodo", label: "Metodo e dati", nota: "Da dove vengono i numeri e come si leggono", icon: BookMarked, colore: "hsl(40 40% 72%)",
       descrizione: "Da dove vengono i numeri, come si calcola ogni voto e quando si è aggiornato l'archivio" },
+    { href: "/metodo/pronostico", label: "Come si fa il pronostico", nota: "Corse, calendario, pesi di XGBoost e risultati", icon: Target, colore: "hsl(40 40% 72%)",
+      descrizione: "Dalle corse al calendario, i modelli XGBoost con i loro pesi, le prove contro i metodi semplici e il mercato, e com'è andato dal vivo" },
     { href: "/controllo", label: "Controllo a posteriori", nota: "Le stime rifatte nel passato, contro com'è andata", icon: History, colore: "hsl(33 38% 62%)",
       descrizione: "Le stime rifatte con i soli dati di una data passata, confrontate con com'è andata davvero" },
     { href: "/validazione", label: "Verifica Advisor", nota: "Il consiglio di accoppiamento messo alla prova", icon: FlaskConical, colore: "hsl(46 48% 80%)",
@@ -130,6 +132,7 @@ const ALIAS: Record<string, string> = {
   "/break-even": "/rende", "/pareggio": "/rende", "/mercato": "/rende", "/chi-rende": "/rende", "/annate": "/generazioni",
   "/aste": "/rende", "/generazione-m": "/generazioni",
   "/metodo-e-dati": "/metodo",
+  "/come-si-fa-il-pronostico": "/metodo/pronostico",
   "/gran-premi": "/ippodromi", "/albo-doro": "/ippodromi", "/palmares": "/ippodromi",
 };
 export function coloreDiPagina(percorso: string): string | null {
