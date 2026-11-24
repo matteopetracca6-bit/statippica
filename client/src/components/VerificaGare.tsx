@@ -183,6 +183,7 @@ function Riepilogo({ d, giorni }: { d: Risposta; giorni: number }) {
 }
 
 const titolo = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
+const dataLunga = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
 function data(iso: string) {
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
@@ -236,6 +237,7 @@ export default function VerificaGare() {
   const [giorni, setGiorni] = useState(14);
   const [aperta, setAperta] = useState<string | null>(null);
   const [tipo, setTipo] = useState<"tutte" | "del_giorno" | "ricostruito">("tutte");
+  const [giornoSel, setGiornoSel] = useState<string | null>(null);
   const { data: d, isLoading } = useQuery<Risposta>({
     queryKey: ["/api/calendar/verifica", giorni],
     queryFn: async () => (await apiRequest("GET", `/api/calendar/verifica?giorni=${giorni}`)).json(),
@@ -243,12 +245,32 @@ export default function VerificaGare() {
   });
 
   if (isLoading || !d) return <Sagoma cornice riquadri={3} righe={6} />;
-  const corse = d.corse.filter(c => tipo === "tutte" || c.tipo === tipo);
+  const corse = d.corse.filter(c => (tipo === "tutte" || c.tipo === tipo) && (!giornoSel || c.race_date === giornoSel));
+  // I giorni del periodo, con la quota dei favoriti a segno e le corse ancora in attesa.
+  const attesaPerGiorno = new Map<string, { n: number; piste: Set<string>; controllo: Controllo | null }>();
+  for (const c of d.in_attesa_elenco ?? []) {
+    const x = attesaPerGiorno.get(c.race_date) ?? { n: 0, piste: new Set<string>(), controllo: null };
+    x.n++; x.piste.add(c.pista); x.controllo = x.controllo ?? c.controllo; attesaPerGiorno.set(c.race_date, x);
+  }
+  const quotaGiorno = new Map((d.andamento ?? []).map(a => [a.data, a]));
+  const giorniElenco = [...new Set([...d.corse.map(c => c.race_date), ...attesaPerGiorno.keys()])].sort().reverse();
   const sg = d.sintesi?.del_giorno;
   const sr = d.sintesi?.ricostruito;
 
   return (
     <div>
+      {attesaPerGiorno.size > 0 && (
+        <div className="verifica-riquadro" data-testid="giorni-in-attesa" style={{ marginBottom: 12, borderColor: "hsl(40 60% 38%)" }}>
+          <div className="etichetta" style={{ color: "hsl(40 75% 60%)" }}>Risultati in arrivo</div>
+          {[...attesaPerGiorno.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([g, x]) => (
+            <div key={g} style={{ fontSize: 13, color: "hsl(210 10% 86%)", marginTop: 6, lineHeight: 1.5 }}>
+              <b style={{ textTransform: "capitalize" }}>{dataLunga(g)}</b>: {x.n} {x.n === 1 ? "corsa aspetta" : "corse aspettano"} l'arrivo
+              ({[...x.piste].map(titolo).join(", ")}). {testoControllo(x.controllo, d.tentativi_max ?? 8)}.
+            </div>
+          ))}
+          <div className="nota">Il giro notturno ricontrolla gli arrivi finché Trottoweb non li pubblica; poi la giornata entra nel conto da sola.</div>
+        </div>
+      )}
       <ControlloMensile />
       <div className="verifica-sintesi-griglia">
         {[{ s: sg, nome: "Stime del giorno", nota: "mostrate nel calendario prima della gara" },
@@ -273,6 +295,21 @@ export default function VerificaGare() {
       <Riepilogo d={d} giorni={giorni} />
 
       <h3 className="verifica-titolo" style={{ margin: "22px 0 0" }}>Corsa per corsa</h3>
+      <div className="verifica-giorni" role="group" aria-label="Giorno" data-testid="scelta-giorno">
+        <button className={`chip-filtro${giornoSel == null ? " attivo" : ""}`} onClick={() => setGiornoSel(null)}>Tutti i giorni</button>
+        {giorniElenco.map(g => {
+          const q = quotaGiorno.get(g);
+          const att = attesaPerGiorno.get(g);
+          return (
+            <button key={g} className={`chip-filtro${giornoSel === g ? " attivo" : ""}`} onClick={() => setGiornoSel(giornoSel === g ? null : g)}
+              title={q ? `${q.corse} corse, favoriti a segno ${p1(q.quota_favoriti)}` : att ? "risultati in arrivo" : ""}>
+              <span style={{ textTransform: "capitalize" }}>{data(g)}</span>
+              {q?.quota_favoriti != null ? <b style={{ marginLeft: 5, color: coloreSegno(q.quota_favoriti, 100) }}>{Math.round(q.quota_favoriti)}%</b>
+                : att ? <span style={{ marginLeft: 5, color: "hsl(40 75% 60%)" }}>in arrivo</span> : null}
+            </button>
+          );
+        })}
+      </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", margin: "10px 0 12px" }}>
         {([["tutte", "Tutte"], ["del_giorno", "Del giorno"], ["ricostruito", "Ricostruite"]] as const).map(([k, t]) => (
           <button key={k} className={`chip-filtro${tipo === k ? " attivo" : ""}`} onClick={() => setTipo(k)}>{t}</button>
@@ -284,7 +321,7 @@ export default function VerificaGare() {
       </div>
 
       {corse.length === 0 ? (
-        <div className="riga-vuota">Nessuna corsa con il risultato in archivio in questo periodo.</div>
+        <div className="riga-vuota">{giornoSel && attesaPerGiorno.has(giornoSel) ? "I risultati di questo giorno non sono ancora arrivati: compaiono dopo il prossimo ricontrollo." : "Nessuna corsa con il risultato in archivio in questo periodo."}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {corse.map(c => {

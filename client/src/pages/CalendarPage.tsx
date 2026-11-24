@@ -8,11 +8,13 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import GradeBadge from "../components/GradeBadge";
 import BandieraCavallo from "../components/BandieraCavallo";
-import { Calendar, MapPin, Clock, ChevronDown, ChevronRight, Trophy, AlertCircle, Medal } from "lucide-react";
+import { Calendar, MapPin, Clock, ChevronDown, AlertCircle, Star } from "lucide-react";
 import VerificaPronostico from "../components/VerificaPronostico";
 import VerificaGare from "../components/VerificaGare";
 import DettaglioPronostico from "../components/DettaglioPronostico";
 import CavalloCaricamento from "@/components/CavalloCaricamento";
+import StellinaSegui from "../components/StellinaSegui";
+import { useSeguiti } from "@/lib/seguiti";
 
 interface CalendarEntry {
   horse_name: string;
@@ -67,6 +69,28 @@ function formatTime(time: string): string {
   return time.substring(0, 5);
 }
 
+/** "Oggi", "Domani", "Gio 26". */
+function nomeGiorno(iso: string): string {
+  const oggi = new Date(); oggi.setHours(0, 0, 0, 0);
+  const d = new Date(iso + "T00:00:00");
+  const diff = Math.round((d.getTime() - oggi.getTime()) / 864e5);
+  if (diff === 0) return "Oggi";
+  if (diff === 1) return "Domani";
+  return d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" }).replace(/^./, c => c.toUpperCase());
+}
+function nomeGiornoLungo(iso: string): string {
+  const t = new Date(iso + "T00:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+  const g = nomeGiorno(iso);
+  return (g === "Oggi" || g === "Domani" ? `${g} · ` : "") + t.replace(/^./, c => c.toUpperCase());
+}
+const nomePistaCal = (t: string) => TRACK_NAMES[t] || (t.charAt(0) + t.slice(1).toLowerCase());
+/** La distanza della corsa: quella dei piu' (chi parte dietro ne ha qualcuna in piu'). */
+function distanzaCorsa(r: RaceEvent): number | null {
+  const c = new Map<number, number>();
+  for (const e of r.entries) if (e.distance && e.distance >= 1000) c.set(e.distance, (c.get(e.distance) ?? 0) + 1);
+  return [...c.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null;
+}
+
 const TRACK_NAMES: Record<string, string> = {
   BO: "Bologna", MI: "Milano", RM: "Roma", TO: "Torino",
   NA: "Napoli", CE: "Cesena", SR: "Siracusa", TV: "Treviso",
@@ -103,10 +127,37 @@ export default function CalendarPage() {
   }, []);
 
   const raceKey = (r: RaceEvent) => `${r.track}-${r.race_date}-${r.race_time}`;
+  const [giorno, setGiorno] = useState<string>("tutti");
+  const [pista, setPista] = useState<string>("tutte");
+  const [soloMiei, setSoloMiei] = useState(false);
+  const [chiuse, setChiuse] = useState<Set<string>>(new Set());
+  const { seguiti, segue } = useSeguiti();
+  const tutte = data?.races ?? [];
+  // Numero della corsa nella giornata: l'ordine di partenza nella riunione.
+  const numeroCorsa = new Map<string, number>();
+  {
+    const per = new Map<string, RaceEvent[]>();
+    for (const r of tutte) { const k = `${r.race_date}|${r.track}`; per.set(k, [...(per.get(k) ?? []), r]); }
+    per.forEach(l => [...l].sort((x, y) => x.race_time.localeCompare(y.race_time)).forEach((r, i) => numeroCorsa.set(raceKey(r), i + 1)));
+  }
+  const giorni = [...new Set(tutte.map(r => r.race_date))].sort();
+  const piste = [...new Set(tutte.filter(r => giorno === "tutti" || r.race_date === giorno).map(r => r.track))].sort((a, b) => nomePistaCal(a).localeCompare(nomePistaCal(b)));
+  const conMiei = (r: RaceEvent) => r.entries.some(e => segue(e.horse_name, e.birth_year));
+  const corseConMiei = tutte.filter(conMiei).length;
+  const filtrate = tutte.filter(r => (giorno === "tutti" || r.race_date === giorno) && (pista === "tutte" || r.track === pista) && (!soloMiei || conMiei(r)));
+  const gruppi: { data: string; riunioni: { track: string; corse: RaceEvent[]; miei: number }[] }[] = [];
+  for (const r of [...filtrate].sort((x, y) => x.race_date.localeCompare(y.race_date) || x.race_time.localeCompare(y.race_time))) {
+    let g = gruppi.find(x => x.data === r.race_date);
+    if (!g) { g = { data: r.race_date, riunioni: [] }; gruppi.push(g); }
+    let ri = g.riunioni.find(x => x.track === r.track);
+    if (!ri) { ri = { track: r.track, corse: [], miei: 0 }; g.riunioni.push(ri); }
+    ri.corse.push(r);
+    ri.miei += r.entries.filter(e => segue(e.horse_name, e.birth_year)).length;
+  }
 
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: coloreScheda("/calendario") }}>
-      <style>{CSS_DUE_COLONNE}</style>
+      <style>{CSS_DUE_COLONNE + CSS_CALENDARIO}</style>
       <IntestazionePagina icona={Calendar} colore={coloreScheda("/calendario")} titolo="Calendario gare" margineSotto={16}
         sottotitolo="Le prossime corse con gli iscritti e il loro voto, e come è andato il pronostico delle gare già corse." />
 
@@ -128,7 +179,7 @@ export default function CalendarPage() {
       </div>
 
       {scheda === "verifica" ? <VerificaGare /> : loading ? (
-<CavalloCaricamento label="Caricamento" />
+        <CavalloCaricamento label="Caricamento" />
       ) : !data || data.races.length === 0 ? (
         <div className="pannello" style={{ padding: "48px 24px", textAlign: "center" }}>
           <AlertCircle size={32} style={{ color: "hsl(210 8% 40%)", marginBottom: "12px" }} />
@@ -140,232 +191,168 @@ export default function CalendarPage() {
           </p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {data.races.map((race, i) => {
-            const key = raceKey(race);
-            const expanded = expandedRace === key;
-            const top3 = race.entries.slice(0, 3);
-            const trackName = TRACK_NAMES[race.track] || (race.track.charAt(0) + race.track.slice(1).toLowerCase());
-            return (
-              <div key={key} className="pannello" style={{ overflow: "hidden", ["--colore-pannello" as any]: colorePista(race.track) }}>
-                {/* Race header */}
-                <div
-                  onClick={() => setExpandedRace(expanded ? null : key)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "16px",
-                    padding: "16px 20px", cursor: "pointer", minWidth: 0,
-                    transition: "background 0.15s",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 13%)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  {/* Date badge */}
-                  <div style={{
-                    minWidth: "64px", textAlign: "center",
-                    background: colorePistaTenue(race.track, 0.1), border: `1px solid ${colorePistaTenue(race.track, 0.3)}`,
-                    borderRadius: "10px", padding: "8px 10px",
-                  }}>
-                    <div style={{ fontSize: "11px", color: "hsl(210 8% 50%)", textTransform: "uppercase" }}>
-                      {formatDate(race.race_date).split(" ")[0]}
-                    </div>
-                    <div className="tabular" style={{ fontSize: "20px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>
-                      {formatDate(race.race_date).split(" ")[1]}
-                    </div>
-                    <div style={{ fontSize: "10px", color: "hsl(210 8% 45%)", textTransform: "uppercase" }}>
-                      {formatDate(race.race_date).split(" ")[2]}
-                    </div>
-                  </div>
+        <>
+          {data.pronostico && (
+            <p style={{ fontSize: 12.5, color: "hsl(210 8% 58%)", margin: "0 0 12px", lineHeight: 1.5 }}>
+              La percentuale è la probabilità di arrivare nei primi tre: in ogni corsa sommano a 3. Tocca una corsa per i partenti.
+            </p>
+          )}
+          <div className="cal-filtri">
+            <div className="cal-chips" role="group" aria-label="Giorno">
+              <button className={`chip-filtro${giorno === "tutti" ? " attivo" : ""}`} onClick={() => setGiorno("tutti")}>Tutti i giorni</button>
+              {giorni.map(g => (
+                <button key={g} className={`chip-filtro${giorno === g ? " attivo" : ""}`} onClick={() => setGiorno(g)}>{nomeGiorno(g)}</button>
+              ))}
+            </div>
+            <div className="cal-chips" role="group" aria-label="Ippodromo">
+              <button className={`chip-filtro${pista === "tutte" ? " attivo" : ""}`} onClick={() => setPista("tutte")}>Tutti gli ippodromi</button>
+              {piste.map(t => (
+                <button key={t} className={`chip-filtro${pista === t ? " attivo" : ""}`} onClick={() => setPista(t)}
+                  style={pista === t ? { borderColor: colorePista(t), color: colorePista(t) } : undefined}>{nomePistaCal(t)}</button>
+              ))}
+            </div>
+            {seguiti.length > 0 && (
+              <button className={`chip-filtro${soloMiei ? " attivo" : ""}`} onClick={() => setSoloMiei(!soloMiei)} data-testid="solo-miei"
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, alignSelf: "flex-start" }}>
+                <Star size={12} fill={soloMiei ? "hsl(51 85% 58%)" : "none"} color="hsl(51 85% 58%)" />
+                Solo i miei cavalli ({corseConMiei} {corseConMiei === 1 ? "corsa" : "corse"})
+              </button>
+            )}
+          </div>
 
-                  {/* Track + time */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <MapPin size={14} style={{ color: colorePista(race.track) }} />
-                      <span style={{ fontSize: "15px", fontWeight: 700, color: colorePista(race.track) }}>
-                        {trackName}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-                      <Clock size={12} style={{ color: "hsl(210 8% 45%)" }} />
-                      <span className="tabular" style={{ fontSize: "12px", color: "hsl(210 8% 55%)" }}>
-                        {formatTime(race.race_time)}
-                      </span>
-                      <span style={{ fontSize: "12px", color: "hsl(210 8% 40%)", marginLeft: "8px" }}>
-                        {race.n_runners} partenti
-                      </span>
-                      <Link href={`/simulatore?tipo=prossima&pista=${encodeURIComponent(race.track)}&data=${race.race_date}&ora=${encodeURIComponent(race.race_time)}`}>
-                        <a onClick={e => e.stopPropagation()} style={{ fontSize: "12px", fontWeight: 600, color: "hsl(355 70% 64%)", marginLeft: "10px", textDecoration: "none" }}>▶ Simula</a>
-                      </Link>
-                    </div>
-                  </div>
+          {gruppi.length === 0 && <div className="pannello" style={{ padding: 20, color: "hsl(210 8% 55%)", fontSize: 13 }}>Nessuna corsa con questi filtri.</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {gruppi.map(g => (
+              <section key={g.data}>
+                <h2 className="cal-giorno">{nomeGiornoLungo(g.data)}</h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {g.riunioni.map(ri => {
+                    const kr = `${g.data}|${ri.track}`;
+                    const chiusa = chiuse.has(kr);
+                    const colP = colorePista(ri.track);
+                    return (
+                      <div key={kr} className="cal-riunione" style={{ ["--cp" as any]: colP }}>
+                        <button className="cal-riunione-testa" onClick={() => setChiuse(c => { const n = new Set(c); n.has(kr) ? n.delete(kr) : n.add(kr); return n; })} aria-expanded={!chiusa}>
+                          <MapPin size={15} color={colP} />
+                          <b style={{ color: colP }}>{nomePistaCal(ri.track)}</b>
+                          <span>{ri.corse.length} {ri.corse.length === 1 ? "corsa" : "corse"} · dalle {formatTime(ri.corse[0].race_time)}</span>
+                          {ri.miei > 0 && <span className="cal-miei"><Star size={11} fill="hsl(51 85% 58%)" color="hsl(51 85% 58%)" /> {ri.miei}</span>}
+                          <ChevronDown size={16} style={{ marginLeft: "auto", color: "hsl(210 8% 45%)", transform: chiusa ? "rotate(-90deg)" : "none", transition: "transform .2s" }} />
+                        </button>
+                        {!chiusa && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 0 4px" }}>
+                            {ri.corse.map(race => {
+                              const key = raceKey(race);
+                              const expanded = expandedRace === key;
+                              const top3 = race.entries.slice(0, 3);
+                              const num = numeroCorsa.get(key);
+                              const dist = distanzaCorsa(race);
+                              const miei = race.entries.filter(e => segue(e.horse_name, e.birth_year)).length;
+                              return (
+                                <div key={key} className="pannello cal-corsa" style={{ overflow: "hidden", ["--colore-pannello" as any]: colP }}>
+                                  <div className="cal-corsa-testa" onClick={() => setExpandedRace(expanded ? null : key)} role="button" aria-expanded={expanded}>
+                                    <div className="cal-corsa-dati">
+                                      <span className="cal-num" style={{ color: colP, borderColor: colorePistaTenue(ri.track, 0.45), background: colorePistaTenue(ri.track, 0.1) }}>
+                                        {num ? `Corsa ${num}` : "Corsa"}
+                                      </span>
+                                      <span className="tabular cal-ora"><Clock size={12} /> {formatTime(race.race_time)}</span>
+                                      {dist && <span className="tabular">{dist.toLocaleString("it-IT")} m</span>}
+                                      <span>{race.n_runners} partenti</span>
+                                      {miei > 0 && <span className="cal-miei"><Star size={11} fill="hsl(51 85% 58%)" color="hsl(51 85% 58%)" /> {miei === 1 ? "un tuo cavallo" : `${miei} tuoi cavalli`}</span>}
+                                      <Link href={`/simulatore?tipo=prossima&pista=${encodeURIComponent(race.track)}&data=${race.race_date}&ora=${encodeURIComponent(race.race_time)}`}>
+                                        <a onClick={e => e.stopPropagation()} className="cal-simula" data-testid="simula">▶ Simula</a>
+                                      </Link>
+                                      <ChevronDown size={17} style={{ marginLeft: "auto", color: "hsl(210 8% 45%)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
+                                    </div>
+                                    {top3.length >= 3 && race.n_runners > 3 && (
+                                      <div className="cal-favoriti">
+                                        <span className="cal-fav-etich">favoriti</span>
+                                        {top3.map((e, idx) => (
+                                          <span key={idx} className="cal-fav">
+                                            <b style={{ color: idx === 0 ? "hsl(210 10% 92%)" : "hsl(210 10% 80%)" }}>{e.horse_name}</b>
+                                            {e.grade && <GradeBadge grade={e.grade} size="sm" />}
+                                            {(e.top3 || !data.pronostico) && <span className="tabular" style={{ color: "hsl(183 60% 58%)", fontWeight: 700 }}>{stima(e).toFixed(0)}%</span>}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
 
-                  {/* Podium preview */}
-                  {top3.length >= 3 && (
-                    <div className="podio-anteprima" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      {top3.map((e, idx) => (
-                        <div key={idx} style={{
-                          display: "flex", alignItems: "center", gap: "4px",
-                          padding: "4px 8px", borderRadius: "6px",
-                          background: idx === 0 ? "hsl(51 80% 50% / 0.1)" : idx === 1 ? "hsl(0 0% 70% / 0.08)" : "hsl(30 70% 50% / 0.08)",
-                        }}>
-                          <Medal size={12} style={{ color: idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : "hsl(30 70% 50%)" }} />
-                          <Link href={`/horse/${encodeURIComponent(e.horse_name)}/${e.birth_year || 0}`}>
-                            <a style={{ fontSize: "11px", color: "hsl(210 10% 80%)", textDecoration: "none", fontWeight: 600 }} onClick={ev => ev.stopPropagation()}>
-                              <BandieraCavallo nome={e.horse_name} paese={e.country} solo_estero /> {e.horse_name}
-                            </a>
-                          </Link>
-                          {(e.top3 || !data.pronostico) && (<span className="tabular" style={{ fontSize: "10px", color: idx === 0 ? "hsl(51 80% 55%)" : "hsl(183 60% 50%)", fontWeight: 700 }}>
-                            {stima(e).toFixed(0)}%
-                          </span>)}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <ChevronDown
-                    size={18}
-                    style={{
-                      color: "hsl(210 8% 45%)",
-                      transform: expanded ? "rotate(180deg)" : "none",
-                      transition: "transform 0.2s",
-                    }}
-                  />
-                </div>
-
-                {/* Expanded entries */}
-                {expanded && (
-                  <div style={{ borderTop: "1px solid hsl(220 10% 16%)" }}>
-                    {/* Podium header */}
-                    <div style={{ padding: "12px 20px 8px", display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Trophy size={14} style={{ color: "hsl(51 80% 55%)" }} />
-                      <span style={{ fontSize: "12px", fontWeight: 600, color: "hsl(210 8% 60%)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                        {data.pronostico ? "Probabilità di arrivare nei primi tre" : "Podio stimato"}
-                      </span>
-                      {data.pronostico && !data.pronostico.verificato && (
-                        <span style={{ fontSize: "10.5px", fontWeight: 700, color: "hsl(40 70% 55%)", border: "1px solid hsl(40 60% 40%)", borderRadius: "5px", padding: "1px 6px" }}>
-                          sperimentale
-                        </span>
-                      )}
-                    </div>
-
-                    {data.galoppo?.supera && (
-                      <div className="nota-galoppo">
-                        <span className="chip-galoppo medio" aria-hidden>galoppo</span>
-                        Sotto ogni cavallo, la probabilità che venga squalificato per galoppo. Provata su {data.galoppo.partenze.toLocaleString("it-IT")} partenze
-                        del 2025 e del 2026: dove diceva «alto» ha rotto {conArticolo(Math.round((data.galoppo.fasce.alto?.vera ?? 0) * 100))} dei cavalli,
-                        dove diceva «basso» {conArticolo(Math.round((data.galoppo.fasce.basso?.vera ?? 0) * 100))}. È un rischio, non una certezza: anche fra i cavalli a rischio alto quasi due su tre finiscono la corsa senza squalifica.
-                      </div>
-                    )}
-                    {data.pronostico && race.n_runners <= 3 && (
-                      <div style={{ padding: "0 20px 8px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>
-                        Con {race.n_runners} partenti arrivano tutti nei primi tre, se finiscono la corsa: qui la stima non serve.
-                      </div>
-                    )}
-                    {/* Entries table */}
-                    <div style={{ padding: "0 8px 8px" }}>
-                      {race.entries.map((entry, idx) => {
-                        const podiumColor = idx === 0 ? "hsl(51 80% 55%)" : idx === 1 ? "hsl(0 0% 70%)" : idx === 2 ? "hsl(30 70% 50%)" : "hsl(210 8% 40%)";
-                        const podiumBg = idx === 0 ? "hsl(51 80% 50% / 0.06)" : idx === 1 ? "hsl(0 0% 70% / 0.04)" : idx === 2 ? "hsl(30 70% 50% / 0.04)" : "transparent";
-                        return (
-                          <div key={`${entry.horse_name}-${idx}`} className="riga-pronostico" style={{
-                            display: "grid",
-                            gridTemplateColumns: data.pronostico ? "28px 24px 1fr auto auto auto auto" : "28px 24px 1fr auto auto auto",
-                            alignItems: "center", gap: "12px",
-                            padding: "10px 16px", borderRadius: "8px",
-                            background: podiumBg,
-                            transition: "background 0.1s",
-                          }}
-                            onMouseEnter={e => e.currentTarget.style.background = idx < 3 ? podiumBg : "hsl(220 10% 14%)"}
-                            onMouseLeave={e => e.currentTarget.style.background = podiumBg}
-                          >
-                            {/* Position */}
-                            <span className="tabular" style={{
-                              fontSize: "13px", fontWeight: 700,
-                              color: podiumColor,
-                              textAlign: "center",
-                            }}>
-                              {idx < 3 ? ["1°", "2°", "3°"][idx] : idx + 1}
-                            </span>
-
-                            {/* Medal */}
-                            {idx < 3 ? (
-                              <Medal size={14} style={{ color: podiumColor }} />
-                            ) : (
-                              <span style={{ width: 14 }} />
-                            )}
-
-                            {/* Name + info */}
-                            <div>
-                              <Link href={`/horse/${encodeURIComponent(entry.horse_name)}/${entry.birth_year || 0}`}>
-                                <a style={{
-                                  fontSize: "13px", fontWeight: 600,
-                                  color: idx < 3 ? podiumColor : "hsl(210 10% 85%)",
-                                  textDecoration: "none",
-                                }}>
-                                  <BandieraCavallo nome={entry.horse_name} paese={entry.country} /> {entry.horse_name}
-                                </a>
-                              </Link>
-                              <div style={{ fontSize: "11px", color: "hsl(210 8% 45%)", marginTop: "2px" }}>
-                                {entry.sire && <span>{entry.sire}</span>}
-                                {entry.birth_year && <span> · {entry.birth_year}</span>}
-                                {entry.career_races != null && <span> · {entry.career_races} gare</span>}
-                                {entry.win_rate != null && entry.win_rate > 0 && <span> · {entry.win_rate.toFixed(0)}% vinte</span>}
-                                {entry.start_pos != null && <span> · numero {entry.start_pos}</span>}
-                              </div>
-                              {entry.galoppo && <ChipGaloppo g={entry.galoppo} />}
-                              {entry.top3 && entry.top3.motivi.length > 0 && (
-                                <div className="motivi-pronostico">
-                                  {entry.top3.motivi.map((m, k) => (
-                                    <span key={k} className={m.pro ? "motivo pro" : "motivo contro"}>{m.pro ? "+" : "−"} {m.testo}</span>
-                                  ))}
+                                  {expanded && (
+                                    <div style={{ borderTop: "1px solid hsl(220 10% 16%)" }}>
+                                      {data.galoppo?.supera && (
+                                        <div className="nota-galoppo">
+                                          <span className="chip-galoppo medio" aria-hidden>galoppo</span>
+                                          Sotto ogni cavallo, la probabilità che venga squalificato per galoppo. Dove diceva «alto» ha rotto {conArticolo(Math.round((data.galoppo.fasce.alto?.vera ?? 0) * 100))} dei cavalli,
+                                          dove diceva «basso» {conArticolo(Math.round((data.galoppo.fasce.basso?.vera ?? 0) * 100))}.
+                                        </div>
+                                      )}
+                                      {data.pronostico && race.n_runners <= 3 && (
+                                        <div style={{ padding: "8px 16px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>
+                                          Con {race.n_runners} partenti arrivano tutti nei primi tre, se finiscono la corsa: qui la stima non serve.
+                                        </div>
+                                      )}
+                                      <div style={{ padding: "6px 8px 8px" }}>
+                                        {race.entries.map((entry, idx) => {
+                                          const podio = idx < 3;
+                                          const p = entry.top3 ? entry.top3.prob : data.pronostico ? null : entry.win_estimate;
+                                          const mio = segue(entry.horse_name, entry.birth_year);
+                                          return (
+                                            <div key={`${entry.horse_name}-${idx}`} className={`cal-riga${podio ? " podio" : ""}${mio ? " mio" : ""}`}>
+                                              <span className="tabular cal-pos">{idx + 1}</span>
+                                              <div style={{ minWidth: 0 }}>
+                                                <div className="cal-nome">
+                                                  <Link href={`/horse/${encodeURIComponent(entry.horse_name)}/${entry.birth_year || 0}`}>
+                                                    <a><BandieraCavallo nome={entry.horse_name} paese={entry.country} solo_estero /> {entry.horse_name}</a>
+                                                  </Link>
+                                                  {entry.grade ? <GradeBadge grade={entry.grade} size="sm" /> : null}
+                                                  <StellinaSegui nome={entry.horse_name} anno={entry.birth_year} piccola />
+                                                </div>
+                                                <div className="cal-meta">
+                                                  {entry.start_pos != null && <span>n. {entry.start_pos}</span>}
+                                                  {entry.driver && <span>{entry.driver.replace(/\s*-\d+-\s*$/, "")}</span>}
+                                                  {entry.birth_year && <span>{new Date().getFullYear() - entry.birth_year} anni</span>}
+                                                  {entry.sire && <span>da {entry.sire}</span>}
+                                                  {entry.career_races != null && <span>{entry.career_races} corse{entry.win_rate ? `, ${entry.win_rate.toFixed(0)}% vinte` : ""}</span>}
+                                                </div>
+                                                {entry.galoppo && <ChipGaloppo g={entry.galoppo} />}
+                                                {entry.top3 && entry.top3.motivi.length > 0 && (
+                                                  <div className="motivi-pronostico">
+                                                    {entry.top3.motivi.map((m, k) => (
+                                                      <span key={k} className={m.pro ? "motivo pro" : "motivo contro"}>{m.pro ? "+" : "−"} {m.testo}</span>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className="cal-prob">
+                                                <span className="tabular" style={{ color: podio ? "hsl(210 10% 94%)" : "hsl(183 60% 58%)" }}>
+                                                  {p != null ? `${p.toFixed(0)}%` : race.n_runners <= 3 ? "" : "—"}
+                                                </span>
+                                                <span className="cal-barra"><i style={{ width: `${Math.min(100, p ?? 0)}%` }} /></span>
+                                                {data.pronostico && entry.top3 && !entry.top3.affidabile && <small title={`Solo ${entry.top3.n_corse} corse in archivio: la stima è debole`}>poche corse</small>}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      {data.pronostico && race.n_runners > 3 && (
+                                        <DettaglioPronostico track={race.track} date={race.race_date} time={race.race_time} />
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Grade */}
-                            <div>
-                              {entry.grade ? <GradeBadge grade={entry.grade} size="sm" /> : <span style={{ fontSize: "11px", color: "hsl(210 8% 40%)" }}>—</span>}
-                            </div>
-
-                            {/* Score */}
-                            <div className="tabular" style={{
-                              fontSize: "13px", fontWeight: 700, minWidth: "36px", textAlign: "right",
-                              color: entry.score != null ? "hsl(183 60% 55%)" : "hsl(210 8% 40%)",
-                            }}>
-                              {entry.score != null ? entry.score.toFixed(1) : "—"}
-                            </div>
-
-                            {/* Win estimate bar */}
-                            <div className="barra-stima" style={{ minWidth: "100px", display: "flex", alignItems: "center", gap: "8px" }}>
-                              <div style={{ flex: 1, height: "8px", background: "hsl(220 12% 8%)", borderRadius: "4px", overflow: "hidden" }}>
-                                <div style={{
-                                  height: "100%", width: `${Math.min(entry.top3 ? entry.top3.prob : data.pronostico ? 0 : entry.win_estimate * 2, 100)}%`,
-                                  background: idx < 3 ? podiumColor : "hsl(183 60% 50%)",
-                                  borderRadius: "4px", transition: "width 0.5s",
-                                }} />
-                              </div>
-                              <span className="tabular" style={{
-                                fontSize: "13px", fontWeight: 700, minWidth: "40px",
-                                color: idx < 3 ? podiumColor : "hsl(183 60% 55%)",
-                              }}>
-                                {entry.top3 || !data.pronostico ? `${stima(entry).toFixed(0)}%` : race.n_runners <= 3 ? "" : "—"}
-                              </span>
-                            </div>
-                            {data.pronostico && (entry.top3 && !entry.top3.affidabile
-                              ? <span className="poco-affidabile" title={`Solo ${entry.top3.n_corse} corse in archivio: la stima è debole`}>poche corse</span>
-                              : <span className="cella-vuota" />)}
+                              );
+                            })}
                           </div>
-                        );
-                      })}
-                    </div>
-                    {data.pronostico && race.n_runners > 3 && (
-                      <DettaglioPronostico track={race.track} date={race.race_date} time={race.race_time} />
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
 
       {scheda === "prossime" && data?.pronostico && <VerificaPronostico />}
@@ -398,6 +385,43 @@ function ChipGaloppo({ g }: { g: NonNullable<CalendarEntry["galoppo"]> }) {
     </div>
   );
 }
+
+const CSS_CALENDARIO = `
+.cal-filtri { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.cal-chips { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.cal-chips .chip-filtro { flex-shrink: 0; }
+.cal-giorno { font-size: 16px; font-weight: 800; color: hsl(210 10% 92%); margin: 0 0 8px; }
+.cal-riunione { border-left: 3px solid var(--cp); padding-left: 10px; }
+.cal-riunione-testa { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 6px 2px 10px; font-size: 13px; color: hsl(210 8% 58%); }
+.cal-riunione-testa b { font-size: 15px; }
+.cal-miei { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 700; color: hsl(51 85% 62%); }
+.cal-corsa-testa { padding: 12px 14px; cursor: pointer; display: grid; gap: 8px; }
+.cal-corsa-testa:hover { background: hsl(220 10% 13%); }
+.cal-corsa-dati { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: 12.5px; color: hsl(210 8% 58%); }
+.cal-num { font-size: 12px; font-weight: 800; border: 1px solid; border-radius: 7px; padding: 2px 8px; }
+.cal-ora { display: inline-flex; align-items: center; gap: 4px; color: hsl(210 10% 85%); font-weight: 700; }
+.cal-simula { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: hsl(220 15% 8%); background: hsl(355 70% 62%);
+  border-radius: 8px; padding: 4px 10px; text-decoration: none; }
+.cal-favoriti { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: 12px; }
+.cal-fav-etich { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: hsl(210 8% 45%); }
+.cal-fav { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.cal-fav b { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+.cal-riga { display: grid; grid-template-columns: 24px minmax(0, 1fr) 86px; gap: 10px; align-items: start; padding: 9px 10px; border-radius: 9px; }
+.cal-riga.podio { background: hsl(220 14% 12%); }
+.cal-riga.mio { box-shadow: inset 3px 0 0 hsl(51 85% 58%); }
+.cal-pos { font-size: 13px; font-weight: 800; color: hsl(210 8% 50%); text-align: center; padding-top: 1px; }
+.cal-riga.podio .cal-pos { color: hsl(210 10% 90%); }
+.cal-nome { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.cal-nome a { font-size: 13.5px; font-weight: 700; color: hsl(210 10% 90%); text-decoration: none; overflow-wrap: anywhere; }
+.cal-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11.5px; color: hsl(210 8% 50%); margin-top: 3px; }
+.cal-prob { display: grid; justify-items: end; gap: 4px; }
+.cal-prob > span:first-child { font-size: 16px; font-weight: 800; }
+.cal-prob small { font-size: 10px; color: hsl(40 70% 55%); }
+.cal-barra { width: 100%; height: 6px; background: hsl(220 12% 8%); border-radius: 4px; overflow: hidden; display: block; }
+.cal-barra i { display: block; height: 100%; background: hsl(183 60% 48%); border-radius: 4px; }
+@media (max-width: 520px) { .cal-riga { grid-template-columns: 20px minmax(0, 1fr) 62px; gap: 8px; padding: 8px 6px; } .cal-fav b { max-width: 120px; } }
+`;
 
 /** "il 37%", "l'8%", "l'11%": l'articolo giusto davanti a una percentuale. */
 function conArticolo(n: number) {
