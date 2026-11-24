@@ -2867,6 +2867,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const atleti = new Map<string, any[]>();
     const stalloni = new Map<string, string>();
     const fattrici = new Map<string, string>();
+    const storici = new Set<string>();
     for (let i = 0; i < nomi.length; i += 400) {
       const pezzo = nomi.slice(i, i + 400);
       const q = pezzo.map(() => "?").join(",");
@@ -2882,6 +2883,15 @@ export function registerRoutes(httpServer: Server, app: Express) {
       for (const r of db.prepare(`SELECT dam, grade FROM dam_rating_stats
                                   WHERE dam IN (${q}) AND grade IS NOT NULL AND grade != 'N/A'`).all(...pezzo) as any[])
         fattrici.set(String(r.dam).toUpperCase(), r.grade);
+      // Voto storico da riproduttore (24/11/2026): per chi ha figli solo fra
+      // gli storici (WAIKIKI BEACH, IALMAZ). Scala a parte.
+      if (vpTableExists(db, "riproduttori_storici")) {
+        for (const r of db.prepare(`SELECT nome, ruolo, voto FROM riproduttori_storici WHERE nome IN (${q})`).all(...pezzo) as any[]) {
+          const k = String(r.nome).toUpperCase();
+          if (r.ruolo === "sire" && !stalloni.has(k)) { stalloni.set(k, r.voto); storici.add("s|" + k); }
+          if (r.ruolo === "dam" && !fattrici.has(k)) { fattrici.set(k, r.voto); storici.add("f|" + k); }
+        }
+      }
     }
     for (const n of nodi) {
       const k = String(n.name || "").trim().toUpperCase();
@@ -2895,6 +2905,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
         atleta: atl?.grade ?? null,
         stallone: n.sex === "F" ? null : (stalloni.get(k) ?? null),
         fattrice: n.sex === "M" ? null : (fattrici.get(k) ?? null),
+        stallone_storico: storici.has("s|" + k),
+        fattrice_storica: storici.has("f|" + k),
       };
     }
   }

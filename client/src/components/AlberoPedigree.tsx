@@ -17,7 +17,9 @@ import { apiRequest } from "@/lib/queryClient";
 import BandieraCavallo from "./BandieraCavallo";
 import CavalloCaricamento from "./CavalloCaricamento";
 
-export interface VotiNodo { atleta: string | null; stallone: string | null; fattrice: string | null }
+export interface VotiNodo { atleta: string | null; stallone: string | null; fattrice: string | null;
+  /** Voto storico da riproduttore: figli tutti storici, scala a parte (24/11/2026). */
+  stallone_storico?: boolean; fattrice_storica?: boolean }
 
 export interface PedigreeNode {
   name: string;
@@ -120,7 +122,7 @@ function Voto({ etichetta, grado, href, compatto }: { etichetta: string; grado: 
     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}
       title={`Voto da ${etichetta.toLowerCase()}: ${grado}`}>
       <span style={{ fontSize: compatto ? 8.5 : 9.5, color: "hsl(210 8% 52%)", textTransform: compatto ? "none" : "uppercase", letterSpacing: compatto ? 0 : ".04em" }}>
-        {compatto ? etichetta.slice(0, 3).toLowerCase() + "." : etichetta}
+        {compatto ? etichetta.slice(0, 3).toLowerCase() + (etichetta.endsWith(" st.") ? ". st." : ".") : etichetta}
       </span>
       <span className={`grade-badge grade-${grado}`}
         style={{ fontSize: compatto ? 9 : 10, padding: compatto ? "0 4px" : "1px 5px", minWidth: compatto ? 18 : 22, lineHeight: compatto ? "13px" : undefined }}>
@@ -153,8 +155,8 @@ function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
   const v = node.voti;
   const voti: { etichetta: string; grado: string; href?: string }[] = [];
   if (v?.atleta) voti.push({ etichetta: "Atleta", grado: v.atleta });
-  if (v?.stallone) voti.push({ etichetta: "Stallone", grado: v.stallone, href: `/stallion/${encodeURIComponent(node.name)}` });
-  if (v?.fattrice) voti.push({ etichetta: "Fattrice", grado: v.fattrice, href: `/fattrice/${encodeURIComponent(node.name)}` });
+  if (v?.stallone) voti.push({ etichetta: v.stallone_storico ? "Stallone st." : "Stallone", grado: v.stallone, href: `/stallion/${encodeURIComponent(node.name)}` });
+  if (v?.fattrice) voti.push({ etichetta: v.fattrice_storica ? "Fattrice st." : "Fattrice", grado: v.fattrice, href: `/fattrice/${encodeURIComponent(node.name)}` });
   const nomeSize = gen === 0 ? 13.5 : gen >= 4 ? 10 : gen === 3 ? 11 : 12;
   const linkCavallo = `/horse/${encodeURIComponent(node.name)}/${node.birth_year ?? 0}`;
 
@@ -271,7 +273,7 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
           <span style={{ width: 12, height: 12, borderRadius: 3, background: "hsl(220 8% 13%)", border: "1.5px dashed hsl(210 8% 38%)" }} /> Omonimo: stesso nome, altro cavallo
         </span>
-        <span>Atleta = voto dalle sue corse · Stallone / Fattrice = voto dai figli</span>
+        <span>Atleta = voto dalle sue corse · Stallone / Fattrice = voto dai figli · «st.» = voto storico, dai figli nati prima del 2012</span>
         <span>Clicca un nome per la scheda, un voto da riproduttore per la sua pagina</span>
       </div>
       <LineeERipetuti root={root} rip={rip} colore={colore} chiave={chiave} hovered={hovered} onHover={onHover} />
