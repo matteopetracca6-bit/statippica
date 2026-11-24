@@ -305,7 +305,7 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
     return Math.min(spazio, g === 0 ? 96 : g === 1 ? 76 : g === 2 ? 64 : 52);
   };
   const colonne = righe.map((_, g) => g === 0 ? (generazioni <= 3 ? "minmax(120px, 0.9fr)" : "165px") : g >= 4 ? "minmax(125px, 1fr)" : "minmax(130px, 1fr)").join(" ");
-  const larghezzaMin = generazioni >= 5 ? 980 : generazioni === 4 ? 860 : generazioni === 3 ? 700 : 360;
+  const larghezzaMin = generazioni >= 5 ? 1080 : generazioni === 4 ? 940 : generazioni === 3 ? 700 : 520;
   return (
     <div>
       <Sintesi root={root} generazioni={generazioni} />
