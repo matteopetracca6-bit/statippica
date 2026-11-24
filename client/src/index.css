@@ -743,6 +743,8 @@ button.voce-menu { font-family: inherit; cursor: pointer; border: none; }
 .verifica-sintesi { font-size: 12px; font-weight: 500; color: hsl(183 60% 58%); }
 .verifica-testo { font-size: 12.5px; color: hsl(210 8% 58%); line-height: 1.65; margin: 0 0 14px; max-width: 80ch; }
 .verifica-titolo { font-size: 13px; font-weight: 700; color: hsl(210 10% 85%); margin: 20px 0 6px; }
+.verifica-giorni { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; margin: 10px 0 4px; padding-bottom: 2px; }
+.verifica-giorni .chip-filtro { flex-shrink: 0; }
 .verifica-tabella > div:not(.nota-tabella) { display: grid; grid-template-columns: 1.3fr 1.6fr .8fr; gap: 12px; align-items: center;
   padding: 9px 10px; border-bottom: 1px solid hsl(220 10% 15%); font-size: 12.5px; color: hsl(210 8% 70%); }
 .verifica-tabella .intestazione { font-size: 11px !important; color: hsl(210 8% 48%) !important; }

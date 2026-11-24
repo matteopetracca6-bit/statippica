@@ -3742,9 +3742,19 @@ export function registerRoutes(httpServer: Server, app: Express) {
         g.sort((a, b) => b.prob - a.prob);
         const tipo = g[0].tipo;
         const noti = g.filter(e => e.arrivo != null || e.arrivo_testo != null);
-        if (!noti.length) continue; // risultati non ancora arrivati
         // Con tre cavalli stimati o meno "i tre favoriti" sono tutti: non e' una prova.
         if (g.length < 4) continue;
+        // Risultati non ancora arrivati (24/11/2026): prima la corsa spariva e
+        // con lei, se mancavano tutti, l'intera giornata. Ora resta fra quelle
+        // in attesa, con il motivo del ricontrollo notturno.
+        if (!noti.length) {
+          if (g[0].tipo === "del_giorno") {
+            inAttesa++;
+            inAttesaElenco.push({ race_date: g[0].race_date, pista: g[0].pista, corsa: g[0].corsa, cavalli_con_arrivo: 0, partenti: g.length,
+                                  controllo: controlli.get(`${g[0].race_date}|${g[0].pista}|${g[0].corsa}`) ?? null });
+          }
+          continue;
+        }
         // Arrivo ancora a meta': l'archivio ha solo i cavalli presi dalle loro
         // schede (succede quando la fonte pubblica i risultati in ritardo).
         // Non si mostra e non conta finche' l'arrivo non e' completo.
