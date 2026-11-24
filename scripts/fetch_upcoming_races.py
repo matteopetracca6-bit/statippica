@@ -89,7 +89,7 @@ def fetch_meetings() -> list:
     """Fetch hNum.php and return list of (date, track_name) tuples."""
     html = fetch_url(HNUM_URL)
     # Links: hNum.php?data=2026-09-20&ippodromo=BOLOGNA&note_giorno=...
-    pattern = re.compile(r'href="hNum\.php\?data=([^&]+)&ippodromo=([^"&]+)')
+    pattern = re.compile(r'href="hNum\.php\?data=([^&]+)&ippodromo=([^"&¬]+)')
     meetings = []
     for m in pattern.finditer(html):
         date_str = m.group(1).strip()

@@ -1627,7 +1627,7 @@ def _fetch_all_hris_convegni() -> list[dict]:
             continue
         data = m.group(1)
         m_sigla = re.search(r"sigla=([A-Z]+)", href)
-        m_ippo  = re.search(r"ippodromo=([^&]+)", href)
+        m_ippo  = re.search(r"ippodromo=([^&¬]+)", href)
         m_note  = re.search(r"note_giorno=([^&]*)", href)
 
         sigla     = m_sigla.group(1) if m_sigla else ""
@@ -4711,7 +4711,10 @@ def _fetch_meetings_list() -> list:
         m = re.search(r"data=(\d{4}-\d{2}-\d{2})&ippodromo=([^&\"]+)", href)
         if m:
             date_str = m.group(1).strip()
-            track_name = m.group(2).strip()
+            # 24/11/2026: nei collegamenti c'e' "&note_giorno=...", e il parser
+            # HTML legge "&not" come il simbolo "¬": il nome della pista
+            # diventava "CASTELLUCCIO¬e_giorno=" e i partenti non si trovavano.
+            track_name = re.split(r"[¬&]", m.group(2))[0].strip()
             if date_str >= datetime.now().strftime("%Y-%m-%d"):
                 meetings.append((date_str, track_name))
     seen = set()
