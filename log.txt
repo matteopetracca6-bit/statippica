@@ -1,0 +1,10 @@
+costruisco le variabili...
+[V5] variabili: velocita' 2s, scontri 6s, resto 4s
+variabili pronte in 31 s, partenze 737466
+/home/runner/.local/lib/python3.14/site-packages/pandas/core/nanops.py:2043: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  return spearmanr(a, b)[0]
+ESITO quadrato {"alberi": 514, "errore_medio": 0.943, "errore_quadratico": 1.284, "piu_veloce_vince": 0.2964, "tre_piu_veloci_nei_tre": 0.5015, "ordine_tempi_spearman": 0.4866, "errore_tempo_vincitore": 0.956}
+/home/runner/.local/lib/python3.14/site-packages/pandas/core/nanops.py:2043: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  return spearmanr(a, b)[0]
+ESITO assoluto {"alberi": 886, "errore_medio": 0.934, "errore_quadratico": 1.293, "piu_veloce_vince": 0.2943, "tre_piu_veloci_nei_tre": 0.4994, "ordine_tempi_spearman": 0.4836, "errore_tempo_vincitore": 0.903}
+ESITO_FINALE {"quadrato": {"alberi": 514, "errore_medio": 0.943, "errore_quadratico": 1.284, "piu_veloce_vince": 0.2964, "tre_piu_veloci_nei_tre": 0.5015, "ordine_tempi_spearman": 0.4866, "errore_tempo_vincitore": 0.956}, "assoluto": {"alberi": 886, "errore_medio": 0.934, "errore_quadratico": 1.293, "piu_veloce_vince": 0.2943, "tre_piu_veloci_nei_tre": 0.4994, "ordine_tempi_spearman": 0.4836, "errore_tempo_vincitore": 0.903}, "ultimo_tempo": {"errore_medio": 1.439, "coperti": 0.966}, "pista_piu_indice_medio": {"errore_medio": 1.142, "coperti": 0.963, "piu_veloce_vince": 0.235}, "pista_piu_indice_migliore": {"errore_medio": 1.895, "coperti": 0.789}, "solo_pista": {"errore_medio": 1.515, "coperti": 1.0}, "partenze_prova": 85371}

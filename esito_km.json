@@ -1,0 +1,202 @@
+{
+ "quadrato": {
+  "alberi": 514,
+  "errore_medio": 0.943,
+  "errore_quadratico": 1.284,
+  "piu_veloce_vince": 0.2964,
+  "tre_piu_veloci_nei_tre": 0.5015,
+  "ordine_tempi_spearman": 0.4866,
+  "errore_tempo_vincitore": 0.956,
+  "peso_variabili": [
+   {
+    "variabile": "h_ind_med5",
+    "peso": 0.3172
+   },
+   {
+    "variabile": "h_premi_365",
+    "peso": 0.1229
+   },
+   {
+    "variabile": "h_tempo_ult",
+    "peso": 0.0948
+   },
+   {
+    "variabile": "h_vitt",
+    "peso": 0.0511
+   },
+   {
+    "variabile": "h_ind_migl",
+    "peso": 0.0414
+   },
+   {
+    "variabile": "eta",
+    "peso": 0.0389
+   },
+   {
+    "variabile": "h_top3",
+    "peso": 0.0297
+   },
+   {
+    "variabile": "d_n_30",
+    "peso": 0.0262
+   },
+   {
+    "variabile": "dist_vs_solita",
+    "peso": 0.0184
+   },
+   {
+    "variabile": "s_ind_med5",
+    "peso": 0.0157
+   },
+   {
+    "variabile": "rif_km",
+    "peso": 0.0143
+   },
+   {
+    "variabile": "distanza",
+    "peso": 0.0128
+   },
+   {
+    "variabile": "h_fascia_top3",
+    "peso": 0.0126
+   },
+   {
+    "variabile": "campo_premi",
+    "peso": 0.0122
+   },
+   {
+    "variabile": "d_top3",
+    "peso": 0.0117
+   },
+   {
+    "variabile": "h_ult5_top3",
+    "peso": 0.0111
+   },
+   {
+    "variabile": "d_n",
+    "peso": 0.0109
+   },
+   {
+    "variabile": "h_n",
+    "peso": 0.009
+   },
+   {
+    "variabile": "h_ult_top3",
+    "peso": 0.0086
+   },
+   {
+    "variabile": "d_top3_30",
+    "peso": 0.0086
+   }
+  ]
+ },
+ "assoluto": {
+  "alberi": 886,
+  "errore_medio": 0.934,
+  "errore_quadratico": 1.293,
+  "piu_veloce_vince": 0.2943,
+  "tre_piu_veloci_nei_tre": 0.4994,
+  "ordine_tempi_spearman": 0.4836,
+  "errore_tempo_vincitore": 0.903,
+  "peso_variabili": [
+   {
+    "variabile": "h_ind_med5",
+    "peso": 0.2775
+   },
+   {
+    "variabile": "h_tempo_ult",
+    "peso": 0.0932
+   },
+   {
+    "variabile": "h_premi_365",
+    "peso": 0.0721
+   },
+   {
+    "variabile": "h_vitt",
+    "peso": 0.0479
+   },
+   {
+    "variabile": "eta",
+    "peso": 0.0359
+   },
+   {
+    "variabile": "h_ind_migl",
+    "peso": 0.0312
+   },
+   {
+    "variabile": "h_ult_top3",
+    "peso": 0.0276
+   },
+   {
+    "variabile": "d_n_30",
+    "peso": 0.0241
+   },
+   {
+    "variabile": "s_ind_med5",
+    "peso": 0.0223
+   },
+   {
+    "variabile": "dist_vs_solita",
+    "peso": 0.0219
+   },
+   {
+    "variabile": "rif_km",
+    "peso": 0.0212
+   },
+   {
+    "variabile": "distanza",
+    "peso": 0.0203
+   },
+   {
+    "variabile": "campo_premi",
+    "peso": 0.0156
+   },
+   {
+    "variabile": "d_n",
+    "peso": 0.0136
+   },
+   {
+    "variabile": "h_fascia_top3",
+    "peso": 0.0124
+   },
+   {
+    "variabile": "h_top3",
+    "peso": 0.0121
+   },
+   {
+    "variabile": "d_top3",
+    "peso": 0.0108
+   },
+   {
+    "variabile": "h_tempo_migl",
+    "peso": 0.0106
+   },
+   {
+    "variabile": "h_classe5",
+    "peso": 0.0105
+   },
+   {
+    "variabile": "maschio",
+    "peso": 0.0103
+   }
+  ]
+ },
+ "ultimo_tempo": {
+  "errore_medio": 1.439,
+  "coperti": 0.966
+ },
+ "pista_piu_indice_medio": {
+  "errore_medio": 1.142,
+  "coperti": 0.963,
+  "piu_veloce_vince": 0.235
+ },
+ "pista_piu_indice_migliore": {
+  "errore_medio": 1.895,
+  "coperti": 0.789
+ },
+ "solo_pista": {
+  "errore_medio": 1.515,
+  "coperti": 1.0
+ },
+ "partenze_prova": 85371
+}
