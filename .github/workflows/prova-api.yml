@@ -10,11 +10,5 @@ jobs:
       - run: |
           set +e
           B=https://statippica.onrender.com
-          for i in $(seq 1 60); do
-            curl -s $B/ > idx.html
-            for f in $(grep -o 'assets/[^"]*\.js' idx.html); do curl -s "$B/$f" | grep -o 'assets/[^"]*\.js' ; echo $f; done | sort -u > js.txt
-            for f in $(cat js.txt); do curl -s "$B/$f" | grep -q "anno solo\|gen <= 2\|dettaglio-antenato" && curl -s "$B/$f" | grep -q "dettaglio-antenato" && echo "$f" > ok; done
-            [ -s ok ] && break; sleep 20; done
-          echo "attese $i"
           npm i playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
-          node prova/ped.js
+          node prova/ped.cjs
