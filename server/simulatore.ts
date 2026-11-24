@@ -130,7 +130,7 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       const ts = esiste(db, "track_stats") ? db.prepare(`SELECT tempo_km_mediano FROM track_stats WHERE track = ?`).get(pista) as any : null;
       const kmPista = kmSecondi(ts?.tempo_km_mediano) ?? 76;
 
-      const ultime = db.prepare(`SELECT time_km, distance, placement_raw, placement, shoes, race_date FROM races
+      const ultime = db.prepare(`SELECT time_km, distance, placement_raw, placement, shoes, race_date, track FROM races
                                   WHERE horse_name = ? AND race_date < ? ORDER BY race_date DESC LIMIT 20`);
       // Il numero di partenza: vittorie con quel numero su questa pista (o su
       // tutte, se la pista ne ha poche) rispetto alla media dei numeri in corsa.
@@ -166,8 +166,18 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
         for (const r of db.prepare(`SELECT horse_name, quota FROM quote_totalizzatore WHERE race_date = ? AND pista = ? AND corsa = ?`).all(data, pista, numero) as any[])
           if (r.quota != null) quoteCorsa.set(nq(r.horse_name), r.quota);
 
+      // Tempi riportati alla pista di oggi (24/11/2026, ?piste=1, in prova):
+      // ogni tempo passato meno lo scarto della sua pista piu' quello della
+      // pista di oggi (piste_velocita, secondi al km per corse corte e lunghe).
+      const correggiPiste = String(req.query.piste ?? "") === "1" && esiste(db, "piste_velocita");
+      const scarti = new Map<string, number>();
+      if (correggiPiste) for (const r of db.prepare(`SELECT pista, classe, scarto FROM piste_velocita`).all() as any[]) scarti.set(`${r.pista}|${r.classe}`, r.scarto);
+      const classe = (d: number | null) => (d ?? base) <= 1800 ? "corta" : "lunga";
+      const correzione = (pistaGara: string, d: number | null) => correggiPiste
+        ? (scarti.get(`${pista}|${classe(d)}`) ?? 0) - (scarti.get(`${pistaGara}|${classe(d)}`) ?? 0) : 0;
       const cavalli = partenti.map(p => {
-        const storia = ultime.all(p.nome, data) as any[];
+        const storia = (ultime.all(p.nome, data) as any[]).map(r => correggiPiste && kmSecondi(r.time_km)
+          ? { ...r, time_km: kmSecondi(r.time_km)! + correzione(r.track, r.distance) } : r);
         const vicine = storia.filter(r => kmSecondi(r.time_km) && Math.abs((r.distance ?? base) - (p.distanza ?? base)) <= 500);
         // Tempi "a ferri neutri": si toglie l'effetto della ferratura di quel giorno.
         const tempi = (vicine.length >= 3 ? vicine : storia.filter(r => kmSecondi(r.time_km))).slice(0, 8)
