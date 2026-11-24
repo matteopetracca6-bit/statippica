@@ -1,0 +1,3719 @@
+{
+"periodo": {
+"da": "2025-01-01",
+"a": "2026-11-23",
+"corse": 7650,
+"partenze": 70185
+},
+"allenatori": {
+"minimo_partenze": 150,
+"alberi": 592,
+"temperatura": 1.0,
+"variabili": 49,
+"stabilita_2025_2026": 0.324,
+"entita_per_stabilita": 149,
+"elenco": [
+{
+"nome": "ANTONIO SIMIOLI",
+"partenze": 723,
+"cavalli": 163,
+"veri": 410,
+"attesi": 354.6,
+"scarto_100": 7.66,
+"z": 4.35,
+"vittorie": 206
+},
+{
+"nome": "MILITELLO ONOFRIO",
+"partenze": 165,
+"cavalli": 25,
+"veri": 57,
+"attesi": 37.9,
+"scarto_100": 11.61,
+"z": 3.85,
+"vittorie": 20
+},
+{
+"nome": "CINCINNATO FRANCESCO",
+"partenze": 226,
+"cavalli": 40,
+"veri": 98,
+"attesi": 73.9,
+"scarto_100": 10.67,
+"z": 3.74,
+"vittorie": 29
+},
+{
+"nome": "CASILLO GENNARO",
+"partenze": 1567,
+"cavalli": 217,
+"veri": 795,
+"attesi": 739.1,
+"scarto_100": 3.57,
+"z": 3.01,
+"vittorie": 363
+},
+{
+"nome": "GOCCIADORO ALESSANDRO",
+"partenze": 1471,
+"cavalli": 289,
+"veri": 817,
+"attesi": 764.1,
+"scarto_100": 3.6,
+"z": 2.95,
+"vittorie": 483
+},
+{
+"nome": "GUZZINATI ANDREA",
+"partenze": 535,
+"cavalli": 67,
+"veri": 300,
+"attesi": 268.4,
+"scarto_100": 5.91,
+"z": 2.91,
+"vittorie": 118
+},
+{
+"nome": "MONTAGNA ENRICO",
+"partenze": 559,
+"cavalli": 123,
+"veri": 266,
+"attesi": 236.3,
+"scarto_100": 5.32,
+"z": 2.72,
+"vittorie": 109
+},
+{
+"nome": "BARONCINI MAURO",
+"partenze": 443,
+"cavalli": 125,
+"veri": 218,
+"attesi": 191.9,
+"scarto_100": 5.88,
+"z": 2.67,
+"vittorie": 95
+},
+{
+"nome": "ROMANELLI PAOLO",
+"partenze": 406,
+"cavalli": 67,
+"veri": 220,
+"attesi": 195.1,
+"scarto_100": 6.13,
+"z": 2.66,
+"vittorie": 105
+},
+{
+"nome": "LOCCISANO EDOARDO",
+"partenze": 510,
+"cavalli": 112,
+"veri": 222,
+"attesi": 195.7,
+"scarto_100": 5.16,
+"z": 2.59,
+"vittorie": 74
+},
+{
+"nome": "CUSIMANO ANTONINO",
+"partenze": 229,
+"cavalli": 46,
+"veri": 102,
+"attesi": 84.8,
+"scarto_100": 7.51,
+"z": 2.59,
+"vittorie": 38
+},
+{
+"nome": "DI NICOLA MARCELLO",
+"partenze": 230,
+"cavalli": 27,
+"veri": 93,
+"attesi": 80.5,
+"scarto_100": 5.44,
+"z": 1.89,
+"vittorie": 28
+},
+{
+"nome": "AZZARONI MARCO",
+"partenze": 608,
+"cavalli": 141,
+"veri": 233,
+"attesi": 213.0,
+"scarto_100": 3.29,
+"z": 1.84,
+"vittorie": 73
+},
+{
+"nome": "MAISTO ENRICO ANTONIO",
+"partenze": 178,
+"cavalli": 41,
+"veri": 47,
+"attesi": 37.6,
+"scarto_100": 5.26,
+"z": 1.81,
+"vittorie": 15
+},
+{
+"nome": "FACCI FELICE",
+"partenze": 231,
+"cavalli": 22,
+"veri": 92,
+"attesi": 79.7,
+"scarto_100": 5.34,
+"z": 1.81,
+"vittorie": 23
+},
+{
+"nome": "ROCCA FILIPPO",
+"partenze": 273,
+"cavalli": 51,
+"veri": 125,
+"attesi": 111.3,
+"scarto_100": 5.03,
+"z": 1.81,
+"vittorie": 50
+},
+{
+"nome": "SIDDI LUIGI",
+"partenze": 573,
+"cavalli": 108,
+"veri": 172,
+"attesi": 154.4,
+"scarto_100": 3.08,
+"z": 1.8,
+"vittorie": 48
+},
+{
+"nome": "QUARNETI GABRIELE",
+"partenze": 153,
+"cavalli": 19,
+"veri": 47,
+"attesi": 38.3,
+"scarto_100": 5.69,
+"z": 1.74,
+"vittorie": 9
+},
+{
+"nome": "DI MARO MICHELE",
+"partenze": 890,
+"cavalli": 203,
+"veri": 348,
+"attesi": 327.0,
+"scarto_100": 2.36,
+"z": 1.58,
+"vittorie": 141
+},
+{
+"nome": "ORLANDO MATTIA",
+"partenze": 346,
+"cavalli": 40,
+"veri": 117,
+"attesi": 104.5,
+"scarto_100": 3.61,
+"z": 1.58,
+"vittorie": 39
+},
+{
+"nome": "BALDI EDOARDO",
+"partenze": 330,
+"cavalli": 48,
+"veri": 150,
+"attesi": 137.1,
+"scarto_100": 3.92,
+"z": 1.54,
+"vittorie": 39
+},
+{
+"nome": "MANUELE MATTEINI",
+"partenze": 303,
+"cavalli": 37,
+"veri": 154,
+"attesi": 141.3,
+"scarto_100": 4.18,
+"z": 1.54,
+"vittorie": 47
+},
+{
+"nome": "PEZZATINI RICCARDO",
+"partenze": 433,
+"cavalli": 41,
+"veri": 133,
+"attesi": 119.9,
+"scarto_100": 3.03,
+"z": 1.51,
+"vittorie": 38
+},
+{
+"nome": "CISTERNINO MARCO",
+"partenze": 250,
+"cavalli": 47,
+"veri": 64,
+"attesi": 55.3,
+"scarto_100": 3.47,
+"z": 1.43,
+"vittorie": 11
+},
+{
+"nome": "PUCCIO FRANCESCO",
+"partenze": 154,
+"cavalli": 28,
+"veri": 37,
+"attesi": 31.1,
+"scarto_100": 3.83,
+"z": 1.28,
+"vittorie": 10
+},
+{
+"nome": "DI VINCENZO UMBERTO",
+"partenze": 295,
+"cavalli": 48,
+"veri": 103,
+"attesi": 93.6,
+"scarto_100": 3.19,
+"z": 1.27,
+"vittorie": 30
+},
+{
+"nome": "CASTALDO MASSIMILIANO",
+"partenze": 345,
+"cavalli": 48,
+"veri": 157,
+"attesi": 146.2,
+"scarto_100": 3.13,
+"z": 1.26,
+"vittorie": 36
+},
+{
+"nome": "BONDO HANSEN ERIK",
+"partenze": 569,
+"cavalli": 112,
+"veri": 260,
+"attesi": 246.3,
+"scarto_100": 2.4,
+"z": 1.24,
+"vittorie": 106
+},
+{
+"nome": "COLLETTI LUCIO",
+"partenze": 174,
+"cavalli": 23,
+"veri": 65,
+"attesi": 57.8,
+"scarto_100": 4.14,
+"z": 1.23,
+"vittorie": 17
+},
+{
+"nome": "LAGAS EDWIN",
+"partenze": 269,
+"cavalli": 36,
+"veri": 128,
+"attesi": 119.0,
+"scarto_100": 3.36,
+"z": 1.19,
+"vittorie": 42
+},
+{
+"nome": "LO VERDE GASPARE",
+"partenze": 1056,
+"cavalli": 118,
+"veri": 444,
+"attesi": 426.9,
+"scarto_100": 1.62,
+"z": 1.16,
+"vittorie": 185
+},
+{
+"nome": "ZIZZI ANGELO",
+"partenze": 197,
+"cavalli": 29,
+"veri": 53,
+"attesi": 46.8,
+"scarto_100": 3.17,
+"z": 1.13,
+"vittorie": 16
+},
+{
+"nome": "LETTIERI MARCELLO",
+"partenze": 228,
+"cavalli": 54,
+"veri": 86,
+"attesi": 78.7,
+"scarto_100": 3.2,
+"z": 1.11,
+"vittorie": 24
+},
+{
+"nome": "RIZZO CRISTIAN",
+"partenze": 273,
+"cavalli": 86,
+"veri": 144,
+"attesi": 135.6,
+"scarto_100": 3.07,
+"z": 1.09,
+"vittorie": 59
+},
+{
+"nome": "FINETTI MASSIMO",
+"partenze": 238,
+"cavalli": 55,
+"veri": 66,
+"attesi": 59.5,
+"scarto_100": 2.75,
+"z": 1.06,
+"vittorie": 18
+},
+{
+"nome": "TEAM MINOPOLI",
+"partenze": 855,
+"cavalli": 125,
+"veri": 286,
+"attesi": 273.1,
+"scarto_100": 1.51,
+"z": 1.02,
+"vittorie": 104
+},
+{
+"nome": "NEGRO SALVATORE",
+"partenze": 161,
+"cavalli": 21,
+"veri": 56,
+"attesi": 50.6,
+"scarto_100": 3.36,
+"z": 1.0,
+"vittorie": 17
+},
+{
+"nome": "BACALINI EDOARDO",
+"partenze": 568,
+"cavalli": 67,
+"veri": 199,
+"attesi": 188.9,
+"scarto_100": 1.78,
+"z": 0.96,
+"vittorie": 51
+},
+{
+"nome": "ALESSIO DI BASCO",
+"partenze": 171,
+"cavalli": 29,
+"veri": 74,
+"attesi": 68.6,
+"scarto_100": 3.18,
+"z": 0.91,
+"vittorie": 32
+},
+{
+"nome": "MIRAGLIA SANDRO",
+"partenze": 219,
+"cavalli": 33,
+"veri": 61,
+"attesi": 55.6,
+"scarto_100": 2.46,
+"z": 0.89,
+"vittorie": 17
+},
+{
+"nome": "MONTE CLAUDIO",
+"partenze": 243,
+"cavalli": 48,
+"veri": 99,
+"attesi": 93.3,
+"scarto_100": 2.35,
+"z": 0.8,
+"vittorie": 31
+},
+{
+"nome": "CUGLINI DANIELE",
+"partenze": 469,
+"cavalli": 63,
+"veri": 189,
+"attesi": 181.2,
+"scarto_100": 1.67,
+"z": 0.8,
+"vittorie": 65
+},
+{
+"nome": "LA ROSA LORENZO",
+"partenze": 222,
+"cavalli": 37,
+"veri": 70,
+"attesi": 65.1,
+"scarto_100": 2.19,
+"z": 0.78,
+"vittorie": 20
+},
+{
+"nome": "LO VERDE GASPARE JR",
+"partenze": 526,
+"cavalli": 81,
+"veri": 186,
+"attesi": 178.5,
+"scarto_100": 1.43,
+"z": 0.75,
+"vittorie": 59
+},
+{
+"nome": "BEVILACQUA SABATO",
+"partenze": 751,
+"cavalli": 117,
+"veri": 307,
+"attesi": 298.5,
+"scarto_100": 1.13,
+"z": 0.68,
+"vittorie": 127
+},
+{
+"nome": "RUVOLO ROBERTO",
+"partenze": 414,
+"cavalli": 61,
+"veri": 206,
+"attesi": 199.6,
+"scarto_100": 1.54,
+"z": 0.66,
+"vittorie": 77
+},
+{
+"nome": "PECORARO ANTONINO JR",
+"partenze": 478,
+"cavalli": 77,
+"veri": 120,
+"attesi": 114.2,
+"scarto_100": 1.21,
+"z": 0.65,
+"vittorie": 26
+},
+{
+"nome": "PALUMBO VINCENZO",
+"partenze": 185,
+"cavalli": 39,
+"veri": 57,
+"attesi": 53.4,
+"scarto_100": 1.95,
+"z": 0.64,
+"vittorie": 18
+},
+{
+"nome": "SMORGON MARCO",
+"partenze": 441,
+"cavalli": 65,
+"veri": 201,
+"attesi": 194.7,
+"scarto_100": 1.43,
+"z": 0.64,
+"vittorie": 80
+},
+{
+"nome": "BEVILACQUA BIAGIO",
+"partenze": 480,
+"cavalli": 92,
+"veri": 107,
+"attesi": 101.8,
+"scarto_100": 1.08,
+"z": 0.63,
+"vittorie": 28
+},
+{
+"nome": "ESPOSITO ANDREA",
+"partenze": 220,
+"cavalli": 24,
+"veri": 89,
+"attesi": 85.0,
+"scarto_100": 1.83,
+"z": 0.59,
+"vittorie": 25
+},
+{
+"nome": "SILVESTRO ANTONIO",
+"partenze": 252,
+"cavalli": 42,
+"veri": 75,
+"attesi": 71.2,
+"scarto_100": 1.5,
+"z": 0.56,
+"vittorie": 21
+},
+{
+"nome": "FRANCESCO ALESSANDRINI",
+"partenze": 198,
+"cavalli": 36,
+"veri": 78,
+"attesi": 74.5,
+"scarto_100": 1.79,
+"z": 0.56,
+"vittorie": 16
+},
+{
+"nome": "BARBIERI LAMBERTO",
+"partenze": 318,
+"cavalli": 49,
+"veri": 118,
+"attesi": 113.6,
+"scarto_100": 1.39,
+"z": 0.55,
+"vittorie": 38
+},
+{
+"nome": "PACILEO GENNARO",
+"partenze": 209,
+"cavalli": 32,
+"veri": 63,
+"attesi": 59.8,
+"scarto_100": 1.55,
+"z": 0.53,
+"vittorie": 23
+},
+{
+"nome": "TREVELLIN MASSIMO",
+"partenze": 221,
+"cavalli": 23,
+"veri": 93,
+"attesi": 89.6,
+"scarto_100": 1.54,
+"z": 0.49,
+"vittorie": 27
+},
+{
+"nome": "RANTANEN HARRI MIKAEL",
+"partenze": 324,
+"cavalli": 60,
+"veri": 148,
+"attesi": 144.3,
+"scarto_100": 1.13,
+"z": 0.45,
+"vittorie": 70
+},
+{
+"nome": "TROLESE FRANCESCO",
+"partenze": 152,
+"cavalli": 20,
+"veri": 44,
+"attesi": 41.7,
+"scarto_100": 1.5,
+"z": 0.44,
+"vittorie": 8
+},
+{
+"nome": "BIGLIARDI ANDREA",
+"partenze": 163,
+"cavalli": 22,
+"veri": 62,
+"attesi": 59.4,
+"scarto_100": 1.58,
+"z": 0.44,
+"vittorie": 14
+},
+{
+"nome": "SCAMARDELLA PAOLO",
+"partenze": 167,
+"cavalli": 75,
+"veri": 58,
+"attesi": 55.6,
+"scarto_100": 1.46,
+"z": 0.43,
+"vittorie": 19
+},
+{
+"nome": "RICCIO GENNARO",
+"partenze": 518,
+"cavalli": 73,
+"veri": 165,
+"attesi": 160.7,
+"scarto_100": 0.82,
+"z": 0.43,
+"vittorie": 55
+},
+{
+"nome": "BARELLI FAUSTO",
+"partenze": 547,
+"cavalli": 89,
+"veri": 275,
+"attesi": 270.4,
+"scarto_100": 0.84,
+"z": 0.42,
+"vittorie": 124
+},
+{
+"nome": "MARANGI FEDELE",
+"partenze": 296,
+"cavalli": 53,
+"veri": 81,
+"attesi": 78.1,
+"scarto_100": 0.97,
+"z": 0.41,
+"vittorie": 21
+},
+{
+"nome": "BUOMPANE ANGELO MARIANO",
+"partenze": 151,
+"cavalli": 23,
+"veri": 41,
+"attesi": 39.0,
+"scarto_100": 1.35,
+"z": 0.41,
+"vittorie": 7
+},
+{
+"nome": "DI NARDO CIRO",
+"partenze": 325,
+"cavalli": 79,
+"veri": 151,
+"attesi": 148.4,
+"scarto_100": 0.81,
+"z": 0.32,
+"vittorie": 78
+},
+{
+"nome": "SARZETTO ANDREA",
+"partenze": 775,
+"cavalli": 93,
+"veri": 330,
+"attesi": 325.9,
+"scarto_100": 0.53,
+"z": 0.32,
+"vittorie": 123
+},
+{
+"nome": "VALENTINO SALVATORE",
+"partenze": 324,
+"cavalli": 51,
+"veri": 81,
+"attesi": 78.7,
+"scarto_100": 0.71,
+"z": 0.32,
+"vittorie": 16
+},
+{
+"nome": "D'ALESSANDRO RAFFAELE",
+"partenze": 804,
+"cavalli": 102,
+"veri": 233,
+"attesi": 229.7,
+"scarto_100": 0.41,
+"z": 0.28,
+"vittorie": 52
+},
+{
+"nome": "DEMURU PIETRO",
+"partenze": 618,
+"cavalli": 67,
+"veri": 204,
+"attesi": 201.8,
+"scarto_100": 0.35,
+"z": 0.2,
+"vittorie": 51
+},
+{
+"nome": "RACCA MICHELA",
+"partenze": 299,
+"cavalli": 32,
+"veri": 117,
+"attesi": 115.4,
+"scarto_100": 0.52,
+"z": 0.2,
+"vittorie": 36
+},
+{
+"nome": "MALLOZZI FABRIZIO",
+"partenze": 172,
+"cavalli": 14,
+"veri": 57,
+"attesi": 56.0,
+"scarto_100": 0.59,
+"z": 0.18,
+"vittorie": 10
+},
+{
+"nome": "PISTONE GIUSEPPE",
+"partenze": 298,
+"cavalli": 41,
+"veri": 130,
+"attesi": 128.7,
+"scarto_100": 0.42,
+"z": 0.16,
+"vittorie": 42
+},
+{
+"nome": "GALLO SAVERIO",
+"partenze": 704,
+"cavalli": 123,
+"veri": 274,
+"attesi": 272.2,
+"scarto_100": 0.26,
+"z": 0.15,
+"vittorie": 105
+},
+{
+"nome": "TAMBURRANO ROMANO",
+"partenze": 330,
+"cavalli": 50,
+"veri": 141,
+"attesi": 140.0,
+"scarto_100": 0.29,
+"z": 0.11,
+"vittorie": 53
+},
+{
+"nome": "BECCHETTI LUCIO",
+"partenze": 359,
+"cavalli": 74,
+"veri": 116,
+"attesi": 115.1,
+"scarto_100": 0.24,
+"z": 0.11,
+"vittorie": 41
+},
+{
+"nome": "DI FRANCIA MICHELE",
+"partenze": 196,
+"cavalli": 42,
+"veri": 63,
+"attesi": 62.8,
+"scarto_100": 0.09,
+"z": 0.03,
+"vittorie": 28
+},
+{
+"nome": "CARRO SALVATORE",
+"partenze": 195,
+"cavalli": 24,
+"veri": 58,
+"attesi": 57.9,
+"scarto_100": 0.06,
+"z": 0.02,
+"vittorie": 14
+},
+{
+"nome": "BERRI KARIM",
+"partenze": 186,
+"cavalli": 33,
+"veri": 64,
+"attesi": 63.9,
+"scarto_100": 0.06,
+"z": 0.02,
+"vittorie": 25
+},
+{
+"nome": "DEMURU MARCELLO",
+"partenze": 188,
+"cavalli": 19,
+"veri": 60,
+"attesi": 60.2,
+"scarto_100": -0.09,
+"z": -0.03,
+"vittorie": 12
+},
+{
+"nome": "DI STEFANO FRANCESCO",
+"partenze": 236,
+"cavalli": 32,
+"veri": 88,
+"attesi": 88.6,
+"scarto_100": -0.26,
+"z": -0.09,
+"vittorie": 26
+},
+{
+"nome": "MOLLO SANTO",
+"partenze": 189,
+"cavalli": 37,
+"veri": 79,
+"attesi": 79.6,
+"scarto_100": -0.32,
+"z": -0.1,
+"vittorie": 33
+},
+{
+"nome": "GABOR IOAN ALIN",
+"partenze": 416,
+"cavalli": 61,
+"veri": 98,
+"attesi": 98.9,
+"scarto_100": -0.21,
+"z": -0.11,
+"vittorie": 25
+},
+{
+"nome": "FORINO RAFFAELE",
+"partenze": 451,
+"cavalli": 75,
+"veri": 112,
+"attesi": 113.0,
+"scarto_100": -0.21,
+"z": -0.11,
+"vittorie": 31
+},
+{
+"nome": "DESCHI GIULIA",
+"partenze": 164,
+"cavalli": 39,
+"veri": 62,
+"attesi": 63.2,
+"scarto_100": -0.71,
+"z": -0.2,
+"vittorie": 24
+},
+{
+"nome": "CANGELOSI COSIMO",
+"partenze": 155,
+"cavalli": 39,
+"veri": 55,
+"attesi": 56.3,
+"scarto_100": -0.81,
+"z": -0.22,
+"vittorie": 21
+},
+{
+"nome": "DE VIVO MARCO",
+"partenze": 297,
+"cavalli": 46,
+"veri": 102,
+"attesi": 103.8,
+"scarto_100": -0.6,
+"z": -0.23,
+"vittorie": 33
+},
+{
+"nome": "MINOPOLI DOMENICO",
+"partenze": 270,
+"cavalli": 74,
+"veri": 102,
+"attesi": 104.0,
+"scarto_100": -0.74,
+"z": -0.27,
+"vittorie": 40
+},
+{
+"nome": "IMPRODA ANTONIO",
+"partenze": 266,
+"cavalli": 30,
+"veri": 62,
+"attesi": 63.9,
+"scarto_100": -0.71,
+"z": -0.29,
+"vittorie": 15
+},
+{
+"nome": "D'ALESSANDRO GIOVANNI",
+"partenze": 832,
+"cavalli": 161,
+"veri": 208,
+"attesi": 211.4,
+"scarto_100": -0.41,
+"z": -0.29,
+"vittorie": 55
+},
+{
+"nome": "MARJO HANNELE NATYNKI",
+"partenze": 640,
+"cavalli": 114,
+"veri": 284,
+"attesi": 287.4,
+"scarto_100": -0.54,
+"z": -0.29,
+"vittorie": 98
+},
+{
+"nome": "LOMBARDO GIUSEPPE JR",
+"partenze": 205,
+"cavalli": 33,
+"veri": 79,
+"attesi": 81.2,
+"scarto_100": -1.05,
+"z": -0.33,
+"vittorie": 35
+},
+{
+"nome": "ZANCA MASSIMO",
+"partenze": 185,
+"cavalli": 43,
+"veri": 47,
+"attesi": 48.9,
+"scarto_100": -1.05,
+"z": -0.35,
+"vittorie": 17
+},
+{
+"nome": "MEROLA NICOLA",
+"partenze": 241,
+"cavalli": 26,
+"veri": 55,
+"attesi": 57.3,
+"scarto_100": -0.97,
+"z": -0.38,
+"vittorie": 16
+},
+{
+"nome": "ZANETTI WALTER",
+"partenze": 284,
+"cavalli": 73,
+"veri": 118,
+"attesi": 121.0,
+"scarto_100": -1.04,
+"z": -0.39,
+"vittorie": 48
+},
+{
+"nome": "CHIARO RAFFAELE",
+"partenze": 455,
+"cavalli": 76,
+"veri": 138,
+"attesi": 141.6,
+"scarto_100": -0.79,
+"z": -0.39,
+"vittorie": 46
+},
+{
+"nome": "ESPOSITO FRANCESCO",
+"partenze": 379,
+"cavalli": 47,
+"veri": 93,
+"attesi": 96.3,
+"scarto_100": -0.87,
+"z": -0.42,
+"vittorie": 27
+},
+{
+"nome": "TRINCHILLO GIUSEPPE",
+"partenze": 302,
+"cavalli": 30,
+"veri": 78,
+"attesi": 81.1,
+"scarto_100": -1.01,
+"z": -0.43,
+"vittorie": 23
+},
+{
+"nome": "FIORE COSIMO",
+"partenze": 448,
+"cavalli": 85,
+"veri": 160,
+"attesi": 164.3,
+"scarto_100": -0.95,
+"z": -0.45,
+"vittorie": 45
+},
+{
+"nome": "SHMIDRA AFRIM",
+"partenze": 208,
+"cavalli": 60,
+"veri": 85,
+"attesi": 88.2,
+"scarto_100": -1.56,
+"z": -0.49,
+"vittorie": 34
+},
+{
+"nome": "DI MURO MASSIMO",
+"partenze": 261,
+"cavalli": 34,
+"veri": 65,
+"attesi": 68.4,
+"scarto_100": -1.3,
+"z": -0.51,
+"vittorie": 21
+},
+{
+"nome": "CONTICELLI FRANCESCO PAOLO",
+"partenze": 185,
+"cavalli": 48,
+"veri": 29,
+"attesi": 31.6,
+"scarto_100": -1.38,
+"z": -0.54,
+"vittorie": 7
+},
+{
+"nome": "FIASCHI ENRICO",
+"partenze": 477,
+"cavalli": 73,
+"veri": 227,
+"attesi": 232.6,
+"scarto_100": -1.17,
+"z": -0.55,
+"vittorie": 104
+},
+{
+"nome": "DI CHIARA ALESSIO",
+"partenze": 193,
+"cavalli": 33,
+"veri": 54,
+"attesi": 57.5,
+"scarto_100": -1.79,
+"z": -0.59,
+"vittorie": 19
+},
+{
+"nome": "CINTURA NATALE",
+"partenze": 353,
+"cavalli": 52,
+"veri": 127,
+"attesi": 132.1,
+"scarto_100": -1.46,
+"z": -0.61,
+"vittorie": 47
+},
+{
+"nome": "CUOZZO LUIGI",
+"partenze": 591,
+"cavalli": 80,
+"veri": 159,
+"attesi": 165.5,
+"scarto_100": -1.1,
+"z": -0.63,
+"vittorie": 34
+},
+{
+"nome": "ZANCA GIUSEPPE",
+"partenze": 279,
+"cavalli": 56,
+"veri": 59,
+"attesi": 63.3,
+"scarto_100": -1.53,
+"z": -0.66,
+"vittorie": 18
+},
+{
+"nome": "BRECCIA SABINA",
+"partenze": 238,
+"cavalli": 35,
+"veri": 76,
+"attesi": 80.5,
+"scarto_100": -1.91,
+"z": -0.68,
+"vittorie": 26
+},
+{
+"nome": "DI VINCENZO SABATO",
+"partenze": 667,
+"cavalli": 80,
+"veri": 153,
+"attesi": 160.7,
+"scarto_100": -1.15,
+"z": -0.75,
+"vittorie": 29
+},
+{
+"nome": "BORTOLOTTI MARCO",
+"partenze": 325,
+"cavalli": 56,
+"veri": 105,
+"attesi": 111.1,
+"scarto_100": -1.87,
+"z": -0.75,
+"vittorie": 26
+},
+{
+"nome": "BALLOTTA GABRIELE",
+"partenze": 187,
+"cavalli": 21,
+"veri": 45,
+"attesi": 49.3,
+"scarto_100": -2.3,
+"z": -0.79,
+"vittorie": 8
+},
+{
+"nome": "MATTERA VITALE",
+"partenze": 204,
+"cavalli": 30,
+"veri": 42,
+"attesi": 46.7,
+"scarto_100": -2.32,
+"z": -0.84,
+"vittorie": 13
+},
+{
+"nome": "SCHETTINO PIETRO PAOLO",
+"partenze": 200,
+"cavalli": 47,
+"veri": 44,
+"attesi": 49.0,
+"scarto_100": -2.5,
+"z": -0.9,
+"vittorie": 12
+},
+{
+"nome": "POLIZZOTTO GIUSEPPE JR",
+"partenze": 349,
+"cavalli": 78,
+"veri": 47,
+"attesi": 52.9,
+"scarto_100": -1.69,
+"z": -0.96,
+"vittorie": 12
+},
+{
+"nome": "VAIRANI ETTORE",
+"partenze": 190,
+"cavalli": 16,
+"veri": 58,
+"attesi": 64.0,
+"scarto_100": -3.17,
+"z": -0.98,
+"vittorie": 19
+},
+{
+"nome": "REGGE MASSIMILIANO",
+"partenze": 152,
+"cavalli": 23,
+"veri": 35,
+"attesi": 40.1,
+"scarto_100": -3.39,
+"z": -1.02,
+"vittorie": 3
+},
+{
+"nome": "TALPO LUCA",
+"partenze": 316,
+"cavalli": 44,
+"veri": 62,
+"attesi": 68.9,
+"scarto_100": -2.19,
+"z": -1.04,
+"vittorie": 11
+},
+{
+"nome": "FIERRO IVANO",
+"partenze": 224,
+"cavalli": 40,
+"veri": 47,
+"attesi": 53.3,
+"scarto_100": -2.82,
+"z": -1.08,
+"vittorie": 8
+},
+{
+"nome": "DE FILIPPIS GIUSEPPE",
+"partenze": 501,
+"cavalli": 107,
+"veri": 168,
+"attesi": 179.8,
+"scarto_100": -2.36,
+"z": -1.18,
+"vittorie": 58
+},
+{
+"nome": "FATICONI ROBERTO",
+"partenze": 244,
+"cavalli": 15,
+"veri": 31,
+"attesi": 37.3,
+"scarto_100": -2.57,
+"z": -1.19,
+"vittorie": 4
+},
+{
+"nome": "DALLOLIO DIEGO",
+"partenze": 216,
+"cavalli": 26,
+"veri": 54,
+"attesi": 61.6,
+"scarto_100": -3.5,
+"z": -1.23,
+"vittorie": 5
+},
+{
+"nome": "MANCUSO LUCIANO",
+"partenze": 631,
+"cavalli": 99,
+"veri": 149,
+"attesi": 161.5,
+"scarto_100": -1.98,
+"z": -1.24,
+"vittorie": 41
+},
+{
+"nome": "VITAGLIANO ANDREA",
+"partenze": 191,
+"cavalli": 39,
+"veri": 48,
+"attesi": 55.0,
+"scarto_100": -3.67,
+"z": -1.24,
+"vittorie": 18
+},
+{
+"nome": "GELORMINI BRUNO",
+"partenze": 268,
+"cavalli": 37,
+"veri": 65,
+"attesi": 73.2,
+"scarto_100": -3.07,
+"z": -1.24,
+"vittorie": 11
+},
+{
+"nome": "GIORDANO CARLO",
+"partenze": 217,
+"cavalli": 51,
+"veri": 35,
+"attesi": 41.8,
+"scarto_100": -3.15,
+"z": -1.26,
+"vittorie": 7
+},
+{
+"nome": "GALLOSO GERVASIO",
+"partenze": 227,
+"cavalli": 36,
+"veri": 33,
+"attesi": 39.9,
+"scarto_100": -3.03,
+"z": -1.29,
+"vittorie": 7
+},
+{
+"nome": "RICCI MATTIA",
+"partenze": 247,
+"cavalli": 43,
+"veri": 83,
+"attesi": 92.3,
+"scarto_100": -3.75,
+"z": -1.33,
+"vittorie": 27
+},
+{
+"nome": "PECORARO ANTONINO",
+"partenze": 237,
+"cavalli": 26,
+"veri": 51,
+"attesi": 59.1,
+"scarto_100": -3.43,
+"z": -1.33,
+"vittorie": 10
+},
+{
+"nome": "BARBINI MASSIMO",
+"partenze": 188,
+"cavalli": 36,
+"veri": 57,
+"attesi": 65.1,
+"scarto_100": -4.31,
+"z": -1.34,
+"vittorie": 12
+},
+{
+"nome": "RAIMO MICHELE",
+"partenze": 237,
+"cavalli": 26,
+"veri": 79,
+"attesi": 88.7,
+"scarto_100": -4.11,
+"z": -1.38,
+"vittorie": 22
+},
+{
+"nome": "QUARNETI DANIELE",
+"partenze": 407,
+"cavalli": 47,
+"veri": 81,
+"attesi": 92.1,
+"scarto_100": -2.72,
+"z": -1.4,
+"vittorie": 11
+},
+{
+"nome": "MESSINEO GIUSEPPE",
+"partenze": 194,
+"cavalli": 31,
+"veri": 51,
+"attesi": 59.7,
+"scarto_100": -4.47,
+"z": -1.45,
+"vittorie": 12
+},
+{
+"nome": "CASSANI GIORGIO",
+"partenze": 196,
+"cavalli": 29,
+"veri": 42,
+"attesi": 51.0,
+"scarto_100": -4.61,
+"z": -1.56,
+"vittorie": 12
+},
+{
+"nome": "MANZONE MARIO",
+"partenze": 202,
+"cavalli": 26,
+"veri": 42,
+"attesi": 50.9,
+"scarto_100": -4.43,
+"z": -1.59,
+"vittorie": 14
+},
+{
+"nome": "SILVESTRI OTTAVIO",
+"partenze": 347,
+"cavalli": 39,
+"veri": 87,
+"attesi": 99.7,
+"scarto_100": -3.65,
+"z": -1.6,
+"vittorie": 26
+},
+{
+"nome": "ZANETTI ENRICO",
+"partenze": 178,
+"cavalli": 16,
+"veri": 35,
+"attesi": 43.7,
+"scarto_100": -4.89,
+"z": -1.62,
+"vittorie": 8
+},
+{
+"nome": "D'ALESSANDRO ROBERTO",
+"partenze": 543,
+"cavalli": 127,
+"veri": 117,
+"attesi": 132.2,
+"scarto_100": -2.8,
+"z": -1.63,
+"vittorie": 33
+},
+{
+"nome": "D'ALESSANDRO GIORGIO",
+"partenze": 793,
+"cavalli": 174,
+"veri": 196,
+"attesi": 215.0,
+"scarto_100": -2.4,
+"z": -1.64,
+"vittorie": 53
+},
+{
+"nome": "DI MAIO DARIO",
+"partenze": 335,
+"cavalli": 62,
+"veri": 86,
+"attesi": 98.9,
+"scarto_100": -3.85,
+"z": -1.69,
+"vittorie": 26
+},
+{
+"nome": "GJONI ADRIAN",
+"partenze": 272,
+"cavalli": 29,
+"veri": 56,
+"attesi": 67.5,
+"scarto_100": -4.22,
+"z": -1.77,
+"vittorie": 11
+},
+{
+"nome": "TEAM EHLERT",
+"partenze": 587,
+"cavalli": 142,
+"veri": 239,
+"attesi": 259.9,
+"scarto_100": -3.56,
+"z": -1.85,
+"vittorie": 104
+},
+{
+"nome": "BIAGINI ROBERTO",
+"partenze": 375,
+"cavalli": 38,
+"veri": 89,
+"attesi": 103.6,
+"scarto_100": -3.9,
+"z": -1.85,
+"vittorie": 12
+},
+{
+"nome": "LUONGO DOMENICO",
+"partenze": 274,
+"cavalli": 45,
+"veri": 79,
+"attesi": 92.6,
+"scarto_100": -4.95,
+"z": -1.86,
+"vittorie": 26
+},
+{
+"nome": "FINETTI ANTONIO",
+"partenze": 258,
+"cavalli": 52,
+"veri": 76,
+"attesi": 89.5,
+"scarto_100": -5.23,
+"z": -1.9,
+"vittorie": 14
+},
+{
+"nome": "BORRINO SALVATORE",
+"partenze": 530,
+"cavalli": 107,
+"veri": 81,
+"attesi": 97.6,
+"scarto_100": -3.14,
+"z": -2.01,
+"vittorie": 26
+},
+{
+"nome": "BELLITTI SERGIO",
+"partenze": 156,
+"cavalli": 30,
+"veri": 25,
+"attesi": 34.6,
+"scarto_100": -6.17,
+"z": -2.01,
+"vittorie": 4
+},
+{
+"nome": "D'ISANTO ENZO",
+"partenze": 330,
+"cavalli": 35,
+"veri": 89,
+"attesi": 104.9,
+"scarto_100": -4.82,
+"z": -2.02,
+"vittorie": 20
+},
+{
+"nome": "GALLO VINCENZO",
+"partenze": 202,
+"cavalli": 50,
+"veri": 59,
+"attesi": 72.0,
+"scarto_100": -6.45,
+"z": -2.04,
+"vittorie": 13
+},
+{
+"nome": "CASTIGLIA VINCENZO",
+"partenze": 199,
+"cavalli": 47,
+"veri": 47,
+"attesi": 59.6,
+"scarto_100": -6.35,
+"z": -2.09,
+"vittorie": 18
+},
+{
+"nome": "ESPOSITO DANIELE",
+"partenze": 175,
+"cavalli": 26,
+"veri": 21,
+"attesi": 30.6,
+"scarto_100": -5.47,
+"z": -2.1,
+"vittorie": 7
+},
+{
+"nome": "MARINI MARCO",
+"partenze": 320,
+"cavalli": 60,
+"veri": 101,
+"attesi": 118.8,
+"scarto_100": -5.57,
+"z": -2.28,
+"vittorie": 42
+},
+{
+"nome": "FIERRO LUCA",
+"partenze": 417,
+"cavalli": 74,
+"veri": 87,
+"attesi": 106.0,
+"scarto_100": -4.56,
+"z": -2.32,
+"vittorie": 15
+},
+{
+"nome": "GRECO MARIO",
+"partenze": 348,
+"cavalli": 44,
+"veri": 53,
+"attesi": 69.0,
+"scarto_100": -4.61,
+"z": -2.33,
+"vittorie": 8
+},
+{
+"nome": "PORZIO ANTONINO",
+"partenze": 380,
+"cavalli": 68,
+"veri": 77,
+"attesi": 95.3,
+"scarto_100": -4.81,
+"z": -2.33,
+"vittorie": 20
+},
+{
+"nome": "CONTICELLI GIUSEPPE",
+"partenze": 346,
+"cavalli": 61,
+"veri": 107,
+"attesi": 126.5,
+"scarto_100": -5.64,
+"z": -2.36,
+"vittorie": 28
+},
+{
+"nome": "BALDI LORENZO",
+"partenze": 743,
+"cavalli": 134,
+"veri": 284,
+"attesi": 319.8,
+"scarto_100": -4.81,
+"z": -2.85,
+"vittorie": 73
+},
+{
+"nome": "LAUDISIO COSTANTINO",
+"partenze": 657,
+"cavalli": 155,
+"veri": 84,
+"attesi": 117.9,
+"scarto_100": -5.17,
+"z": -3.71,
+"vittorie": 18
+},
+{
+"nome": "BATTISTINI DARIO",
+"partenze": 223,
+"cavalli": 55,
+"veri": 43,
+"attesi": 66.4,
+"scarto_100": -10.52,
+"z": -3.74,
+"vittorie": 11
+},
+{
+"nome": "CONGIU BATTISTA",
+"partenze": 745,
+"cavalli": 91,
+"veri": 162,
+"attesi": 211.3,
+"scarto_100": -6.62,
+"z": -4.3,
+"vittorie": 31
+}
+]
+},
+"guidatori": {
+"minimo_partenze": 150,
+"alberi": 593,
+"temperatura": 1.0,
+"variabili": 49,
+"stabilita_2025_2026": 0.435,
+"entita_per_stabilita": 115,
+"elenco": [
+{
+"nome": "A.Di Nardo",
+"partenze": 1424,
+"cavalli": 681,
+"veri": 738,
+"attesi": 619.3,
+"scarto_100": 8.34,
+"z": 6.82,
+"vittorie": 334
+},
+{
+"nome": "A.Gocciadoro",
+"partenze": 1052,
+"cavalli": 342,
+"veri": 632,
+"attesi": 539.1,
+"scarto_100": 8.83,
+"z": 6.1,
+"vittorie": 398
+},
+{
+"nome": "V.Luongo",
+"partenze": 1196,
+"cavalli": 490,
+"veri": 598,
+"attesi": 506.0,
+"scarto_100": 7.7,
+"z": 5.8,
+"vittorie": 262
+},
+{
+"nome": "M.Stefani",
+"partenze": 1000,
+"cavalli": 293,
+"veri": 497,
+"attesi": 423.3,
+"scarto_100": 7.37,
+"z": 5.08,
+"vittorie": 201
+},
+{
+"nome": "A.Simioli",
+"partenze": 1040,
+"cavalli": 429,
+"veri": 501,
+"attesi": 428.4,
+"scarto_100": 6.98,
+"z": 4.92,
+"vittorie": 233
+},
+{
+"nome": "R.Vecchione",
+"partenze": 1065,
+"cavalli": 522,
+"veri": 517,
+"attesi": 453.2,
+"scarto_100": 5.99,
+"z": 4.22,
+"vittorie": 240
+},
+{
+"nome": "A.Guzzinati",
+"partenze": 569,
+"cavalli": 210,
+"veri": 300,
+"attesi": 261.7,
+"scarto_100": 6.73,
+"z": 3.44,
+"vittorie": 125
+},
+{
+"nome": "E.O.Villani",
+"partenze": 183,
+"cavalli": 106,
+"veri": 100,
+"attesi": 78.8,
+"scarto_100": 11.59,
+"z": 3.42,
+"vittorie": 55
+},
+{
+"nome": "C.Ciccarelli",
+"partenze": 200,
+"cavalli": 148,
+"veri": 98,
+"attesi": 76.0,
+"scarto_100": 11.0,
+"z": 3.41,
+"vittorie": 44
+},
+{
+"nome": "G.Lo Verde",
+"partenze": 405,
+"cavalli": 132,
+"veri": 198,
+"attesi": 167.4,
+"scarto_100": 7.56,
+"z": 3.37,
+"vittorie": 102
+},
+{
+"nome": "A.Buzzitta",
+"partenze": 340,
+"cavalli": 140,
+"veri": 146,
+"attesi": 120.9,
+"scarto_100": 7.37,
+"z": 3.07,
+"vittorie": 53
+},
+{
+"nome": "A.Farolfi",
+"partenze": 891,
+"cavalli": 338,
+"veri": 411,
+"attesi": 369.6,
+"scarto_100": 4.64,
+"z": 3.03,
+"vittorie": 172
+},
+{
+"nome": "L.Vastano",
+"partenze": 167,
+"cavalli": 59,
+"veri": 88,
+"attesi": 71.2,
+"scarto_100": 10.08,
+"z": 2.84,
+"vittorie": 40
+},
+{
+"nome": "M.Minopoli Jr.",
+"partenze": 564,
+"cavalli": 178,
+"veri": 201,
+"attesi": 173.3,
+"scarto_100": 4.92,
+"z": 2.7,
+"vittorie": 85
+},
+{
+"nome": "G.De Filippis",
+"partenze": 639,
+"cavalli": 237,
+"veri": 245,
+"attesi": 215.3,
+"scarto_100": 4.65,
+"z": 2.66,
+"vittorie": 87
+},
+{
+"nome": "Man.Matteini",
+"partenze": 261,
+"cavalli": 58,
+"veri": 134,
+"attesi": 117.8,
+"scarto_100": 6.2,
+"z": 2.12,
+"vittorie": 35
+},
+{
+"nome": "S.Cintura Jr.",
+"partenze": 337,
+"cavalli": 125,
+"veri": 127,
+"attesi": 110.0,
+"scarto_100": 5.05,
+"z": 2.12,
+"vittorie": 53
+},
+{
+"nome": "Fed.Esposito",
+"partenze": 185,
+"cavalli": 118,
+"veri": 92,
+"attesi": 79.9,
+"scarto_100": 6.55,
+"z": 1.94,
+"vittorie": 50
+},
+{
+"nome": "E.Loccisano",
+"partenze": 416,
+"cavalli": 181,
+"veri": 173,
+"attesi": 155.4,
+"scarto_100": 4.22,
+"z": 1.92,
+"vittorie": 58
+},
+{
+"nome": "M.Michelotto",
+"partenze": 150,
+"cavalli": 107,
+"veri": 78,
+"attesi": 67.4,
+"scarto_100": 7.09,
+"z": 1.89,
+"vittorie": 32
+},
+{
+"nome": "U.Di Vincenzo",
+"partenze": 226,
+"cavalli": 57,
+"veri": 72,
+"attesi": 61.2,
+"scarto_100": 4.77,
+"z": 1.76,
+"vittorie": 17
+},
+{
+"nome": "F.Gallo",
+"partenze": 737,
+"cavalli": 264,
+"veri": 276,
+"attesi": 255.3,
+"scarto_100": 2.81,
+"z": 1.73,
+"vittorie": 98
+},
+{
+"nome": "Fr.Facci",
+"partenze": 657,
+"cavalli": 263,
+"veri": 312,
+"attesi": 292.9,
+"scarto_100": 2.9,
+"z": 1.61,
+"vittorie": 118
+},
+{
+"nome": "Rene' Legati",
+"partenze": 176,
+"cavalli": 41,
+"veri": 80,
+"attesi": 70.7,
+"scarto_100": 5.31,
+"z": 1.53,
+"vittorie": 25
+},
+{
+"nome": "M.Pistone",
+"partenze": 851,
+"cavalli": 390,
+"veri": 358,
+"attesi": 337.8,
+"scarto_100": 2.38,
+"z": 1.52,
+"vittorie": 136
+},
+{
+"nome": "G.D'Alessandro Jr.",
+"partenze": 1079,
+"cavalli": 400,
+"veri": 313,
+"attesi": 293.6,
+"scarto_100": 1.8,
+"z": 1.42,
+"vittorie": 84
+},
+{
+"nome": "E.Bellei",
+"partenze": 462,
+"cavalli": 209,
+"veri": 205,
+"attesi": 191.3,
+"scarto_100": 2.97,
+"z": 1.38,
+"vittorie": 69
+},
+{
+"nome": "D.Angeletti",
+"partenze": 265,
+"cavalli": 94,
+"veri": 65,
+"attesi": 56.8,
+"scarto_100": 3.08,
+"z": 1.3,
+"vittorie": 15
+},
+{
+"nome": "M.Smorgon",
+"partenze": 191,
+"cavalli": 52,
+"veri": 83,
+"attesi": 75.5,
+"scarto_100": 3.92,
+"z": 1.17,
+"vittorie": 29
+},
+{
+"nome": "C.Maione",
+"partenze": 1094,
+"cavalli": 472,
+"veri": 392,
+"attesi": 375.1,
+"scarto_100": 1.54,
+"z": 1.16,
+"vittorie": 147
+},
+{
+"nome": "V.P.Dell'Annunziata",
+"partenze": 651,
+"cavalli": 380,
+"veri": 250,
+"attesi": 237.7,
+"scarto_100": 1.89,
+"z": 1.08,
+"vittorie": 84
+},
+{
+"nome": "R.Pezzatini",
+"partenze": 325,
+"cavalli": 41,
+"veri": 103,
+"attesi": 95.2,
+"scarto_100": 2.41,
+"z": 1.03,
+"vittorie": 29
+},
+{
+"nome": "E.Bacalini",
+"partenze": 390,
+"cavalli": 102,
+"veri": 142,
+"attesi": 133.7,
+"scarto_100": 2.14,
+"z": 0.95,
+"vittorie": 36
+},
+{
+"nome": "P.Gubellini",
+"partenze": 582,
+"cavalli": 189,
+"veri": 283,
+"attesi": 272.9,
+"scarto_100": 1.73,
+"z": 0.89,
+"vittorie": 118
+},
+{
+"nome": "V.D'Alessandro Jr.",
+"partenze": 809,
+"cavalli": 221,
+"veri": 233,
+"attesi": 222.6,
+"scarto_100": 1.28,
+"z": 0.87,
+"vittorie": 47
+},
+{
+"nome": "J.A.Gabor",
+"partenze": 154,
+"cavalli": 44,
+"veri": 38,
+"attesi": 34.0,
+"scarto_100": 2.6,
+"z": 0.85,
+"vittorie": 11
+},
+{
+"nome": "D.Cangiano",
+"partenze": 273,
+"cavalli": 102,
+"veri": 83,
+"attesi": 77.2,
+"scarto_100": 2.14,
+"z": 0.84,
+"vittorie": 18
+},
+{
+"nome": "Gp.Minnucci",
+"partenze": 306,
+"cavalli": 190,
+"veri": 125,
+"attesi": 118.5,
+"scarto_100": 2.12,
+"z": 0.82,
+"vittorie": 45
+},
+{
+"nome": "F.Minopoli",
+"partenze": 464,
+"cavalli": 218,
+"veri": 147,
+"attesi": 141.1,
+"scarto_100": 1.28,
+"z": 0.65,
+"vittorie": 46
+},
+{
+"nome": "O.Zorzetto",
+"partenze": 186,
+"cavalli": 90,
+"veri": 89,
+"attesi": 85.3,
+"scarto_100": 2.01,
+"z": 0.58,
+"vittorie": 40
+},
+{
+"nome": "R.Gallucci",
+"partenze": 235,
+"cavalli": 151,
+"veri": 52,
+"attesi": 48.6,
+"scarto_100": 1.43,
+"z": 0.57,
+"vittorie": 21
+},
+{
+"nome": "S.Luongo",
+"partenze": 168,
+"cavalli": 83,
+"veri": 36,
+"attesi": 33.6,
+"scarto_100": 1.45,
+"z": 0.52,
+"vittorie": 13
+},
+{
+"nome": "M.Volpato",
+"partenze": 186,
+"cavalli": 88,
+"veri": 71,
+"attesi": 67.9,
+"scarto_100": 1.67,
+"z": 0.51,
+"vittorie": 24
+},
+{
+"nome": "G.Pacileo",
+"partenze": 247,
+"cavalli": 128,
+"veri": 77,
+"attesi": 73.6,
+"scarto_100": 1.37,
+"z": 0.5,
+"vittorie": 23
+},
+{
+"nome": "L.Messineo",
+"partenze": 338,
+"cavalli": 114,
+"veri": 121,
+"attesi": 117.6,
+"scarto_100": 1.0,
+"z": 0.42,
+"vittorie": 43
+},
+{
+"nome": "R.Tamburrano",
+"partenze": 254,
+"cavalli": 71,
+"veri": 107,
+"attesi": 104.0,
+"scarto_100": 1.17,
+"z": 0.41,
+"vittorie": 44
+},
+{
+"nome": "M.Zaccherini",
+"partenze": 289,
+"cavalli": 161,
+"veri": 163,
+"attesi": 159.9,
+"scarto_100": 1.08,
+"z": 0.39,
+"vittorie": 103
+},
+{
+"nome": "M.Zanca",
+"partenze": 256,
+"cavalli": 97,
+"veri": 69,
+"attesi": 66.5,
+"scarto_100": 0.99,
+"z": 0.39,
+"vittorie": 22
+},
+{
+"nome": "F.Monti",
+"partenze": 284,
+"cavalli": 122,
+"veri": 85,
+"attesi": 83.0,
+"scarto_100": 0.7,
+"z": 0.28,
+"vittorie": 19
+},
+{
+"nome": "G.Immobile",
+"partenze": 344,
+"cavalli": 139,
+"veri": 96,
+"attesi": 94.0,
+"scarto_100": 0.57,
+"z": 0.26,
+"vittorie": 29
+},
+{
+"nome": "L.Talpo Jr.",
+"partenze": 562,
+"cavalli": 273,
+"veri": 191,
+"attesi": 188.3,
+"scarto_100": 0.47,
+"z": 0.26,
+"vittorie": 46
+},
+{
+"nome": "L.Becchetti",
+"partenze": 189,
+"cavalli": 61,
+"veri": 61,
+"attesi": 59.6,
+"scarto_100": 0.76,
+"z": 0.24,
+"vittorie": 24
+},
+{
+"nome": "G.Amitrano",
+"partenze": 851,
+"cavalli": 356,
+"veri": 246,
+"attesi": 244.1,
+"scarto_100": 0.22,
+"z": 0.15,
+"vittorie": 89
+},
+{
+"nome": "N.Del Rosso",
+"partenze": 234,
+"cavalli": 58,
+"veri": 80,
+"attesi": 79.5,
+"scarto_100": 0.22,
+"z": 0.08,
+"vittorie": 20
+},
+{
+"nome": "Mar.Castaldo",
+"partenze": 155,
+"cavalli": 92,
+"veri": 70,
+"attesi": 69.8,
+"scarto_100": 0.16,
+"z": 0.04,
+"vittorie": 22
+},
+{
+"nome": "Santo Mollo",
+"partenze": 526,
+"cavalli": 259,
+"veri": 213,
+"attesi": 212.6,
+"scarto_100": 0.08,
+"z": 0.04,
+"vittorie": 84
+},
+{
+"nome": "M.Di Nicola",
+"partenze": 280,
+"cavalli": 123,
+"veri": 90,
+"attesi": 89.8,
+"scarto_100": 0.07,
+"z": 0.03,
+"vittorie": 25
+},
+{
+"nome": "V.Gallo",
+"partenze": 855,
+"cavalli": 392,
+"veri": 283,
+"attesi": 283.6,
+"scarto_100": -0.07,
+"z": -0.05,
+"vittorie": 80
+},
+{
+"nome": "F.sco La Rosa Jr.",
+"partenze": 156,
+"cavalli": 58,
+"veri": 39,
+"attesi": 40.0,
+"scarto_100": -0.62,
+"z": -0.19,
+"vittorie": 9
+},
+{
+"nome": "F.Virzi'",
+"partenze": 152,
+"cavalli": 52,
+"veri": 43,
+"attesi": 44.3,
+"scarto_100": -0.84,
+"z": -0.24,
+"vittorie": 4
+},
+{
+"nome": "Fil.Esposito",
+"partenze": 166,
+"cavalli": 115,
+"veri": 63,
+"attesi": 64.6,
+"scarto_100": -0.95,
+"z": -0.27,
+"vittorie": 27
+},
+{
+"nome": "R.Forino",
+"partenze": 594,
+"cavalli": 168,
+"veri": 142,
+"attesi": 144.7,
+"scarto_100": -0.46,
+"z": -0.28,
+"vittorie": 33
+},
+{
+"nome": "A.Di Chiara",
+"partenze": 333,
+"cavalli": 147,
+"veri": 106,
+"attesi": 108.4,
+"scarto_100": -0.72,
+"z": -0.3,
+"vittorie": 35
+},
+{
+"nome": "D.Cuglini",
+"partenze": 303,
+"cavalli": 108,
+"veri": 107,
+"attesi": 109.4,
+"scarto_100": -0.8,
+"z": -0.31,
+"vittorie": 27
+},
+{
+"nome": "M.Spano'",
+"partenze": 168,
+"cavalli": 56,
+"veri": 39,
+"attesi": 41.1,
+"scarto_100": -1.24,
+"z": -0.4,
+"vittorie": 8
+},
+{
+"nome": "Mass.Castaldo",
+"partenze": 332,
+"cavalli": 141,
+"veri": 137,
+"attesi": 140.7,
+"scarto_100": -1.1,
+"z": -0.44,
+"vittorie": 29
+},
+{
+"nome": "Ant.Esposito -90-",
+"partenze": 289,
+"cavalli": 50,
+"veri": 78,
+"attesi": 81.2,
+"scarto_100": -1.12,
+"z": -0.45,
+"vittorie": 25
+},
+{
+"nome": "M.Cheli",
+"partenze": 613,
+"cavalli": 262,
+"veri": 197,
+"attesi": 202.2,
+"scarto_100": -0.85,
+"z": -0.48,
+"vittorie": 43
+},
+{
+"nome": "E.Baldi",
+"partenze": 494,
+"cavalli": 232,
+"veri": 175,
+"attesi": 179.8,
+"scarto_100": -0.98,
+"z": -0.49,
+"vittorie": 44
+},
+{
+"nome": "G.Cassani",
+"partenze": 160,
+"cavalli": 42,
+"veri": 42,
+"attesi": 44.7,
+"scarto_100": -1.68,
+"z": -0.5,
+"vittorie": 8
+},
+{
+"nome": "C.Piscuoglio",
+"partenze": 730,
+"cavalli": 365,
+"veri": 245,
+"attesi": 251.9,
+"scarto_100": -0.95,
+"z": -0.58,
+"vittorie": 69
+},
+{
+"nome": "C.Cangelosi",
+"partenze": 220,
+"cavalli": 97,
+"veri": 73,
+"attesi": 76.8,
+"scarto_100": -1.75,
+"z": -0.58,
+"vittorie": 21
+},
+{
+"nome": "F.Pettinari",
+"partenze": 262,
+"cavalli": 122,
+"veri": 94,
+"attesi": 98.7,
+"scarto_100": -1.8,
+"z": -0.64,
+"vittorie": 27
+},
+{
+"nome": "D.Demuru",
+"partenze": 325,
+"cavalli": 78,
+"veri": 104,
+"attesi": 110.1,
+"scarto_100": -1.88,
+"z": -0.76,
+"vittorie": 21
+},
+{
+"nome": "V.D'Alessandro",
+"partenze": 157,
+"cavalli": 72,
+"veri": 35,
+"attesi": 39.0,
+"scarto_100": -2.54,
+"z": -0.79,
+"vittorie": 9
+},
+{
+"nome": "D.Montanile",
+"partenze": 180,
+"cavalli": 61,
+"veri": 38,
+"attesi": 42.5,
+"scarto_100": -2.51,
+"z": -0.84,
+"vittorie": 8
+},
+{
+"nome": "A.Pecoraro Jr.",
+"partenze": 262,
+"cavalli": 111,
+"veri": 64,
+"attesi": 69.9,
+"scarto_100": -2.26,
+"z": -0.88,
+"vittorie": 11
+},
+{
+"nome": "A.Velotti",
+"partenze": 208,
+"cavalli": 74,
+"veri": 45,
+"attesi": 50.1,
+"scarto_100": -2.43,
+"z": -0.88,
+"vittorie": 9
+},
+{
+"nome": "S.Di Vincenzo",
+"partenze": 500,
+"cavalli": 124,
+"veri": 113,
+"attesi": 121.8,
+"scarto_100": -1.76,
+"z": -0.98,
+"vittorie": 24
+},
+{
+"nome": "F.Pisacane",
+"partenze": 194,
+"cavalli": 95,
+"veri": 74,
+"attesi": 80.3,
+"scarto_100": -3.23,
+"z": -0.99,
+"vittorie": 36
+},
+{
+"nome": "G.Galloso",
+"partenze": 155,
+"cavalli": 48,
+"veri": 24,
+"attesi": 28.6,
+"scarto_100": -2.99,
+"z": -1.04,
+"vittorie": 5
+},
+{
+"nome": "Lor.Baldi",
+"partenze": 531,
+"cavalli": 127,
+"veri": 211,
+"attesi": 222.1,
+"scarto_100": -2.1,
+"z": -1.05,
+"vittorie": 48
+},
+{
+"nome": "F.Di Stefano",
+"partenze": 170,
+"cavalli": 55,
+"veri": 59,
+"attesi": 65.5,
+"scarto_100": -3.82,
+"z": -1.09,
+"vittorie": 19
+},
+{
+"nome": "A.Greppi",
+"partenze": 485,
+"cavalli": 213,
+"veri": 166,
+"attesi": 177.2,
+"scarto_100": -2.31,
+"z": -1.14,
+"vittorie": 44
+},
+{
+"nome": "T.Gambino",
+"partenze": 243,
+"cavalli": 133,
+"veri": 79,
+"attesi": 87.0,
+"scarto_100": -3.28,
+"z": -1.16,
+"vittorie": 21
+},
+{
+"nome": "G.D'Alessandro Sr.",
+"partenze": 279,
+"cavalli": 75,
+"veri": 69,
+"attesi": 77.3,
+"scarto_100": -2.97,
+"z": -1.19,
+"vittorie": 18
+},
+{
+"nome": "S.Miraglia",
+"partenze": 276,
+"cavalli": 98,
+"veri": 66,
+"attesi": 74.4,
+"scarto_100": -3.03,
+"z": -1.21,
+"vittorie": 12
+},
+{
+"nome": "F.Tufano -91-",
+"partenze": 518,
+"cavalli": 261,
+"veri": 151,
+"attesi": 162.9,
+"scarto_100": -2.3,
+"z": -1.21,
+"vittorie": 58
+},
+{
+"nome": "R.Ruvolo",
+"partenze": 296,
+"cavalli": 78,
+"veri": 131,
+"attesi": 141.4,
+"scarto_100": -3.51,
+"z": -1.28,
+"vittorie": 58
+},
+{
+"nome": "R.Biagini",
+"partenze": 150,
+"cavalli": 33,
+"veri": 28,
+"attesi": 34.3,
+"scarto_100": -4.21,
+"z": -1.32,
+"vittorie": 3
+},
+{
+"nome": "E.A.Maisto",
+"partenze": 175,
+"cavalli": 70,
+"veri": 36,
+"attesi": 43.2,
+"scarto_100": -4.12,
+"z": -1.35,
+"vittorie": 10
+},
+{
+"nome": "G.Di Nardo",
+"partenze": 1203,
+"cavalli": 505,
+"veri": 385,
+"attesi": 405.6,
+"scarto_100": -1.71,
+"z": -1.37,
+"vittorie": 146
+},
+{
+"nome": "S.Mollo",
+"partenze": 219,
+"cavalli": 95,
+"veri": 85,
+"attesi": 95.9,
+"scarto_100": -4.99,
+"z": -1.61,
+"vittorie": 30
+},
+{
+"nome": "A.Convertini",
+"partenze": 166,
+"cavalli": 68,
+"veri": 37,
+"attesi": 45.5,
+"scarto_100": -5.1,
+"z": -1.61,
+"vittorie": 12
+},
+{
+"nome": "S.Valentino",
+"partenze": 157,
+"cavalli": 45,
+"veri": 28,
+"attesi": 36.3,
+"scarto_100": -5.3,
+"z": -1.67,
+"vittorie": 2
+},
+{
+"nome": "G.Riccio",
+"partenze": 341,
+"cavalli": 70,
+"veri": 96,
+"attesi": 109.8,
+"scarto_100": -4.05,
+"z": -1.7,
+"vittorie": 21
+},
+{
+"nome": "L.Mancuso",
+"partenze": 175,
+"cavalli": 61,
+"veri": 30,
+"attesi": 39.5,
+"scarto_100": -5.42,
+"z": -1.82,
+"vittorie": 5
+},
+{
+"nome": "A.Finetti Jr.",
+"partenze": 186,
+"cavalli": 62,
+"veri": 41,
+"attesi": 51.6,
+"scarto_100": -5.69,
+"z": -1.88,
+"vittorie": 7
+},
+{
+"nome": "L.Cuozzo",
+"partenze": 529,
+"cavalli": 178,
+"veri": 123,
+"attesi": 141.1,
+"scarto_100": -3.41,
+"z": -1.9,
+"vittorie": 30
+},
+{
+"nome": "M.Limongelli",
+"partenze": 178,
+"cavalli": 115,
+"veri": 28,
+"attesi": 37.6,
+"scarto_100": -5.39,
+"z": -1.92,
+"vittorie": 7
+},
+{
+"nome": "S.Levacovich",
+"partenze": 190,
+"cavalli": 66,
+"veri": 44,
+"attesi": 55.5,
+"scarto_100": -6.06,
+"z": -1.95,
+"vittorie": 14
+},
+{
+"nome": "G.Cordova",
+"partenze": 211,
+"cavalli": 122,
+"veri": 43,
+"attesi": 56.0,
+"scarto_100": -6.14,
+"z": -2.17,
+"vittorie": 17
+},
+{
+"nome": "D.Di Maio",
+"partenze": 274,
+"cavalli": 113,
+"veri": 61,
+"attesi": 76.4,
+"scarto_100": -5.63,
+"z": -2.27,
+"vittorie": 15
+},
+{
+"nome": "C.Monte",
+"partenze": 257,
+"cavalli": 132,
+"veri": 77,
+"attesi": 96.9,
+"scarto_100": -7.74,
+"z": -2.75,
+"vittorie": 22
+},
+{
+"nome": "A.Garruto",
+"partenze": 480,
+"cavalli": 218,
+"veri": 125,
+"attesi": 151.8,
+"scarto_100": -5.58,
+"z": -2.83,
+"vittorie": 25
+},
+{
+"nome": "D.Battistini",
+"partenze": 169,
+"cavalli": 86,
+"veri": 30,
+"attesi": 45.6,
+"scarto_100": -9.21,
+"z": -2.92,
+"vittorie": 4
+}
+]
+},
+"stalloni": {
+"minimo_partenze": 150,
+"alberi": 515,
+"temperatura": 1.0,
+"variabili": 55,
+"stabilita_2025_2026": 0.213,
+"entita_per_stabilita": 107,
+"elenco": [
+{
+"nome": "NAD AL SHEBA",
+"partenze": 3325,
+"cavalli": 308,
+"veri": 1294,
+"attesi": 1200.7,
+"scarto_100": 2.81,
+"z": 3.66,
+"vittorie": 473
+},
+{
+"nome": "EL IDEAL",
+"partenze": 571,
+"cavalli": 90,
+"veri": 269,
+"attesi": 234.5,
+"scarto_100": 6.04,
+"z": 3.16,
+"vittorie": 84
+},
+{
+"nome": "LORENZ DEL RONCO",
+"partenze": 230,
+"cavalli": 26,
+"veri": 87,
+"attesi": 69.3,
+"scarto_100": 7.69,
+"z": 2.82,
+"vittorie": 25
+},
+{
+"nome": "GREENSHOE",
+"partenze": 188,
+"cavalli": 25,
+"veri": 103,
+"attesi": 91.0,
+"scarto_100": 6.4,
+"z": 1.91,
+"vittorie": 58
+},
+{
+"nome": "NUNCIO",
+"partenze": 318,
+"cavalli": 42,
+"veri": 146,
+"attesi": 132.3,
+"scarto_100": 4.32,
+"z": 1.68,
+"vittorie": 56
+},
+{
+"nome": "TIMOKO",
+"partenze": 196,
+"cavalli": 20,
+"veri": 72,
+"attesi": 62.7,
+"scarto_100": 4.76,
+"z": 1.57,
+"vittorie": 27
+},
+{
+"nome": "ROYAL BLESSED",
+"partenze": 206,
+"cavalli": 20,
+"veri": 90,
+"attesi": 79.9,
+"scarto_100": 4.91,
+"z": 1.56,
+"vittorie": 31
+},
+{
+"nome": "OWEN CR",
+"partenze": 362,
+"cavalli": 29,
+"veri": 131,
+"attesi": 118.5,
+"scarto_100": 3.45,
+"z": 1.54,
+"vittorie": 48
+},
+{
+"nome": "FACE TIME BOURBON",
+"partenze": 783,
+"cavalli": 96,
+"veri": 383,
+"attesi": 365.9,
+"scarto_100": 2.18,
+"z": 1.33,
+"vittorie": 190
+},
+{
+"nome": "SIX PACK",
+"partenze": 193,
+"cavalli": 17,
+"veri": 72,
+"attesi": 64.5,
+"scarto_100": 3.88,
+"z": 1.24,
+"vittorie": 20
+},
+{
+"nome": "YANKEE SLIDE",
+"partenze": 155,
+"cavalli": 12,
+"veri": 49,
+"attesi": 42.8,
+"scarto_100": 3.98,
+"z": 1.2,
+"vittorie": 12
+},
+{
+"nome": "PITAGORA BI",
+"partenze": 216,
+"cavalli": 16,
+"veri": 66,
+"attesi": 58.9,
+"scarto_100": 3.28,
+"z": 1.16,
+"vittorie": 24
+},
+{
+"nome": "FATHER PATRICK",
+"partenze": 319,
+"cavalli": 43,
+"veri": 142,
+"attesi": 133.2,
+"scarto_100": 2.75,
+"z": 1.09,
+"vittorie": 58
+},
+{
+"nome": "EVERY TIME BOURBON",
+"partenze": 213,
+"cavalli": 26,
+"veri": 75,
+"attesi": 68.3,
+"scarto_100": 3.14,
+"z": 1.08,
+"vittorie": 27
+},
+{
+"nome": "ORLANDO VICI",
+"partenze": 164,
+"cavalli": 14,
+"veri": 71,
+"attesi": 65.0,
+"scarto_100": 3.63,
+"z": 1.03,
+"vittorie": 20
+},
+{
+"nome": "ROD STEWART",
+"partenze": 200,
+"cavalli": 15,
+"veri": 66,
+"attesi": 60.2,
+"scarto_100": 2.89,
+"z": 0.96,
+"vittorie": 16
+},
+{
+"nome": "MOSES ROB",
+"partenze": 406,
+"cavalli": 40,
+"veri": 110,
+"attesi": 102.7,
+"scarto_100": 1.79,
+"z": 0.9,
+"vittorie": 26
+},
+{
+"nome": "VICTOR GIO",
+"partenze": 1192,
+"cavalli": 134,
+"veri": 421,
+"attesi": 408.1,
+"scarto_100": 1.09,
+"z": 0.86,
+"vittorie": 126
+},
+{
+"nome": "CALGARY GAMES",
+"partenze": 187,
+"cavalli": 26,
+"veri": 86,
+"attesi": 81.1,
+"scarto_100": 2.63,
+"z": 0.79,
+"vittorie": 33
+},
+{
+"nome": "SCEICCO",
+"partenze": 219,
+"cavalli": 21,
+"veri": 79,
+"attesi": 74.2,
+"scarto_100": 2.21,
+"z": 0.76,
+"vittorie": 31
+},
+{
+"nome": "RUTY GRIF",
+"partenze": 347,
+"cavalli": 27,
+"veri": 108,
+"attesi": 102.6,
+"scarto_100": 1.55,
+"z": 0.69,
+"vittorie": 27
+},
+{
+"nome": "THE BANK",
+"partenze": 705,
+"cavalli": 82,
+"veri": 260,
+"attesi": 252.1,
+"scarto_100": 1.13,
+"z": 0.67,
+"vittorie": 85
+},
+{
+"nome": "TUONOBLU REX",
+"partenze": 381,
+"cavalli": 39,
+"veri": 136,
+"attesi": 130.5,
+"scarto_100": 1.45,
+"z": 0.66,
+"vittorie": 43
+},
+{
+"nome": "WISHING STONE",
+"partenze": 2030,
+"cavalli": 187,
+"veri": 713,
+"attesi": 700.8,
+"scarto_100": 0.6,
+"z": 0.62,
+"vittorie": 225
+},
+{
+"nome": "GINGER UP",
+"partenze": 201,
+"cavalli": 25,
+"veri": 78,
+"attesi": 74.2,
+"scarto_100": 1.9,
+"z": 0.61,
+"vittorie": 37
+},
+{
+"nome": "NAPOLEON (2005)",
+"partenze": 527,
+"cavalli": 41,
+"veri": 129,
+"attesi": 124.2,
+"scarto_100": 0.92,
+"z": 0.54,
+"vittorie": 32
+},
+{
+"nome": "MANOFMANYMISSIONS",
+"partenze": 1381,
+"cavalli": 113,
+"veri": 431,
+"attesi": 422.6,
+"scarto_100": 0.61,
+"z": 0.54,
+"vittorie": 125
+},
+{
+"nome": "PRODIGIOUS",
+"partenze": 162,
+"cavalli": 13,
+"veri": 57,
+"attesi": 54.0,
+"scarto_100": 1.83,
+"z": 0.53,
+"vittorie": 19
+},
+{
+"nome": "OASIS BI",
+"partenze": 884,
+"cavalli": 81,
+"veri": 308,
+"attesi": 301.2,
+"scarto_100": 0.77,
+"z": 0.53,
+"vittorie": 105
+},
+{
+"nome": "SOUTHWIND FRANK",
+"partenze": 176,
+"cavalli": 17,
+"veri": 72,
+"attesi": 69.0,
+"scarto_100": 1.72,
+"z": 0.52,
+"vittorie": 36
+},
+{
+"nome": "GOOGOO GAAGAA",
+"partenze": 467,
+"cavalli": 43,
+"veri": 183,
+"attesi": 178.1,
+"scarto_100": 1.05,
+"z": 0.51,
+"vittorie": 71
+},
+{
+"nome": "VIVID WISE AS",
+"partenze": 939,
+"cavalli": 95,
+"veri": 350,
+"attesi": 343.4,
+"scarto_100": 0.7,
+"z": 0.49,
+"vittorie": 123
+},
+{
+"nome": "NAPOLEON BAR",
+"partenze": 2039,
+"cavalli": 183,
+"veri": 649,
+"attesi": 639.9,
+"scarto_100": 0.45,
+"z": 0.48,
+"vittorie": 186
+},
+{
+"nome": "NORTON ANS",
+"partenze": 238,
+"cavalli": 13,
+"veri": 67,
+"attesi": 64.2,
+"scarto_100": 1.19,
+"z": 0.45,
+"vittorie": 15
+},
+{
+"nome": "EXPLOIT CAF",
+"partenze": 1148,
+"cavalli": 84,
+"veri": 359,
+"attesi": 353.0,
+"scarto_100": 0.52,
+"z": 0.42,
+"vittorie": 112
+},
+{
+"nome": "IGOR FONT",
+"partenze": 810,
+"cavalli": 74,
+"veri": 278,
+"attesi": 273.1,
+"scarto_100": 0.61,
+"z": 0.4,
+"vittorie": 87
+},
+{
+"nome": "TEDO FKS",
+"partenze": 253,
+"cavalli": 30,
+"veri": 68,
+"attesi": 65.6,
+"scarto_100": 0.96,
+"z": 0.38,
+"vittorie": 22
+},
+{
+"nome": "TONY GIO",
+"partenze": 322,
+"cavalli": 33,
+"veri": 110,
+"attesi": 107.2,
+"scarto_100": 0.86,
+"z": 0.36,
+"vittorie": 33
+},
+{
+"nome": "MISTER J.P.",
+"partenze": 227,
+"cavalli": 21,
+"veri": 93,
+"attesi": 90.9,
+"scarto_100": 0.94,
+"z": 0.31,
+"vittorie": 35
+},
+{
+"nome": "CC'S CHUCKIE T",
+"partenze": 158,
+"cavalli": 18,
+"veri": 40,
+"attesi": 38.5,
+"scarto_100": 0.93,
+"z": 0.3,
+"vittorie": 8
+},
+{
+"nome": "MACK GRACE SM",
+"partenze": 436,
+"cavalli": 35,
+"veri": 139,
+"attesi": 136.5,
+"scarto_100": 0.57,
+"z": 0.28,
+"vittorie": 40
+},
+{
+"nome": "RINGOSTARR TREB",
+"partenze": 2362,
+"cavalli": 214,
+"veri": 772,
+"attesi": 766.6,
+"scarto_100": 0.23,
+"z": 0.26,
+"vittorie": 253
+},
+{
+"nome": "DONTYOUFORGETIT",
+"partenze": 455,
+"cavalli": 40,
+"veri": 120,
+"attesi": 117.9,
+"scarto_100": 0.46,
+"z": 0.25,
+"vittorie": 31
+},
+{
+"nome": "MAHARAJAH",
+"partenze": 3610,
+"cavalli": 340,
+"veri": 1426,
+"attesi": 1419.6,
+"scarto_100": 0.18,
+"z": 0.24,
+"vittorie": 573
+},
+{
+"nome": "VITRUVIO",
+"partenze": 251,
+"cavalli": 25,
+"veri": 95,
+"attesi": 93.4,
+"scarto_100": 0.64,
+"z": 0.23,
+"vittorie": 22
+},
+{
+"nome": "ALRAJAH ONE",
+"partenze": 250,
+"cavalli": 37,
+"veri": 101,
+"attesi": 99.4,
+"scarto_100": 0.64,
+"z": 0.23,
+"vittorie": 33
+},
+{
+"nome": "LOVE YOU",
+"partenze": 1075,
+"cavalli": 93,
+"veri": 403,
+"attesi": 400.6,
+"scarto_100": 0.22,
+"z": 0.16,
+"vittorie": 154
+},
+{
+"nome": "VILLIAM",
+"partenze": 340,
+"cavalli": 31,
+"veri": 112,
+"attesi": 110.8,
+"scarto_100": 0.36,
+"z": 0.15,
+"vittorie": 31
+},
+{
+"nome": "FABULOUS WOOD",
+"partenze": 314,
+"cavalli": 39,
+"veri": 113,
+"attesi": 111.9,
+"scarto_100": 0.35,
+"z": 0.14,
+"vittorie": 50
+},
+{
+"nome": "COKSTILE",
+"partenze": 535,
+"cavalli": 44,
+"veri": 154,
+"attesi": 153.6,
+"scarto_100": 0.08,
+"z": 0.04,
+"vittorie": 47
+},
+{
+"nome": "IGLESIAS",
+"partenze": 445,
+"cavalli": 41,
+"veri": 119,
+"attesi": 119.0,
+"scarto_100": 0.0,
+"z": 0.0,
+"vittorie": 29
+},
+{
+"nome": "DONATO HANOVER",
+"partenze": 507,
+"cavalli": 61,
+"veri": 183,
+"attesi": 183.0,
+"scarto_100": 0.0,
+"z": 0.0,
+"vittorie": 78
+},
+{
+"nome": "PASCIA' LEST",
+"partenze": 1249,
+"cavalli": 108,
+"veri": 396,
+"attesi": 396.2,
+"scarto_100": -0.01,
+"z": -0.01,
+"vittorie": 122
+},
+{
+"nome": "MUSCLE MASS",
+"partenze": 162,
+"cavalli": 17,
+"veri": 59,
+"attesi": 59.2,
+"scarto_100": -0.14,
+"z": -0.04,
+"vittorie": 23
+},
+{
+"nome": "BOLD EAGLE",
+"partenze": 244,
+"cavalli": 26,
+"veri": 104,
+"attesi": 104.3,
+"scarto_100": -0.14,
+"z": -0.05,
+"vittorie": 50
+},
+{
+"nome": "IULIUS DEL RONCO",
+"partenze": 281,
+"cavalli": 18,
+"veri": 86,
+"attesi": 86.5,
+"scarto_100": -0.16,
+"z": -0.07,
+"vittorie": 30
+},
+{
+"nome": "INTERNATIONAL MONI",
+"partenze": 151,
+"cavalli": 19,
+"veri": 55,
+"attesi": 55.4,
+"scarto_100": -0.27,
+"z": -0.08,
+"vittorie": 27
+},
+{
+"nome": "CONWAY HALL",
+"partenze": 214,
+"cavalli": 15,
+"veri": 72,
+"attesi": 72.7,
+"scarto_100": -0.34,
+"z": -0.11,
+"vittorie": 16
+},
+{
+"nome": "ROBERT BI",
+"partenze": 631,
+"cavalli": 71,
+"veri": 209,
+"attesi": 210.8,
+"scarto_100": -0.28,
+"z": -0.17,
+"vittorie": 84
+},
+{
+"nome": "NO REPLY",
+"partenze": 365,
+"cavalli": 34,
+"veri": 110,
+"attesi": 111.5,
+"scarto_100": -0.41,
+"z": -0.19,
+"vittorie": 32
+},
+{
+"nome": "ZE' MARIA",
+"partenze": 221,
+"cavalli": 22,
+"veri": 79,
+"attesi": 80.3,
+"scarto_100": -0.57,
+"z": -0.19,
+"vittorie": 17
+},
+{
+"nome": "GHIACCIO DEL NORD",
+"partenze": 448,
+"cavalli": 37,
+"veri": 126,
+"attesi": 127.7,
+"scarto_100": -0.39,
+"z": -0.2,
+"vittorie": 36
+},
+{
+"nome": "AXL ROSE",
+"partenze": 389,
+"cavalli": 47,
+"veri": 130,
+"attesi": 131.9,
+"scarto_100": -0.49,
+"z": -0.22,
+"vittorie": 35
+},
+{
+"nome": "BIRD PARKER",
+"partenze": 254,
+"cavalli": 28,
+"veri": 97,
+"attesi": 98.9,
+"scarto_100": -0.73,
+"z": -0.26,
+"vittorie": 49
+},
+{
+"nome": "NAGLO",
+"partenze": 380,
+"cavalli": 40,
+"veri": 89,
+"attesi": 91.1,
+"scarto_100": -0.56,
+"z": -0.27,
+"vittorie": 24
+},
+{
+"nome": "LANGDON GRIF",
+"partenze": 416,
+"cavalli": 45,
+"veri": 106,
+"attesi": 108.5,
+"scarto_100": -0.59,
+"z": -0.3,
+"vittorie": 29
+},
+{
+"nome": "INFINITIF",
+"partenze": 518,
+"cavalli": 39,
+"veri": 142,
+"attesi": 145.0,
+"scarto_100": -0.59,
+"z": -0.33,
+"vittorie": 29
+},
+{
+"nome": "GAMBLING BI",
+"partenze": 152,
+"cavalli": 13,
+"veri": 41,
+"attesi": 42.7,
+"scarto_100": -1.12,
+"z": -0.34,
+"vittorie": 7
+},
+{
+"nome": "ORESTE",
+"partenze": 162,
+"cavalli": 16,
+"veri": 50,
+"attesi": 51.9,
+"scarto_100": -1.15,
+"z": -0.34,
+"vittorie": 16
+},
+{
+"nome": "TOBIN KRONOS",
+"partenze": 315,
+"cavalli": 24,
+"veri": 92,
+"attesi": 94.7,
+"scarto_100": -0.84,
+"z": -0.35,
+"vittorie": 21
+},
+{
+"nome": "IPER ROC",
+"partenze": 175,
+"cavalli": 18,
+"veri": 42,
+"attesi": 43.9,
+"scarto_100": -1.06,
+"z": -0.36,
+"vittorie": 15
+},
+{
+"nome": "MAGO D'AMORE",
+"partenze": 1013,
+"cavalli": 90,
+"veri": 321,
+"attesi": 326.5,
+"scarto_100": -0.54,
+"z": -0.4,
+"vittorie": 82
+},
+{
+"nome": "VILLAGE MYSTIC",
+"partenze": 185,
+"cavalli": 14,
+"veri": 55,
+"attesi": 58.0,
+"scarto_100": -1.63,
+"z": -0.51,
+"vittorie": 18
+},
+{
+"nome": "KEN WARKENTIN",
+"partenze": 167,
+"cavalli": 16,
+"veri": 42,
+"attesi": 44.7,
+"scarto_100": -1.6,
+"z": -0.52,
+"vittorie": 19
+},
+{
+"nome": "REMO GAS",
+"partenze": 683,
+"cavalli": 54,
+"veri": 180,
+"attesi": 187.0,
+"scarto_100": -1.02,
+"z": -0.66,
+"vittorie": 53
+},
+{
+"nome": "GANYMEDE",
+"partenze": 396,
+"cavalli": 33,
+"veri": 130,
+"attesi": 136.7,
+"scarto_100": -1.69,
+"z": -0.75,
+"vittorie": 45
+},
+{
+"nome": "CHAPEAU",
+"partenze": 394,
+"cavalli": 36,
+"veri": 111,
+"attesi": 117.2,
+"scarto_100": -1.58,
+"z": -0.76,
+"vittorie": 40
+},
+{
+"nome": "VARENNE",
+"partenze": 3083,
+"cavalli": 296,
+"veri": 1040,
+"attesi": 1063.8,
+"scarto_100": -0.77,
+"z": -0.98,
+"vittorie": 367
+},
+{
+"nome": "ORIENT HORSE",
+"partenze": 153,
+"cavalli": 12,
+"veri": 33,
+"attesi": 37.9,
+"scarto_100": -3.19,
+"z": -0.99,
+"vittorie": 5
+},
+{
+"nome": "ADRIAN CHIP",
+"partenze": 671,
+"cavalli": 59,
+"veri": 206,
+"attesi": 216.9,
+"scarto_100": -1.63,
+"z": -1.0,
+"vittorie": 63
+},
+{
+"nome": "TIMONE EK",
+"partenze": 187,
+"cavalli": 18,
+"veri": 57,
+"attesi": 63.1,
+"scarto_100": -3.27,
+"z": -1.05,
+"vittorie": 19
+},
+{
+"nome": "READY CASH",
+"partenze": 238,
+"cavalli": 24,
+"veri": 92,
+"attesi": 99.5,
+"scarto_100": -3.15,
+"z": -1.06,
+"vittorie": 41
+},
+{
+"nome": "TWISTER BI",
+"partenze": 804,
+"cavalli": 81,
+"veri": 255,
+"attesi": 268.0,
+"scarto_100": -1.62,
+"z": -1.08,
+"vittorie": 90
+},
+{
+"nome": "TESORO DEGLI DEI",
+"partenze": 398,
+"cavalli": 39,
+"veri": 94,
+"attesi": 103.2,
+"scarto_100": -2.31,
+"z": -1.14,
+"vittorie": 23
+},
+{
+"nome": "ROTARY OK",
+"partenze": 219,
+"cavalli": 21,
+"veri": 58,
+"attesi": 65.0,
+"scarto_100": -3.18,
+"z": -1.15,
+"vittorie": 19
+},
+{
+"nome": "NESTA EFFE",
+"partenze": 1162,
+"cavalli": 104,
+"veri": 325,
+"attesi": 342.1,
+"scarto_100": -1.47,
+"z": -1.22,
+"vittorie": 116
+},
+{
+"nome": "MAIN WISE AS",
+"partenze": 217,
+"cavalli": 16,
+"veri": 61,
+"attesi": 69.7,
+"scarto_100": -4.01,
+"z": -1.36,
+"vittorie": 20
+},
+{
+"nome": "TOBIAS DEL RONCO",
+"partenze": 175,
+"cavalli": 20,
+"veri": 46,
+"attesi": 53.8,
+"scarto_100": -4.44,
+"z": -1.39,
+"vittorie": 15
+},
+{
+"nome": "GRUCCIONE JET",
+"partenze": 323,
+"cavalli": 27,
+"veri": 80,
+"attesi": 90.6,
+"scarto_100": -3.27,
+"z": -1.41,
+"vittorie": 17
+},
+{
+"nome": "PACE DEL RIO",
+"partenze": 372,
+"cavalli": 26,
+"veri": 91,
+"attesi": 102.4,
+"scarto_100": -3.08,
+"z": -1.45,
+"vittorie": 20
+},
+{
+"nome": "ZARENNE FAS",
+"partenze": 160,
+"cavalli": 18,
+"veri": 44,
+"attesi": 52.1,
+"scarto_100": -5.07,
+"z": -1.48,
+"vittorie": 14
+},
+{
+"nome": "MUSCLE MASSIVE",
+"partenze": 305,
+"cavalli": 27,
+"veri": 77,
+"attesi": 87.8,
+"scarto_100": -3.54,
+"z": -1.51,
+"vittorie": 23
+},
+{
+"nome": "TRIXTON",
+"partenze": 245,
+"cavalli": 27,
+"veri": 81,
+"attesi": 91.7,
+"scarto_100": -4.38,
+"z": -1.52,
+"vittorie": 26
+},
+{
+"nome": "UZO JOSSELYN",
+"partenze": 196,
+"cavalli": 14,
+"veri": 34,
+"attesi": 42.9,
+"scarto_100": -4.53,
+"z": -1.64,
+"vittorie": 11
+},
+{
+"nome": "DAGUET RAPIDE",
+"partenze": 198,
+"cavalli": 20,
+"veri": 53,
+"attesi": 64.7,
+"scarto_100": -5.89,
+"z": -1.9,
+"vittorie": 14
+},
+{
+"nome": "READLY EXPRESS",
+"partenze": 789,
+"cavalli": 79,
+"veri": 288,
+"attesi": 312.9,
+"scarto_100": -3.16,
+"z": -1.96,
+"vittorie": 133
+},
+{
+"nome": "OROPURO BAR",
+"partenze": 2646,
+"cavalli": 226,
+"veri": 767,
+"attesi": 810.4,
+"scarto_100": -1.64,
+"z": -2.0,
+"vittorie": 209
+},
+{
+"nome": "PACHA DEI GREPPI",
+"partenze": 662,
+"cavalli": 39,
+"veri": 153,
+"attesi": 174.3,
+"scarto_100": -3.22,
+"z": -2.04,
+"vittorie": 29
+},
+{
+"nome": "LIBECCIO GRIF",
+"partenze": 247,
+"cavalli": 30,
+"veri": 49,
+"attesi": 62.0,
+"scarto_100": -5.28,
+"z": -2.08,
+"vittorie": 19
+},
+{
+"nome": "IDEALE LUIS",
+"partenze": 1404,
+"cavalli": 124,
+"veri": 409,
+"attesi": 442.3,
+"scarto_100": -2.37,
+"z": -2.1,
+"vittorie": 148
+},
+{
+"nome": "TROLLEY",
+"partenze": 655,
+"cavalli": 62,
+"veri": 141,
+"attesi": 165.4,
+"scarto_100": -3.73,
+"z": -2.4,
+"vittorie": 40
+},
+{
+"nome": "BRILLANTISSIME (2011)",
+"partenze": 390,
+"cavalli": 41,
+"veri": 118,
+"attesi": 139.0,
+"scarto_100": -5.37,
+"z": -2.41,
+"vittorie": 37
+},
+{
+"nome": "ZACON GIO",
+"partenze": 161,
+"cavalli": 15,
+"veri": 40,
+"attesi": 53.7,
+"scarto_100": -8.53,
+"z": -2.53,
+"vittorie": 10
+},
+{
+"nome": "OSIRIDE GRIF",
+"partenze": 200,
+"cavalli": 13,
+"veri": 34,
+"attesi": 48.4,
+"scarto_100": -7.19,
+"z": -2.55,
+"vittorie": 8
+}
+]
+},
+"calcolato_il": "2026-11-24"
+}

@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Trophy, Crown, UserCog, MapPin, Gavel, Search, ChevronLeft, ChevronRight, Tag, BarChart3 } from "lucide-react";
+import { Trophy, Crown, UserCog, MapPin, Gavel, Search, ChevronLeft, ChevronRight, Tag, BarChart3, TrendingUp } from "lucide-react";
 import Sagoma from "../components/Sagoma";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
@@ -25,7 +25,7 @@ const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "�
 const num = (n: number) => Math.round(n).toLocaleString("it-IT");
 const pc = (n: number | null | undefined) => (n == null ? "—" : `${n.toLocaleString("it-IT")}%`);
 const PER_PAGINA = 40;
-type Tab = "stalloni" | "allenatori" | "ippodromi" | "aste" | "aste2026" | "voti";
+type Tab = "stalloni" | "allenatori" | "ippodromi" | "aste" | "aste2026" | "voti" | "previsto";
 const get = (u: string) => apiRequest("GET", u).then(r => r.json());
 const parametri = () => new URLSearchParams((typeof window !== "undefined" ? window.location.hash.split("?")[1] : "") ?? "");
 
@@ -239,6 +239,62 @@ function Aste() {
   );
 }
 
+/** Chi fa meglio del previsto: arrivi veri contro quelli attesi da XGBoost (scripts/sopra_previsto.py). */
+function SopraPrevisto() {
+  const { data: d, error } = useQuery<any>({ queryKey: ["/api/rende/previsto"], queryFn: () => get("/api/rende/previsto"), staleTime: 3600_000 });
+  const [chi, setChi] = useState<"allenatori" | "guidatori" | "stalloni">("allenatori");
+  if (error) return <div className="ed-pannello ed-vuoto">Il confronto non è ancora stato calcolato.</div>;
+  if (!d) return <Sagoma cornice righe={8} />;
+  const x = d[chi];
+  const voci = (x?.elenco ?? []) as any[];
+  const sopra = voci.filter(v => v.z >= 2).length, sotto = voci.filter(v => v.z <= -2).length;
+  const href = (n: string) => chi === "allenatori" ? `/allenatore/${encodeURIComponent(n)}` : chi === "guidatori" ? `/guidatore/${encodeURIComponent(n)}` : `/stallion/${encodeURIComponent(n)}`;
+  const chiaro = (z: number) => z >= 2 ? "chiaramente sopra" : z >= 1 ? "un po' sopra" : z <= -2 ? "chiaramente sotto" : z <= -1 ? "un po' sotto" : "in linea";
+  const nome = chi === "guidatori" ? (n: string) => n : nomeBello;
+  const stab = x?.stabilita_2025_2026;
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <div className="ed-segm" role="group" aria-label="Chi" style={{ justifySelf: "start" }}>
+        {(["allenatori", "guidatori", "stalloni"] as const).map(k => (
+          <button key={k} aria-pressed={chi === k} onClick={() => setChi(k)} data-testid={`previsto-${k}`}>{k[0].toUpperCase() + k.slice(1)}</button>
+        ))}
+      </div>
+      <div className="ed-cifre">
+        <Cifra titolo="In classifica" valore={String(voci.length)} sotto={`almeno ${x?.minimo_partenze ?? 150} partenze dal ${new Date(d.periodo.da).toLocaleDateString("it-IT")}`} />
+        <Cifra titolo="Chiaramente sopra" valore={String(sopra)} colore={VERDE} sotto="più piazzati del previsto, difficile che sia fortuna" />
+        <Cifra titolo="Chiaramente sotto" valore={String(sotto)} colore={ROSSO} sotto="meno piazzati del previsto" />
+        {stab != null && <Cifra titolo="Si ripete l'anno dopo?" valore={stab >= 0.4 ? "abbastanza" : stab >= 0.2 ? "in parte" : "poco"} colore={NEUTRO}
+          sotto={`chi era sopra nel 2025 lo è anche nel 2026 (correlazione ${String(stab).replace(".", ",")})`} />}
+      </div>
+      <Classifica voci={voci} ordini={[
+        { k: "z", t: "Più sicuri sopra", v: (v: any) => v.z },
+        { k: "scarto", t: "Più piazzati ogni 100", v: (v: any) => v.scarto_100 },
+        { k: "partenze", t: "Più partenze", v: (v: any) => v.partenze },
+      ]} riga={(v: any, o) => ({
+        titolo: nome(v.nome), href: href(v.nome),
+        sotto: <>{num(v.partenze)} partenze, {num(v.cavalli)} cavalli · nei primi tre {num(v.veri)} volte, ne erano attese {num(v.attesi)} · {chiaro(v.z)}</>,
+        valore: o === "partenze" ? num(v.partenze) : `${v.scarto_100 >= 0 ? "+" : "−"}${Math.abs(v.scarto_100).toLocaleString("it-IT", { maximumFractionDigits: 1 })}`,
+        nota: o === "partenze" ? "partenze" : "piazzati in più ogni 100 partenze",
+        barra: o === "partenze" ? v.partenze : Math.max(0, o === "z" ? v.z : v.scarto_100),
+        colore: v.z >= 2 ? VERDE : v.z <= -2 ? ROSSO : v.z >= 1 ? GIALLO : NEUTRO,
+      })} />
+      <Spiegazione titolo="Come è fatto il conto e cosa non dice">
+        <p>Per ogni partenza dal {new Date(d.periodo.da).toLocaleDateString("it-IT")} al {new Date(d.periodo.a).toLocaleDateString("it-IT")} ({num(d.periodo.partenze)} partenze
+        in {num(d.periodo.corse)} corse, mai viste dal modello) un modello XGBoost stima quante volte il cavallo arriva nei primi tre, con le stesse informazioni del pronostico:
+        forma, tempi, carriera, partenza, avversari. Per gli allenatori il modello <b>non sa chi è l'allenatore</b>, per i guidatori <b>non sa chi guida</b>: così lo scarto è quello
+        che i cavalli hanno reso in più o in meno con loro, a parità di tutto il resto. Per gli stalloni il modello non sa chi è il padre: lo scarto dice se i figli corrono meglio
+        di quanto i loro numeri farebbero pensare.</p>
+        <p>«Chiaramente sopra» vuol dire che lo scarto è più di due volte quello che il caso darebbe da solo con quel numero di partenze. Chi ha poche partenze può avere
+        scarti grandi per fortuna: per questo l'ordine di serie è per sicurezza, non per scarto. La prova sull'anno dopo dice quanto è un merito che si ripete:
+        {d.guidatori?.stabilita_2025_2026 != null ? <> per i guidatori {String(d.guidatori.stabilita_2025_2026).replace(".", ",")}, per gli allenatori {String(d.allenatori.stabilita_2025_2026).replace(".", ",")},
+        per gli stalloni {String(d.stalloni.stabilita_2025_2026).replace(".", ",")} (0 = nessun legame, 1 = identico).</> : null}</p>
+        <p>Non è un voto alla persona: un allenatore può avere cavalli che il modello sottovaluta per ragioni che i numeri non vedono (cavalli appena arrivati dall'estero, scuderie
+        che corrono poco ma bene), e un guidatore bravo spesso guida cavalli migliori di quanto sembrano proprio perché li sceglie.</p>
+      </Spiegazione>
+    </div>
+  );
+}
+
 export default function RendePage() {
   const [, naviga] = useLocation();
   const daIndirizzo = (): Tab => {
@@ -246,7 +302,8 @@ export default function RendePage() {
     const perc = window.location.hash.replace(/^#/, "").split("?")[0];
     if (perc.startsWith("/pareggio") || perc.startsWith("/break-even")) return "voti";
     if (perc.startsWith("/aste")) return "aste2026";
-    return v === "allenatori" || v === "ippodromi" || v === "aste" || v === "aste2026" || v === "voti" ? v : "stalloni";
+    if (perc.startsWith("/sopra-previsto")) return "previsto";
+    return v === "allenatori" || v === "ippodromi" || v === "aste" || v === "aste2026" || v === "voti" || v === "previsto" ? v : "stalloni";
   };
   const { data: gen } = useQuery<any>({ queryKey: ["/api/generazione-m"], queryFn: () => get("/api/generazione-m"), staleTime: 3600_000 });
   const apriConto = (x: Scelta) => {
@@ -266,15 +323,16 @@ export default function RendePage() {
     { key: "aste", label: "Aste 2024-25", hint: "Com'è andata: premi contro prezzo", icon: Gavel },
     { key: "aste2026", label: "Aste 2026", hint: "I puledri M lotto per lotto", icon: Tag },
     { key: "voti", label: "Quanto rende un voto", hint: "Il cavallo tipico contro i costi", icon: BarChart3 },
+    { key: "previsto", label: "Sopra il previsto", hint: "Chi fa meglio di quanto dice XGBoost", icon: TrendingUp },
   ];
   const periodo = tab === "stalloni" ? "tutta la carriera dei figli nati 2014-2019" : tab === "aste" ? "le carriere fin qui"
-    : tab === "aste2026" ? "fino ai 3 anni e tutta la carriera" : tab === "voti" ? "tutta la carriera, media storica" : "gli ultimi 12 mesi";
+    : tab === "aste2026" ? "fino ai 3 anni e tutta la carriera" : tab === "voti" ? "tutta la carriera, media storica" : tab === "previsto" ? "le corse dal 2025" : "gli ultimi 12 mesi";
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE + CSS_PULEDRO}</style>
       <IntestazionePagina icona={Trophy} colore={COLORE} titolo="Chi rende di più" margineSotto={14}
         sottotitolo="Stalloni, allenatori, ippodromi e aste in fila per quanto rendono davvero." />
-      <SpeseBar periodo={periodo} colore={COLORE} conMonta={tab === "voti"} legenda={tab === "voti"} />
+      {tab !== "previsto" && <SpeseBar periodo={periodo} colore={COLORE} conMonta={tab === "voti"} legenda={tab === "voti"} />}
       <div className="ed-linguette" role="tablist">
         {tabs.map(t => {
           const Icon = t.icon;
@@ -292,6 +350,7 @@ export default function RendePage() {
       {tab === "aste" && <Aste />}
       {tab === "aste2026" && (gen ? <Aste2026 d={gen} apriConto={apriConto} /> : <Sagoma cornice righe={8} />)}
       {tab === "voti" && <RendeOgniVoto />}
+      {tab === "previsto" && <SopraPrevisto />}
       <CollegamentiCorrelati voci={[
         { href: "/conto", titolo: "Fai il conto", descrizione: "Un puledro o un cavallo preciso, con le tue spese" },
         { href: "/scuderia", titolo: "La tua scuderia", descrizione: "I tuoi cavalli insieme: cassa, rischio e valore" },

@@ -116,6 +116,7 @@ export default function App() {
               <Route path="/mercato" component={RendePage} />
               <Route path="/conto" component={ContoPage} />
               <Route path="/rende" component={RendePage} />
+              <Route path="/sopra-previsto" component={RendePage} />
               <Route path="/generazioni" component={GenerazioniPage} />
               <Route path="/annate" component={GenerazioniPage} />
               <Route path="/chi-rende" component={RendePage} />
