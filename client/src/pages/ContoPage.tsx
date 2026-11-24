@@ -49,6 +49,12 @@ const CSS_CONTO = `
 .co-modulo label, .co-campo { font-size: 12px; color: var(--ed-muto); display: flex; flex-direction: column; gap: 5px; }
 .co-modulo input[type=number] { background: hsl(220 12% 7%); border: 1px solid var(--ed-bordo); border-radius: 8px; color: var(--ed-testo);
   padding: 8px 10px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box; }
+.co-completo > * { min-width: 0; }
+.co-fascia { display: grid; gap: 4px; font-size: 12.5px; }
+.co-fascia-testa { display: flex; justify-content: space-between; gap: 10px; }
+.co-tab { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.co-tab th, .co-tab td { padding: 6px 6px; border-bottom: 1px solid var(--ed-bordo); }
+@media (max-width: 480px) { .co-tab { font-size: 11.5px; } .co-tab th, .co-tab td { padding: 5px 4px; } .co-tab .co-nasc { display: none; } }
 .co-domanda { font-size: 21px; font-weight: 900; color: var(--ed-testo); margin: 18px 0 10px; line-height: 1.25; }
 .co-caso { display: grid; grid-template-columns: minmax(0, 1fr) 110px 96px; gap: 6px 14px; align-items: center; padding: 9px 12px; border-radius: 10px; background: var(--ed-fondo2); }
 @media (max-width: 640px) { .co-scelta { grid-template-columns: 1fr; } .co-caso { grid-template-columns: minmax(0, 1fr) 90px; } .co-caso .co-netto { grid-column: 1 / -1; text-align: left !important; } }
@@ -62,7 +68,9 @@ function Completo({ children }: { children: React.ReactNode }) {
         style={{ all: "unset", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: COLORE }}>
         {aperto ? <ChevronUp size={15} /> : <ChevronDown size={15} />} {aperto ? "Nascondi il conto completo" : "Mostra il conto completo"}
       </button>
-      {aperto && <div style={{ display: "grid", gap: 14, marginTop: 12 }}>{children}</div>}
+      {/* minmax(0, 1fr): senza, una tabella larga dentro un riquadro allargava
+          tutta la colonna e sul telefono i riquadri uscivano dallo schermo. */}
+      {aperto && <div className="co-completo" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 14, marginTop: 12 }}>{children}</div>}
     </div>
   );
 }
@@ -151,7 +159,7 @@ function Puledro({ iniziale }: { iniziale: { padre: string; madre: string; prezz
             <div className="ed-tit" style={{ marginTop: 0 }}>Se lo paghi…</div>
             <div style={{ display: "grid", gap: 5 }}>
               {r.curva.map((c: any) => (
-                <div key={c.prezzo} style={{ display: "grid", gridTemplateColumns: "80px minmax(0, 1fr) 46px 110px", gap: 8, alignItems: "center", fontSize: 12.5 }}>
+                <div key={c.prezzo} style={{ display: "grid", gridTemplateColumns: "72px minmax(0, 1fr) 40px 84px", gap: 6, alignItems: "center", fontSize: 12 }}>
                   <span className="tabular" style={{ textAlign: "right", color: "var(--ed-testo)" }}>{c.prezzo === 0 ? "regalato" : euro(c.prezzo)}</span>
                   <Barretta valore={c.prob_ripaga} colore={r.prezzo_massimo > 0 && c.prezzo <= r.prezzo_massimo ? VERDE : SPENTO} alta={10} />
                   <span className="tabular" style={{ textAlign: "right", color: "var(--ed-testo)" }}>{pc(c.prob_ripaga)}%</span>
@@ -212,13 +220,15 @@ function ContoCavallo({ r, mensile, costo }: { r: any; mensile: number; costo: n
           </p>
           <div style={{ display: "grid", gap: 6 }}>
             {fasce.map(([t, v]) => (
-              <div key={t} style={{ display: "grid", gridTemplateColumns: "minmax(0, 190px) minmax(0, 1fr) 90px", gap: 10, alignItems: "center", fontSize: 12.5 }}>
-                <span style={{ color: "var(--ed-muto)" }}>{t}</span>
+              <div key={t} className="co-fascia">
+                <span className="co-fascia-testa">
+                  <span style={{ color: "var(--ed-muto)", minWidth: 0 }}>{t}</span>
+                  <span className="tabular" style={{ fontWeight: 700, color: v >= costo ? VERDE : "var(--ed-testo)", whiteSpace: "nowrap" }}>{euro(v)}</span>
+                </span>
                 <span style={{ position: "relative", display: "block" }}>
-                  <Barretta valore={v} max={maxF} colore={v >= costo ? VERDE : SPENTO} alta={10} />
+                  <Barretta valore={v} max={maxF} colore={v >= costo ? VERDE : SPENTO} alta={9} />
                   <span style={{ position: "absolute", top: -3, bottom: -3, left: `${Math.min(100, 100 * costo / maxF)}%`, borderLeft: `2px solid ${GIALLO}` }} />
                 </span>
-                <span className="tabular" style={{ textAlign: "right", fontWeight: 700, color: v >= costo ? VERDE : "var(--ed-testo)" }}>{euro(v)}</span>
               </div>
             ))}
           </div>
@@ -231,20 +241,21 @@ function ContoCavallo({ r, mensile, costo }: { r: any; mensile: number; costo: n
       {q && (
         <div className="ed-pannello">
           <div className="ed-tit" style={{ marginTop: 0 }}>Se cambi la spesa</div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, fontVariantNumeric: "tabular-nums", minWidth: 420 }}>
+          <p style={{ fontSize: 12, color: "var(--ed-muto)", margin: "0 0 8px" }}>Spesa al mese, quanto guadagni (+) o perdi (−) in media in un anno, e quante volte copre la spesa. ★ = la tua.</p>
+          <div>
+            <table className="co-tab">
               <thead><tr style={{ color: "var(--ed-muto)", fontSize: 11 }}>
-                {["Al mese", "In un anno", "In media", "Copre la spesa"].map((t, i) => <th key={t} style={{ textAlign: i ? "right" : "left", padding: "6px 8px", fontWeight: 600, borderBottom: "1px solid var(--ed-bordo)" }}>{t}</th>)}
+                {["Al mese", "In un anno", "In media", "Copre"].map((t, i) => <th key={t} className={i === 1 ? "co-nasc" : undefined} style={{ textAlign: i ? "right" : "left", fontWeight: 600 }}>{t}</th>)}
               </tr></thead>
               <tbody>
                 {[800, 1000, 1200, 1500, 1800, 2200].map(m => {
                   const sp = 12 * m, sal = r.attesi - sp, pr = probDaPercentili(q, sp);
                   return (
                     <tr key={m} style={{ borderBottom: "1px solid var(--ed-bordo)", background: m === mensile ? "color-mix(in srgb, var(--ed-acc) 10%, transparent)" : undefined }}>
-                      <td style={{ padding: "6px 8px", fontWeight: m === mensile ? 800 : 500 }}>{euro(m)}{m === mensile ? " (la tua)" : ""}</td>
-                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{euro(sp)}</td>
-                      <td style={{ padding: "6px 8px", textAlign: "right", color: sal >= 0 ? VERDE : ROSSO }}>{sal >= 0 ? "guadagni" : "perdi"} {euro(Math.abs(sal))}</td>
-                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{testoProb(100 * pr.p, pr.estremo)}</td>
+                      <td style={{ fontWeight: m === mensile ? 800 : 500, whiteSpace: "nowrap" }}>{euro(m)}{m === mensile ? " ★" : ""}</td>
+                      <td className="co-nasc" style={{ textAlign: "right" }}>{euro(sp)}</td>
+                      <td style={{ textAlign: "right", color: sal >= 0 ? VERDE : ROSSO }}>{sal >= 0 ? "+" : "−"}{euro(Math.abs(sal))}</td>
+                      <td style={{ textAlign: "right" }}>{testoProb(100 * pr.p, pr.estremo)}</td>
                     </tr>
                   );
                 })}
