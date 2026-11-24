@@ -1,0 +1,58 @@
+{
+ "binario": {
+  "alberi": 515,
+  "auc": 0.7563,
+  "log_loss": 0.5359,
+  "brier": 0.1807,
+  "tre_scelti_a_segno": 0.5489,
+  "temperatura": 1.05
+ },
+ "pairwise": {
+  "alberi": 519,
+  "da_solo": {
+   "auc": 0.7573,
+   "log_loss": 0.5356,
+   "brier": 0.1805,
+   "tre_scelti_a_segno": 0.5497,
+   "temperatura": 1.5
+  },
+  "insieme": {
+   "auc": 0.7574,
+   "log_loss": 0.535,
+   "brier": 0.1803,
+   "tre_scelti_a_segno": 0.5498,
+   "peso": 0.75,
+   "temperatura": 0.7
+  },
+  "vince_da_punteggio": {
+   "log_loss_vince": 0.282,
+   "primo_scelto_vince": 0.3688,
+   "temperatura": 1.7
+  }
+ },
+ "ndcg": {
+  "alberi": 456,
+  "da_solo": {
+   "auc": 0.7547,
+   "log_loss": 0.5377,
+   "brier": 0.1812,
+   "tre_scelti_a_segno": 0.5468,
+   "temperatura": 1.0
+  },
+  "insieme": {
+   "auc": 0.7569,
+   "log_loss": 0.5355,
+   "brier": 0.1805,
+   "tre_scelti_a_segno": 0.5491,
+   "peso": 0.5,
+   "temperatura": 0.7
+  },
+  "vince_da_punteggio": {
+   "log_loss_vince": 0.2803,
+   "primo_scelto_vince": 0.3718,
+   "temperatura": 1.2
+  }
+ },
+ "vince_in_uso": "[Errno 2] No such file or directory: '/home/runner/work/statippica/statippica/modelli/vince_xgb.json'",
+ "corse_prova": 7650
+}
