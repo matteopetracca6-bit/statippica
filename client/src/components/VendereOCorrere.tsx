@@ -155,7 +155,7 @@ export default function VendereOCorrere({ nome, anno, mensile = 1200, inScheda =
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
           <Gavel size={15} style={{ color: GIALLO }} />
           <span style={{ fontSize: "12px", fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>Vendere o far correre?</span>
-          <Link href="/pareggio"><a style={{ marginLeft: "auto", fontSize: "11.5px", color: "hsl(160 60% 55%)", textDecoration: "none" }}>Cambia le ipotesi</a></Link>
+          <span style={{ marginLeft: "auto", fontSize: "11.5px", color: "hsl(210 8% 50%)" }}>spese: barretta in alto</span>
         </div>
         {corpo}
       </div>

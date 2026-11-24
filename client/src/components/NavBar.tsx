@@ -26,10 +26,11 @@ function isAttiva(percorso: string, href: string): boolean {
   if (href === "/guidatori") return percorso.startsWith("/guidator");
   if (href === "/ippodromi") return percorso.startsWith("/ippodrom") || percorso.startsWith("/piste") || percorso.startsWith("/trend")
     || percorso.startsWith("/gran-premi") || percorso.startsWith("/albo-doro") || percorso.startsWith("/palmares");
-  if (href === "/pareggio") return percorso.startsWith("/pareggio") || percorso.startsWith("/break-even");
+  if (href === "/mercato") return percorso.startsWith("/mercato") || percorso.startsWith("/pareggio") || percorso.startsWith("/break-even")
+    || percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
   if (href === "/scuderia") return percorso.startsWith("/scuderia") || percorso.startsWith("/portafoglio");
   if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere")
-    || percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
+    || percorso.startsWith("/economia");
   if (href === "/metodo") return percorso.startsWith("/metodo");
   if (href === "/controllo") return percorso.startsWith("/controllo");
   if (href === "/advisor") return percorso.startsWith("/advisor");

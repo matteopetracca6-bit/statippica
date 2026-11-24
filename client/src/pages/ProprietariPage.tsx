@@ -250,7 +250,7 @@ export default function ProprietariPage() {
             <p>
               <strong>Premi a cavallo all'anno.</strong> I premi della scuderia divisi per le stagioni corse dai suoi cavalli: un cavallo che ha
               corso tre anni per lei conta tre volte. Serve a confrontare una scuderia con due cavalli e una con cinquanta. Non dice quanto
-              guadagna il proprietario: mancano le spese e i soldi della compravendita. Per i conti di un cavallo c'è la pagina Punto di pareggio.
+              guadagna il proprietario: mancano le spese e i soldi della compravendita. Per i conti di un cavallo ci sono le pagine di Economia.
             </p>
           </Spiegazione>
 
@@ -335,7 +335,7 @@ export default function ProprietariPage() {
       <CollegamentiCorrelati voci={[
         { href: "/allenatori", titolo: "Allenatori", descrizione: "Chi allena i cavalli, con il confronto a parità di cavallo." },
         { href: "/guidatori", titolo: "Guidatori", descrizione: "Chi porta i cavalli a rendere più del loro solito." },
-        { href: "/pareggio", titolo: "Punto di pareggio", descrizione: "Quanto deve vincere un cavallo per ripagarsi." },
+        { href: "/mercato", titolo: "Mercato", descrizione: "Quanto rende ogni voto e quanto deve vincere un cavallo per ripagarsi." },
       ]} />
     </div>
   );

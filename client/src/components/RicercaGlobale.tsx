@@ -50,7 +50,9 @@ const PAGINE: { titolo: string; href: string; sotto: string; parole: string }[] 
   { titolo: "Guidatori", href: "/guidatori", sotto: "chi fa rendere di piu' i cavalli", parole: "guidatori driver" },
   { titolo: "Allenatori", href: "/allenatori", sotto: "corse, vittorie e premi dal 2016", parole: "allenatori allenatore trainer scuderia" },
   { titolo: "Ippodromi e Gran Premi", href: "/ippodromi", sotto: "piste, albo d'oro e andamenti negli anni", parole: "ippodromi piste trend andamenti numero partenza gran premi albo d oro vincitori derby lotteria nazioni" },
-  { titolo: "Punto di pareggio", href: "/pareggio", sotto: "perdita, pareggio o profitto", parole: "pareggio break even costi utile profitto perdita soldi economia" },
+  { titolo: "Prima di correre", href: "/puledro", sotto: "un puledro: prezzo massimo, vendere, incrocio", parole: "puledro prezzo massimo vendere asta incrocio conviene monta economia soldi" },
+  { titolo: "In corsa", href: "/tenere", sotto: "lo tengo o lo fermo", parole: "tenere fermare premi attesi spese costi economia" },
+  { titolo: "Mercato", href: "/mercato", sotto: "aste 2026, generazione M, quanto rende ogni voto", parole: "mercato aste generazione m pareggio break even costi utile profitto perdita voto economia" },
   { titolo: "Metodo e dati", href: "/metodo", sotto: "come si calcolano i voti", parole: "metodo dati fonti come funziona voto" },
 ];
 const CHIAVE_RECENTI = "statippica-recenti";

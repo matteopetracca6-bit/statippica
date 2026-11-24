@@ -27,6 +27,7 @@ import { ESITO_COLORE } from "@/lib/esiti";
 import { testoProb } from "@/lib/probCopre";
 import BandieraCavallo from "@/components/BandieraCavallo";
 import { useScuderia } from "@/lib/scuderia";
+import SpeseBar from "../components/SpeseBar";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/tenere");
@@ -335,7 +336,7 @@ function PerStallone({ mensile, costo }: { mensile: string; costo: number }) {
       <div style={{ marginTop: 14 }}>
         <Spiegazione compatta>
           Conta solo i figli che hanno corso nell'ultimo anno: chi ha smesso o non ha mai corso non c'è, quindi il quadro è più favorevole di quello di
-          tutta la produzione. Per il rendimento di un intero raccolto c'è la scheda Punto di pareggio.
+          tutta la produzione. Per quanto rende in media ogni voto c'è Mercato.
         </Spiegazione>
       </div>
     </div>
@@ -344,34 +345,27 @@ function PerStallone({ mensile, costo }: { mensile: string; costo: number }) {
 
 export default function TenerePage() {
   const [scheda, setScheda] = useState<"cavalli" | "stalloni">("cavalli");
-  // Il costo al mese e' lo stesso in tutte le pagine di Economia.
-  const { scuderia, impostaMensile } = useScuderia();
-  const [mensileScritto, setMensileScritto] = useState(String(scuderia.mensile || 1200));
-  const mensile = useRitardo(Number(mensileScritto) >= 100 ? String(Math.round(Number(mensileScritto))) : "1200", 400);
-  useEffect(() => { const n = Number(mensile); if (n >= 100 && n !== scuderia.mensile) impostaMensile(n); }, [mensile]);
+  // Il costo al mese e' quello della barretta "Le tue spese", uguale in tutte le pagine di Economia.
+  const { scuderia } = useScuderia();
+  const mensile = String(scuderia.mensile || 1200);
   const costo = 12 * (Number(mensile) || 1200);
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
-      <IntestazionePagina icona={TrendingUp} colore={COLORE} titolo="Tenere o fermare" margineSotto={16}
-        sottotitolo="Ogni cavallo in attività: premi attesi nei prossimi 12 mesi contro la spesa di un anno.">
+      <IntestazionePagina icona={TrendingUp} colore={COLORE} titolo="In corsa" margineSotto={14}
+        sottotitolo="Lo tengo o lo fermo? Per ogni cavallo in attività, quanto vincerà nei prossimi 12 mesi contro la spesa di un anno.">
         Per ogni cavallo che ha corso nell'ultimo anno: quanto vincerà probabilmente nei prossimi 12 mesi e quanto è probabile che copra la spesa
         di un anno. Le spese passate non contano più: si confronta solo quello che costa da oggi con quello che può rendere da oggi.
         Rifatto sul passato (al 1° ottobre 2025), dei cavalli che il sito avrebbe dato «in perdita» solo 5 su 100 hanno poi coperto la spesa:
         i dettagli sono in <Link href="/controllo" style={{ color: COLORE }}>Controllo a posteriori</Link>.
       </IntestazionePagina>
 
-      <div className="ed-pannello" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, marginBottom: 16 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ed-testo)", flexWrap: "wrap" }}>
-          Spesa al mese per allenamento e mantenimento
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>€
-            <input type="number" min={100} step={100} inputMode="numeric" value={mensileScritto} onChange={e => setMensileScritto(e.target.value)} data-testid="input-mensile"
-              style={{ width: 92, background: "var(--ed-fondo)", border: "1px solid var(--ed-bordo)", borderRadius: 8, color: "var(--ed-testo)", padding: "6px 9px", fontSize: 13, fontFamily: "inherit" }} />
-          </span>
-        </label>
-        <input type="range" min={400} max={3000} step={100} value={Number(mensileScritto) || 1200} onChange={e => setMensileScritto(e.target.value)}
-          style={{ flex: "1 1 180px", maxWidth: 320, accentColor: COLORE }} aria-label="Spesa al mese" />
-        <span style={{ fontSize: 12.5, color: "var(--ed-muto)" }}>in un anno: <b style={{ color: "var(--ed-testo)" }}>{euro(costo)}</b></span>
+      <SpeseBar periodo="i prossimi 12 mesi, da oggi" colore={COLORE} />
+
+      <div className="ed-pannello" style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", fontSize: 12.5, color: "var(--ed-muto)", marginBottom: 14, alignItems: "center" }}>
+        <b style={{ color: "var(--ed-testo)" }}>Altre domande su un cavallo:</b>
+        <span>Fin qui si è ripagato? → nella sua scheda, parte Economia (bilancio della carriera)</span>
+        <span>Mi hanno fatto un'offerta? → <Link href="/scuderia" style={{ color: COLORE }}>mettilo nella scuderia</Link> e scrivila accanto al cavallo</span>
       </div>
 
       <div className="ed-linguette" role="tablist">

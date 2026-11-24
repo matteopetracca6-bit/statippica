@@ -16,7 +16,12 @@ export interface VoceScuderia {
   asta?: boolean;
   offerta?: number | null;   // quanto ti offrono per venderlo (facoltativo)
 }
-export interface Scuderia { mensile: number; voci: VoceScuderia[] }
+export interface Scuderia {
+  mensile: number;
+  /** Prezzo della monta per i conti di un puledro da allevare (facoltativo). */
+  monta?: number | null;
+  voci: VoceScuderia[];
+}
 
 const CHIAVE = "statippica.scuderia.v1";
 const VUOTA: Scuderia = { mensile: 1200, voci: [] };
@@ -28,7 +33,8 @@ function leggi(): Scuderia {
   try {
     const t = localStorage.getItem(CHIAVE);
     const d = t ? JSON.parse(t) : null;
-    corrente = d && Array.isArray(d.voci) ? { mensile: Number(d.mensile) || 1200, voci: d.voci } : VUOTA;
+    corrente = d && Array.isArray(d.voci)
+      ? { mensile: Number(d.mensile) || 1200, monta: d.monta == null ? null : Number(d.monta), voci: d.voci } : VUOTA;
   } catch {
     corrente = VUOTA;
   }
@@ -67,6 +73,7 @@ export function useScuderia() {
     togliVoce: (v: Partial<VoceScuderia>) => scrivi({ ...s, voci: s.voci.filter(x => chiaveVoce(x) !== chiaveVoce(v)) }),
     modifica: (id: string, cambi: Partial<VoceScuderia>) => scrivi({ ...s, voci: s.voci.map(x => x.id === id ? { ...x, ...cambi } : x) }),
     impostaMensile: (mensile: number) => scrivi({ ...s, mensile }),
+    impostaMonta: (monta: number | null) => scrivi({ ...s, monta }),
     sostituisci: (voci: Omit<VoceScuderia, "id">[]) => scrivi({ ...s, voci: voci.map(v => ({ ...v, id: Math.random().toString(36).slice(2, 10) })) }),
     svuota: () => scrivi({ ...s, voci: [] }),
   };
