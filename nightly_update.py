@@ -6141,6 +6141,13 @@ def main():
             phase_voto_previsto(conn)   # FASE 3h-ter: voto previsto a fine carriera (2-4 anni)
         except Exception as e:
             print(f"[VOTO PREVISTO] errore: {e}", file=sys.stderr)
+        try:
+            # FASE 3h-quater: quanto gli resta in carriera (carriera_futura.py):
+            # probabilita' di correre nei prossimi 6 mesi e fra 6 e 12, corse attese.
+            from carriera_futura import phase_carriera_futura
+            phase_carriera_futura(conn)
+        except Exception as e:
+            print(f"[CARRIERA FUTURA] errore: {e}", file=sys.stderr)
         phase_controllo_modelli(conn)  # FASE 3i: controllo mensile dei modelli
         try:
             # FASE 3i-bis: potenziale dinamico (potenziale.py). Dopo il controllo

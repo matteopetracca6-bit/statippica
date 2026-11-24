@@ -536,7 +536,7 @@ class Alberi:
         # Il punto di partenza dipende dal tipo di modello: probabilita' (sì/no)
         # oppure importo in euro (tweedie, che lavora sul logaritmo).
         self.obiettivo = lm.get("objective", {}).get("name", "binary:logistic")
-        if self.obiettivo.startswith("reg:tweedie"):
+        if self.obiettivo.startswith("reg:tweedie") or self.obiettivo.startswith("count:poisson"):
             self.margine0 = math.log(base)
         elif self.obiettivo in ("reg:quantileerror", "reg:squarederror", "reg:absoluteerror"):
             # Modelli che stimano direttamente un numero (es. il voto previsto):
