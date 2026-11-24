@@ -10,12 +10,13 @@
  * I voti arrivano dal server a ogni richiesta, quindi seguono i ricalcoli
  * notturni.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import BandieraCavallo from "./BandieraCavallo";
 import CavalloCaricamento from "./CavalloCaricamento";
+import { formatRecord } from "@/lib/record";
 
 export interface VotiNodo { atleta: string | null; stallone: string | null; fattrice: string | null;
   /** Voto storico da riproduttore: figli tutti storici, scala a parte (24/11/2026). */
@@ -29,6 +30,8 @@ export interface PedigreeNode {
   career_earnings: number | null;
   career_wins: number | null;
   career_races: number | null;
+  /** Miglior tempo al km in carriera (24/11/2026). */
+  record?: string | null;
   sire: PedigreeNode | null;
   dam: PedigreeNode | null;
   missing?: boolean;
@@ -40,10 +43,6 @@ export interface PedigreeNode {
   voti?: VotiNodo;
 }
 
-const BLU = "hsl(212 85% 62%)";
-const ROSA = "hsl(330 75% 68%)";
-const BLU_FONDO = "hsl(212 45% 12%)";
-const ROSA_FONDO = "hsl(330 30% 12%)";
 
 // Antenati ripetuti (23/11/2026): ognuno con un suo colore, sempre visibile,
 // non solo passandoci sopra.
@@ -117,110 +116,160 @@ export function righeGenerazioni(root: PedigreeNode, maxGen: number): (PedigreeN
   return righe;
 }
 
-function Voto({ etichetta, grado, href, compatto }: { etichetta: string; grado: string; href?: string; compatto: boolean }) {
-  const badge = (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}
-      title={`Voto da ${etichetta.toLowerCase()}: ${grado}`}>
-      <span style={{ fontSize: compatto ? 8.5 : 9.5, color: "hsl(210 8% 52%)", textTransform: compatto ? "none" : "uppercase", letterSpacing: compatto ? 0 : ".04em" }}>
-        {compatto ? etichetta.slice(0, 3).toLowerCase() + (etichetta.endsWith(" st.") ? ". st." : ".") : etichetta}
-      </span>
+/** Bollino del voto con i colori del sito (SSS oro, SS argento, S bronzo...). */
+function Bollino({ etichetta, grado, titolo, piccolo }: { etichetta: string; grado: string; titolo: string; piccolo: boolean }) {
+  return (
+    <span title={titolo} style={{ display: "inline-flex", alignItems: "center", gap: 2, whiteSpace: "nowrap", flexShrink: 0 }}>
+      <span style={{ fontSize: piccolo ? 8 : 9, color: "hsl(210 8% 50%)" }}>{etichetta}</span>
       <span className={`grade-badge grade-${grado}`}
-        style={{ fontSize: compatto ? 9 : 10, padding: compatto ? "0 4px" : "1px 5px", minWidth: compatto ? 18 : 22, lineHeight: compatto ? "13px" : undefined }}>
+        style={{ fontSize: piccolo ? 9 : 10.5, padding: piccolo ? "0 3px" : "0 5px", minWidth: piccolo ? 17 : 24, lineHeight: piccolo ? "13px" : "16px", fontWeight: 800 }}>
         {grado}
       </span>
     </span>
   );
-  return href ? <Link href={href}><a style={{ textDecoration: "none" }} onClick={e => e.stopPropagation()}>{badge}</a></Link> : badge;
 }
 
-function Casella({ node, gen, maxGen, hovered, onHover, colore, volte }: {
+/** I voti di un antenato: dalle corse (atleta) e dai figli (stallone o fattrice). */
+function votiDi(node: PedigreeNode) {
+  const v = node.voti;
+  const atleta = v?.atleta ?? null;
+  const ripr = node.sex === "F" ? (v?.fattrice ?? null) : (v?.stallone ?? v?.fattrice ?? null);
+  const storico = node.sex === "F" ? !!v?.fattrice_storica : !!(v?.stallone_storico || (!v?.stallone && v?.fattrice_storica));
+  return { atleta, ripr, storico };
+}
+const ORDINE_VOTI = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+const migliore = (a: string | null, b: string | null) =>
+  [a, b].filter(Boolean).sort((x, y) => ORDINE_VOTI.indexOf(x!) - ORDINE_VOTI.indexOf(y!))[0] ?? null;
+
+function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli }: {
   node: PedigreeNode | null; gen: number; maxGen: number;
   hovered: string | null; onHover: (n: string | null) => void;
-  colore?: string; volte?: number;
+  colore?: string; volte?: number; scelto: boolean; onScegli: (n: PedigreeNode) => void;
 }) {
-  const compatto = gen >= 4;
+  const piccolo = gen >= 4;
   if (!node) {
-    return <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "hsl(210 8% 24%)", borderRadius: 8, border: "1px dashed hsl(220 10% 18%)" }}>—</div>;
+    return <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "hsl(210 8% 26%)", borderRadius: 8, border: "1px dashed hsl(220 10% 18%)" }}>—</div>;
   }
   const maschio = node.sex === "M";
-  // Omonimo: stesso nome di un cavallo dell'archivio, ma e' un altro cavallo
-  // (troppo vecchio per esserlo). Grigio, senza link alla scheda sbagliata.
   const om = !!node.omonimo;
-  const spiegaOm = om
-    ? `Non è il ${node.name}${node.omonimo_anno ? ` nato nel ${node.omonimo_anno}` : " dell'archivio"}: qui è un altro cavallo con lo stesso nome, ` +
-      `antenato di un cavallo nato${node.anno_max ? ` entro il ${node.anno_max + 2}` : " prima"}. Non si conta fra gli antenati ripetuti.`
-    : undefined;
-  const evidenziato = !node.omonimo && !!(hovered && node.name && node.name.toUpperCase() === hovered.toUpperCase());
-  const bordo = evidenziato ? "hsl(25 85% 58%)" : om ? "hsl(210 8% 38%)" : maschio ? BLU : ROSA;
-  const v = node.voti;
-  const voti: { etichetta: string; grado: string; href?: string }[] = [];
-  if (v?.atleta) voti.push({ etichetta: "Atleta", grado: v.atleta });
-  if (v?.stallone) voti.push({ etichetta: v.stallone_storico ? "Stallone st." : "Stallone", grado: v.stallone, href: `/stallion/${encodeURIComponent(node.name)}` });
-  if (v?.fattrice) voti.push({ etichetta: v.fattrice_storica ? "Fattrice st." : "Fattrice", grado: v.fattrice, href: `/fattrice/${encodeURIComponent(node.name)}` });
-  const nomeSize = gen === 0 ? 13.5 : gen >= 4 ? 10 : gen === 3 ? 11 : 12;
-  const linkCavallo = `/horse/${encodeURIComponent(node.name)}/${node.birth_year ?? 0}`;
-
+  const evidenziato = scelto || (!om && !!(hovered && node.name && node.name.toUpperCase() === hovered.toUpperCase()));
+  const bordo = evidenziato ? "hsl(25 85% 58%)" : om ? "hsl(210 8% 34%)" : maschio ? "hsl(212 50% 40%)" : "hsl(330 40% 45%)";
+  const { atleta, ripr, storico } = votiDi(node);
+  const rec = node.record ? formatRecord(node.record) : null;
+  const nomeSize = gen === 0 ? 14 : gen >= 4 ? 10.5 : gen === 3 ? 11.5 : 12.5;
   return (
-    <div
+    <button type="button"
+      onClick={() => onScegli(node)}
       onMouseEnter={() => node.name && !om && onHover(node.name)}
       onMouseLeave={() => onHover(null)}
-      title={spiegaOm}
+      title={om ? "Omonimo: stesso nome di un cavallo dell'archivio, ma è un altro cavallo" : "Tocca per i dettagli"}
       style={{
-        width: "100%", minWidth: 0, height: "100%", overflow: "hidden", boxSizing: "border-box",
-        display: "flex", flexDirection: "column", justifyContent: "center",
-        padding: compatto ? "2px 6px" : gen === 0 ? "10px 11px" : "6px 9px",
+        all: "unset", cursor: "pointer", boxSizing: "border-box",
+        width: "100%", minWidth: 0, height: "100%", overflow: "hidden",
+        display: "flex", flexDirection: "column", justifyContent: "center", gap: piccolo ? 1 : 4,
+        padding: piccolo ? "2px 6px" : gen === 0 ? "10px 12px" : "6px 9px",
         borderRadius: 8,
-        background: evidenziato ? "hsl(25 50% 14%)" : om ? "hsl(220 8% 13%)" : maschio ? BLU_FONDO : ROSA_FONDO,
-        border: `1.5px solid ${bordo}`,
-        borderLeftWidth: compatto ? 3 : 4,
-        borderLeftColor: colore && !evidenziato ? colore : bordo,
-        borderStyle: om ? "dashed" : "solid",
-        boxShadow: evidenziato ? "0 2px 12px hsl(25 85% 58% / .3)" : "none",
-        transition: "background .15s, box-shadow .15s",
-        opacity: node.missing && !voti.length ? 0.85 : 1,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-        {om ? (
-          <span style={{ fontSize: nomeSize, fontWeight: 700, color: "hsl(210 8% 62%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-            {node.name}
-          </span>
-        ) : (
-          <Link href={linkCavallo}>
-            <a style={{
-              fontSize: nomeSize, fontWeight: 700, color: "hsl(210 10% 88%)", textDecoration: "none",
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0,
-            }}
-              onMouseEnter={e => e.currentTarget.style.color = maschio ? BLU : ROSA}
-              onMouseLeave={e => e.currentTarget.style.color = "hsl(210 10% 88%)"}>
-              {node.name}
-            </a>
-          </Link>
-        )}
-        {om && (
-          <span style={{ flexShrink: 0, fontSize: compatto ? 8.5 : 9.5, fontWeight: 700, color: "hsl(210 8% 70%)", border: "1px solid hsl(210 8% 40%)",
-                         borderRadius: 999, padding: "0 5px", lineHeight: compatto ? "12px" : "14px", whiteSpace: "nowrap" }}>
-            {compatto ? "omonimo" : "omonimo – altro cavallo"}
-          </span>
-        )}
+        background: evidenziato ? "hsl(25 45% 14%)" : om ? "hsl(220 8% 12%)" : "hsl(220 14% 11%)",
+        border: `1px solid ${evidenziato ? bordo : "hsl(220 10% 20%)"}`,
+        borderLeft: `${piccolo ? 3 : 4}px ${om ? "dashed" : "solid"} ${colore && !evidenziato ? colore : bordo}`,
+        boxShadow: evidenziato ? "0 2px 12px hsl(25 85% 58% / .25)" : "none",
+      }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+        <span style={{ fontSize: nomeSize, fontWeight: 700, color: om ? "hsl(210 8% 60%)" : "hsl(210 10% 90%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+          {node.name}
+        </span>
         {colore && (
-          <span title={`Compare ${volte} volte nell'albero`} className="tabular"
-            style={{ flexShrink: 0, fontSize: compatto ? 8.5 : 9.5, fontWeight: 800, color: "hsl(220 15% 10%)", background: colore,
-                     borderRadius: 999, padding: compatto ? "0 4px" : "0 5px", lineHeight: compatto ? "12px" : "14px", whiteSpace: "nowrap" }}>
+          <span className="tabular" title={`Compare ${volte} volte nell'albero`}
+            style={{ flexShrink: 0, fontSize: piccolo ? 8.5 : 9.5, fontWeight: 800, color: "hsl(220 15% 10%)", background: colore, borderRadius: 999, padding: "0 4px", lineHeight: piccolo ? "12px" : "14px" }}>
             ×{volte}
           </span>
         )}
-        {!compatto && node.birth_year && (
-          <span style={{ fontSize: 10, color: "hsl(210 8% 48%)", whiteSpace: "nowrap", flexShrink: 0 }}>
+        {!piccolo && node.birth_year ? (
+          <span className="tabular" style={{ marginLeft: "auto", fontSize: 10, color: "hsl(210 8% 46%)", whiteSpace: "nowrap", flexShrink: 0 }}>
             <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto /> {node.birth_year}
           </span>
-        )}
+        ) : null}
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: piccolo ? 4 : 7, minWidth: 0, overflow: "hidden" }}>
+        {om ? <span style={{ fontSize: piccolo ? 8.5 : 9.5, color: "hsl(210 8% 55%)", whiteSpace: "nowrap" }}>omonimo</span> : <>
+          {atleta && <Bollino etichetta={gen >= 3 ? "c" : "corse"} grado={atleta} piccolo={piccolo} titolo={`Voto da atleta (dalle sue corse): ${atleta}`} />}
+          {ripr && <Bollino etichetta={gen >= 3 ? (storico ? "f st." : "f") : storico ? "figli st." : "figli"} grado={ripr} piccolo={piccolo}
+            titolo={`Voto da ${maschio ? "stallone" : "fattrice"} (dai figli${storico ? " nati prima del 2012, scala storica" : ""}): ${ripr}`} />}
+          {rec && rec !== "—" && <span className="tabular" title="Miglior tempo al km in carriera"
+            style={{ fontSize: piccolo ? 9 : 10.5, color: "hsl(183 55% 62%)", whiteSpace: "nowrap", marginLeft: "auto", flexShrink: 0 }}>{rec}</span>}
+          {!atleta && !ripr && !rec && <span style={{ fontSize: piccolo ? 8.5 : 9.5, color: "hsl(210 8% 40%)", whiteSpace: "nowrap" }}>senza voti</span>}
+        </>}
+      </span>
+    </button>
+  );
+}
+
+/** Il riquadro con tutto di un antenato, sopra l'albero. */
+function DettaglioAntenato({ node, volte, onChiudi }: { node: PedigreeNode; volte?: number; onChiudi: () => void }) {
+  const { atleta, ripr, storico } = votiDi(node);
+  const rec = node.record ? formatRecord(node.record) : null;
+  const maschio = node.sex === "M";
+  const euro = (x?: number | null) => (x ? `€ ${Math.round(x).toLocaleString("it-IT")}` : "—");
+  const cella = (t: string, v: ReactNode, sotto?: string) => (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 10, color: "hsl(210 8% 46%)", textTransform: "uppercase", letterSpacing: ".05em" }}>{t}</div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: "hsl(210 10% 90%)", marginTop: 2 }}>{v}</div>
+      {sotto && <div style={{ fontSize: 11, color: "hsl(210 8% 50%)" }}>{sotto}</div>}
+    </div>
+  );
+  return (
+    <div className="pannello" data-testid="dettaglio-antenato" style={{ padding: "12px 14px", marginBottom: 12, borderColor: "hsl(25 70% 40% / .6)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        <span style={{ fontSize: 16, fontWeight: 800, color: maschio ? "hsl(212 80% 70%)" : "hsl(330 70% 75%)" }}>{node.name}</span>
+        <span style={{ fontSize: 12, color: "hsl(210 8% 52%)" }}>
+          {node.birth_year ?? ""} {node.country ? <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto /> : null}
+          {node.sire?.name ? ` · ${node.sire.name} × ${node.dam?.name ?? "?"}` : ""}
+        </span>
+        <button type="button" onClick={onChiudi} aria-label="Chiudi" style={{ marginLeft: "auto", background: "none", border: "none", color: "hsl(210 8% 55%)", cursor: "pointer", fontSize: 18 }}>×</button>
       </div>
-      {voti.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "nowrap", overflow: "hidden", gap: compatto ? 5 : 8, marginTop: compatto ? 1 : 4, minWidth: 0 }}>
-          {voti.map(x => <Voto key={x.etichetta} {...x} compatto={compatto} />)}
+      {node.omonimo ? (
+        <div style={{ fontSize: 12.5, color: "hsl(210 8% 65%)" }}>
+          Omonimo: nell'archivio c'è un altro {node.name}{node.omonimo_anno ? ` (nato nel ${node.omonimo_anno})` : ""}; questo antenato non ha una scheda.
         </div>
+      ) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
+            {cella("Voto dalle corse", atleta ? <span className={`grade-badge grade-${atleta}`} style={{ fontSize: 13, padding: "1px 8px" }}>{atleta}</span> : "—", "atleta")}
+            {cella(maschio ? "Voto da stallone" : "Voto da fattrice", ripr ? <span className={`grade-badge grade-${ripr}`} style={{ fontSize: 13, padding: "1px 8px" }}>{ripr}</span> : "—", ripr ? (storico ? "dai figli, scala storica" : "dai figli") : "pochi figli valutati")}
+            {cella("Miglior km", rec && rec !== "—" ? rec : "—")}
+            {cella("Corse", node.career_races ?? "—", node.career_wins != null && node.career_races ? `${node.career_wins} vinte` : undefined)}
+            {cella("Guadagni", euro(node.career_earnings))}
+            {volte ? cella("Nell'albero", `${volte} volte`) : null}
+          </div>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 12, fontSize: 12.5 }}>
+            <Link href={`/horse/${encodeURIComponent(node.name)}/${node.birth_year ?? 0}`}><a style={{ color: "hsl(183 70% 60%)", fontWeight: 700 }}>Apri la scheda</a></Link>
+            {ripr && <Link href={maschio ? `/stallion/${encodeURIComponent(node.name)}` : `/fattrice/${encodeURIComponent(node.name)}`}><a style={{ color: "hsl(183 70% 60%)", fontWeight: 700 }}>{maschio ? "Pagina dello stallone" : "Pagina della fattrice"}</a></Link>}
+            <a href={`#/pedigree?nome=${encodeURIComponent(node.name)}`} onClick={() => setTimeout(() => window.location.reload(), 30)} style={{ color: "hsl(183 70% 60%)", fontWeight: 700 }}>Il suo pedigree</a>
+          </div>
+        </>
       )}
+    </div>
+  );
+}
+
+/** Sintesi sopra l'albero: quanti antenati forti per lato. */
+function Sintesi({ root, generazioni }: { root: PedigreeNode; generazioni: number }) {
+  const conta = (x: PedigreeNode | null, g: number, acc: { n: number; forti: number }) => {
+    if (!x || g > generazioni) return acc;
+    if (g > 0 && !x.omonimo) {
+      acc.n++;
+      const { atleta, ripr } = votiDi(x);
+      const m = migliore(atleta, ripr);
+      if (m && ORDINE_VOTI.indexOf(m) <= 2) acc.forti++;
+    }
+    conta(x.sire, g + 1, acc); conta(x.dam, g + 1, acc);
+    return acc;
+  };
+  const p = conta(root.sire, 1, { n: 0, forti: 0 }), m = conta(root.dam, 1, { n: 0, forti: 0 });
+  return (
+    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: "hsl(210 8% 62%)", marginBottom: 10 }}>
+      <span>Antenati con voto S o più: <strong style={{ color: "hsl(212 80% 70%)" }}>lato padre {p.forti} su {p.n}</strong> · <strong style={{ color: "hsl(330 70% 75%)" }}>lato madre {m.forti} su {m.n}</strong></span>
+      <span style={{ color: "hsl(210 8% 46%)" }}>Tocca un nome per i dettagli</span>
     </div>
   );
 }
@@ -231,6 +280,7 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
 }) {
   const righe = righeGenerazioni(root, generazioni);
   const { rip, colore, chiave } = antenatiRipetuti(root, generazioni);
+  const [scelto, setScelto] = useState<PedigreeNode | null>(null);
   // 24/11/2026: griglia vera invece di colonne indipendenti. Ogni casella
   // occupa esattamente le righe dei suoi antenati (2^(ultima-gen) righe), quindi
   // il padre sta sempre a meta' fra i suoi due genitori e le famiglie restano
@@ -247,6 +297,8 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
   const larghezzaMin = generazioni >= 5 ? 980 : generazioni === 4 ? 860 : generazioni === 3 ? 560 : 360;
   return (
     <div>
+      <Sintesi root={root} generazioni={generazioni} />
+      {scelto && <DettaglioAntenato node={scelto} volte={rip.find(([k]) => k === chiave(scelto))?.[1].n} onChiudi={() => setScelto(null)} />}
       <div style={{ overflowX: "auto" }}>
         <div style={{ minWidth: larghezzaMin }}>
           <div style={{ display: "grid", gridTemplateColumns: colonne, columnGap: 8, marginBottom: 8 }}>
@@ -264,7 +316,8 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
                   <div style={{ width: "100%", height: altezzaCasella(g), display: "flex", minWidth: 0 }}>
                     <Casella node={n} gen={g} maxGen={generazioni} hovered={hovered} onHover={onHover}
                       colore={n && g > 0 ? colore.get(chiave(n) ?? "") : undefined}
-                      volte={n && g > 0 ? rip.find(([k]) => k === chiave(n))?.[1].n : undefined} />
+                      volte={n && g > 0 ? rip.find(([k]) => k === chiave(n))?.[1].n : undefined}
+                      scelto={!!n && scelto === n} onScegli={x => setScelto(scelto === x ? null : x)} />
                   </div>
                 </div>
               );
@@ -273,22 +326,10 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
         </div>
       </div>
       <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 11, color: "hsl(210 8% 48%)", flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: BLU_FONDO, border: `1.5px solid ${BLU}` }} /> Maschio / stallone
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: ROSA_FONDO, border: `1.5px solid ${ROSA}` }} /> Femmina / fattrice
-        </span>
-        {rip.length > 0 && (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 12, height: 12, borderRadius: 3, borderLeft: `4px solid ${COLORI_RIPETUTI[0]}`, border: "1.5px solid hsl(210 8% 35%)" }} /> Antenato che compare più volte (×N)
-          </span>
-        )}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: "hsl(220 8% 13%)", border: "1.5px dashed hsl(210 8% 38%)" }} /> Omonimo: stesso nome, altro cavallo
-        </span>
-        <span>Atleta = voto dalle sue corse · Stallone / Fattrice = voto dai figli · «st.» = voto storico, dai figli nati prima del 2012</span>
-        <span>Clicca un nome per la scheda, un voto da riproduttore per la sua pagina</span>
+        <span><b style={{ color: "hsl(210 8% 70%)" }}>corse / c</b> = voto da atleta, dalle sue corse</span>
+        <span><b style={{ color: "hsl(210 8% 70%)" }}>figli / f</b> = voto da stallone o fattrice («st.» = scala storica, figli nati prima del 2012)</span>
+        <span><span style={{ color: "hsl(183 55% 62%)" }}>1'11"2</span> = miglior km in carriera</span>
+        <span>Bordo sinistro blu = maschio, rosa = femmina; colorato = antenato ripetuto (×N)</span>
       </div>
       <LineeERipetuti root={root} rip={rip} colore={colore} chiave={chiave} hovered={hovered} onHover={onHover} />
     </div>
