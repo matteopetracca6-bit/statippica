@@ -28,6 +28,7 @@ function isAttiva(percorso: string, href: string): boolean {
     || percorso.startsWith("/gran-premi") || percorso.startsWith("/albo-doro") || percorso.startsWith("/palmares");
   if (href === "/mercato") return percorso.startsWith("/mercato") || percorso.startsWith("/pareggio") || percorso.startsWith("/break-even")
     || percorso.startsWith("/generazione-m") || percorso.startsWith("/aste");
+  if (href === "/rende") return percorso.startsWith("/rende") || percorso.startsWith("/chi-rende");
   if (href === "/scuderia") return percorso.startsWith("/scuderia") || percorso.startsWith("/portafoglio");
   if (href === "/puledro") return percorso.startsWith("/puledro") || percorso.startsWith("/prezzo-massimo") || percorso.startsWith("/vendere")
     || percorso.startsWith("/economia");
