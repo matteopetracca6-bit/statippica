@@ -19,6 +19,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 // guardare la pagina iniziale (lento soprattutto sul telefono).
 const IppodromiTrendPage = lazy(() => import("./pages/IppodromiTrendPage"));
 const MercatoPage = lazy(() => import("./pages/MercatoPage"));
+const RendePage = lazy(() => import("./pages/RendePage"));
 const TenerePage = lazy(() => import("./pages/TenerePage"));
 const ScuderiaPage = lazy(() => import("./pages/ScuderiaPage"));
 const PuledroPage = lazy(() => import("./pages/PuledroPage"));
@@ -113,6 +114,8 @@ export default function App() {
               <Route path="/proprietario/:name" component={ProprietarioPage} />
               <Route path="/ippodromi" component={IppodromiTrendPage} />
               <Route path="/mercato" component={MercatoPage} />
+              <Route path="/rende" component={RendePage} />
+              <Route path="/chi-rende" component={RendePage} />
               <Route path="/pareggio" component={MercatoPage} />
               <Route path="/tenere" component={TenerePage} />
               <Route path="/generazione-m" component={MercatoPage} />
