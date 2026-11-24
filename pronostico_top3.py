@@ -379,6 +379,139 @@ def costruisci_variabili(conn: sqlite3.Connection, con_calendario: bool = False)
                        ("h_tempo_migl", "s_tempo_migl"), ("h_classe5", "s_classe5")):
         df[dest] = df[sorg] - gg[sorg].transform("mean")
 
+    df = variabili_v5(df)
+    return df
+
+
+# Dalla versione 5 (novembre 2026): tempi corretti per pista, scontri diretti
+# e forza del campo, forma degli ultimi 30 giorni di guidatore e allenatore.
+VARIABILI_V5 = [
+    "h_ind_migl", "h_ind_med5", "r_ind_migl", "s_ind_med5",
+    "h2h", "h2h_n", "campo_premi", "campo_vs_solito",
+    "d_top3_30", "d_n_30", "r_d_top3_30", "a_top3_30", "a_n_30",
+]
+# La ferratura di oggi: si conosce solo la mattina della corsa. Entra nel
+# modello del mattino, non in quello della notte (dove sarebbe sempre vuota).
+VARIABILI_FERRI = ["oggi_scalzo_ant", "oggi_scalzo_post", "cambio_ferri", "toglie_ferri",
+                   "h_top3_scalzo", "h_top3_ferrato", "h_scalzo_quota"]
+
+
+def variabili_v5(df):
+    """Le variabili della versione 5, aggiunte a quelle di costruisci_variabili.
+    Tutte guardano solo al passato della riga (nessun dato dal futuro)."""
+    import time
+    import numpy as np
+    import pandas as pd
+    t0 = time.time()
+    fut = df["futura"].astype(bool)
+
+    # 1) Indice di velocita': il tempo al km meno il tempo tipico di QUELLA
+    #    pista su QUELLA fascia di distanza, misurato sull'anno prima (mai
+    #    sull'anno della corsa). 1'13" a Torino non vale 1'13" a Taranto.
+    anno = df["data"].dt.year
+    fascia = pd.cut(df["distanza"], [0, 1799, 2199, 9999], labels=False)
+    base = pd.DataFrame({"pista": df["pista"], "f": fascia, "anno": anno, "t": df["tempo"]})[~fut & df["tempo"].notna() & fascia.notna()]
+    tab = base.groupby(["pista", "f", "anno"])["t"].agg(["median", "count"]).reset_index()
+    tab = tab[tab["count"] >= 30]
+    tab_g = base.groupby(["f", "anno"])["t"].median().reset_index().rename(columns={"t": "mg"})
+    q = pd.DataFrame({"pista": df["pista"], "f": fascia, "anno": anno - 1})
+    q = q.merge(tab[["pista", "f", "anno", "median"]], on=["pista", "f", "anno"], how="left")
+    q2 = pd.DataFrame({"pista": df["pista"], "f": fascia, "anno": anno - 2}).merge(
+        tab[["pista", "f", "anno", "median"]], on=["pista", "f", "anno"], how="left")
+    q3 = pd.DataFrame({"f": fascia, "anno": anno - 1}).merge(tab_g, on=["f", "anno"], how="left")
+    rif = q["median"].fillna(q2["median"]).fillna(q3["mg"]).to_numpy()
+    df["_ind"] = df["tempo"].to_numpy() - rif
+    df["h_ind_migl"] = _minimo_passato(df, "cavallo", "_ind")
+    df["h_ind_med5"] = _mobile_passata(df, "cavallo", "_ind", 5)
+    gg = df.groupby("gara", sort=False)
+    df["r_ind_migl"] = gg["h_ind_migl"].rank(pct=True, ascending=False)
+    df["s_ind_med5"] = df["h_ind_med5"] - gg["h_ind_med5"].transform("mean")
+    df = df.drop(columns=["_ind"])
+    t1 = time.time()
+
+    # 2) Scontri diretti: con gli stessi avversari di oggi, quante volte il
+    #    cavallo e' arrivato davanti e quante dietro, nelle corse precedenti.
+    #    Chi non finisce la corsa conta dietro a chi la finisce.
+    # Le coppie si tengono come numeri (id del cavallo) per stare in memoria:
+    # chiave = a * M + b con a < b, valore = netto * 2^20 + incontri.
+    ids = pd.factorize(df["cavallo"])[0].astype(np.int64)
+    M = int(ids.max()) + 2
+    d = pd.DataFrame({"g": df["gara"].to_numpy(), "data": df["data"].to_numpy(), "c": ids,
+                      "pos": pd.to_numeric(df["arrivo"], errors="coerce").fillna(99).to_numpy(),
+                      "fut": fut.to_numpy(), "i": np.arange(len(df))})
+    d = d.sort_values(["data", "g"])
+    netto = np.full(len(df), np.nan)
+    incontri = np.zeros(len(df))
+    stato: dict = {}
+    MASK = (1 << 20) - 1
+    for _, giorno in d.groupby("data", sort=True):
+        gare = [(c["c"].tolist(), c["pos"].tolist(), c["i"].tolist(), bool(c["fut"].iloc[0])) for _, c in giorno.groupby("g", sort=False)]
+        for cs, _ps, ix, _f in gare:                # prima si legge (il passato)...
+            for a_, ia in zip(cs, ix):
+                s_, n_ = 0, 0
+                for b_ in cs:
+                    if b_ == a_:
+                        continue
+                    v = stato.get(a_ * M + b_ if a_ < b_ else b_ * M + a_)
+                    if v is not None:
+                        nn = v & MASK
+                        s_ += (v >> 20) if a_ < b_ else -(v >> 20)
+                        n_ += nn
+                incontri[ia] = n_
+                if n_:
+                    netto[ia] = s_ / n_
+        for cs, ps, _ix, f_ in gare:                # ...poi si impara dal giorno
+            if f_:
+                continue
+            L = len(cs)
+            for x in range(L):
+                for y in range(x + 1, L):
+                    if ps[x] == ps[y]:
+                        continue
+                    a_, b_ = cs[x], cs[y]
+                    avanti = 1 if ps[x] < ps[y] else -1
+                    if a_ < b_:
+                        k, sgn = a_ * M + b_, avanti
+                    else:
+                        k, sgn = b_ * M + a_, -avanti
+                    stato[k] = stato.get(k, 0) + (sgn << 20) + 1
+    df["h2h"] = netto
+    df["h2h_n"] = incontri
+    t2 = time.time()
+
+    # Forza del campo: i premi dell'ultimo anno degli avversari di oggi, e
+    # quanto e' piu' forte (o piu' debole) del campo che il cavallo trova di solito.
+    lp = np.log1p(df["h_premi_365"].fillna(0))
+    somma = lp.groupby(df["gara"]).transform("sum")
+    quanti = df.groupby("gara")["cavallo"].transform("count")
+    df["campo_premi"] = ((somma - lp) / (quanti - 1)).where(quanti > 1)
+    df["campo_vs_solito"] = df["campo_premi"] - _media_passata(df, "cavallo", "campo_premi")
+
+    # 3) Forma degli ultimi 30 giorni (escluso il giorno stesso) di guidatore e allenatore.
+    def ultimi30(persona_corsa, persona_riga):
+        dd = df[df[persona_corsa].notna() & df["top3"].notna()]
+        gio = dd.groupby([persona_corsa, "data"], sort=True)["top3"].agg(s="sum", n="count").reset_index()
+        gio["cs"] = gio.groupby(persona_corsa)["s"].cumsum()
+        gio["cn"] = gio.groupby(persona_corsa)["n"].cumsum()
+        gio = gio.rename(columns={persona_corsa: "_p"}).sort_values("data")
+        qq = pd.DataFrame({"_p": df[persona_riga], "data": df["data"], "_i": np.arange(len(df))}).dropna(subset=["_p"])
+        qa = pd.merge_asof(qq.sort_values("data"), gio[["_p", "data", "cs", "cn"]], on="data", by="_p",
+                           allow_exact_matches=False, direction="backward")
+        qb = qq.assign(data=qq["data"] - pd.Timedelta(days=30))
+        qb = pd.merge_asof(qb.sort_values("data"), gio[["_p", "data", "cs", "cn"]], on="data", by="_p",
+                           allow_exact_matches=False, direction="backward")
+        qa = qa.set_index("_i"); qb = qb.set_index("_i")
+        s = (qa["cs"] - qb["cs"].reindex(qa.index).fillna(0))
+        n = (qa["cn"] - qb["cn"].reindex(qa.index).fillna(0))
+        out_s = np.full(len(df), np.nan); out_n = np.full(len(df), np.nan)
+        out_n[qa.index.to_numpy()] = n.fillna(0).to_numpy()
+        out_s[qa.index.to_numpy()] = s.to_numpy()
+        top = np.where(out_n > 0, out_s / np.where(out_n > 0, out_n, 1), np.nan)
+        return top, out_n
+    df["d_top3_30"], df["d_n_30"] = ultimi30("guidatore", "guidatore")
+    df["a_top3_30"], df["a_n_30"] = ultimi30("allenatore_corsa", "allenatore")
+    df["r_d_top3_30"] = df.groupby("gara", sort=False)["d_top3_30"].rank(pct=True, ascending=True)
+    print(f"[V5] variabili: velocita' {t1 - t0:.0f}s, scontri {t2 - t1:.0f}s, resto {time.time() - t2:.0f}s", flush=True)
     return df
 
 
