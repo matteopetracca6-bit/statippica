@@ -189,12 +189,12 @@ function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli 
             ×{volte}
           </span>
         )}
-        {gen <= 2 && node.birth_year ? (
-          <span className="tabular" style={{ marginLeft: "auto", fontSize: 10, color: "hsl(210 8% 46%)", whiteSpace: "nowrap", flexShrink: 0 }}>
-            {node.birth_year}
-          </span>
-        ) : null}
       </span>
+      {gen <= 2 && node.birth_year ? (
+        <span className="tabular" style={{ fontSize: 10, lineHeight: "11px", color: "hsl(210 8% 46%)", whiteSpace: "nowrap", marginTop: -2 }}>
+          nato nel {node.birth_year}
+        </span>
+      ) : null}
       <span style={{ display: "flex", alignItems: "center", gap: piccolo ? 4 : 7, minWidth: 0, overflow: "hidden" }}>
         {om ? <span style={{ fontSize: piccolo ? 8.5 : 9.5, color: "hsl(210 8% 55%)", whiteSpace: "nowrap" }}>omonimo</span> : <>
           {atleta && <Bollino etichetta={gen >= 3 ? "c" : "corse"} grado={atleta} piccolo={piccolo} titolo={`Voto da atleta (dalle sue corse): ${atleta}`} />}
