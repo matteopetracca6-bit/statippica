@@ -5286,8 +5286,17 @@ def phase_dam_ratings(conn: sqlite3.Connection):
         ))
     conn.commit()
     print(f"[RATINGS] Rating fattrici: {len(buffer)}", file=sys.stderr)
+    # 24/11/2026: voto storico da stallone e da fattrice per i riproduttori i
+    # cui figli sono tutti storici (WAIKIKI BEACH, IALMAZ):
+    # scripts/riproduttori_storici.py. Dopo i voti storici e quelli dei
+    # riproduttori di oggi, perche' si fa solo per chi non ha gia' un voto.
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
+        import riproduttori_storici as _rs
+        _rs.calcola(conn)
+    except Exception as e:
+        print(f"[RIPRODUTTORI STORICI] saltato: {e}", file=sys.stderr)
     return len(buffer)
-
 
 def phase_recover_undated(conn: sqlite3.Connection, batch_size: int = UNDATED_BATCH_SIZE) -> tuple:
     """FASE 2e - Ripesca dalla fonte le date che ci mancano ancora.
