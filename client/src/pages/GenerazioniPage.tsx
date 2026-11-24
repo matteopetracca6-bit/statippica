@@ -81,7 +81,7 @@ function Annata({ g, totale }: { g: any; totale: any[] }) {
       <div className="ed-pannello" style={{ borderColor: `color-mix(in srgb, ${COLORE} 40%, transparent)` }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 26, fontWeight: 900, color: "var(--ed-testo)" }}>Nati nel {g.anno}</span>
-          <span style={{ fontSize: 12.5, color: "var(--ed-muto)" }}>{g.eta} anni oggi · dati dal {g.fonte}</span>
+          <span style={{ fontSize: 12.5, color: "var(--ed-muto)" }}>{g.eta} anni oggi · {g.anno < 2012 ? "dal registro UNIRE" : "dall'archivio delle corse"}</span>
           {g.in_corso && <span style={{ fontSize: 11, fontWeight: 700, color: COLORI_GRAFICO.medio, border: `1px solid ${COLORI_GRAFICO.medio}`, borderRadius: 999, padding: "1px 8px" }}>carriere ancora in corso</span>}
         </div>
         {g.campione && (
