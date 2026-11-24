@@ -3,20 +3,26 @@ on:
   push:
     branches: [prova/api-verifica]
 jobs:
-  simulatore:
+  allena:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        variante: [base, piste, inc13, inc24, spunto10, spunto04, solo_piste, solo_base]
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
-      - run: npm i tsx@4.19.2 >/dev/null 2>&1; VARIANTE=${{ matrix.variante }} npx tsx prova/sim2.ts
-  partenza:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          curl -s "https://www.trottoweb.it/TrottoWeb/php_resp/hPart.php" -o h.html; wc -c h.html
-          grep -o -i ".\{60\}\(autostart\|auto-start\|nastri\|partenza\).\{60\}" h.html | head -20
-          curl -s "https://www.trottoweb.it/TrottoWeb/php_resp/hNum.php" | grep -o 'href="[^"]*"' | head -5
+      - run: pip install -q xgboost==2.1.3 scikit-learn pandas numpy
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id=$(gh api repos/${{ github.repository }}/releases/tags/archivio --jq '.assets[] | select(.name=="data.db.gz") | .id')
+          gh api -H "Accept: application/octet-stream" repos/${{ github.repository }}/releases/assets/$id > data.db.gz
+          gunzip -f data.db.gz
+      - run: git show origin/main:modelli/top3_xgb.json > /dev/null 2>&1 || true; NTHREAD=4 python3 pronostico_top3.py --allena-v5 2>&1 | grep -v "^\[[0-9]*\]\s*verifica" | tail -80
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modelli-v5
+          path: |
+            modelli/top3_xgb.json
+            modelli/top3_verifica.json
+            modelli/top3_mattino_xgb.json
+            modelli/top3_mattino_verifica.json
+            modelli/vince_xgb.json
+            modelli/vince_verifica.json
