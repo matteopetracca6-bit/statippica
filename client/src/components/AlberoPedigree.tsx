@@ -116,15 +116,21 @@ export function righeGenerazioni(root: PedigreeNode, maxGen: number): (PedigreeN
   return righe;
 }
 
-/** Bollino del voto con i colori del sito (SSS oro, SS argento, S bronzo...). */
-function Bollino({ etichetta, grado, titolo, piccolo }: { etichetta: string; grado: string; titolo: string; piccolo: boolean }) {
+/** Voto in una posizione fissa (prima atleta, poi riproduttore), coi colori del
+ *  sito; se manca resta un trattino, cosi' i voti si leggono in colonna. */
+function Bollino({ grado, titolo, piccolo, storico = false }: { grado: string | null; titolo: string; piccolo: boolean; storico?: boolean }) {
   return (
-    <span title={titolo} style={{ display: "inline-flex", alignItems: "center", gap: 2, whiteSpace: "nowrap", flexShrink: 0 }}>
-      <span style={{ fontSize: piccolo ? 8 : 9, color: "hsl(210 8% 50%)" }}>{etichetta}</span>
-      <span className={`grade-badge grade-${grado}`}
-        style={{ fontSize: piccolo ? 9 : 10.5, padding: piccolo ? "0 3px" : "0 5px", minWidth: piccolo ? 17 : 24, lineHeight: piccolo ? "13px" : "16px", fontWeight: 800 }}>
-        {grado}
-      </span>
+    <span title={grado ? titolo : "Voto non disponibile"}
+      style={{ display: "inline-flex", alignItems: "center", gap: 1, width: piccolo ? 28 : 38, flexShrink: 0, whiteSpace: "nowrap" }}>
+      {grado ? (
+        <span className={`grade-badge grade-${grado}`}
+          style={{ fontSize: piccolo ? 9 : 10.5, padding: piccolo ? "0 3px" : "0 5px", minWidth: piccolo ? 18 : 26, lineHeight: piccolo ? "13px" : "16px", fontWeight: 800, textAlign: "center" }}>
+          {grado}
+        </span>
+      ) : (
+        <span style={{ display: "inline-block", minWidth: piccolo ? 18 : 26, textAlign: "center", fontSize: piccolo ? 9 : 10.5, color: "hsl(210 8% 32%)", lineHeight: piccolo ? "13px" : "16px" }}>–</span>
+      )}
+      {storico && grado && <span style={{ fontSize: piccolo ? 7 : 8, color: "hsl(210 8% 50%)", alignSelf: "flex-start" }}>st</span>}
     </span>
   );
 }
@@ -153,7 +159,7 @@ function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli 
   const maschio = node.sex === "M";
   const om = !!node.omonimo;
   const evidenziato = scelto || (!om && !!(hovered && node.name && node.name.toUpperCase() === hovered.toUpperCase()));
-  const bordo = evidenziato ? "hsl(25 85% 58%)" : om ? "hsl(210 8% 34%)" : maschio ? "hsl(212 50% 40%)" : "hsl(330 40% 45%)";
+  const bordo = evidenziato ? "hsl(25 85% 58%)" : "hsl(220 10% 22%)";
   const { atleta, ripr, storico } = votiDi(node);
   const rec = node.record ? formatRecord(node.record) : null;
   const nomeSize = gen === 0 ? 14 : gen >= 4 ? 10.5 : gen === 3 ? 11.5 : 12.5;
@@ -171,7 +177,7 @@ function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli 
         borderRadius: 8,
         background: evidenziato ? "hsl(25 45% 14%)" : om ? "hsl(220 8% 12%)" : "hsl(220 14% 11%)",
         border: `1px solid ${evidenziato ? bordo : "hsl(220 10% 20%)"}`,
-        borderLeft: `${piccolo ? 3 : 4}px ${om ? "dashed" : "solid"} ${colore && !evidenziato ? colore : bordo}`,
+        borderLeft: colore && !evidenziato ? `${piccolo ? 3 : 4}px solid ${colore}` : `1px ${om ? "dashed" : "solid"} ${bordo}`,
         boxShadow: evidenziato ? "0 2px 12px hsl(25 85% 58% / .25)" : "none",
       }}>
       <span style={{ display: "flex", alignItems: "center", gap: piccolo ? 3 : 5, minWidth: 0 }}>
@@ -180,7 +186,7 @@ function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli 
             <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto />
           </span>
         )}
-        <span style={{ fontSize: nomeSize, fontWeight: 700, color: om ? "hsl(210 8% 60%)" : "hsl(210 10% 90%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+        <span style={{ fontSize: nomeSize, fontWeight: 700, color: om ? "hsl(210 8% 60%)" : maschio ? "hsl(212 60% 82%)" : "hsl(330 55% 84%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
           {node.name}
         </span>
         {colore && (
@@ -197,12 +203,11 @@ function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli 
       ) : null}
       <span style={{ display: "flex", alignItems: "center", gap: piccolo ? 4 : 7, minWidth: 0, overflow: "hidden" }}>
         {om ? <span style={{ fontSize: piccolo ? 8.5 : 9.5, color: "hsl(210 8% 55%)", whiteSpace: "nowrap" }}>omonimo</span> : <>
-          {atleta && <Bollino etichetta={gen >= 3 ? "c" : "corse"} grado={atleta} piccolo={piccolo} titolo={`Voto da atleta (dalle sue corse): ${atleta}`} />}
-          {ripr && <Bollino etichetta={gen >= 3 ? (storico ? "f st." : "f") : storico ? "figli st." : "figli"} grado={ripr} piccolo={piccolo}
-            titolo={`Voto da ${maschio ? "stallone" : "fattrice"} (dai figli${storico ? " nati prima del 2012, scala storica" : ""}): ${ripr}`} />}
+          <Bollino grado={atleta} piccolo={piccolo} titolo={`Voto da atleta (dalle sue corse): ${atleta}`} />
+          <Bollino grado={ripr} piccolo={piccolo} storico={storico}
+            titolo={`Voto da ${maschio ? "stallone" : "fattrice"} (dai figli${storico ? " nati prima del 2012, scala storica" : ""}): ${ripr}`} />
           {rec && rec !== "—" && <span className="tabular" title="Miglior tempo al km in carriera"
             style={{ fontSize: piccolo ? 9 : 10.5, color: "hsl(183 55% 62%)", whiteSpace: "nowrap", marginLeft: "auto", flexShrink: 0 }}>{rec}</span>}
-          {!atleta && !ripr && !rec && <span style={{ fontSize: piccolo ? 8.5 : 9.5, color: "hsl(210 8% 40%)", whiteSpace: "nowrap" }}>senza voti</span>}
         </>}
       </span>
     </button>
@@ -285,6 +290,7 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
 }) {
   const righe = righeGenerazioni(root, generazioni);
   const { rip, colore, chiave } = antenatiRipetuti(root, generazioni);
+  const GAP = 18;
   const [scelto, setScelto] = useState<PedigreeNode | null>(null);
   // 24/11/2026: griglia vera invece di colonne indipendenti. Ogni casella
   // occupa esattamente le righe dei suoi antenati (2^(ultima-gen) righe), quindi
@@ -306,18 +312,44 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
       {scelto && <DettaglioAntenato node={scelto} volte={rip.find(([k]) => k === chiave(scelto))?.[1].n} onChiudi={() => setScelto(null)} />}
       <div style={{ overflowX: "auto" }}>
         <div style={{ minWidth: larghezzaMin }}>
-          <div style={{ display: "grid", gridTemplateColumns: colonne, columnGap: 8, marginBottom: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: colonne, columnGap: GAP, marginBottom: 8 }}>
             {righe.map((_, g) => (
               <div key={g} style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", color: "hsl(210 8% 40%)", textAlign: "center", whiteSpace: "nowrap" }}>
                 {GEN_TITOLI[g] || `${g}ª gen.`}
               </div>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: colonne, gridTemplateRows: `repeat(${righeTot}, ${riga}px)`, columnGap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: colonne, gridTemplateRows: `repeat(${righeTot}, ${riga}px)`, columnGap: GAP }}>
+            {/* Le due fasce: lato del padre sopra, lato della madre sotto. */}
+            {generazioni >= 1 && [0, 1].map(lato => (
+              <div key={`fascia-${lato}`} aria-hidden style={{
+                gridColumn: `2 / ${generazioni + 2}`, gridRow: `${lato * righeTot / 2 + 1} / span ${righeTot / 2}`,
+                margin: lato === 0 ? "0 -6px 3px -6px" : "3px -6px 0 -6px", borderRadius: 12,
+                background: lato === 0 ? "hsl(212 60% 50% / .07)" : "hsl(330 55% 55% / .07)",
+                border: `1px solid ${lato === 0 ? "hsl(212 60% 50% / .18)" : "hsl(330 55% 55% / .18)"}`,
+              }} />
+            ))}
+            {generazioni >= 1 && [0, 1].map(lato => (
+              <div key={`nome-fascia-${lato}`} style={{
+                gridColumn: 1, gridRow: `${lato * righeTot / 2 + 1} / span ${righeTot / 2}`,
+                display: "flex", alignItems: lato === 0 ? "flex-start" : "flex-end", justifyContent: "flex-end",
+                padding: lato === 0 ? "4px 2px 0 0" : "0 2px 4px 0",
+                fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase",
+                color: lato === 0 ? "hsl(212 70% 68%)" : "hsl(330 60% 74%)",
+              }}>{lato === 0 ? "Lato padre →" : "Lato madre →"}</div>
+            ))}
             {righe.map((col, g) => col.map((n, i) => {
               const span = Math.pow(2, generazioni - g);
+              const figli = g < generazioni && !!n && !!(n.sire || n.dam);
+              const linea = "hsl(220 10% 34%)";
               return (
-                <div key={`${g}-${i}`} style={{ gridColumn: g + 1, gridRow: `${i * span + 1} / span ${span}`, display: "flex", alignItems: "center", minWidth: 0, minHeight: 0 }}>
+                <div key={`${g}-${i}`} style={{ gridColumn: g + 1, gridRow: `${i * span + 1} / span ${span}`, display: "flex", alignItems: "center", minWidth: 0, minHeight: 0, position: "relative", zIndex: 1 }}>
+                  {/* Linee che uniscono ogni cavallo a padre e madre. */}
+                  {g > 0 && n && <>
+                    <span aria-hidden style={{ position: "absolute", left: -GAP / 2, width: GAP / 2, top: "50%", borderTop: `1px solid ${linea}` }} />
+                    <span aria-hidden style={{ position: "absolute", left: -GAP / 2, top: i % 2 === 0 ? "50%" : 0, height: "50%", borderLeft: `1px solid ${linea}` }} />
+                  </>}
+                  {figli && <span aria-hidden style={{ position: "absolute", right: -GAP / 2, width: GAP / 2, top: "50%", borderTop: `1px solid ${linea}` }} />}
                   <div style={{ width: "100%", height: altezzaCasella(g), display: "flex", minWidth: 0 }}>
                     <Casella node={n} gen={g} maxGen={generazioni} hovered={hovered} onHover={onHover}
                       colore={n && g > 0 ? colore.get(chiave(n) ?? "") : undefined}
@@ -331,10 +363,9 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
         </div>
       </div>
       <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 11, color: "hsl(210 8% 48%)", flexWrap: "wrap", alignItems: "center" }}>
-        <span><b style={{ color: "hsl(210 8% 70%)" }}>corse / c</b> = voto da atleta, dalle sue corse</span>
-        <span><b style={{ color: "hsl(210 8% 70%)" }}>figli / f</b> = voto da stallone o fattrice («st.» = scala storica, figli nati prima del 2012)</span>
-        <span><span style={{ color: "hsl(183 55% 62%)" }}>1'11"2</span> = miglior km in carriera</span>
-        <span>Bordo sinistro blu = maschio, rosa = femmina; colorato = antenato ripetuto (×N)</span>
+        <span>Primo voto = da <b style={{ color: "hsl(210 8% 70%)" }}>atleta</b> (dalle sue corse) · secondo = da <b style={{ color: "hsl(210 8% 70%)" }}>stallone o fattrice</b> (dai figli) · «st» = scala storica, figli nati prima del 2012 · – = non disponibile</span>
+        <span><span style={{ color: "hsl(183 55% 62%)" }}>1.11.2</span> = miglior km in carriera</span>
+        <span>Nome azzurro = maschio, rosa = femmina · bordo colorato e ×N = antenato ripetuto</span>
       </div>
       <LineeERipetuti root={root} rip={rip} colore={colore} chiave={chiave} hovered={hovered} onHover={onHover} />
     </div>
