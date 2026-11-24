@@ -25,7 +25,6 @@ import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import AggiungiScuderia from "../components/AggiungiScuderia";
 import GradeBadge from "../components/GradeBadge";
 import PesoCosti from "../components/PesoCosti";
-import LegendaEsiti from "../components/LegendaEsiti";
 import SpeseBar from "../components/SpeseBar";
 import { Periodo, Risposta } from "../components/Periodo";
 import { ESITO_COLORE } from "@/lib/esiti";
@@ -33,9 +32,8 @@ import { useScuderia } from "@/lib/scuderia";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, nomeBello as titolo } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/mercato");
-const VERDE = "hsl(145 55% 52%)";
-const ROSSO = "hsl(0 60% 62%)";
-const ORO = "hsl(45 85% 60%)";
+import { VERDE, ROSSO, GIALLO, NEUTRO } from "@/lib/coloriEconomia";
+const GRIGIO_BARRA = "hsl(210 10% 58%)";
 const euro = (n: number | null | undefined) => (n == null ? "—" : (n < 0 ? "−\u2060€\u00a0" : "€\u00a0") + Math.abs(Math.round(n)).toLocaleString("it-IT"));
 const pc = (p: number | null | undefined) => (p == null ? "—" : p > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`);
 const pct = (p: number | null | undefined) => (p == null ? "—" : p < 0.01 && p > 0 ? "<1%" : `${Math.round(p * 100)}%`);
@@ -79,7 +77,7 @@ const CSS_PULEDRO = `
 /* ------------------------------------------------------------------ */
 
 function coloreRipaga(x: number | null | undefined) {
-  return x == null ? "var(--ed-muto)" : x >= 0.25 ? VERDE : x >= 0.1 ? ORO : ROSSO;
+  return x == null ? "var(--ed-muto)" : x >= 0.25 ? VERDE : x >= 0.1 ? GIALLO : ROSSO;
 }
 
 function SchedaLotto({ l, onConto, onClose }: { l: any; onConto: () => void; onClose?: () => void }) {
@@ -105,10 +103,10 @@ function SchedaLotto({ l, onConto, onClose }: { l: any; onConto: () => void; onC
       <div className="ed-cifre" style={{ marginTop: 14 }}>
         <Cifra titolo={l.venduto ? "Pagato" : "Ricomprato"} valore={l.venduto ? euro(l.prezzo) : "—"} sotto={!l.venduto && l.prezzo ? `battuto a ${euro(l.prezzo)}` : l.venduto ? "all'asta" : "non venduto"} />
         <Cifra titolo="Prezzo massimo" valore={pm == null ? "—" : pm > 0 ? euro(pm) : "nessuno"}
-          colore={!pm ? ROSSO : l.venduto && pm >= l.prezzo ? VERDE : ORO} sotto="in carriera, a 1.200 € al mese" />
+          colore={!pm ? ROSSO : l.venduto && pm >= l.prezzo ? VERDE : GIALLO} sotto="in carriera, a 1.200 € al mese" />
         <Cifra titolo="Si ripaga" valore={l.venduto ? pct(l.ripaga_entro_3_anni) : "—"} colore={coloreRipaga(l.ripaga_entro_3_anni)} sotto="entro i 3 anni" />
         <Cifra titolo="In pari sotto" valore={!l.venduto ? "—" : l.mensile_di_pareggio ? euro(l.mensile_di_pareggio) : "mai"} sotto="di costo al mese" />
-        {l.potenziale && <Cifra titolo="Potenziale a 4 anni" valore={lettera(l.potenziale.p50)} colore="hsl(265 85% 76%)"
+        {l.potenziale && <Cifra titolo="Potenziale a 4 anni" valore={<GradeBadge grade={lettera(l.potenziale.p50)} size="lg" />}
           sotto={`fra ${lettera(l.potenziale.p10)} e ${lettera(l.potenziale.p90)} · dai genitori · ${l.potenziale.etichetta?.esito ?? "in verifica"}`} />}
       </div>
 
@@ -117,7 +115,7 @@ function SchedaLotto({ l, onConto, onClose }: { l: any; onConto: () => void; onC
         {([["1 su 4 sotto", p.p25], ["tipico", p.mediana], ["1 su 4 sopra", p.p75]] as [string, number][]).map(([t, v]) => (
           <div key={t} style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr) 80px", gap: 8, alignItems: "center", fontSize: 12.5 }}>
             <span style={{ color: "var(--ed-muto)" }}>{t}</span>
-            <Barretta valore={v} max={maxP} colore={ORO} alta={9} />
+            <Barretta valore={v} max={maxP} colore={COLORE} alta={9} />
             <span className="tabular" style={{ textAlign: "right", color: "var(--ed-testo)", fontWeight: 700 }}>{euro(v)}</span>
           </div>
         ))}
@@ -186,7 +184,7 @@ function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
       <div className="ed-cifre">
         <Cifra titolo="Venduti davvero" valore={`${a.venduti} su ${a.lotti}`} sotto="gli altri ricomprati dal venditore" />
         <Cifra titolo="Spesa dei compratori" valore={euro(a.spesa_totale)} />
-        <Cifra titolo="Premi attesi" valore={euro(a.premi_al_proprietario_attesi)} colore={ORO} sotto={`fino ai 3 anni, contro ${euro(a.costo_totale_fino_a_3_anni)} fra prezzo e allenamento`} />
+        <Cifra titolo="Premi attesi" valore={euro(a.premi_al_proprietario_attesi)} colore={NEUTRO} sotto={`fino ai 3 anni, contro ${euro(a.costo_totale_fino_a_3_anni)} fra prezzo e allenamento`} />
         <Cifra titolo="Si ripaga in media" valore={pct(a.ripaga_entro_3_anni_medio)} colore={ROSSO} sotto="entro i 3 anni: conto prudente" />
       </div>
 
@@ -198,7 +196,7 @@ function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
             <span className="ed-nome">{NOME_ASTA[x.asta] ?? x.asta}</span>
             <span className="ed-sotto">{x.venduti} venduti su {x.lotti} · prezzo medio <b style={{ color: "var(--ed-testo)" }}>{euro(x.prezzo_medio)}</b></span>
             <span style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
-              <span><span className="ed-etich">Premi attesi</span><span className="tabular" style={{ display: "block", fontWeight: 800, color: ORO }}>{euro(x.premi_2_3_anni_medi_attesi)}</span></span>
+              <span><span className="ed-etich">Premi attesi</span><span className="tabular" style={{ display: "block", fontWeight: 800, color: NEUTRO }}>{euro(x.premi_2_3_anni_medi_attesi)}</span></span>
               <span><span className="ed-etich">Si ripaga</span><span className="tabular" style={{ display: "block", fontWeight: 800, color: coloreRipaga(x.ripaga_entro_3_anni_medio) }}>{pct(x.ripaga_entro_3_anni_medio)}</span></span>
             </span>
           </button>
@@ -206,7 +204,7 @@ function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
       </div>
       {v.length > 0 && (
         <p style={{ fontSize: 12.5, color: "var(--ed-muto)", lineHeight: 1.6, margin: "10px 0 0" }}>
-          <b style={{ color: ORO }}>{positivi} venduti su {v.length}</b> hanno un prezzo massimo sopra zero; <b style={{ color: "var(--ed-testo)" }}>{sotto}</b>{" "}
+          <b style={{ color: "var(--ed-testo)" }}>{positivi} venduti su {v.length}</b> hanno un prezzo massimo sopra zero; <b style={{ color: "var(--ed-testo)" }}>{sotto}</b>{" "}
           {sotto === 1 ? "è stato pagato" : "sono stati pagati"} meno del loro prezzo massimo. Chi compra all'asta paga anche la speranza del campione,
           la rivendita e, per le femmine, il valore da fattrice.
         </p>
@@ -243,14 +241,14 @@ function Aste({ d, apriConto }: { d: any; apriConto: (s: Scelta) => void }) {
                     <span style={{ minWidth: 0 }}>
                       <span className="ed-nome" style={{ display: "block" }}>{l.puledro} <span style={{ color: "var(--ed-fioco)", fontWeight: 600, fontSize: 11 }}>{l.sesso}</span>
                         {l.potenziale && <span title={`Potenziale a 4 anni: ${lettera(l.potenziale.p50)}, fra ${lettera(l.potenziale.p10)} e ${lettera(l.potenziale.p90)}`}
-                          style={{ color: "hsl(265 85% 76%)", fontWeight: 700, fontSize: 11, marginLeft: 6 }}>→ {lettera(l.potenziale.p50)}</span>}</span>
+                          style={{ marginLeft: 6, display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5, color: "var(--ed-fioco)", fontWeight: 600, verticalAlign: 1 }}>a 4 anni <GradeBadge grade={lettera(l.potenziale.p50)} size="sm" /></span>}</span>
                       <span className="ed-sotto" style={{ display: "block" }}>{titolo(l.padre)} × {l.madre ? titolo(l.madre) : "—"}</span>
                       <span style={{ display: "block", marginTop: 5 }}><Barretta valore={l.venduto ? l.prezzo : 0} max={maxPrezzo} colore="hsl(210 10% 55%)" alta={4} /></span>
                       <span className="ed-sotto" style={{ display: "block" }}>{NOME_ASTA[l.asta] ?? l.asta} · lotto {l.lotto} · {l.venduto ? euro(l.prezzo) : "ricomprato"}</span>
                     </span>
                     <span style={{ textAlign: "right" }}>
                       <span className="tabular" style={{ display: "block", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap",
-                        color: !pm ? ROSSO : l.venduto && pm >= l.prezzo ? VERDE : ORO }}>{pm == null ? "—" : pm > 0 ? euro(pm) : "nessuno"}</span>
+                        color: !pm ? ROSSO : l.venduto && pm >= l.prezzo ? VERDE : GIALLO }}>{pm == null ? "—" : pm > 0 ? euro(pm) : "nessuno"}</span>
                       <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)" }}>prezzo massimo</span>
                     </span>
                   </button>
@@ -301,9 +299,9 @@ function GenerazioneM({ d }: { d: any }) {
 
   return (
     <div>
-      <div className="ed-pannello" style={{ borderColor: "color-mix(in srgb, " + ORO + " 45%, transparent)", fontSize: 12.5, color: "var(--ed-testo)", lineHeight: 1.6, marginBottom: 14 }}
+      <div className="ed-pannello" style={{ borderColor: "color-mix(in srgb, " + GIALLO + " 45%, transparent)", fontSize: 12.5, color: "var(--ed-testo)", lineHeight: 1.6, marginBottom: 14 }}
         data-testid="avviso-sperimentale">
-        <b style={{ color: ORO }}>Sperimentale.</b> I trottatori nati nel 2025 hanno il nome che comincia per M e debutteranno a 2 anni nel 2027.
+        <b style={{ color: GIALLO }}>Sperimentale.</b> I trottatori nati nel 2025 hanno il nome che comincia per M e debutteranno a 2 anni nel 2027.
         I numeri della generazione intera sono provati sul passato e tengono; quelli del singolo puledro sono un intervallo largo, non una previsione.
         Questo non è il modello di allevamento del sito.
       </div>
@@ -312,7 +310,7 @@ function GenerazioneM({ d }: { d: any }) {
         <Cifra titolo="Nati nel 2025" valore={num(g.nati_ufficiali)} sotto="il numero più basso degli ultimi anni" />
         <Cifra titolo="Correranno a 2 anni" valore={`~${num(g.corrono_a_2_anni[1])}`} sotto={`fra ${num(g.corrono_a_2_anni[0])} e ${num(g.corrono_a_2_anni[2])}: il ${pct(g.quota_corrono_2_anni)} dei nati`} />
         <Cifra titolo="Correranno a 3 anni" valore={`~${num(g.corrono_a_3_anni[1])}`} sotto={`fra ${num(g.corrono_a_3_anni[0])} e ${num(g.corrono_a_3_anni[2])}`} />
-        <Cifra titolo="Premi a 2 anni" valore={euro(g.premi_2_anni_per_nato)} colore={ORO} sotto={piu2 != null ? `per nato, circa il ${piu2}% più della generazione ${ult.generazione}` : "per nato"} />
+        <Cifra titolo="Premi a 2 anni" valore={euro(g.premi_2_anni_per_nato)} colore={NEUTRO} sotto={piu2 != null ? `per nato, circa il ${piu2}% più della generazione ${ult.generazione}` : "per nato"} />
       </div>
 
       <div className="ed-griglia" style={{ marginTop: 16 }}>
@@ -322,15 +320,15 @@ function GenerazioneM({ d }: { d: any }) {
             I premi per i giovani sono quasi fissi: con meno puledri, a ciascuno tocca una fetta più grande.
           </p>
           {([["Nati", "nati", maxN, "hsl(210 10% 58%)", (v: number) => num(v)],
-            ["Premi a 2 anni, per nato", "premi_2_anni_per_nato", max2, ORO, euro],
-            ["Premi a 3 anni, per nato", "premi_3_anni_per_nato", max3, COLORE, euro]] as const).map(([t, k, mx, col, f]) => (
+            ["Premi a 2 anni, per nato", "premi_2_anni_per_nato", max2, GRIGIO_BARRA, euro],
+            ["Premi a 3 anni, per nato", "premi_3_anni_per_nato", max3, GRIGIO_BARRA, euro]] as const).map(([t, k, mx, col, f]) => (
             <div key={k} style={{ marginBottom: 14 }}>
               <div className="ed-etich" style={{ marginBottom: 6 }}>{t}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 {righe.map((x: any) => (
                   <div key={x.generazione} className="pu-gen">
-                    <span style={{ color: x.m ? ORO : "var(--ed-testo)", fontWeight: x.m ? 800 : 600 }}>{x.generazione}</span>
-                    <Barretta valore={x[k]} max={mx} colore={x.m ? ORO : col} alta={10} />
+                    <span style={{ color: x.m ? COLORE : "var(--ed-testo)", fontWeight: x.m ? 800 : 600 }}>{x.generazione}</span>
+                    <Barretta valore={x[k]} max={mx} colore={x.m ? COLORE : col} alta={10} />
                     <span className="tabular" style={{ textAlign: "right", color: "var(--ed-testo)", fontWeight: x.m ? 800 : 500 }}>
                       {x[k] == null ? "in corso" : (f as any)(x[k])}
                     </span>
@@ -359,7 +357,7 @@ function GenerazioneM({ d }: { d: any }) {
                   <b style={{ color: "var(--ed-testo)" }}>pagati {x.fascia} €</b>
                   <span style={{ color: "var(--ed-muto)" }}>{x.lotti} puledri · {pct(x.corsi_a_2_anni)} corsi a 2 anni</span>
                 </div>
-                {([["2 anni", x.premi_2_anni_medi, ORO, `tipico ${euro(x.premi_2_anni_mediana)}`], ["3 anni finora", x.premi_3_anni_finora_medi, COLORE, ""]] as const).map(([t, val, col, nota]) => (
+                {([["2 anni", x.premi_2_anni_medi, COLORE, `tipico ${euro(x.premi_2_anni_mediana)}`], ["3 anni finora", x.premi_3_anni_finora_medi, GRIGIO_BARRA, ""]] as const).map(([t, val, col, nota]) => (
                   <div key={t} style={{ display: "grid", gridTemplateColumns: "84px minmax(0, 1fr) 76px", gap: 8, alignItems: "center", fontSize: 12, marginTop: 5 }}>
                     <span style={{ color: "var(--ed-muto)" }}>{t}</span>
                     <Barretta valore={val} max={maxF} colore={col} alta={8} />
@@ -474,7 +472,8 @@ function RendeOgniVoto() {
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <Risposta etichetta="Da che voto un cavallo si ripaga" periodo="tutta la carriera, media storica"
-        colore={vp ? COLORE_ESITO.pareggio : COLORE_ESITO.perdita} valore={vp ?? "nessuno"}
+        colore={vp ? COLORE_ESITO.pareggio : COLORE_ESITO.perdita}
+        valore={vp ? <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}><span>dal voto</span><span className={`grade-badge grade-${vp}`} style={{ fontSize: 24, padding: "2px 12px", lineHeight: 1.2 }}>{vp}</span></span> : "nessun voto"}
         verdetto={vp ? "in su" : "con queste spese"}
         testo={vp ? <>Con le tue spese, solo dal voto {vp} in su il cavallo tipico non è in perdita.</> : <>Con queste spese nessun voto, nel caso tipico, ripaga i costi.</>}
         sotto={<>Carriere vere di {ip.cavalli_osservati.toLocaleString("it-IT")} cavalli nati fra il {ip.annate[0]} e il {ip.annate[1]}. Si legge come una media storica, non come la previsione su un cavallo.</>} />
@@ -532,7 +531,6 @@ function RendeOgniVoto() {
           </tbody>
         </table>
         </div>
-        <LegendaEsiti style={{ marginTop: 12 }} />
       </div>
       <div className="ed-pannello">
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>

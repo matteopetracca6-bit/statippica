@@ -20,7 +20,6 @@ import { TrendingUp, ChevronLeft, ChevronRight, Search, X, ArrowRight } from "lu
 import Sagoma from "../components/Sagoma";
 import AggiungiScuderia from "../components/AggiungiScuderia";
 import GradeBadge from "../components/GradeBadge";
-import LegendaEsiti from "../components/LegendaEsiti";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { ESITO_COLORE } from "@/lib/esiti";
@@ -28,6 +27,7 @@ import { testoProb } from "@/lib/probCopre";
 import BandieraCavallo from "@/components/BandieraCavallo";
 import { useScuderia } from "@/lib/scuderia";
 import SpeseBar from "../components/SpeseBar";
+import { NEUTRO } from "@/lib/coloriEconomia";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/tenere");
@@ -105,7 +105,7 @@ function SchedaCavallo({ r, costo, onClose }: { r: any; costo: number; onClose?:
       </div>
 
       <div className="ed-cifre" style={{ marginTop: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-        <Cifra titolo="Premi attesi" valore={euro(r.attesi)} colore="hsl(45 80% 62%)" sotto="nei prossimi 12 mesi" />
+        <Cifra titolo="Premi attesi" valore={euro(r.attesi)} colore={NEUTRO} sotto="nei prossimi 12 mesi" />
         <Cifra titolo="Saldo atteso" valore={euro(r.saldo)} colore={c} sotto="premi attesi meno la spesa" />
         <Cifra titolo="Ultimi 12 mesi" valore={euro(r.ultimo)} sotto="premi già vinti" />
         <Cifra titolo="Coprire la spesa" valore={testoProb(r.prob, r.estremo)} colore={coloreProb(r.prob)} />
@@ -250,7 +250,7 @@ function SchedaStallone({ s, costo, onClose }: { s: any; costo: number; onClose?
       <div className="ed-cifre" style={{ marginTop: 14, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
         <Cifra titolo="Probabilità media" valore={`${Math.round(s.prob_media)}%`} colore={coloreProb(s.prob_media)} sotto={`che un figlio copra ${euro(costo)}`} />
         <Cifra titolo="Saldo medio" valore={euro(s.saldo_medio)} colore={s.saldo_medio >= 0 ? ESITO_COLORE.profitto : ESITO_COLORE.perdita} sotto="per figlio, nei prossimi 12 mesi" />
-        <Cifra titolo="Premi attesi" valore={euro(s.attesi_mediani)} colore="hsl(45 80% 62%)" sotto="il figlio a metà classifica" />
+        <Cifra titolo="Premi attesi" valore={euro(s.attesi_mediani)} colore={NEUTRO} sotto="il figlio a metà classifica" />
         <Cifra titolo="Figli in utile" valore={`${s.in_utile} su ${s.figli}`} colore={ESITO_COLORE.profitto} sotto={`${Math.round((100 * s.in_utile) / t)}% dei figli in attività`} />
       </div>
       <div className="ed-etich" style={{ margin: "14px 0 6px" }}>Utile, pari e perdita fra i figli</div>
@@ -270,7 +270,7 @@ function SchedaStallone({ s, costo, onClose }: { s: any; costo: number; onClose?
                 <b style={{ color: "var(--ed-testo)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.migliore.nome}</b>
                 {s.migliore.voto && <GradeBadge grade={s.migliore.voto} size="sm" />}
               </span>
-              <span className="tabular" style={{ color: "hsl(45 80% 62%)", fontWeight: 700, whiteSpace: "nowrap" }}>{euro(s.migliore.attesi)}</span>
+              <span className="tabular" style={{ color: NEUTRO, fontWeight: 700, whiteSpace: "nowrap" }}>{euro(s.migliore.attesi)}</span>
             </a>
           </Link>
         </>
@@ -379,7 +379,6 @@ export default function TenerePage() {
 
       {scheda === "cavalli" ? <ElencoCavalli mensile={mensile} costo={costo} /> : <PerStallone mensile={mensile} costo={costo} />}
 
-      <LegendaEsiti style={{ marginTop: 14 }} />
       <Spiegazione titolo="Come è fatto il conto e cosa non dice">
         <p>
           I premi attesi vengono da un modello XGBoost che ha imparato da fotografie trimestrali dei cavalli fra il 2016 e il 2023 ed è stato

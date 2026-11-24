@@ -10,12 +10,14 @@
 import { useEffect, useState } from "react";
 import { Pencil, Check, CalendarRange } from "lucide-react";
 import { useScuderia } from "@/lib/scuderia";
+import GradeBadge from "./GradeBadge";
+import { VERDE, GIALLO, ROSSO, COLORE_ECONOMIA } from "@/lib/coloriEconomia";
 
 const euro = (n: number) => "€ " + Math.round(n).toLocaleString("it-IT");
 const TESTO = "hsl(210 10% 90%)";
 const MUTO = "hsl(210 8% 56%)";
 
-export default function SpeseBar({ periodo, conMonta = false, colore = "hsl(160 60% 50%)" }: {
+export default function SpeseBar({ periodo, conMonta = false, colore = COLORE_ECONOMIA }: {
   /** Che periodo guardano i numeri della pagina: "i prossimi 12 mesi", "tutta la carriera"... */
   periodo: string;
   /** Mostra anche il prezzo della monta (serve per i conti di un puledro da allevare). */
@@ -63,6 +65,19 @@ export default function SpeseBar({ periodo, conMonta = false, colore = "hsl(160 
             color: colore, borderRadius: 8, padding: "5px 11px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
           {aperta ? <><Check size={13} /> Fatto</> : <><Pencil size={13} /> Cambia</>}
         </button>
+      </div>
+      {/* Legenda unica, uguale in tutte le pagine di Economia. */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", marginTop: 8, fontSize: 11.5, color: MUTO }} data-testid="legenda-economia">
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
+          Voti {["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"].map(v => <GradeBadge key={v} grade={v} size="sm" />)}
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          Soldi {([[VERDE, "in utile"], [GIALLO, "in pari"], [ROSSO, "in perdita"]] as const).map(([c, t]) => (
+            <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span style={{ width: 9, height: 9, borderRadius: 99, background: c, display: "inline-block" }} />{t}
+            </span>
+          ))}
+        </span>
       </div>
       {aperta && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 22px", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid hsl(220 10% 20%)" }}>

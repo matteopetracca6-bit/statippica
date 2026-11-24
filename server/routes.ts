@@ -626,7 +626,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const madre = String(req.query.madre ?? "").trim().toUpperCase() || null;
       const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
       const monta = req.query.monta != null && req.query.monta !== "" ? numero(req.query.monta, NaN, 0, 500_000) : null;
-      res.json({ mensile, ...valutaIncrocio(db, padre, madre, mensile, Number.isFinite(monta as number) ? monta : null) });
+      let potenziale = null;
+      try { potenziale = potenzialeNascita(db, padre, contestoMadre(db, madre ?? "")); } catch { /* resta il conto sui figli */ }
+      res.json({ mensile, ...valutaIncrocio(db, padre, madre, mensile, Number.isFinite(monta as number) ? monta : null, potenziale) });
     } finally {
       db.close();
     }
