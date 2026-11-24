@@ -331,7 +331,15 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
   // Dal 24/11/2026 le probabilita' vengono dal modello del potenziale alla
   // nascita quando c'e' (piu' morbide: non saltano per un figlio in piu' o in
   // meno); il conto sui soli figli resta come riserva.
-  const prob = potenziale ? probabilitaDaPotenziale(potenziale, pop.NON_CORSO) : probFigli;
+  // 24/11/2026, via di mezzo: la curva del modello vale come 60 figli. Chi ha
+  // tanti figli veri (Varenne, 948) pesa soprattutto su quelli; chi ne ha
+  // pochi si appoggia al modello invece che alla media di tutti i cavalli.
+  const K_MODELLO = 60;
+  const probModello = potenziale ? probabilitaDaPotenziale(potenziale, pop.NON_CORSO) : null;
+  const prob: Record<string, number> = {};
+  for (const g of [...ORDINE_VOTI, "NON_CORSO"])
+    prob[g] = probModello ? ((conta[g] ?? 0) + K_MODELLO * probModello[g]) / (n + K_MODELLO) : probFigli[g];
+  const pesoFigli = probModello ? n / (n + K_MODELLO) : null;
 
   // Per ogni voto: utile medio e quota in utile, con l'ingresso di questo incrocio.
   const esiti = ORDINE_VOTI.filter(v => b.perVoto[v]?.length).map(v => {
@@ -360,6 +368,7 @@ export function valutaIncrocio(db: Database.Database, padre: string, madre: stri
     probabilita: [...esiti.map(x => ({ voto: x.voto, p: Math.round(1000 * x.p) / 10 })),
                   { voto: "Non corre", p: Math.round(1000 * prob.NON_CORSO) / 10 }],
     fonte_probabilita: potenziale ? "modello" : "figli",
+    peso_figli: pesoFigli == null ? null : Math.round(100 * pesoFigli) / 100,
     potenziale: potenziale ? { p10: potenziale.p10, p50: potenziale.p50, p90: potenziale.p90, etichetta: potenziale.etichetta ?? null } : null,
     costo_atteso: ignoto ? null : Math.round(costoAtteso),
     utile_atteso: ignoto ? null : Math.round(utileAtteso),
