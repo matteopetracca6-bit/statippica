@@ -55,7 +55,10 @@ export interface Simulazione {
  */
 export const PARAMETRI = {
   ritmo: 1.3,        // secondi al km aggiunti a tutti: cosi' il vincitore simulato va come quello vero
-  incertezza: 1.8,   // quanto caso sul tempo al km di ogni corsa (piu' caso = previsioni meno sicure di se', e piu' giuste)
+  // quanto caso sul tempo al km di ogni corsa. 1,8 fino al 24/11/2026; con la
+  // taratura sul pronostico 1,3 sbaglia meno sul vincitore (prova su 220 corse:
+  // log loss sul vincitore 1,790 -> 1,781, probabilita' al vincitore 21,4% -> 22,3%).
+  incertezza: 1.3,
   numero: 5,         // metri guadagnati o persi alla partenza per ogni punto di ln(vantaggio del numero): conta poco
   galoppo: 1.03,     // probabilita' di rompere = rischio di squalifica x questo (squalifiche simulate = vere)
   spunto: 0.7,       // peso dello spunto nel finale
