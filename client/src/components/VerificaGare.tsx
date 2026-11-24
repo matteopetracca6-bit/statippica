@@ -264,8 +264,8 @@ export default function VerificaGare() {
           <div className="etichetta" style={{ color: "hsl(40 75% 60%)" }}>Risultati in arrivo</div>
           {[...attesaPerGiorno.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([g, x]) => (
             <div key={g} style={{ fontSize: 13, color: "hsl(210 10% 86%)", marginTop: 6, lineHeight: 1.5 }}>
-              <b style={{ textTransform: "capitalize" }}>{dataLunga(g)}</b>: {x.n} {x.n === 1 ? "corsa aspetta" : "corse aspettano"} l'arrivo
-              ({[...x.piste].map(titolo).join(", ")}). {testoControllo(x.controllo, d.tentativi_max ?? 8)}.
+              <b>{dataLunga(g).replace(/^./, c => c.toUpperCase())}</b>: {x.n} {x.n === 1 ? "corsa aspetta" : "corse aspettano"} l'arrivo
+              ({[...x.piste].map(titolo).join(", ")}). {testoControllo(x.controllo, d.tentativi_max ?? 8).replace(/^./, c => c.toUpperCase())}.
             </div>
           ))}
           <div className="nota">Il giro notturno ricontrolla gli arrivi finché Trottoweb non li pubblica; poi la giornata entra nel conto da sola.</div>

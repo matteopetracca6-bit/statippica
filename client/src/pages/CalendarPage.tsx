@@ -313,7 +313,7 @@ export default function CalendarPage() {
                                                   {entry.driver && <span>{entry.driver.replace(/\s*-\d+-\s*$/, "")}</span>}
                                                   {entry.birth_year && <span>{new Date().getFullYear() - entry.birth_year} anni</span>}
                                                   {entry.sire && <span>da {entry.sire}</span>}
-                                                  {entry.career_races != null && <span>{entry.career_races} corse{entry.win_rate ? `, ${entry.win_rate.toFixed(0)}% vinte` : ""}</span>}
+                                                  {entry.career_races != null && <span>{entry.career_races === 0 ? "debutto" : `${entry.career_races} ${entry.career_races === 1 ? "corsa" : "corse"}`}{entry.win_rate ? `, ${entry.win_rate.toFixed(0)}% vinte` : ""}</span>}
                                                 </div>
                                                 {entry.galoppo && <ChipGaloppo g={entry.galoppo} />}
                                                 {entry.top3 && entry.top3.motivi.length > 0 && (
