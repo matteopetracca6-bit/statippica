@@ -2746,7 +2746,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
     // il confronto diretto usa l'indice: ripulirli con UPPER/TRIM obbligava
     // a leggere tutti i 23.000 cavalli per ogni casella dell'albero.
     const horseStmt = db.prepare(`
-      SELECT name, birth_year, sire, dam, sex, country, career_earnings, career_wins, career_races
+      SELECT name, birth_year, sire, dam, sex, country, career_earnings, career_wins, career_races, record_career
       FROM horses WHERE name = ? ORDER BY birth_year DESC LIMIT 1
     `);
     const horseCache = new Map<string, any>();
@@ -2836,6 +2836,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
         career_earnings: h.career_earnings,
         career_wins: h.career_wins,
         career_races: h.career_races,
+        record: h.record_career ?? null,
         sire: sireName ? buildTree(sireName, depth + 1, chain + "p", useName, useChain + "p", h.birth_year ?? null, annoMax) : null,
         dam:  damName  ? buildTree(damName,  depth + 1, chain + "m", useName, useChain + "m", h.birth_year ?? null, annoMax) : null,
         anno_max: h.birth_year ? null : annoMax,
