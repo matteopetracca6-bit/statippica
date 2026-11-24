@@ -174,7 +174,12 @@ function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli 
         borderLeft: `${piccolo ? 3 : 4}px ${om ? "dashed" : "solid"} ${colore && !evidenziato ? colore : bordo}`,
         boxShadow: evidenziato ? "0 2px 12px hsl(25 85% 58% / .25)" : "none",
       }}>
-      <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+      <span style={{ display: "flex", alignItems: "center", gap: piccolo ? 3 : 5, minWidth: 0 }}>
+        {!om && (
+          <span style={{ flexShrink: 0, display: "inline-flex", fontSize: piccolo ? 9 : 11, lineHeight: 1 }}>
+            <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto />
+          </span>
+        )}
         <span style={{ fontSize: nomeSize, fontWeight: 700, color: om ? "hsl(210 8% 60%)" : "hsl(210 10% 90%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
           {node.name}
         </span>
@@ -184,9 +189,9 @@ function Casella({ node, gen, hovered, onHover, colore, volte, scelto, onScegli 
             ×{volte}
           </span>
         )}
-        {!piccolo && node.birth_year ? (
+        {gen <= 2 && node.birth_year ? (
           <span className="tabular" style={{ marginLeft: "auto", fontSize: 10, color: "hsl(210 8% 46%)", whiteSpace: "nowrap", flexShrink: 0 }}>
-            <BandieraCavallo nome={node.name} paese={node.country} ignoto_se_vuoto /> {node.birth_year}
+            {node.birth_year}
           </span>
         ) : null}
       </span>
