@@ -39,7 +39,13 @@ from pathlib import Path
 CARTELLA = Path(__file__).resolve().parent / "modelli"
 FILE_MODELLO = CARTELLA / "top3_xgb.json"
 FILE_VERIFICA = CARTELLA / "top3_verifica.json"
-NOME_MODELLO = "top3-xgb-v4"
+NOME_MODELLO = "top3-xgb-v5"
+# Dalla versione 5 (24/11/2026): il modello del mattino (con la ferratura di
+# oggi, che la fonte scrive solo il giorno della corsa) e quello per la vittoria.
+FILE_MATTINO = CARTELLA / "top3_mattino_xgb.json"
+FILE_VERIFICA_MATTINO = CARTELLA / "top3_mattino_verifica.json"
+FILE_VINCE = CARTELLA / "vince_xgb.json"
+FILE_VERIFICA_VINCE = CARTELLA / "vince_verifica.json"
 ULTIME_VARIABILI = None  # righe dell'ultima notte, riusate dal rischio di galoppo
 
 # Ordine fisso delle variabili: il modello le legge per posizione.
@@ -379,6 +385,139 @@ def costruisci_variabili(conn: sqlite3.Connection, con_calendario: bool = False)
                        ("h_tempo_migl", "s_tempo_migl"), ("h_classe5", "s_classe5")):
         df[dest] = df[sorg] - gg[sorg].transform("mean")
 
+    df = variabili_v5(df)
+    return df
+
+
+# Dalla versione 5 (novembre 2026): tempi corretti per pista, scontri diretti
+# e forza del campo, forma degli ultimi 30 giorni di guidatore e allenatore.
+VARIABILI_V5 = [
+    "h_ind_migl", "h_ind_med5", "r_ind_migl", "s_ind_med5",
+    "h2h", "h2h_n", "campo_premi", "campo_vs_solito",
+    "d_top3_30", "d_n_30", "r_d_top3_30", "a_top3_30", "a_n_30",
+]
+# La ferratura di oggi: si conosce solo la mattina della corsa. Entra nel
+# modello del mattino, non in quello della notte (dove sarebbe sempre vuota).
+VARIABILI_FERRI = ["oggi_scalzo_ant", "oggi_scalzo_post", "cambio_ferri", "toglie_ferri",
+                   "h_top3_scalzo", "h_top3_ferrato", "h_scalzo_quota"]
+
+
+def variabili_v5(df):
+    """Le variabili della versione 5, aggiunte a quelle di costruisci_variabili.
+    Tutte guardano solo al passato della riga (nessun dato dal futuro)."""
+    import time
+    import numpy as np
+    import pandas as pd
+    t0 = time.time()
+    fut = df["futura"].astype(bool)
+
+    # 1) Indice di velocita': il tempo al km meno il tempo tipico di QUELLA
+    #    pista su QUELLA fascia di distanza, misurato sull'anno prima (mai
+    #    sull'anno della corsa). 1'13" a Torino non vale 1'13" a Taranto.
+    anno = df["data"].dt.year
+    fascia = pd.cut(df["distanza"], [0, 1799, 2199, 9999], labels=False)
+    base = pd.DataFrame({"pista": df["pista"], "f": fascia, "anno": anno, "t": df["tempo"]})[~fut & df["tempo"].notna() & fascia.notna()]
+    tab = base.groupby(["pista", "f", "anno"])["t"].agg(["median", "count"]).reset_index()
+    tab = tab[tab["count"] >= 30]
+    tab_g = base.groupby(["f", "anno"])["t"].median().reset_index().rename(columns={"t": "mg"})
+    q = pd.DataFrame({"pista": df["pista"], "f": fascia, "anno": anno - 1})
+    q = q.merge(tab[["pista", "f", "anno", "median"]], on=["pista", "f", "anno"], how="left")
+    q2 = pd.DataFrame({"pista": df["pista"], "f": fascia, "anno": anno - 2}).merge(
+        tab[["pista", "f", "anno", "median"]], on=["pista", "f", "anno"], how="left")
+    q3 = pd.DataFrame({"f": fascia, "anno": anno - 1}).merge(tab_g, on=["f", "anno"], how="left")
+    rif = q["median"].fillna(q2["median"]).fillna(q3["mg"]).to_numpy()
+    df["_ind"] = df["tempo"].to_numpy() - rif
+    df["h_ind_migl"] = _minimo_passato(df, "cavallo", "_ind")
+    df["h_ind_med5"] = _mobile_passata(df, "cavallo", "_ind", 5)
+    gg = df.groupby("gara", sort=False)
+    df["r_ind_migl"] = gg["h_ind_migl"].rank(pct=True, ascending=False)
+    df["s_ind_med5"] = df["h_ind_med5"] - gg["h_ind_med5"].transform("mean")
+    df = df.drop(columns=["_ind"])
+    t1 = time.time()
+
+    # 2) Scontri diretti: con gli stessi avversari di oggi, quante volte il
+    #    cavallo e' arrivato davanti e quante dietro, nelle corse precedenti.
+    #    Chi non finisce la corsa conta dietro a chi la finisce.
+    # Le coppie si tengono come numeri (id del cavallo) per stare in memoria:
+    # chiave = a * M + b con a < b, valore = netto * 2^20 + incontri.
+    ids = pd.factorize(df["cavallo"])[0].astype(np.int64)
+    M = int(ids.max()) + 2
+    d = pd.DataFrame({"g": df["gara"].to_numpy(), "data": df["data"].to_numpy(), "c": ids,
+                      "pos": pd.to_numeric(df["arrivo"], errors="coerce").fillna(99).to_numpy(),
+                      "fut": fut.to_numpy(), "i": np.arange(len(df))})
+    d = d.sort_values(["data", "g"])
+    netto = np.full(len(df), np.nan)
+    incontri = np.zeros(len(df))
+    stato: dict = {}
+    MASK = (1 << 20) - 1
+    for _, giorno in d.groupby("data", sort=True):
+        gare = [(c["c"].tolist(), c["pos"].tolist(), c["i"].tolist(), bool(c["fut"].iloc[0])) for _, c in giorno.groupby("g", sort=False)]
+        for cs, _ps, ix, _f in gare:                # prima si legge (il passato)...
+            for a_, ia in zip(cs, ix):
+                s_, n_ = 0, 0
+                for b_ in cs:
+                    if b_ == a_:
+                        continue
+                    v = stato.get(a_ * M + b_ if a_ < b_ else b_ * M + a_)
+                    if v is not None:
+                        nn = v & MASK
+                        s_ += (v >> 20) if a_ < b_ else -(v >> 20)
+                        n_ += nn
+                incontri[ia] = n_
+                if n_:
+                    netto[ia] = s_ / n_
+        for cs, ps, _ix, f_ in gare:                # ...poi si impara dal giorno
+            if f_:
+                continue
+            L = len(cs)
+            for x in range(L):
+                for y in range(x + 1, L):
+                    if ps[x] == ps[y]:
+                        continue
+                    a_, b_ = cs[x], cs[y]
+                    avanti = 1 if ps[x] < ps[y] else -1
+                    if a_ < b_:
+                        k, sgn = a_ * M + b_, avanti
+                    else:
+                        k, sgn = b_ * M + a_, -avanti
+                    stato[k] = stato.get(k, 0) + (sgn << 20) + 1
+    df["h2h"] = netto
+    df["h2h_n"] = incontri
+    t2 = time.time()
+
+    # Forza del campo: i premi dell'ultimo anno degli avversari di oggi, e
+    # quanto e' piu' forte (o piu' debole) del campo che il cavallo trova di solito.
+    lp = np.log1p(df["h_premi_365"].fillna(0))
+    somma = lp.groupby(df["gara"]).transform("sum")
+    quanti = df.groupby("gara")["cavallo"].transform("count")
+    df["campo_premi"] = ((somma - lp) / (quanti - 1)).where(quanti > 1)
+    df["campo_vs_solito"] = df["campo_premi"] - _media_passata(df, "cavallo", "campo_premi")
+
+    # 3) Forma degli ultimi 30 giorni (escluso il giorno stesso) di guidatore e allenatore.
+    def ultimi30(persona_corsa, persona_riga):
+        dd = df[df[persona_corsa].notna() & df["top3"].notna()]
+        gio = dd.groupby([persona_corsa, "data"], sort=True)["top3"].agg(s="sum", n="count").reset_index()
+        gio["cs"] = gio.groupby(persona_corsa)["s"].cumsum()
+        gio["cn"] = gio.groupby(persona_corsa)["n"].cumsum()
+        gio = gio.rename(columns={persona_corsa: "_p"}).sort_values("data")
+        qq = pd.DataFrame({"_p": df[persona_riga], "data": df["data"], "_i": np.arange(len(df))}).dropna(subset=["_p"])
+        qa = pd.merge_asof(qq.sort_values("data"), gio[["_p", "data", "cs", "cn"]], on="data", by="_p",
+                           allow_exact_matches=False, direction="backward")
+        qb = qq.assign(data=qq["data"] - pd.Timedelta(days=30))
+        qb = pd.merge_asof(qb.sort_values("data"), gio[["_p", "data", "cs", "cn"]], on="data", by="_p",
+                           allow_exact_matches=False, direction="backward")
+        qa = qa.set_index("_i"); qb = qb.set_index("_i")
+        s = (qa["cs"] - qb["cs"].reindex(qa.index).fillna(0))
+        n = (qa["cn"] - qb["cn"].reindex(qa.index).fillna(0))
+        out_s = np.full(len(df), np.nan); out_n = np.full(len(df), np.nan)
+        out_n[qa.index.to_numpy()] = n.fillna(0).to_numpy()
+        out_s[qa.index.to_numpy()] = s.to_numpy()
+        top = np.where(out_n > 0, out_s / np.where(out_n > 0, out_n, 1), np.nan)
+        return top, out_n
+    df["d_top3_30"], df["d_n_30"] = ultimi30("guidatore", "guidatore")
+    df["a_top3_30"], df["a_n_30"] = ultimi30("allenatore_corsa", "allenatore")
+    df["r_d_top3_30"] = df.groupby("gara", sort=False)["d_top3_30"].rank(pct=True, ascending=True)
+    print(f"[V5] variabili: velocita' {t1 - t0:.0f}s, scontri {t2 - t1:.0f}s, resto {time.time() - t2:.0f}s", flush=True)
     return df
 
 
@@ -580,9 +719,19 @@ def _temperatura(p, y, gare, campo):
     return t_migl
 
 
-def allena(conn=None, df=None, variabili=None, salva=True):
+def _tagli():
+    """Le date che dividono allenamento, verifica e prova. Di serie quelle
+    della versione 4; il riallenamento mensile le sposta in avanti
+    (TAGLIO_VERIFICA, TAGLIO_PROVA), cosi' il modello impara anche i mesi recenti."""
+    return os.environ.get("TAGLIO_VERIFICA", "2024-01-01"), os.environ.get("TAGLIO_PROVA", "2025-01-01")
+
+
+def allena(conn=None, df=None, variabili=None, salva=True, file_modello=None, file_verifica=None, nome=None):
     """Allena, verifica e (se `salva`) scrive il modello. Con `variabili`
     diverse si prova una variante senza toccare il modello in uso."""
+    file_modello = Path(file_modello or FILE_MODELLO)
+    file_verifica = Path(file_verifica or FILE_VERIFICA)
+    nome = nome or NOME_MODELLO
     import numpy as np
     import pandas as pd
     import xgboost as xgb
@@ -594,15 +743,16 @@ def allena(conn=None, df=None, variabili=None, salva=True):
         df = prepara_allenamento(conn)
     print(f"partenze utilizzabili: {len(df):,}", flush=True)
 
-    tr = df[df["data"] < "2024-01-01"]
-    va = df[(df["data"] >= "2024-01-01") & (df["data"] < "2025-01-01")]
-    te = df[df["data"] >= "2025-01-01"]
+    t_va, t_te = _tagli()
+    tr = df[df["data"] < t_va]
+    va = df[(df["data"] >= t_va) & (df["data"] < t_te)]
+    te = df[df["data"] >= t_te]
     X = lambda d: d[VARIABILI_USO].to_numpy(dtype="float32")
     dtr = xgb.DMatrix(X(tr), label=tr["top3"], feature_names=VARIABILI_USO)
     dva = xgb.DMatrix(X(va), label=va["top3"], feature_names=VARIABILI_USO)
     par = dict(objective="binary:logistic", eval_metric="logloss", eta=0.05, max_depth=6,
                min_child_weight=50, subsample=0.8, colsample_bytree=0.8, reg_lambda=2.0,
-               tree_method="hist", nthread=2, seed=7)
+               tree_method="hist", nthread=int(os.environ.get("NTHREAD", "2")), seed=7)
     bst = xgb.train(par, dtr, 2000, evals=[(dva, "verifica")], early_stopping_rounds=60, verbose_eval=100)
     n_alberi = bst.best_iteration + 1
     print("alberi:", n_alberi, flush=True)
@@ -618,16 +768,16 @@ def allena(conn=None, df=None, variabili=None, salva=True):
     bst = xgb.train(par, xgb.DMatrix(X(trva), label=trva["top3"], feature_names=VARIABILI_USO), n_alberi)
     # Il modello in uso, sulle stesse partenze: per dire se il nuovo e' meglio.
     precedente = None
-    if FILE_MODELLO.exists() and FILE_VERIFICA.exists():
+    if file_modello.exists() and file_verifica.exists():
         try:
-            vecchio = Alberi(FILE_MODELLO)
+            vecchio = Alberi(file_modello)
             pv = vecchio.probabilita(te[list(vecchio.variabili)].to_numpy(dtype="float32"))
-            precedente = {"nome": json.loads(FILE_VERIFICA.read_text()).get("nome"),
+            precedente = {"nome": json.loads(file_verifica.read_text()).get("nome"),
                           **_misure(te["top3"].to_numpy(), pv, te["gara"].to_numpy())}
         except Exception as e:  # noqa: BLE001
             print("modello precedente non confrontabile:", e, flush=True)
     CARTELLA.mkdir(exist_ok=True)
-    percorso = FILE_MODELLO if salva else Path("/tmp") / "top3_prova.json"
+    percorso = file_modello if salva else Path("/tmp") / f"prova_{file_modello.name}"
     bst.save_model(str(percorso))
 
     # Il lettore senza XGBoost deve dare gli stessi numeri.
@@ -722,11 +872,11 @@ def allena(conn=None, df=None, variabili=None, salva=True):
                                   "partenze": int(len(trva))}
     ris["alberi"] = int(n_alberi)
     ris["modello_precedente"] = precedente
-    ris["nome"] = NOME_MODELLO
+    ris["nome"] = nome
     ris["allenato_il"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     ris["variabili"] = VARIABILI_USO
     if salva:
-        FILE_VERIFICA.write_text(json.dumps(ris, indent=2, ensure_ascii=False))
+        file_verifica.write_text(json.dumps(ris, indent=2, ensure_ascii=False))
     print(json.dumps({k: v for k, v in ris.items() if k not in ("peso_variabili", "variabili")}, indent=2, ensure_ascii=False))
     return ris
 
@@ -740,18 +890,22 @@ def allena(conn=None, df=None, variabili=None, salva=True):
 GRUPPI = {
     "forma": (["h_ult5_top3", "h_ult3_pos", "h_ult_top3", "r_ult5_top3", "s_ult5_top3"],
               "forma recente migliore degli avversari", "forma recente peggiore degli avversari"),
-    "guidatore": (["d_top3", "d_n", "r_d_top3"],
+    "guidatore": (["d_top3", "d_n", "r_d_top3", "d_top3_30", "d_n_30", "r_d_top3_30"],
                   "guidatore di oggi tra i piu' efficaci", "guidatore di oggi meno efficace degli altri"),
-    "allenatore": (["a_top3", "a_n", "a_top3_365", "r_a_top3"],
+    "allenatore": (["a_top3", "a_n", "a_top3_365", "r_a_top3", "a_top3_30", "a_n_30"],
                    "allenatore che piazza spesso i suoi cavalli", "allenatore con pochi piazzamenti"),
     "partenza": (["partenza", "partenza_rel", "partenti"],
                  "numero di partenza favorevole", "numero di partenza sfavorevole"),
     "premi": (["h_premi_365", "h_gare_365", "r_premi_365", "s_premi_365"],
               "ha vinto piu' degli altri nell'ultimo anno", "ha vinto meno degli altri nell'ultimo anno"),
-    "tempi": (["h_tempo_migl", "h_tempo_ult", "r_tempo_migl", "s_tempo_migl"],
+    "tempi": (["h_tempo_migl", "h_tempo_ult", "r_tempo_migl", "s_tempo_migl", "h_ind_migl", "h_ind_med5", "r_ind_migl", "s_ind_med5"],
               "tempi migliori degli avversari", "tempi piu' lenti degli avversari"),
     "carriera": (["h_n", "h_top3", "h_vitt", "r_top3"],
                  "buoni piazzamenti in carriera", "pochi piazzamenti in carriera"),
+    "scontri": (["h2h", "h2h_n"], "spesso davanti a questi avversari", "spesso dietro a questi avversari"),
+    "campo": (["campo_premi", "campo_vs_solito"], "avversari piu' deboli del solito", "avversari piu' forti del solito"),
+    "ferri": (["oggi_scalzo_ant", "oggi_scalzo_post", "cambio_ferri", "toglie_ferri", "h_top3_scalzo", "h_top3_ferrato", "h_scalzo_quota"],
+              "ferratura di oggi favorevole", "ferratura di oggi sfavorevole"),
     "livello": (["h_classe5", "h_classe_top3", "r_classe5", "s_classe5"],
                 "abituato a corse di livello piu' alto", "viene da corse di livello piu' basso"),
     "pista": (["h_pista_top3", "h_pista_n"],
@@ -949,20 +1103,53 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
             prob REAL, prob_grezza REAL, affidabile INTEGER, n_corse INTEGER,
             motivi TEXT, modello TEXT, verificato INTEGER, calcolato_il TEXT,
             PRIMARY KEY (track, race_date, race_time, horse_name))""")
+        # Dalla versione 5: la probabilita' di vincere (somma 1 in ogni corsa).
+        if "prob_vince" not in {r[1] for r in conn.execute("PRAGMA table_info(pronostico_top3)")}:
+            conn.execute("ALTER TABLE pronostico_top3 ADD COLUMN prob_vince REAL")
         conn.execute("DELETE FROM pronostico_top3")
         if fut.empty:
             _crea_storico(conn)
             n_ric = _ricostruisci(conn, df, Alberi(FILE_MODELLO), datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
             conn.commit()
             return n_ric
+        import numpy as np
         lettore = Alberi(FILE_MODELLO)
+        gare_f = fut["gara"].to_numpy()
         Xf = fut[list(lettore.variabili)].to_numpy(dtype="float32")
         grezza = lettore.probabilita(Xf)
-        prob = normalizza_per_gara(grezza, fut["gara"].to_numpy(), fut["partenti"].to_numpy(),
-                                   float(verifica.get("temperatura") or 1.0))
+        temp_notte = float(verifica.get("temperatura") or 1.0)
+        # Il mattino della corsa la fonte scrive la ferratura: dove la conosce
+        # per almeno meta' dei partenti si usa il modello del mattino, che la
+        # legge (versione 5). Per le corse dei giorni dopo resta quello della notte.
+        mattino = np.zeros(len(fut), dtype=bool)
+        if FILE_MATTINO.exists() and "oggi_scalzo_ant" in fut.columns:
+            nota = fut["oggi_scalzo_ant"].notna().groupby(fut["gara"]).transform("mean").to_numpy()
+            mattino = nota >= 0.5
+        temperature = np.full(len(fut), temp_notte)
+        modello_riga = np.array([NOME_MODELLO] * len(fut), dtype=object)
+        if mattino.any():
+            lm = Alberi(FILE_MATTINO)
+            vm = json.loads(FILE_VERIFICA_MATTINO.read_text()) if FILE_VERIFICA_MATTINO.exists() else {}
+            grezza = grezza.copy()
+            grezza[mattino] = lm.probabilita(fut.loc[mattino, list(lm.variabili)].to_numpy(dtype="float32"))
+            temperature[mattino] = float(vm.get("temperatura") or 1.0)
+            modello_riga[mattino] = vm.get("nome", "top3-mattino")
+        prob = np.zeros(len(fut))
+        for t in np.unique(temperature):
+            sel = temperature == t
+            prob[sel] = normalizza_per_gara(grezza[sel], gare_f[sel], fut["partenti"].to_numpy()[sel], float(t))
+        # La vittoria (versione 5): stime del modello per vincere, che in ogni corsa sommano a 1.
+        vince = np.full(len(fut), np.nan)
+        if FILE_VINCE.exists():
+            try:
+                lv = Alberi(FILE_VINCE)
+                pv = lv.probabilita(fut[list(lv.variabili)].to_numpy(dtype="float32"))
+                vince = pv / pd.Series(pv).groupby(pd.Series(gare_f)).transform("sum").to_numpy()
+            except Exception as e:  # noqa: BLE001
+                print(f"[PRONOSTICO] vittoria non calcolata: {e!r}", file=sys.stderr)
         # Le ragioni: quanto ogni gruppo di dati sposta la stima del cavallo
         # rispetto agli avversari della stessa corsa.
-        gruppi = _contributi_per_gruppo(lettore, Xf, fut["gara"].to_numpy(), fut["_noti"].to_numpy())
+        gruppi = _contributi_per_gruppo(lettore, Xf, gare_f, fut["_noti"].to_numpy())
         ora = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         verificato = 1 if verifica.get("supera_i_metodi_semplici") else 0
         righe = []
@@ -971,21 +1158,27 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
             ncorse = int(d["h_n"]) if d["h_n"] == d["h_n"] else 0
             righe.append((d["gara"].split("|")[1], d["data"].strftime("%Y-%m-%d"), str(d["numero"]), d["cavallo"],
                           round(float(pn), 4), round(float(pg), 4), 1 if ncorse >= 5 else 0, ncorse,
-                          json.dumps(_motivi(d, {g: v[i] for g, v in gruppi.items()}), ensure_ascii=False), NOME_MODELLO, verificato, ora))
-        conn.executemany("INSERT OR REPLACE INTO pronostico_top3 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", righe)
+                          json.dumps(_motivi(d, {g: v[i] for g, v in gruppi.items()}), ensure_ascii=False), str(modello_riga[i]), verificato, ora,
+                          None if vince[i] != vince[i] else round(float(vince[i]), 4)))
+        conn.executemany("""INSERT OR REPLACE INTO pronostico_top3
+                            (track, race_date, race_time, horse_name, prob, prob_grezza, affidabile, n_corse,
+                             motivi, modello, verificato, calcolato_il, prob_vince)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""", righe)
         # Lo storico conserva la stima del giorno anche dopo la gara, quando il
         # calendario la cancella: serve per verificarla con l'arrivo vero.
         _crea_storico(conn)
+        if "prob_vince" not in {r[1] for r in conn.execute("PRAGMA table_info(pronostico_top3_storico)")}:
+            conn.execute("ALTER TABLE pronostico_top3_storico ADD COLUMN prob_vince REAL")
         storico = []
-        for (_, r), pg, pn in zip(fut.iterrows(), grezza, prob):
+        for i, ((_, r), pg, pn) in enumerate(zip(fut.iterrows(), grezza, prob)):
             ncorse = int(r["h_n"]) if r["h_n"] == r["h_n"] else 0
             storico.append((r["pista"], r["data"].strftime("%Y-%m-%d"), str(r["numero"]), r["cavallo"],
                             round(float(pn), 4), round(float(pg), 4), 1 if ncorse >= 5 else 0, ncorse,
-                            NOME_MODELLO, ora))
+                            str(modello_riga[i]), ora, None if vince[i] != vince[i] else round(float(vince[i]), 4)))
         conn.executemany("""INSERT OR REPLACE INTO pronostico_top3_storico
                             (pista, race_date, corsa, horse_name, prob, prob_grezza, affidabile,
-                             n_corse, campo_completo, tipo, modello, calcolato_il)
-                            VALUES (?,?,?,?,?,?,?,?,1,'del_giorno',?,?)""", storico)
+                             n_corse, campo_completo, tipo, modello, calcolato_il, prob_vince)
+                            VALUES (?,?,?,?,?,?,?,?,1,'del_giorno',?,?,?)""", storico)
         # Le stime "del giorno" salvate senza orario appartengono a piu' corse
         # fuse insieme per un errore di lettura del calendario (Bologna 08/10,
         # Roma 09/10, Torino 11/10, Montecatini 12/10): non sono verificabili
@@ -1007,8 +1200,82 @@ def phase_pronostico_top3(conn: sqlite3.Connection) -> int:
         return 0
 
 
+def allena_vince(conn, df, variabili, salva=True):
+    """Il modello per la vittoria (versione 5): stesse variabili, etichetta
+    "ha vinto". Si prova contro la vittoria ricavata dai primi tre."""
+    import numpy as np
+    import pandas as pd
+    import xgboost as xgb
+    from sklearn.metrics import log_loss, brier_score_loss, roc_auc_score
+    V = list(variabili)
+    t_va, t_te = _tagli()
+    tr = df[df["data"] < t_va]; va = df[(df["data"] >= t_va) & (df["data"] < t_te)]; te = df[df["data"] >= t_te]
+    X = lambda d: d[V].to_numpy(dtype="float32")
+    par = dict(objective="binary:logistic", eval_metric="logloss", eta=0.05, max_depth=6, min_child_weight=50,
+               subsample=0.8, colsample_bytree=0.8, reg_lambda=2.0, tree_method="hist",
+               nthread=int(os.environ.get("NTHREAD", "2")), seed=7)
+    b = xgb.train(par, xgb.DMatrix(X(tr), label=tr["vitt"], feature_names=V), 2000,
+                  evals=[(xgb.DMatrix(X(va), label=va["vitt"], feature_names=V), "verifica")],
+                  early_stopping_rounds=60, verbose_eval=200)
+    n = b.best_iteration + 1
+    trva = pd.concat([tr, va])
+    b = xgb.train(par, xgb.DMatrix(X(trva), label=trva["vitt"], feature_names=V), n)
+    percorso = FILE_VINCE if salva else Path("/tmp") / "prova_vince.json"
+    b.save_model(str(percorso))
+    lettore = Alberi(percorso)
+    pieno = campo_pieno(te)
+    t2 = te[pieno].copy()
+    p_mio = lettore.probabilita(X(t2))
+    assert float(np.max(np.abs(p_mio - b.predict(xgb.DMatrix(X(t2), feature_names=V))))) < 1e-4
+    t2["p"] = p_mio
+    t2["pn"] = t2["p"] / t2.groupby("gara")["p"].transform("sum")
+    y = t2["vitt"].to_numpy(); pp = np.clip(t2["pn"].to_numpy(), 1e-4, 1 - 1e-4)
+    rk = t2.groupby("gara")["pn"].rank(ascending=False, method="first")
+    ris = {"nome": "vince-xgb-v1", "allenato_il": datetime.now(timezone.utc).strftime("%Y-%m-%d"), "alberi": int(n),
+           "variabili": V, "periodo_prova": {"da": str(te["data"].min().date()), "a": str(te["data"].max().date()),
+                                             "corse": int(t2["gara"].nunique())},
+           "modello": {"log_loss": round(float(log_loss(y, pp)), 4), "brier": round(float(brier_score_loss(y, pp)), 4),
+                       "auc": round(float(roc_auc_score(y, pp)), 4),
+                       "primo_scelto_vince": round(float(t2.loc[rk == 1, "vitt"].mean()), 4)}}
+    if salva:
+        FILE_VERIFICA_VINCE.write_text(json.dumps(ris, indent=2, ensure_ascii=False))
+    print(json.dumps(ris["modello"]), flush=True)
+    return ris
+
+
 if __name__ == "__main__":
-    if "--allena" in sys.argv:
+    if "--allena-v5" in sys.argv:
+        # I tre modelli della versione 5: notte, mattino (con la ferratura) e vittoria.
+        # Con --solo-se-meglio (riallenamento mensile) il modello della notte e
+        # quello del mattino si sostituiscono solo se sulle stesse corse di
+        # prova sbagliano meno di quelli in uso (log loss, stime normalizzate).
+        c = sqlite3.connect(os.environ.get("DB_PATH", "data.db"))
+        d = prepara_allenamento(c)
+        cauto = "--solo-se-meglio" in sys.argv
+        def _prova_e_salva(variabili, fm, fv, nome):
+            if cauto and fm.exists():
+                r = allena(c, d, variabili, salva=False, file_modello=fm, file_verifica=fv, nome=nome)
+                vecchio = Alberi(fm)
+                t_va, t_te = _tagli()
+                te = d[d["data"] >= t_te]
+                pieno = campo_pieno(te)
+                temp = json.loads(fv.read_text()).get("temperatura", 1.0) if fv.exists() else 1.0
+                pv = normalizza_per_gara(vecchio.probabilita(te[list(vecchio.variabili)].to_numpy(dtype="float32"))[pieno],
+                                         te["gara"].to_numpy()[pieno], te["partenti"].to_numpy()[pieno], float(temp))
+                ll_vecchio = _misure(te["top3"].to_numpy()[pieno], pv, te["gara"].to_numpy()[pieno])["log_loss"]
+                ll_nuovo = r["campo_completo"]["modello_normalizzato"]["log_loss"]
+                print(f"[RIALLENA] {fm.name}: vecchio {ll_vecchio}, nuovo {ll_nuovo}", flush=True)
+                if ll_nuovo >= ll_vecchio:
+                    print(f"[RIALLENA] {fm.name}: il nuovo non e' meglio, resta il vecchio", flush=True)
+                    return False
+            allena(c, d, variabili, salva=True, file_modello=fm, file_verifica=fv, nome=nome)
+            return True
+        n1 = _prova_e_salva(VARIABILI + VARIABILI_V5, FILE_MODELLO, FILE_VERIFICA, "top3-xgb-v5")
+        n2 = _prova_e_salva(VARIABILI + VARIABILI_V5 + VARIABILI_FERRI, FILE_MATTINO, FILE_VERIFICA_MATTINO, "top3-xgb-v5-mattino")
+        # La vittoria si rifa' insieme al modello della notte (stesse variabili, stesso periodo).
+        if n1 or not cauto or not FILE_VINCE.exists():
+            allena_vince(c, d, VARIABILI + VARIABILI_V5)
+    elif "--allena" in sys.argv:
         allena()
     elif "--prova-varianti" in sys.argv:
         # Stesse partenze, stesso periodo di prova: quanto aggiunge ogni gruppo

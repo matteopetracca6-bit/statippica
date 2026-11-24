@@ -118,7 +118,9 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
         }
       } else {
         sigla = String(req.query.pista || ""); data = String(req.query.data || ""); ora = String(req.query.ora || "");
-        partenti = db.prepare(`SELECT horse_name AS nome, start_pos AS numero, distance AS distanza, driver AS guidatore, shoes
+        // Il tipo di partenza scritto dalla fonte (24/11/2026), se la colonna c'e'.
+        const conTipo = (db.prepare(`PRAGMA table_info(upcoming_races)`).all() as any[]).some(c => c.name === "start_type");
+        partenti = db.prepare(`SELECT horse_name AS nome, start_pos AS numero, distance AS distanza, driver AS guidatore, shoes${conTipo ? ", start_type" : ""}
                                  FROM upcoming_races WHERE track = ? AND race_date = ? AND race_time = ?`).all(sigla, data, ora) as any[];
         if (!partenti.length) return res.status(404).json({ error: "Corsa non trovata" });
         pista = nomePista(sigla);
@@ -126,7 +128,11 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       partenti.sort((a, b) => (a.numero ?? 99) - (b.numero ?? 99));
       const distanze = partenti.map(p => p.distanza).filter((d: any) => d > 0);
       const base = distanze.length ? Math.min(...distanze) : 1600;
-      const nastri = new Set(distanze).size > 1 || base > 1700;
+      // Nastri o autostart: dalla fonte quando lo scrive, altrimenti dalle
+      // distanze (handicap = nastri; sopra i 1.700 metri di solito nastri).
+      const tipoFonte = partenti.map(p => p.start_type).filter(Boolean);
+      const nastri = tipoFonte.length ? tipoFonte.filter(t => t === "nastri").length >= tipoFonte.length / 2
+        : new Set(distanze).size > 1 || base > 1700;
       const ts = esiste(db, "track_stats") ? db.prepare(`SELECT tempo_km_mediano FROM track_stats WHERE track = ?`).get(pista) as any : null;
       const kmPista = kmSecondi(ts?.tempo_km_mediano) ?? 76;
 
@@ -157,8 +163,10 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       const guid = esiste(db, "driver_stats") ? db.prepare(`SELECT effetto_corretto FROM driver_stats WHERE driver = ?`) : null;
       const rischioP = esiste(db, "rischio_galoppo") ? db.prepare(`SELECT prob FROM rischio_galoppo WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
       const rischioS = esiste(db, "rischio_galoppo_storico") ? db.prepare(`SELECT prob FROM rischio_galoppo_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
-      const pronP = esiste(db, "pronostico_top3") ? db.prepare(`SELECT prob FROM pronostico_top3 WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
-      const pronS = esiste(db, "pronostico_top3_storico") ? db.prepare(`SELECT prob FROM pronostico_top3_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
+      // Dalla versione 5 anche la probabilita' di vincere (prob_vince), se la colonna c'e'.
+      const colV = (t: string) => esiste(db, t) && (db.prepare(`PRAGMA table_info(${t})`).all() as any[]).some(c => c.name === "prob_vince") ? "prob_vince" : "NULL AS prob_vince";
+      const pronP = esiste(db, "pronostico_top3") ? db.prepare(`SELECT prob, ${colV("pronostico_top3")} FROM pronostico_top3 WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
+      const pronS = esiste(db, "pronostico_top3_storico") ? db.prepare(`SELECT prob, ${colV("pronostico_top3_storico")} FROM pronostico_top3_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
       // Quote finali per nome senza segni: Hippoweb scrive "-S-", l'archivio "(S)".
       const nq = (n: string) => String(n || "").toUpperCase().replace(/\s*[-(]\s*([A-Z]{1,3})\s*[-)]\s*$/, " $1").replace(/[^A-Z0-9]/g, "");
       const quoteCorsa = new Map<string, number>();
@@ -201,9 +209,11 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
         const galoppoModello = tipo === "passata"
           ? (rischioS && ora ? (rischioS.get(pista, data, ora, p.nome) as any)?.prob : null)
           : (rischioP ? (rischioP.get(sigla, data, ora, p.nome) as any)?.prob : null);
-        const top3 = tipo === "passata"
-          ? (pronS && ora ? (pronS.get(pista, data, ora, p.nome) as any)?.prob : null)
-          : (pronP ? (pronP.get(sigla, data, ora, p.nome) as any)?.prob : null);
+        const pr = tipo === "passata"
+          ? (pronS && ora ? (pronS.get(pista, data, ora, p.nome) as any) : null)
+          : (pronP ? (pronP.get(sigla, data, ora, p.nome) as any) : null);
+        const top3 = pr?.prob ?? null;
+        const vince = pr?.prob_vince ?? null;
         const q = quoteCorsa.get(nq(p.nome)) ?? null;
         const eff = guid && p.guidatore ? (guid.get(p.guidatore) as any)?.effetto_corretto : null;
         return {
@@ -220,6 +230,7 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
           galoppo_fonte: galoppoModello != null ? "modello" : "storico",
           effetto_guidatore: eff ?? null,
           pronostico_top3: top3 != null ? Math.round(top3 * 1000) / 10 : null,
+          pronostico_vince: vince != null ? Math.round(vince * 1000) / 10 : null,
           quota: q ?? null,
           arrivo: p.arrivo ?? null, arrivo_testo: p.arrivo_testo ?? null,
           km_reale: kmSecondi(p.time_km),
@@ -228,6 +239,7 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       res.json({
         tipo, pista, sigla, data, ora, numero, distanza: base,
         partenza: nastri ? "nastri" : "autostart",
+        partenza_fonte: tipoFonte.length ? "fonte" : "stimata",
         lunghezza_pista: LUNGHEZZA_PISTA[pista] ?? 1000,
         pista_verificata: pista in PISTE_VERIFICATE,
         km_pista: Math.round(kmPista * 10) / 10,

@@ -33,7 +33,7 @@ interface CalendarEntry {
   dam: string | null;
   win_estimate: number;
   /** Probabilita' di arrivare nei primi tre (modello XGBoost). */
-  top3?: { prob: number; affidabile: boolean; n_corse: number; motivi: { testo: string; pro: boolean }[] };
+  top3?: { prob: number; affidabile: boolean; n_corse: number; motivi: { testo: string; pro: boolean }[]; vince?: number | null; mattino?: boolean };
   /** Rischio di squalifica per galoppo (modello provato sulle corse 2025–2026). */
   galoppo?: { prob: number; fascia: "basso" | "medio" | "alto"; n_corse: number; rotture: number };
 }
@@ -194,7 +194,8 @@ export default function CalendarPage() {
         <>
           {data.pronostico && (
             <p style={{ fontSize: 12.5, color: "hsl(210 8% 58%)", margin: "0 0 12px", lineHeight: 1.5 }}>
-              La percentuale è la probabilità di arrivare nei primi tre: in ogni corsa sommano a 3. Tocca una corsa per i partenti.
+              La percentuale grande è la probabilità di arrivare nei primi tre (in ogni corsa sommano a 3), quella piccola di vincere. Il giorno della
+              corsa il pronostico si rifà la mattina, con la ferratura dichiarata. Tocca una corsa per i partenti.
             </p>
           )}
           <div className="cal-filtri">
@@ -329,6 +330,7 @@ export default function CalendarPage() {
                                                   {p != null ? `${p.toFixed(0)}%` : race.n_runners <= 3 ? "" : "—"}
                                                 </span>
                                                 <span className="cal-barra"><i style={{ width: `${Math.min(100, p ?? 0)}%` }} /></span>
+                                                {entry.top3?.vince != null && <span className="tabular" style={{ fontSize: 11, color: "hsl(210 8% 58%)" }} title="Probabilità di vincere (modello XGBoost per la vittoria)">vince {entry.top3.vince.toFixed(0)}%</span>}
                                                 {data.pronostico && entry.top3 && !entry.top3.affidabile && <small title={`Solo ${entry.top3.n_corse} corse in archivio: la stima è debole`}>poche corse</small>}
                                               </div>
                                             </div>

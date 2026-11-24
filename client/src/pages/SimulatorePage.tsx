@@ -32,7 +32,7 @@ interface CavalloApi {
   nome: string; numero: number | null; distanza: number; penalita: number; guidatore: string | null; ferri: string | null;
   anno: number | null; km_base: number | null; km_migliore: number | null; record_corto: number | null; record_lungo: number | null;
   corse_note: number; galoppo: number; galoppo_fonte: string; effetto_guidatore: number | null;
-  pronostico_top3: number | null; quota: number | null; arrivo: number | null; arrivo_testo: string | null; km_reale: number | null;
+  pronostico_top3: number | null; pronostico_vince?: number | null; quota: number | null; arrivo: number | null; arrivo_testo: string | null; km_reale: number | null;
   ferri_effetto?: number; forma?: number | null; giorni_riposo?: number | null; vantaggio_numero?: number;
 }
 interface CorsaApi extends CorsaDati {
@@ -696,6 +696,7 @@ function TabellaMille({ corsa, r }: { corsa: CorsaApi; r: Riepilogo }) {
       <table className="sim-tab">
         <thead><tr>
           <th>Cavallo</th><th className="n">Vince</th><th className="n">Primi 3</th><th className="n">Squalificato</th><th className="n">Km medio</th>
+          <th className="n" title="Il pronostico XGBoost: probabilità di vincere">Pronostico vince</th>
           <th className="n" title="Il nostro pronostico: probabilità di arrivare nei primi tre">Pronostico primi 3</th>
           {passata && <th className="n" title="Quota finale del totalizzatore">Quota</th>}
           {passata && <th className="n">Arrivo vero</th>}
@@ -709,6 +710,7 @@ function TabellaMille({ corsa, r }: { corsa: CorsaApi; r: Riepilogo }) {
               <td className="n">{pct(p.top3)}</td>
               <td className="n" style={{ color: p.squalifiche > 0.25 ? "hsl(0 60% 65%)" : undefined }}>{pct(p.squalifiche)}</td>
               <td className="n">{formatoKm(p.kmMedio)}</td>
+              <td className="n" style={{ color: MUTED }}>{c.pronostico_vince != null ? `${c.pronostico_vince.toFixed(1)}%` : "—"}</td>
               <td className="n" style={{ color: MUTED }}>{c.pronostico_top3 != null ? `${c.pronostico_top3.toFixed(1)}%` : "—"}</td>
               {passata && <td className="n" style={{ color: MUTED }}>{c.quota != null ? c.quota.toFixed(2) : "—"}</td>}
               {passata && <td className="n">{c.arrivo != null ? `${c.arrivo}°` : c.arrivo_testo ?? "—"}</td>}

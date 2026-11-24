@@ -70,6 +70,7 @@ jobs:
             if [ "${tempo%%.*}" -ge 10 ] 2>/dev/null; then lenti=$((lenti+1)); fi
             echo "$(date -u '+%H:%M') colpo $colpi: risposta $codice in ${tempo}s"
             bash scripts/regia_notturna.sh || true
+            bash scripts/giro_mattino.sh || true
             sleep 240
           done
           echo "Fine giro: $colpi colpi, $lenti risvegli lenti."
