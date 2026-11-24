@@ -7,7 +7,7 @@ import { colorePista } from "./piste";
  * pagina nuova andava aggiunta in due posti (e a volte se ne aggiungeva uno).
  */
 import { Trophy, Users, BookOpen, Sparkles, GitCompare, Calendar, TrendingUp, Network, Award, Building2,
-         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass, Flag, Star, Store } from "lucide-react";
+         FlaskConical, Heart, MapPin, BookMarked, Scale, Gavel, Briefcase, Tag, History, Medal, Timer, GitBranch, Crown, KeyRound, Compass, Flag, Star, Store, Layers } from "lucide-react";
 
 export type Scheda = {
   href: string;
@@ -41,6 +41,8 @@ export const GRUPPI: Gruppo[] = [
       descrizione: "Il primo tempo ufficiale dei cavalli giovani, prima che debuttino in corsa" },
     { href: "/compare", label: "Comparazione", nota: "Due cavalli uno accanto all'altro", icon: GitCompare, colore: "hsl(46 95% 54%)",
       descrizione: "Confronta due cavalli su statistiche, carriera e genealogia" },
+    { href: "/generazioni", label: "Generazioni", nota: "Ogni annata di nascita: voti, premi, andamenti", icon: Layers, colore: "hsl(44 88% 60%)",
+      descrizione: "Ogni annata di nascita a confronto, con grafici: nati, chi corre, voti, premi, velocità e campioni" },
     { href: "/seguiti", label: "Cavalli seguiti", nota: "I tuoi cavalli: prossime corse e ultimi arrivi", icon: Star, colore: "hsl(54 88% 62%)",
       descrizione: "I cavalli che segui con la stellina: quando corrono, dove, con chi, e come sono andati" },
   ] },
@@ -130,7 +132,7 @@ const ALIAS: Record<string, string> = {
   "/controllo-a-posteriori": "/controllo",
   "/portafoglio": "/scuderia",
   "/prezzo-massimo": "/puledro", "/vendere": "/puledro", "/economia": "/puledro",
-  "/break-even": "/mercato", "/pareggio": "/mercato", "/chi-rende": "/rende",
+  "/break-even": "/mercato", "/pareggio": "/mercato", "/chi-rende": "/rende", "/annate": "/generazioni",
   "/aste": "/mercato", "/generazione-m": "/mercato",
   "/metodo-e-dati": "/metodo",
   "/gran-premi": "/ippodromi", "/albo-doro": "/ippodromi", "/palmares": "/ippodromi",

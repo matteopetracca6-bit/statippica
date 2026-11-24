@@ -20,6 +20,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 const IppodromiTrendPage = lazy(() => import("./pages/IppodromiTrendPage"));
 const MercatoPage = lazy(() => import("./pages/MercatoPage"));
 const RendePage = lazy(() => import("./pages/RendePage"));
+const GenerazioniPage = lazy(() => import("./pages/GenerazioniPage"));
 const TenerePage = lazy(() => import("./pages/TenerePage"));
 const ScuderiaPage = lazy(() => import("./pages/ScuderiaPage"));
 const PuledroPage = lazy(() => import("./pages/PuledroPage"));
@@ -115,6 +116,8 @@ export default function App() {
               <Route path="/ippodromi" component={IppodromiTrendPage} />
               <Route path="/mercato" component={MercatoPage} />
               <Route path="/rende" component={RendePage} />
+              <Route path="/generazioni" component={GenerazioniPage} />
+              <Route path="/annate" component={GenerazioniPage} />
               <Route path="/chi-rende" component={RendePage} />
               <Route path="/pareggio" component={MercatoPage} />
               <Route path="/tenere" component={TenerePage} />
