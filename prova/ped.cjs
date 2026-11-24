@@ -18,7 +18,7 @@ const { chromium } = require('playwright');
       // linee: ogni linea verticale deve finire al centro del genitore
       const vert = [...document.querySelectorAll('span[aria-hidden]')].filter(s => s.style.borderLeft && s.style.height === '50%');
       const fasce = [...document.querySelectorAll('div[aria-hidden]')].length;
-      const etich = [...document.querySelectorAll('div')].filter(d => /^Lato (padre|madre) →$/.test(d.innerText)).length;
+      const etich = [...document.querySelectorAll('div')].filter(d => /^lato (padre|madre) →$/i.test(d.innerText)).length;
       return { caselle: cells.length, nomi_tagliati: tagliati, es: ex, troppo_alte: alte, voti_fuori: bollOver, linee_vert: vert.length, fasce, etichette_lato: etich };
     });
     // controllo geometrico linee: per ogni coppia padre/madre, la giunzione coincide col centro del figlio
