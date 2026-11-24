@@ -47,8 +47,6 @@ const NOME_ASTA: Record<string, string> = {
 };
 const PER_PAGINA = 30;
 
-const parametri = () => new URLSearchParams((typeof window !== "undefined" ? window.location.hash.split("?")[1] : "") ?? "");
-
 
 const parametri = () => new URLSearchParams((typeof window !== "undefined" ? window.location.hash.split("?")[1] : "") ?? "");
 interface Scelta { padre: string; madre: string; prezzo: string; asta: boolean; nome: string }
