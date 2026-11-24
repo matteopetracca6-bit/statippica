@@ -243,13 +243,28 @@ function QuantoVale({ iniziale, vaiAste }: { iniziale: Scelta; vaiAste: () => vo
 
 export default function PuledroPage() {
   const [percorso, naviga] = useLocation();
-  const q = parametri();
-  const iniz: Tab = percorso.startsWith("/vendere") || q.get("modo") === "vendo" ? "vendo" : q.get("modo") === "incrocio" ? "incrocio" : "valore";
-  const [tab, setTab] = useState<Tab>(iniz);
-  const [scelta] = useState<Scelta>(() => ({
-    padre: q.get("padre")?.toUpperCase() ?? "", madre: q.get("madre")?.toUpperCase() ?? "",
-    prezzo: q.get("prezzo") ?? "", asta: q.get("asta") === "1", nome: q.get("nome") ?? "",
-  }));
+  const linguettaDa = (perc: string): Tab => {
+    const q = parametri();
+    return perc.startsWith("/vendere") || q.get("modo") === "vendo" ? "vendo" : q.get("modo") === "incrocio" ? "incrocio" : "valore";
+  };
+  const sceltaDa = (): Scelta => {
+    const q = parametri();
+    return { padre: q.get("padre")?.toUpperCase() ?? "", madre: q.get("madre")?.toUpperCase() ?? "",
+      prezzo: q.get("prezzo") ?? "", asta: q.get("asta") === "1", nome: q.get("nome") ?? "" };
+  };
+  const [tab, setTab] = useState<Tab>(() => linguettaDa(percorso));
+  const [scelta, setScelta] = useState<Scelta>(sceltaDa);
+  const [versione, setVersione] = useState(0);
+  // Un collegamento che resta in questa pagina (dalle aste, da un'altra
+  // linguetta) non la rimonta: si seguono l'indirizzo e i suoi parametri.
+  useEffect(() => {
+    const f = () => {
+      setTab(linguettaDa(window.location.hash.replace(/^#/, "").split("?")[0]));
+      setScelta(sceltaDa()); setVersione(v => v + 1);
+    };
+    window.addEventListener("hashchange", f);
+    return () => window.removeEventListener("hashchange", f);
+  }, []);
   const { scuderia } = useScuderia();
   useEffect(() => { window.scrollTo?.(0, 0); }, [tab]);
 
@@ -283,7 +298,7 @@ export default function PuledroPage() {
         })}
       </div>
 
-      {tab === "valore" && <QuantoVale iniziale={scelta} vaiAste={() => naviga("/mercato")} />}
+      {tab === "valore" && <QuantoVale key={`v${versione}`} iniziale={scelta} vaiAste={() => naviga("/mercato")} />}
       {tab === "vendo" && (
         <div className="ed-pannello">
           <Spiegazione compatta>
@@ -295,7 +310,7 @@ export default function PuledroPage() {
           <MercatoStalloni mensile={scuderia.mensile || 1200} />
         </div>
       )}
-      {tab === "incrocio" && <IncrocioConviene padreIniziale={scelta.padre} madreIniziale={scelta.madre} />}
+      {tab === "incrocio" && <IncrocioConviene key={`i${versione}`} padreIniziale={scelta.padre} madreIniziale={scelta.madre} />}
 
       {(tab === "valore" || tab === "vendo") && (
         <div style={{ marginTop: 16 }}>
