@@ -1022,7 +1022,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
       //    tre non si sanno;
       //  - carriere complete dall'estero: primi tre dalla fonte (LeTrot, USTA),
       //    primi cinque solo se la fonte li da'.
-      const registro = horse.horse_class === "breeder" && !horse.carriera_completa;
+      // horse_class non e' fra le colonne lette: storico = nato prima del 2012.
+      const registro = (horse.birth_year != null && horse.birth_year < 2012) && !horse.carriera_completa;
       const gareComplete = !!(tot?.n && tot.n >= (horse.career_races ?? 0));
       horse.career_top5 = gareComplete ? horse.career_top5_gare : null;
       if (registro && !gareComplete) {

@@ -5168,6 +5168,43 @@ def phase_fetch_upcoming_races(conn: sqlite3.Connection) -> tuple:
     return new_horses, inserted_races
 
 
+def aggiorna_primi(conn: sqlite3.Connection) -> None:
+    """Primi tre e primi cinque in horse_ratings (23/11/2026). Si rifa' dopo
+    ogni ricalcolo dei voti (fine di phase_dam_ratings), perche' i voti
+    riscrivono le righe e le colonne tornano vuote."""
+    # Primi tre e primi cinque per la classifica (23/11/2026). Dalle
+    # gare quando coprono tutta la carriera; per gli storici del
+    # registro UNIRE i primi cinque sono vittorie + piazzati (il
+    # registro conta i piazzati fino al 5°) e i primi tre non si
+    # sanno; per le carriere complete dall'estero i primi tre della fonte.
+    colonne = {r[1] for r in conn.execute("PRAGMA table_info(horse_ratings)")}
+    for col in ("primi_tre", "primi_cinque"):
+        if col not in colonne:
+            conn.execute(f"ALTER TABLE horse_ratings ADD COLUMN {col} INTEGER")
+    conn.execute("CREATE TABLE IF NOT EXISTS carriere_mondiali (nome TEXT PRIMARY KEY)")
+    conn.execute("CREATE TABLE IF NOT EXISTS carriere_complete (nome TEXT PRIMARY KEY, primi_tre INTEGER)")
+    conn.execute("""UPDATE horse_ratings SET primi_tre = NULL, primi_cinque = NULL""")
+    conn.execute("""
+        UPDATE horse_ratings SET
+          primi_tre = (SELECT SUM(placement BETWEEN 1 AND 3) FROM races r WHERE r.horse_name = horse_ratings.name),
+          primi_cinque = (SELECT SUM(placement BETWEEN 1 AND 5) FROM races r WHERE r.horse_name = horse_ratings.name)
+        WHERE rating_mode IN ('performance', 'storico')
+          AND (SELECT COUNT(*) FROM races r WHERE r.horse_name = horse_ratings.name) >= COALESCE(career_races, 0)
+          AND COALESCE(career_races, 0) > 0
+          AND name NOT IN (SELECT nome FROM carriere_complete)""")
+    conn.execute("""
+        UPDATE horse_ratings SET primi_cinque = (
+            SELECT COALESCE(h.career_wins, 0) + COALESCE(h.career_places, 0) FROM horses h
+             WHERE h.name = horse_ratings.name AND h.birth_year IS horse_ratings.birth_year)
+        WHERE rating_mode = 'storico' AND primi_cinque IS NULL AND COALESCE(carriera_parziale, 0) = 0
+          AND name NOT IN (SELECT nome FROM carriere_complete)
+          AND name NOT IN (SELECT nome FROM carriere_mondiali)""")
+    conn.execute("""
+        UPDATE horse_ratings SET primi_tre = (SELECT c.primi_tre FROM carriere_complete c WHERE c.nome = horse_ratings.name)
+        WHERE name IN (SELECT nome FROM carriere_complete)""")
+    conn.commit()
+
+
 def phase_dam_ratings(conn: sqlite3.Connection):
     """FASE 3c — rating FATTRICI, valutate sulla progenie.
 
@@ -5296,6 +5333,10 @@ def phase_dam_ratings(conn: sqlite3.Connection):
         _rs.calcola(conn)
     except Exception as e:
         print(f"[RIPRODUTTORI STORICI] saltato: {e}", file=sys.stderr)
+    try:
+        aggiorna_primi(conn)
+    except Exception as e:
+        print(f"[PRIMI] saltato: {e}", file=sys.stderr)
     return len(buffer)
 
 def phase_recover_undated(conn: sqlite3.Connection, batch_size: int = UNDATED_BATCH_SIZE) -> tuple:
@@ -6130,36 +6171,7 @@ def main():
                             AND COALESCE(h.career_races, 0) = 0)
                 AND NOT EXISTS (SELECT 1 FROM races r WHERE r.horse_name = horse_ratings.name)""").rowcount
             print(f"[RATINGS] voti da atleta senza piu' gare tolti: {n_vecchi}", file=sys.stderr)
-            # Primi tre e primi cinque per la classifica (23/11/2026). Dalle
-            # gare quando coprono tutta la carriera; per gli storici del
-            # registro UNIRE i primi cinque sono vittorie + piazzati (il
-            # registro conta i piazzati fino al 5°) e i primi tre non si
-            # sanno; per le carriere complete dall'estero i primi tre della fonte.
-            colonne = {r[1] for r in conn.execute("PRAGMA table_info(horse_ratings)")}
-            for col in ("primi_tre", "primi_cinque"):
-                if col not in colonne:
-                    conn.execute(f"ALTER TABLE horse_ratings ADD COLUMN {col} INTEGER")
-            conn.execute("CREATE TABLE IF NOT EXISTS carriere_mondiali (nome TEXT PRIMARY KEY)")
-            conn.execute("CREATE TABLE IF NOT EXISTS carriere_complete (nome TEXT PRIMARY KEY, primi_tre INTEGER)")
-            conn.execute("""UPDATE horse_ratings SET primi_tre = NULL, primi_cinque = NULL""")
-            conn.execute("""
-                UPDATE horse_ratings SET
-                  primi_tre = (SELECT SUM(placement BETWEEN 1 AND 3) FROM races r WHERE r.horse_name = horse_ratings.name),
-                  primi_cinque = (SELECT SUM(placement BETWEEN 1 AND 5) FROM races r WHERE r.horse_name = horse_ratings.name)
-                WHERE rating_mode IN ('performance', 'storico')
-                  AND (SELECT COUNT(*) FROM races r WHERE r.horse_name = horse_ratings.name) >= COALESCE(career_races, 0)
-                  AND COALESCE(career_races, 0) > 0
-                  AND name NOT IN (SELECT nome FROM carriere_complete)""")
-            conn.execute("""
-                UPDATE horse_ratings SET primi_cinque = (
-                    SELECT COALESCE(h.career_wins, 0) + COALESCE(h.career_places, 0) FROM horses h
-                     WHERE h.name = horse_ratings.name AND h.birth_year IS horse_ratings.birth_year)
-                WHERE rating_mode = 'storico' AND primi_cinque IS NULL AND COALESCE(carriera_parziale, 0) = 0
-                  AND name NOT IN (SELECT nome FROM carriere_complete)
-                  AND name NOT IN (SELECT nome FROM carriere_mondiali)""")
-            conn.execute("""
-                UPDATE horse_ratings SET primi_tre = (SELECT c.primi_tre FROM carriere_complete c WHERE c.nome = horse_ratings.name)
-                WHERE name IN (SELECT nome FROM carriere_complete)""")
+            aggiorna_primi(conn)
             # Come e' andata la notte, scritto nell'archivio: la pagina Metodo
             # lo legge quando GitHub non risponde al sito (succede spesso).
             conn.execute("CREATE TABLE IF NOT EXISTS stato_notturni (lavoro TEXT PRIMARY KEY, esito TEXT, quando TEXT)")
