@@ -53,6 +53,7 @@ const ProprietariPage = lazy(() => import("./pages/ProprietariPage"));
 const ProprietarioPage = lazy(() => import("./pages/ProprietarioPage"));
 const TracksPage = lazy(() => import("./pages/TracksPage"));
 const MetodoPage = lazy(() => import("./pages/MetodoPage"));
+const MetodoPronosticoPage = lazy(() => import("./pages/MetodoPronosticoPage"));
 const TrackPage = lazy(() => import("./pages/TrackPage"));
 
 // Gli indirizzi possono portare dei parametri dopo il "?" (per esempio
@@ -133,6 +134,8 @@ export default function App() {
               <Route path="/break-even" component={RendePage} />
               <Route path="/ippodromo/:code" component={TrackPage} />
               <Route path="/piste" component={IppodromiTrendPage} />
+              <Route path="/metodo/pronostico" component={MetodoPronosticoPage} />
+              <Route path="/come-si-fa-il-pronostico" component={MetodoPronosticoPage} />
               <Route path="/metodo" component={MetodoPage} />
               <Route path="/metodo-e-dati" component={MetodoPage} />
               <Route path="/qualifiche" component={QualifichePage} />

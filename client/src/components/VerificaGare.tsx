@@ -228,7 +228,7 @@ function ControlloMensile() {
           Premi dei prossimi 12 mesi: {premi[0].stato === "in attesa" ? premi[premi.length - 1].nota : `${premi[0].stato}, ${premi[0].nota}`}.
         </div>
       )}
-      <div className="nota">Solo le stime del giorno contano: favoriti a segno contro la scelta a caso e contro la prova fatta all'allenamento. Se scende di oltre 8 punti sotto la prova, compare un avviso.</div>
+      <div className="nota">Solo le stime del giorno contano: favoriti a segno contro la scelta a caso e contro la prova fatta all'allenamento. Se scende di oltre 8 punti sotto la prova, compare un avviso. <Link href="/metodo/pronostico" style={{ color: "hsl(40 40% 72%)" }}>Come si fa il pronostico →</Link></div>
     </div>
   );
 }

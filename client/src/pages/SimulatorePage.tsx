@@ -19,6 +19,7 @@ import { coloreScheda } from "@/lib/sezioni";
 import IntestazionePagina from "../components/IntestazionePagina";
 import { CSS_DUE_COLONNE } from "../components/DueColonne";
 import { Spiegazione } from "../components/Spiegazione";
+import { PROVA, PROVA_XGB } from "@/lib/provaSimulatore";
 import CavalloCaricamento from "@/components/CavalloCaricamento";
 import {
   nuovaSimulazione, passo, geometria, simulaMolte, formatoKm, LARGHEZZA_CORSIA, pesaMercato, pesaPronostico,
@@ -728,20 +729,6 @@ function TabellaMille({ corsa, r }: { corsa: CorsaApi; r: Riepilogo }) {
 
 // Prova del 21/11/2026 su 461 corse vere (25/10-20/11/2026), 150 simulazioni a
 // corsa, con i parametri di lib/simulaCorsa.ts. Si rifa' quando cambia il motore.
-const PROVA = {
-  corse: 461, dal: "25/10", al: "20/11/2026",
-  squalificheSim: 17.6, squalificheVere: 17.6, scartoKm: 0.1,
-};
-// Prova del 24/11/2026 della taratura sul pronostico XGBoost: 222 corse vere
-// con almeno 6 partenti degli ultimi 14 giorni (187 con le quote finali), 250
-// simulazioni a corsa, prima e dopo la taratura (prova/sim.ts).
-const PROVA_XGB = {
-  corse: 222, conQuote: 187,
-  alVincitore: { solo: 17.3, tarato: 21.5, conMercato: 23.1, totalizzatore: 24.8 },
-  favoritoVince: { solo: 24.8, tarato: 35.6, conMercato: 39.6, totalizzatore: 43.3 },
-  errorePrimiTre: { solo: 0.192, tarato: 0.182, pronostico: 0.182 },
-  erroreVince: { solo: 0.090, tarato: 0.085, totalizzatore: 0.083 },
-};
 function Precisione() {
   const p = PROVA, x = PROVA_XGB;
   const v = (n: number) => n.toFixed(3).replace(".", ",");
