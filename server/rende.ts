@@ -144,6 +144,13 @@ export function registraRende(app: Express, getDb: () => any) {
     try { res.json(f(db)); } catch (e: any) { res.status(500).json({ message: String(e?.message ?? e) }); } finally { db.close(); }
   };
   app.get("/api/rende/stalloni", con(stalloniRende));
+  // Chi fa meglio del previsto (scripts/sopra_previsto.py, ogni mese).
+  app.get("/api/rende/previsto", (_req, res) => {
+    for (const f of [path.resolve(process.cwd(), "modelli", "sopra_previsto.json"), path.resolve(process.cwd(), "..", "modelli", "sopra_previsto.json")]) {
+      try { return res.json(JSON.parse(fs.readFileSync(f, "utf-8"))); } catch { /* prossimo */ }
+    }
+    res.status(404).json({ message: "non ancora calcolato" });
+  });
   app.get("/api/rende/ippodromi", con(ippodromiRende));
   app.get("/api/rende/aste", con(db => asteRende(db)));
   app.get("/api/rende/allenatori", (req, res) => {

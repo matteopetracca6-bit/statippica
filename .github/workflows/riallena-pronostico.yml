@@ -30,12 +30,14 @@ jobs:
           export TAGLIO_VERIFICA=$(date -u -d "-18 months" +%Y-%m-01)
           echo "verifica dal $TAGLIO_VERIFICA, prova dal $TAGLIO_PROVA" >> "$GITHUB_STEP_SUMMARY"
           NTHREAD=4 DB_PATH=data.db python3 pronostico_top3.py --allena-v5 --solo-se-meglio 2>&1 | grep -E "RIALLENA|log_loss|alberi|temperatura" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Chi fa meglio del previsto (allenatori, guidatori, stalloni)
+        run: NTHREAD=4 DB_PATH=data.db python3 scripts/sopra_previsto.py 2>&1 | grep -E "ESITO" | cut -c1-300 | tee -a "$GITHUB_STEP_SUMMARY" || true
       - name: Pubblica i modelli nuovi
         run: |
           git config user.email "nightly@statippica.bot"
           git config user.name "StatIppica Nightly"
           git remote set-url origin "https://matteopetracca6-bit:${{ secrets.GH_NIGHTLY_TOKEN }}@github.com/matteopetracca6-bit/statippica.git"
-          git add modelli/top3_xgb.json modelli/top3_verifica.json modelli/top3_mattino_xgb.json modelli/top3_mattino_verifica.json modelli/vince_xgb.json modelli/vince_verifica.json
+          git add modelli/top3_xgb.json modelli/top3_verifica.json modelli/top3_mattino_xgb.json modelli/top3_mattino_verifica.json modelli/vince_xgb.json modelli/vince_verifica.json modelli/sopra_previsto.json
           if git diff --cached --quiet; then echo "Nessun modello nuovo." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
           # "nightly update" in testa: niente deploy di giorno, i modelli li usa il notturno.
           git commit -q -m "nightly update modelli del pronostico $(date -u '+%Y-%m-%d')"
