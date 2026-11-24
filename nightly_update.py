@@ -6128,9 +6128,19 @@ def main():
             import pronostico_top3 as _pt
             from rischio_galoppo import phase_rischio_galoppo
             phase_rischio_galoppo(conn, _pt.ULTIME_VARIABILI)  # FASE 3g-bis: rischio di squalifica per galoppo
-            _pt.ULTIME_VARIABILI = None
         except Exception as e:
             print(f"[GALOPPO] errore: {e}", file=sys.stderr)
+        try:
+            import pronostico_top3 as _pt
+            from tempo_previsto import phase_tempo_previsto
+            phase_tempo_previsto(conn, _pt.ULTIME_VARIABILI)  # FASE 3g-ter: tempo al km previsto (XGBoost)
+        except Exception as e:
+            print(f"[TEMPO PREVISTO] errore: {e}", file=sys.stderr)
+        try:
+            import pronostico_top3 as _pt
+            _pt.ULTIME_VARIABILI = None
+        except Exception:
+            pass
         phase_stima_premi(conn)  # FASE 3h: premi attesi nei prossimi 12 mesi
         try:
             phase_valore_residuo(conn)  # FASE 3h-bis: quanto puo' ancora guadagnare (dopo la 3h)
