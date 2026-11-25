@@ -26,8 +26,6 @@ export interface CavalloDati {
   vantaggio_numero?: number | null;
   /** Quota finale del totalizzatore, se c'e' (per "pesa il mercato"). */
   quota?: number | null;
-  /** Il pronostico XGBoost: probabilita' di arrivare nei primi tre, in % (per "pesa il pronostico"). */
-  pronostico_top3?: number | null;
 }
 export interface CorsaDati {
   distanza: number; partenza: "autostart" | "nastri"; lunghezza_pista: number; km_pista: number;
@@ -300,39 +298,6 @@ export function pesaMercato(corsa: CorsaDati, peso: number, giri = 3, prove = 16
     attuale = { ...attuale, cavalli: attuale.cavalli.map((c, i) => ({
       ...c, km_base: c.km_base! + peso * 0.45 * (Math.log(vinte[i] / tv) - Math.log(pMercato[i])),
     })) };
-  }
-  return attuale;
-}
-
-/**
- * "Pesa il pronostico XGBoost" (24/11/2026): il tempo al km di ogni cavallo si
- * sposta finche' la quota di corse in cui arriva nei primi tre si avvicina a
- * quella del pronostico (il modello XGBoost del calendario, provato sulle corse
- * vere). La fisica della corsa resta la stessa: cambia quanto va forte ogni
- * cavallo. Cosi' simulatore e pronostico non si contraddicono piu', e le
- * vittorie, i distacchi e le squalifiche vengono dal simulatore. Chi non ha il
- * pronostico resta com'e'. Restituisce una copia della corsa.
- */
-export function pesaPronostico(corsa: CorsaDati, giri = 4, prove = 150): CorsaDati {
-  const n = corsa.cavalli.length;
-  const t = corsa.cavalli.map(c => c.pronostico_top3 != null ? Math.min(0.97, Math.max(0.02, c.pronostico_top3 / 100)) : null);
-  if (n < 4 || t.filter(x => x != null).length < Math.ceil(0.75 * n)) return corsa;
-  const kmDefault = corsa.km_pista + 1.5;
-  const logit = (p: number) => Math.log(p / (1 - p));
-  let attuale: CorsaDati = { ...corsa, cavalli: corsa.cavalli.map(c => ({ ...c, km_base: c.km_base ?? kmDefault })) };
-  for (let g = 0; g < giri; g++) {
-    const top3 = new Array(n).fill(0);
-    for (let s = 0; s < prove; s++) {
-      const sim = corriTutta(attuale, 1234 + g * 1000 + s * 7919);
-      sim.arrivo.slice(0, 3).forEach(i => top3[i]++);
-    }
-    const passo = g === 0 ? 0.9 : 0.6;
-    attuale = { ...attuale, cavalli: attuale.cavalli.map((c, i) => {
-      if (t[i] == null) return c;
-      const p = Math.min(0.985, Math.max(0.015, (top3[i] + 0.5) / (prove + 1)));
-      const d = Math.max(-1.5, Math.min(1.5, passo * (logit(p) - logit(t[i]!))));
-      return { ...c, km_base: c.km_base! + d };
-    }) };
   }
   return attuale;
 }
