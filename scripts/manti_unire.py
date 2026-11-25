@@ -32,6 +32,31 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unire_source as u  # noqa: E402
 
 
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
+# UNIRE risponde in 3-4 secondi a scheda: con una richiesta alla volta 16.000
+# schede sarebbero 20 ore. Si lavora con 4 richieste in volo, ma mai piu' di
+# una che PARTE al secondo (la stessa cortesia del resto del lavoro su UNIRE).
+_LUCCHETTO = threading.Lock()
+_ULTIMA = [0.0]
+_get_originale = u._get
+
+
+def _get_cortese(*a, **k):
+    with _LUCCHETTO:
+        attesa = _ULTIMA[0] + 1.0 - time.time()
+        if attesa > 0:
+            time.sleep(attesa)
+        _ULTIMA[0] = time.time()
+    return _get_originale(*a, **k)
+
+
+u._get = _get_cortese
+u.UNIRE_DELAY = 0.0   # la pausa la fa _get_cortese
+IN_VOLO = 4
+
+
 def log(*a):
     print(*a, file=sys.stderr, flush=True)
 
@@ -90,39 +115,53 @@ def cerca_id(nome: str, sesso, anno: int):
     return None
 
 
+def leggi_uno(nome, anno, sesso, cid):
+    """Una scheda: (esito, manto, id). Niente scritture qui: siamo in un thread."""
+    try:
+        if not cid:
+            cid = cerca_id(nome, sesso, int(anno))
+        if not cid:
+            return "non_trovato", None, None
+        d = u.fetch_horse(cid)
+        if not d:
+            return "errore", None, cid
+        if d.get("birth_year") and int(d["birth_year"]) != int(anno):
+            return "anno_diverso", None, cid
+        return ("manto", d["coat"], cid) if d.get("coat") else ("senza_manto", None, cid)
+    except Exception as e:  # noqa: BLE001  una scheda storta non ferma il giro
+        log(f"[MANTI UNIRE] {nome} {anno}: {e!r}")
+        return "errore", None, cid
+
+
 def lavora(conn, minuti: float, massimo=None) -> dict:
     crea_tabella(conn)
     fine = time.time() + 60 * minuti
     conta = {"letti": 0, "manti": 0, "senza_manto_in_unire": 0, "non_trovati": 0, "errori": 0}
+    # Secondo giro solo per i nati in Italia (o senza paese): gli stranieri nel registro UNIRE non ci sono.
     for con_id in (True, False):
-        for nome, anno, sesso, cid in senza_manto(conn, con_id):
-            if time.time() > fine or (massimo and conta["letti"] >= massimo):
-                return conta
-            esito, manto = "errore", None
-            try:
-                if not cid:
-                    cid = cerca_id(nome, sesso, int(anno))
-                if not cid:
-                    esito = "non_trovato"
-                else:
-                    d = u.fetch_horse(cid)
-                    if d and d.get("birth_year") and int(d["birth_year"]) != int(anno):
-                        esito = "anno_diverso"
-                    elif d and d.get("coat"):
-                        manto, esito = d["coat"], "manto"
+        coda = senza_manto(conn, con_id)
+        if not con_id:
+            esteri = {r[0] for r in conn.execute("SELECT name FROM horses WHERE country IS NOT NULL AND UPPER(country) NOT IN ('IT', 'ITA', 'ITALIA', '')")}
+            coda = [x for x in coda if x[0] not in esteri and int(x[1]) >= 2012]
+        with ThreadPoolExecutor(IN_VOLO) as ex:
+            k = 0
+            while k < len(coda) and time.time() < fine and not (massimo and conta["letti"] >= massimo):
+                blocco = coda[k:k + 20]
+                k += len(blocco)
+                for (nome, anno, _, _), (esito, manto, cid) in zip(blocco, ex.map(lambda x: leggi_uno(*x), blocco)):
+                    if manto:
                         conn.execute("""UPDATE horses SET coat_color = ? WHERE name = ? AND birth_year = ?
                                         AND (coat_color IS NULL OR coat_color = '' OR coat_color = 'n/d')""", (manto, nome, anno))
-                    elif d:
-                        esito = "senza_manto"
-            except Exception as e:  # noqa: BLE001  una scheda storta non ferma il giro
-                log(f"[MANTI UNIRE] {nome} {anno}: {e!r}")
-            conn.execute("INSERT OR REPLACE INTO manti_unire_letti VALUES (?,?,?,?,?,?)", (nome, anno, cid, esito, manto, adesso()))
-            conta["letti"] += 1
-            conta["manti" if esito == "manto" else "senza_manto_in_unire" if esito == "senza_manto"
-                  else "non_trovati" if esito in ("non_trovato", "anno_diverso") else "errori"] += 1
-            if conta["letti"] % 50 == 0:
+                    if esito != "errore":   # gli errori si riprovano la notte dopo
+                        conn.execute("INSERT OR REPLACE INTO manti_unire_letti VALUES (?,?,?,?,?,?)", (nome, anno, cid, esito, manto, adesso()))
+                    conta["letti"] += 1
+                    conta["manti" if esito == "manto" else "senza_manto_in_unire" if esito == "senza_manto"
+                          else "non_trovati" if esito in ("non_trovato", "anno_diverso") else "errori"] += 1
                 conn.commit()
-                log(f"[MANTI UNIRE] {conta}")
+                if conta["letti"] % 200 < 20:
+                    log(f"[MANTI UNIRE] {conta}")
+        if time.time() >= fine or (massimo and conta["letti"] >= massimo):
+            break
     conn.commit()
     return conta
 
