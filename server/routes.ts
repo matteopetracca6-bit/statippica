@@ -622,6 +622,8 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const galoppo = leggiJsonModelli("galoppo_verifica.json");
     const quote = leggiJsonModelli("confronto_quote.json");
     const tempo = leggiJsonModelli("tempo_km_verifica.json");
+    const carriera = leggiJsonModelli("carriera_verifica.json");
+    const sopra = leggiJsonModelli("sopra_previsto.json");
     let archivio: any = null;
     const db = getDb();
     try {
@@ -637,6 +639,14 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const v = {
       notte: togli(notte, "variabili"), mattino: togli(mattino, "variabili"), vince,
       galoppo: togli(galoppo, "regole", "taratura"), quote, archivio, tempo: togli(tempo, "variabili"),
+      carriera: carriera ? { nome: carriera.nome, allenato_il: carriera.allenato_il, fotografie: carriera.fotografie,
+        modelli: Object.fromEntries(Object.entries(carriera.modelli ?? {}).map(([k, m]: [string, any]) => [k, { ...m, peso_variabili: (m.peso_variabili ?? []).slice(0, 8) }])) } : null,
+      sopra: sopra ? { periodo: sopra.periodo, calcolato_il: sopra.calcolato_il,
+        gruppi: Object.fromEntries(["allenatori", "guidatori", "stalloni"].map(k => [k, sopra[k] ? {
+          n: sopra[k].elenco?.length ?? 0, minimo: sopra[k].minimo_partenze, stabilita: sopra[k].stabilita_2025_2026,
+          entita_stabilita: sopra[k].entita_per_stabilita, variabili: sopra[k].variabili,
+          sopra: (sopra[k].elenco ?? []).filter((x: any) => x.z >= 2).length, sotto: (sopra[k].elenco ?? []).filter((x: any) => x.z <= -2).length,
+          primi: (sopra[k].elenco ?? []).slice(0, 3).map((x: any) => ({ nome: x.nome, scarto_100: x.scarto_100 })) } : null])) } : null,
     };
     memoMetodo = { t: Date.now(), v };
     res.json(v);

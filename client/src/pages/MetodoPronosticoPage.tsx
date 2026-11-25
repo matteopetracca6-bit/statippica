@@ -81,6 +81,15 @@ const GRUPPI: [string, string[]][] = [
   ["Riposo", ["h_giorni"]],
   ["Età e sesso", ["eta", "maschio"]],
 ];
+const NOMI_CARRIERA: Record<string, string> = {
+  eta: "età", maschio: "maschio o femmina", mese: "periodo dell'anno", n_carriera: "corse in carriera", n_365: "corse nell'ultimo anno",
+  n_182: "corse negli ultimi 6 mesi", n_91: "corse negli ultimi 3 mesi", premi_365: "premi nell'ultimo anno", premi_182: "premi negli ultimi 6 mesi",
+  premi_prima_182: "premi nei 6 mesi prima", premi_carriera: "premi in carriera", top3_365: "primi tre nell'ultimo anno",
+  vitt_365: "vittorie nell'ultimo anno", non_class_365: "corse senza piazzamento", giorni_ultima: "giorni dall'ultima corsa",
+  km_ult: "tempo dell'ultima corsa", km_med_365: "tempo medio dell'anno", km_ult_vs_med: "ultima corsa rispetto alla media",
+  anni_attivo: "anni di attività", n_365_anno_prima: "corse nell'anno precedente", premi_365_anno_prima: "premi nell'anno precedente",
+  cambi_allenatore_365: "cambi di allenatore",
+};
 const GRUPPO_DI: Record<string, string> = Object.fromEntries(GRUPPI.flatMap(([g, vs]) => vs.map(v => [v, g])));
 
 const CSS = `
@@ -201,7 +210,7 @@ export default function MetodoPronosticoPage() {
   const { data: live } = useQuery<any>({ queryKey: ["/api/calendar/verifica?giorni=30"], staleTime: 10 * 60_000 });
   const { data: ctrl } = useQuery<{ mesi: any[] }>({ queryKey: ["/api/controllo-modelli"], staleTime: 30 * 60_000 });
 
-  const notte = d?.notte, mattino = d?.mattino, vince = d?.vince, gal = d?.galoppo, q = d?.quote, arch = d?.archivio, tk = d?.tempo;
+  const notte = d?.notte, mattino = d?.mattino, vince = d?.vince, gal = d?.galoppo, q = d?.quote, arch = d?.archivio, tk = d?.tempo, car = d?.carriera, sop = d?.sopra;
   const cc = notte?.campo_completo, ccM = mattino?.campo_completo;
   const ld = live?.sintesi?.del_giorno ?? live?.sintesi?.tutte;
   const mesi = (ctrl?.mesi ?? []).filter(m => m.modello === "primi_tre").slice().reverse();
@@ -227,7 +236,7 @@ export default function MetodoPronosticoPage() {
       <style>{CSS_DUE_COLONNE + CSS}</style>
       <LinguetteGruppo gruppo="metodo" />
       <IntestazionePagina icona={Target} colore={COLORE} titolo="Come si fa il pronostico" margineSotto={14}
-        sottotitolo="Dalle corse al calendario, i modelli XGBoost e i loro pesi, le prove contro i metodi semplici e contro il mercato, e com'è andato dal vivo.">
+        sottotitolo="Dalle corse al calendario, i modelli XGBoost e i loro pesi, le prove contro i metodi semplici e contro il mercato, com'è andato dal vivo, e gli altri modelli: tempo previsto, carriera, sopra il previsto, galoppo e simulatore.">
         Ogni numero di questa pagina viene dai file che i modelli scrivono quando si allenano e dalla verifica del calendario,
         che ogni giorno confronta il pronostico con l'arrivo vero. Le prove sono fatte su corse che il modello non ha mai visto.
       </IntestazionePagina>
@@ -509,6 +518,57 @@ export default function MetodoPronosticoPage() {
                 taratura sul pronostico è spenta: la media fra il tempo delle ultime corse e quello previsto abbassa l'errore sul vincitore da 1,98 a 1,90 (210 corse
                 vere, 25/11/2026). Con la taratura accesa non cambia niente, perché è già il pronostico a fissare i passi.</p>
               {tk.peso_variabili && <p style={{ marginBottom: 0 }}>Pesano di più: {tk.peso_variabili.slice(0, 5).map((v: any) => `${v.variabile === "rif_km" ? "il tempo tipico della pista" : (NOMI[v.variabile] ?? v.variabile)} (${pcN(v.peso * 100, 0)})`).join(", ")}.</p>}
+            </div>
+          </div>
+        </>}
+
+        {/* QUANTO GLI RESTA IN CARRIERA */}
+        {car?.modelli?.p_12 && <>
+          <Titolo sotto={`Tre modelli XGBoost stimano, per ogni cavallo che ha corso nell'ultimo anno, se correrà nei prossimi 6 mesi, se sarà ancora in pista fra un anno e quante corse farà. Si vedono in Fai il conto → Ho un cavallo.`}>Quanto gli resta in carriera</Titolo>
+          <div className="mp-griglia2">
+            <div className="ed-pannello mp-scorre">
+              <table className="mp-tab">
+                <thead><tr><th>Cosa stima</th><th className="n">XGBoost</th><th className="n">Cavalli simili</th><th className="n">Alberi</th></tr></thead>
+                <tbody>
+                  <tr data-noi="true"><td>Corre nei prossimi 6 mesi (AUC)</td><td className="n">{dec(car.modelli.p_6?.modello?.auc)}</td><td className="n">{dec(car.modelli.p_6?.simili?.auc)}</td><td className="n">{car.modelli.p_6?.alberi}</td></tr>
+                  <tr data-noi="true"><td>Ancora in pista fra un anno (AUC)</td><td className="n">{dec(car.modelli.p_12.modello?.auc)}</td><td className="n">{dec(car.modelli.p_12.simili?.auc)}</td><td className="n">{car.modelli.p_12.alberi}</td></tr>
+                  <tr data-noi="true"><td>Corse nei prossimi 12 mesi (errore medio)</td><td className="n">{dec(car.modelli.corse?.modello?.errore_medio, 1)}</td><td className="n">{dec(car.modelli.corse?.simili?.errore_medio, 1)}</td><td className="n">{car.modelli.corse?.alberi}</td></tr>
+                </tbody>
+              </table>
+              <div className="mp-nota">
+                Provati su {n0(car.fotografie?.prova)} situazioni di {n0(car.fotografie?.cavalli_prova)} cavalli fra il {data(car.fotografie?.prova_da)} e il {data(car.fotografie?.prova_a)},
+                mai visti dai modelli. «Cavalli simili» è il metodo usato prima: stessa età, stesso numero di corse e stesso gradino di premi nell'ultimo anno.
+                L'AUC dice quanto spesso il modello mette chi continua sopra chi smette (0,5 il caso, 1 la perfezione).
+                Pesano di più: {(car.modelli.p_12.peso_variabili ?? []).slice(0, 4).map((v: any) => `${NOMI_CARRIERA[v.variabile] ?? v.variabile} (${pcN(v.peso * 100, 0)})`).join(", ")}.
+              </div>
+            </div>
+            <Taratura fasce={car.modelli.p_12.fasce} titolo="Ancora in pista fra un anno: stimato e successo davvero" />
+          </div>
+        </>}
+
+        {/* SOPRA IL PREVISTO */}
+        {sop?.gruppi && <>
+          <Titolo sotto={`Arrivi veri contro quelli che XGBoost si aspettava dai cavalli, sulle corse dal ${data(sop.periodo?.da)} (${n0(sop.periodo?.partenze)} partenze). Si vede in Chi rende di più e nelle schede.`}>Chi fa meglio del previsto</Titolo>
+          <div className="ed-pannello mp-scorre">
+            <table className="mp-tab">
+              <thead><tr><th></th><th className="n">In classifica</th><th className="n">Chiaramente sopra</th><th className="n">Chiaramente sotto</th><th className="n">Si ripete l'anno dopo</th><th>I primi</th></tr></thead>
+              <tbody>
+                {(["guidatori", "allenatori", "stalloni"] as const).map(k => {
+                  const g = sop.gruppi[k];
+                  if (!g) return null;
+                  return (
+                    <tr key={k}><td style={{ textTransform: "capitalize" }}>{k}</td><td className="n">{g.n}</td><td className="n">{g.sopra}</td><td className="n">{g.sotto}</td>
+                      <td className="n">{dec(g.stabilita, 2)}</td>
+                      <td style={{ fontSize: 12 }}>{g.primi.map((x: any) => `${x.nome} (+${String(x.scarto_100).replace(".", ",")})`).join(", ")}</td></tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="mp-nota">
+              Per gli allenatori il modello non conosce l'allenatore, per i guidatori non conosce chi guida, per gli stalloni non sa chi è il padre: lo scarto è quello che i cavalli
+              hanno reso in più o in meno con loro, a parità di tutto il resto. «Chiaramente sopra» vuol dire più di due volte lo scarto che darebbe il caso. «Si ripete l'anno dopo»
+              è la correlazione fra lo scarto del 2025 e quello del 2026 (0 = nessun legame, 1 = identico): per i guidatori è un merito che in buona parte resta, per gli stalloni molto meno.
+              Si rifà ogni mese con il riallenamento.
             </div>
           </div>
         </>}
