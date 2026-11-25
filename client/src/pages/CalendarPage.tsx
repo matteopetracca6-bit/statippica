@@ -260,9 +260,11 @@ export default function CalendarPage() {
                                       {dist && <span className="tabular">{dist.toLocaleString("it-IT")} m</span>}
                                       <span>{race.n_runners} partenti</span>
                                       {miei > 0 && <span className="cal-miei"><Star size={11} fill="hsl(51 85% 58%)" color="hsl(51 85% 58%)" /> {miei === 1 ? "un tuo cavallo" : `${miei} tuoi cavalli`}</span>}
-                                      <Link href={`/simulatore?tipo=prossima&pista=${encodeURIComponent(race.track)}&data=${race.race_date}&ora=${encodeURIComponent(race.race_time)}`}>
-                                        <a onClick={e => e.stopPropagation()} className="cal-simula" data-testid="simula">▶ Simula</a>
-                                      </Link>
+                                      {/* 25/11/2026: un <a> dentro <Link> diventava un link doppio; il clic, fermato per non
+                                          aprire la corsa, non arrivava a wouter e il browser andava a /simulatore senza il #:
+                                          si finiva sulla pagina iniziale. Ora e' un link semplice con il #. */}
+                                      <a href={`#/simulatore?tipo=prossima&pista=${encodeURIComponent(race.track)}&data=${race.race_date}&ora=${encodeURIComponent(race.race_time)}`}
+                                        onClick={e => e.stopPropagation()} className="cal-simula" data-testid="simula">▶ Simula</a>
                                       <ChevronDown size={17} style={{ marginLeft: "auto", color: "hsl(210 8% 45%)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
                                     </div>
                                     {top3.length >= 3 && race.n_runners > 3 && (
