@@ -9,6 +9,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           set +e
-          sleep 420
+          sleep 5
           npm i playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
           node prova/fine.cjs
