@@ -445,7 +445,14 @@ def calcola(conn, con_verifica: bool = False) -> dict:
     t = cifre(r)
     s0 = stagioni(t)
     punti = scala_da(s0["forma"].to_numpy())
-    anag = r.drop_duplicates("cavallo").set_index("cavallo")[["nato", "sesso", "padre"]]
+    # 25/11/2026: l'anagrafica viene dai cavalli, non dalle corse in Italia.
+    # Prima chi correva solo all'estero (IN THE WIND GAR, S fra tutti e SSS
+    # nella sua annata) non aveva anagrafica: le sue stagioni sparivano e la
+    # curva lo prevedeva come un cavallo mai corso, dal solo padre (E). Le
+    # corse all'estero restano fuori solo dalla FORZA (velocita' confrontata
+    # pista per pista), non dal voto, che le ha sempre contate.
+    anag = pd.read_sql_query("""SELECT name AS cavallo, birth_year AS nato, sex AS sesso, UPPER(TRIM(sire)) AS padre
+                                FROM horses WHERE birth_year IS NOT NULL""", conn).drop_duplicates("cavallo").set_index("cavallo")
     s_forza = tabella_stagioni(r, s0, punti)
     vt, extra = voti_per_anno(conn, anno_ora)
     # L'anno in corso: il voto della testata, cosi' la curva arriva li'.
@@ -474,7 +481,9 @@ def calcola(conn, con_verifica: bool = False) -> dict:
             tend = forma(recenti["cifra"].to_numpy(), np.ones(len(recenti))) - \
                 forma(vecchie["cifra"].to_numpy(), np.ones(len(vecchie)))
         righe_f[cav] = (f_ora, tend, len(g))
-    ultima = r.groupby("cavallo")["d"].max()
+    # Ultima corsa ovunque, estero compreso: chi corre all'estero non e' fermo.
+    ultima = pd.read_sql_query("SELECT horse_name AS cavallo, MAX(race_date) AS d FROM races WHERE race_date IS NOT NULL GROUP BY 1", conn)
+    ultima = pd.to_datetime(ultima.set_index("cavallo")["d"], errors="coerce").dropna()
     futuro = extra["futuro"]
 
     h = pd.read_sql_query("""SELECT name AS cavallo, birth_year AS nato, sex AS sesso, UPPER(TRIM(sire)) AS padre
