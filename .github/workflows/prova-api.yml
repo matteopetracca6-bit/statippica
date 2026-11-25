@@ -7,8 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          set +e
-          sleep 420
-          npm i playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
-          node prova/tutto.cjs
+      - run: pip install -q requests beautifulsoup4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id=$(gh api repos/${{ github.repository }}/releases/tags/archivio --jq '.assets[] | select(.name=="data.db.gz") | .id')
+          gh api -H "Accept: application/octet-stream" repos/${{ github.repository }}/releases/assets/$id > data.db.gz
+          gunzip -f data.db.gz
+      - run: python3 prova/manti.py 2>&1 | tail -30
