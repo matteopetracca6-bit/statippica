@@ -161,6 +161,8 @@ def fetch_horse(id_cav: str) -> Optional[dict]:
         out["sex"] = {"maschio": "M", "femmina": "F", "castrone": "C"}[m.group(1).lower()]
         out["birth_year"] = int(m.group(3))
         out["country"] = m.group(4).strip()
+        # Il manto sta fra il sesso e l'anno ("maschio baio oscuro 2005 ITA").
+        out["coat"] = " ".join(m.group(2).split()).capitalize() or None
 
     # Genealogia: i due link di primo livello nella scheda sono stallone e fattrice
     for label, key in (("Stallone", "sire"), ("Fattrice", "dam")):

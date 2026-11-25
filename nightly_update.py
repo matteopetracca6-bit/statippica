@@ -6114,6 +6114,12 @@ def main():
             print(f"[REFUSI] {phase_refusi_nomi(conn)}", file=sys.stderr)
         except Exception as e:
             print(f"[REFUSI] errore: {e}", file=sys.stderr)
+        try:
+            # Manti mancanti da VendoPuledri e dai risultati ufficiali (manti.py).
+            from manti import phase_manti
+            phase_manti(conn)
+        except Exception as e:
+            print(f"[MANTI] errore: {e}", file=sys.stderr)
         phase_ratings(conn)             # FASE 3: rating cavalli
         phase_historic_ratings(conn)    # FASE 3a-bis: classifica storica
         phase_pulisci_voti_pedigree(conn)  # FASE 3a-ter: via dal pedigree chi ha corso
