@@ -6,7 +6,7 @@ const B = 'https://statippica.onrender.com';
     const pg = await br.newPage({ viewport: vp });
     const err = []; pg.on('pageerror', e => err.push(e.message));
     await pg.goto(`${B}/#/horse/INCREDIBLE%20RUN/2023`, { waitUntil: 'networkidle', timeout: 120000 }); await pg.waitForTimeout(10000);
-    const r = await pg.evaluate(() => ({ pannello: document.querySelector('[data-testid=pannello-forza]')?.innerText.slice(0, 700).replace(/\n/g, ' | '), larg: document.documentElement.scrollWidth }));
+    const r = await pg.evaluate(() => ({ pannello: document.querySelector('[data-testid=curva-voto]')?.innerText.slice(0, 700).replace(/\n/g, ' | '), larg: document.documentElement.scrollWidth }));
     console.log('RIS', vp.width, JSON.stringify(r), 'ERR', JSON.stringify(err.slice(0, 3)));
   }
   await br.close();
