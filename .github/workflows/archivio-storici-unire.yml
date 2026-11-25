@@ -60,6 +60,19 @@ jobs:
         run: bash scripts/ottieni_archivio.sh
       - name: Schede da cavallo degli stalloni (al massimo 30 minuti)
         run: python3 scripts/stalloni_schede.py --db data.db --minuti 30 || true
+      - name: Manti dal registro UNIRE (al massimo 120 minuti)
+        # 25/11/2026 (scripts/manti_unire.py): il manto degli storici e dei
+        # cavalli che non ce l'hanno, dalla scheda UNIRE, a tappe. Non ferma
+        # mai il recupero degli storici, che lavora nel tempo che resta.
+        run: |
+          MIN=120
+          ORA=$(TZ=Europe/Rome date +%H%M)
+          if [ "$((10#$ORA))" -lt 800 ]; then
+            FINE=$(TZ=Europe/Rome date -d "$(TZ=Europe/Rome date +%Y-%m-%d) 06:30" +%s)
+            RESTANO=$(( (FINE - $(date +%s)) / 60 ))
+            [ "$RESTANO" -lt "$MIN" ] && MIN=$RESTANO
+          fi
+          if [ "$MIN" -ge 5 ]; then python3 scripts/manti_unire.py --db data.db --minuti "$MIN" || echo "::warning::manti non recuperati stanotte"; fi
       - name: Recupera gli storici
         id: storici
         env:
