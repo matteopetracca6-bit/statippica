@@ -19,6 +19,8 @@ import { BookOpen, FlaskConical, Ruler, Target, TrendingUp } from "lucide-react"
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import VerificaPuledri, { type VerificaPuledriDati } from "../components/VerificaPuledri";
 
 const MUTED = "hsl(210 8% 45%)";
@@ -239,6 +241,7 @@ export default function ValidazionePage() {
 
   return (
     <div className="page-shell">
+      <LinguetteGruppo gruppo="advisor" />
       <IntestazionePagina icona={FlaskConical} colore={CYAN} titolo="Il consiglio funziona davvero?" margineSotto={22}
         etichetta="Advisor sperimentale"
         sottotitolo="La prova dell'Advisor sui puledri che non ha mai visto: se l'ordine che propone somiglia a quello vero, il metodo funziona.">

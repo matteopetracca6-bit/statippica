@@ -15,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Medal, X, ChevronLeft, ChevronRight, ArrowRight, Info } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
 import CavalloCaricamento from "../components/CavalloCaricamento";
@@ -125,6 +127,7 @@ export default function ClassificheAllevatoriPage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
+      <LinguetteGruppo gruppo="allevatori" />
       <IntestazionePagina icona={Medal} colore={COLORE} titolo="Classifica allevatori" margineSotto={16}
         sottotitolo="Gli allevamenti stagione per stagione: cavalli in corsa, vittorie e vincite.">
         Per ogni allevamento si sommano le corse dei cavalli che ha fatto nascere, in una stagione e per l'età scelta.

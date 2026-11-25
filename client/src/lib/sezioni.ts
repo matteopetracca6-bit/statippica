@@ -78,11 +78,9 @@ export const GRUPPI: Gruppo[] = [
     schede: [
     { href: "/fattrici", label: "Fattrici", nota: "Fattrici valutate sui figli", icon: Heart, colore: "hsl(330 65% 62%)",
       descrizione: "Fattrici valutate sui figli: figli di vertice, guadagni medi e carriera della madre" },
-    { href: "/allevamento", label: "Allevatori e stazioni di monta", nota: "Chi alleva e dove stanno gli stalloni", icon: Building2, colore: "hsl(318 52% 58%)",
+    { href: "/allevamento", label: "Allevatori", nota: "Chi alleva, stazioni di monta e classifica stagione per stagione", icon: Building2, colore: "hsl(318 52% 58%)",
       descrizione: "Allevatori e stazioni di monta in un'unica scheda, con la qualità media della produzione" },
-    { href: "/allevatori/classifiche", label: "Classifica allevatori", nota: "Gli allevamenti stagione per stagione", icon: Medal, colore: "hsl(342 72% 67%)",
-      descrizione: "Gli allevamenti stagione per stagione: cavalli in corsa, vittorie, vincite e media a cavallo, per età" },
-    { href: "/advisor", label: "Advisor", nota: "Scegli l'accoppiamento per una fattrice", icon: Sparkles, colore: "hsl(306 45% 67%)",
+    { href: "/advisor", label: "Advisor", nota: "Scegli l'accoppiamento per una fattrice, e quanto è affidabile", icon: Sparkles, colore: "hsl(306 45% 67%)",
       descrizione: "Simula accoppiamenti, costi e ritorni, e controlla la consanguineità" },
   ] },
   { nome: "Economia", icon: Scale, colore: "hsl(160 60% 50%)",
@@ -98,14 +96,8 @@ export const GRUPPI: Gruppo[] = [
   { nome: "Metodo", icon: BookMarked, colore: "hsl(40 40% 72%)",
     descrizione: "Da dove vengono i numeri e le prove che le stime funzionano",
     schede: [
-    { href: "/metodo", label: "Metodo e dati", nota: "Da dove vengono i numeri e come si leggono", icon: BookMarked, colore: "hsl(40 40% 72%)",
+    { href: "/metodo", label: "Metodo", nota: "Dati, come si fa il pronostico e controllo a posteriori", icon: BookMarked, colore: "hsl(40 40% 72%)",
       descrizione: "Da dove vengono i numeri, come si calcola ogni voto e quando si è aggiornato l'archivio" },
-    { href: "/metodo/pronostico", label: "Come si fa il pronostico", nota: "Corse, calendario, pesi di XGBoost e risultati", icon: Target, colore: "hsl(40 40% 72%)",
-      descrizione: "Dalle corse al calendario, i modelli XGBoost con i loro pesi, le prove contro i metodi semplici e il mercato, e com'è andato dal vivo" },
-    { href: "/controllo", label: "Controllo a posteriori", nota: "Le stime rifatte nel passato, contro com'è andata", icon: History, colore: "hsl(33 38% 62%)",
-      descrizione: "Le stime rifatte con i soli dati di una data passata, confrontate con com'è andata davvero" },
-    { href: "/validazione", label: "Verifica Advisor", nota: "Il consiglio di accoppiamento messo alla prova", icon: FlaskConical, colore: "hsl(46 48% 80%)",
-      descrizione: "Il consiglio di accoppiamento provato su puledri mai visti: perché resta sperimentale" },
   ] },
 ];
 
@@ -121,18 +113,17 @@ const ALIAS: Record<string, string> = {
   "/stallion": "/stalloni", "/stallioni": "/stalloni",
   "/fattrice": "/fattrici",
   "/allevamenti": "/allevamento", "/allevatori": "/allevamento", "/allevatore": "/allevamento",
-  "/validazione-advisor": "/validazione",
+  "/validazione-advisor": "/advisor", "/allevatori/classifiche": "/allevamento", "/metodo/pronostico": "/metodo",
   "/trend": "/ippodromi", "/piste": "/ippodromi", "/ippodromo": "/ippodromi",
   "/guidatore": "/guidatori",
   "/allenatore": "/allenatori",
   "/proprietario": "/proprietari",
-  "/controllo-a-posteriori": "/controllo",
+  "/controllo-a-posteriori": "/metodo", "/controllo": "/metodo", "/come-si-fa-il-pronostico": "/metodo", "/validazione": "/advisor",
   "/portafoglio": "/scuderia",
   "/prezzo-massimo": "/conto", "/vendere": "/conto", "/economia": "/conto", "/puledro": "/conto", "/tenere": "/conto",
   "/break-even": "/rende", "/pareggio": "/rende", "/mercato": "/rende", "/chi-rende": "/rende", "/annate": "/generazioni",
   "/aste": "/rende", "/generazione-m": "/generazioni", "/sopra-previsto": "/rende",
   "/metodo-e-dati": "/metodo",
-  "/come-si-fa-il-pronostico": "/metodo/pronostico",
   "/gran-premi": "/ippodromi", "/albo-doro": "/ippodromi", "/palmares": "/ippodromi",
 };
 export function coloreDiPagina(percorso: string): string | null {
@@ -147,6 +138,8 @@ export function coloreDiPagina(percorso: string): string | null {
 
 /** Il colore di una pagina del menu, per usarlo dentro la pagina stessa. */
 export function coloreScheda(href: string): string {
-  for (const g of GRUPPI) for (const sc of g.schede) if (sc.href === href) return sc.colore;
+  // Le pagine diventate linguette di un'altra (25/11/2026) prendono il suo colore.
+  const h = ALIAS[href] ?? href;
+  for (const g of GRUPPI) for (const sc of g.schede) if (sc.href === h) return sc.colore;
   return "hsl(183 70% 55%)";
 }

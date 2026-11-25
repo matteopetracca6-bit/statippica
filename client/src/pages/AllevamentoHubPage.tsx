@@ -5,6 +5,8 @@ import BreedersPage from "./BreedersPage";
 import StudFarmsPage from "./StudFarmsPage";
 import { Warehouse, MapPin, Building2 } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { CSS_DUE_COLONNE } from "../components/DueColonne";
 
@@ -36,6 +38,7 @@ export default function AllevamentoHubPage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
+      <LinguetteGruppo gruppo="allevatori" />
       <IntestazionePagina icona={Building2} colore={COLORE} titolo="Allevatori e stazioni di monta" margineSotto={16}
         sottotitolo="Chi alleva i cavalli e dove stanno gli stalloni, con la qualità media di quello che producono.">
         Due elenchi nello stesso posto: gli allevatori, cioè chi ha materialmente allevato i
