@@ -295,6 +295,11 @@ export default function MetodoPronosticoPage() {
             di ogni corsa che finiscono davvero nei primi tre, contata sulle {n0(cc?.corse)} corse in cui erano noti tutti i partenti.
             L'"indice di velocità" è il tempo al km meno il tempo tipico di quella pista e di quella distanza nell'anno prima: così un 1'14" a Milano e uno a Montegiorgio si possono confrontare.
           </div>
+          <div className="mp-nota">
+            <b>Provato e lasciato fuori (24/11/2026):</b> un modello XGBoost che invece di stimare ogni cavallo da solo impara direttamente l'ordine d'arrivo
+            dentro la corsa (rank:pairwise e rank:ndcg), da solo o mescolato a quello in uso. Sulle stesse 7.650 corse di prova i tre favoriti a segno passano
+            da 54,9% a 55,0% e il primo favorito vince il 37,2% invece del 36,8%: differenze più piccole del margine del caso, che non valgono un giro notturno più complicato.
+          </div>
         </div>
 
         {/* PESI */}
