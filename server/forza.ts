@@ -39,7 +39,11 @@ export function forzaCavallo(db: Database.Database, nome: string) {
                             WHERE horse_name = ? ORDER BY eta`).all(nome) as any[];
   if (!stagioni.length && !curva.length) return null;
   const v = verificaForza();
+  // Corse all'estero degli ultimi 12 mesi: la velocita' non si confronta li'.
+  const estero = (db.prepare(`SELECT COUNT(*) AS n FROM races WHERE horse_name = ? AND track = 'ESTERO'
+                              AND race_date >= date('now', '-365 days')`).get(nome) as any)?.n ?? 0;
   return {
+    corse_estero_12_mesi: estero,
     forza: f.forza, tendenza: f.tendenza, corse_12_mesi: f.corse_12_mesi,
     ultima_corsa: f.ultima_corsa, ferma: !!f.ferma,
     potenziale: f.potenziale, potenziale_basso: f.potenziale_basso, potenziale_alto: f.potenziale_alto,

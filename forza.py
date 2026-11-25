@@ -435,7 +435,42 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS voto_soglie (grado TEXT, soglia REAL)""",
     """CREATE TABLE IF NOT EXISTS curva_carriera (horse_name TEXT, eta INTEGER, mediana REAL,
         basso REAL, alto REAL, PRIMARY KEY (horse_name, eta))""",
+    """CREATE TABLE IF NOT EXISTS forza_controllo (horse_name TEXT PRIMARY KEY, birth_year INTEGER, voto TEXT,
+        potenziale REAL, lettera_potenziale TEXT, lettere_sotto INTEGER, calcolato_il TEXT)""",
 ]
+
+
+def controllo(conn, righe_fc, ora) -> int:
+    """Ogni notte (25/11/2026): cavalli fino a 5 anni, in corsa, con il
+    potenziale di fine carriera due lettere o piu' sotto il voto di oggi.
+    Il voto di carriera puo' scendere davvero, ma non cosi' tanto per un
+    giovane che corre: di solito e' un dato che il calcolo non ha visto
+    (come le corse all'estero di IN THE WIND GAR, potenziale E con voto S)."""
+    ordine = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"]
+    soglie = soglie_voto(conn)
+    def lettera(x):
+        for g, m in soglie:
+            if x >= m:
+                return g
+        return "F"
+    voti = dict(conn.execute("SELECT name, grade FROM horse_ratings WHERE rating_mode = 'performance' AND grade IS NOT NULL").fetchall())
+    anno = date.today().year
+    sospetti = []
+    for r in righe_fc:
+        cav, nato, ferma, pot = r[0], r[1], r[6], r[7]
+        v = voti.get(cav)
+        if pot is None or v not in ordine or ferma or anno - nato > 5:
+            continue
+        lp = lettera(pot)
+        d = ordine.index(lp) - ordine.index(v)
+        if d >= 2:
+            sospetti.append((cav, nato, v, round(float(pot), 1), lp, d, ora))
+    conn.execute("DELETE FROM forza_controllo")
+    conn.executemany("INSERT OR REPLACE INTO forza_controllo VALUES (?,?,?,?,?,?,?)", sospetti)
+    conn.commit()
+    esempi = ", ".join(f"{x[0]} ({x[2]} -> {x[4]})" for x in sorted(sospetti, key=lambda x: -x[5])[:8])
+    log(f"[FORZA] controllo: {len(sospetti)} giovani in corsa con il potenziale due lettere o piu' sotto il voto" + (f": {esempi}" if esempi else ""))
+    return len(sospetti)
 
 
 def calcola(conn, con_verifica: bool = False) -> dict:
@@ -567,7 +602,12 @@ def calcola(conn, con_verifica: bool = False) -> dict:
     conn.executemany("INSERT OR REPLACE INTO curva_carriera VALUES (?,?,?,?,?)", curve)
     conn.executemany("INSERT INTO voto_soglie VALUES (?,?)", soglie_voto(conn))
     conn.commit()
-    esito = {"cavalli": len(righe_fc), "stagioni": len(stag), "curve": len(curve)}
+    try:
+        n_sospetti = controllo(conn, righe_fc, ora)
+    except Exception as e:  # noqa: BLE001  il controllo non deve fermare la notte
+        log(f"[FORZA] controllo non riuscito: {e!r}")
+        n_sospetti = None
+    esito = {"cavalli": len(righe_fc), "stagioni": len(stag), "curve": len(curve), "sospetti": n_sospetti}
     log(f"[FORZA] {esito}")
     if con_verifica:
         v = {"versione": VERSIONE, "calcolato_il": oggi.strftime("%Y-%m-%d"),

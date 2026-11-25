@@ -17,7 +17,7 @@ import GradeBadge from "./GradeBadge";
 import { Spiegazione } from "./Spiegazione";
 
 export interface Forza {
-  forza: number | null; tendenza: number | null; corse_12_mesi: number;
+  forza: number | null; tendenza: number | null; corse_12_mesi: number; corse_estero_12_mesi?: number;
   ultima_corsa: string | null; ferma: boolean;
   potenziale: number | null; potenziale_basso: number | null; potenziale_alto: number | null;
   potenziale_eta: number | null; picco: number | null; picco_eta: number | null; nato: number | null;
@@ -154,6 +154,14 @@ export default function FormaPotenziale({ f, style }: { f: Forza; style?: React.
               </span>
             </div>
           ) : <span style={{ fontSize: 13.5, color: "hsl(210 10% 70%)" }}>non stimabile</span>}
+          {f.picco != null && f.picco_eta != null && (
+            <div style={{ fontSize: 12, color: "hsl(210 8% 62%)", marginTop: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              Picco già raggiunto: <GradeBadge grade={lettera(f.picco)} size="sm" /> {num(f.picco)} a {f.picco_eta} anni
+              {f.potenziale != null && f.potenziale < f.picco - 1 && (
+                <span style={{ color: "hsl(38 70% 62%)" }}>· dopo il picco: il voto di carriera può scendere se corre poche stagioni rispetto a quelle possibili</span>
+              )}
+            </div>
+          )}
           <div style={{ fontSize: 11.5, color: "hsl(210 8% 55%)", marginTop: 4 }}>
             {f.ferma
               ? "Carriera ferma da oltre sei mesi: nessuna previsione. Se non torna a correre, il voto cambia solo per le stagioni che avrebbe potuto correre (fino ai 7 anni)."
@@ -172,10 +180,13 @@ export default function FormaPotenziale({ f, style }: { f: Forza; style?: React.
               )}
             </div>
           ) : (
-            <span style={{ fontSize: 13.5, color: "hsl(210 10% 70%)" }}>nessuna corsa con il tempo negli ultimi 12 mesi</span>
+            (f.corse_estero_12_mesi ?? 0) > 0
+              ? <span style={{ fontSize: 13.5, color: "hsl(210 10% 70%)" }}>corre all'estero: la velocità non si può confrontare pista per pista
+                  (l'archivio non sa su quale pista estera si correva)</span>
+              : <span style={{ fontSize: 13.5, color: "hsl(210 10% 70%)" }}>nessuna corsa con il tempo negli ultimi 12 mesi</span>
           )}
           <div style={{ fontSize: 11.5, color: "hsl(210 8% 55%)", marginTop: 4 }}>
-            {f.corse_12_mesi} corse negli ultimi 12 mesi{f.ultima_corsa ? ` · ultima il ${dataIt(f.ultima_corsa)}` : ""}
+            {f.corse_12_mesi} corse in Italia negli ultimi 12 mesi{(f.corse_estero_12_mesi ?? 0) > 0 ? `, ${f.corse_estero_12_mesi} all'estero` : ""}{f.ultima_corsa ? ` · ultima il ${dataIt(f.ultima_corsa)}` : ""}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignSelf: "center" }}>
