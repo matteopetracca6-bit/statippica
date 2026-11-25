@@ -211,6 +211,21 @@ def leggi_cavallo(conn, cid, nome_elenco, sesso, anno, padre, madre, aggiorna: b
     d = u.fetch_horse(cid)
     if not d:
         return "errore"
+    esito = _leggi_cavallo(conn, d, nome_elenco, sesso, anno, padre, madre, aggiorna)
+    # Il manto della scheda UNIRE (25/11/2026): solo dove manca, sempre con
+    # nome e anno della scheda, cosi' un omonimo non lo prende per errore.
+    try:
+        coat, anno_d = d.get("coat"), d.get("birth_year") or anno
+        if coat and anno_d:
+            for n in {d.get("name") or nome_elenco, nome_elenco, omonimi.nome_con_anno(d.get("name") or nome_elenco, anno_d)}:
+                conn.execute("""UPDATE horses SET coat_color = ? WHERE name = ? AND birth_year = ?
+                                AND (coat_color IS NULL OR coat_color = '' OR coat_color = 'n/d')""", (coat, n, anno_d))
+    except Exception:  # noqa: BLE001  il manto non deve fermare il recupero
+        pass
+    return esito
+
+
+def _leggi_cavallo(conn, d, nome_elenco, sesso, anno, padre, madre, aggiorna: bool = False) -> str:
     corse = int(d.get("career_races") or 0)
     nome = d.get("name") or nome_elenco
     # Una carriera parziale cercata per nome resta sulla sua scheda, anche se
