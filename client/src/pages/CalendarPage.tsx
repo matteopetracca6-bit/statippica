@@ -32,6 +32,8 @@ interface CalendarEntry {
   sire: string | null;
   dam: string | null;
   win_estimate: number;
+  km_previsto?: number | null;
+  piu_veloce?: boolean;
   /** Probabilita' di arrivare nei primi tre (modello XGBoost). */
   top3?: { prob: number; affidabile: boolean; n_corse: number; motivi: { testo: string; pro: boolean }[]; vince?: number | null; mattino?: boolean };
   /** Rischio di squalifica per galoppo (modello provato sulle corse 2025–2026). */
@@ -101,6 +103,13 @@ const TRACK_NAMES: Record<string, string> = {
   MG: "Montegiorgio", AV: "Aversa", TA: "Taranto", FO: "Follonica", CV: "Civitanova", FE: "Ferrara",
   MON: "Montegiorgio",
 };
+
+/** 14.39 (come time_km) -> 1'14"4 */
+function kmTesto(k: number): string {
+  const s = k < 40 ? 60 + k : k;
+  const m = Math.floor(s / 60), r = s - 60 * m;
+  return `${m}'${r.toFixed(1).replace(".", '"')}`;
+}
 
 export default function CalendarPage() {
   const [data, setData] = useState<CalendarResponse | null>(null);
@@ -317,6 +326,11 @@ export default function CalendarPage() {
                                                   {entry.birth_year && <span>{new Date().getFullYear() - entry.birth_year} anni</span>}
                                                   {entry.sire && <span>da {entry.sire}</span>}
                                                   {entry.career_races != null && <span>{entry.career_races === 0 ? "debutto" : `${entry.career_races} ${entry.career_races === 1 ? "corsa" : "corse"}`}{entry.win_rate ? `, ${entry.win_rate.toFixed(0)}% vinte` : ""}</span>}
+                                                  {entry.km_previsto != null && (
+                                                    <span title="Tempo al km previsto da XGBoost per questa corsa: errore medio in prova 0,94 secondi" style={entry.piu_veloce ? { color: "hsl(45 90% 62%)", fontWeight: 700 } : undefined}>
+                                                      km previsto {kmTesto(entry.km_previsto)}{entry.piu_veloce ? " · il più veloce" : ""}
+                                                    </span>
+                                                  )}
                                                 </div>
                                                 {entry.galoppo && <ChipGaloppo g={entry.galoppo} />}
                                                 {entry.top3 && entry.top3.motivi.length > 0 && (
