@@ -11,16 +11,17 @@ const B = 'https://statippica.onrender.com';
     await pg.locator('.cal-riunione, [data-testid=riunione]').first().click().catch(() => {});
     const km = await pg.evaluate(() => [...document.querySelectorAll('.cal-meta span')].map(e => e.innerText).filter(t => t.includes('km previsto')).slice(0, 4));
     console.log('CAL', vp.width, JSON.stringify(km), await larg());
-    for (const u of ['/guidatori', '/allenatori', '/proprietari']) {
+    for (const u of []) {
       await vai(u, 6000);
       console.log('PERS', vp.width, u, await pg.evaluate(() => [...document.querySelectorAll('[data-testid=linguette-persone] a')].map(a => (a.getAttribute('aria-current') ? '*' : '') + a.innerText.split('\n')[0]).join('/')), await larg());
     }
-    for (const [u, k] of [['/guidatore/A.Di%20Nardo', 'guidatore'], ['/allenatore/ANTONIO%20SIMIOLI', 'allenatore'], ['/stallion/NAD%20AL%20SHEBA', 'stallone']]) {
+    for (const [u, k] of []) {
       await vai(u, 10000);
       console.log('SCHEDA', vp.width, k, JSON.stringify((await pg.evaluate(k => document.querySelector(`[data-testid=scheda-in-piu-${k}]`)?.innerText.slice(0, 400).replace(/\n/g, ' | '), k)) ?? 'ASSENTE'), await larg());
     }
     console.log('DBG', JSON.stringify(await pg.evaluate(async () => { const v = await (await fetch('/api/calendar/verifica?giorni=62')).json(); const t = await (await fetch('/api/track/TORINO')).json(); return { piste: (v.piste || []).slice(0, 6), nome: t.nome, codice: t.codice }; })));
     await vai('/ippodromo/TORINO', 10000);
+    console.log('NOME', await pg.evaluate(() => document.querySelector('h1')?.innerText));
     console.log('IPPO', vp.width, JSON.stringify((await pg.evaluate(() => document.querySelector('[data-testid=ippodromo-in-piu]')?.innerText.slice(0, 500).replace(/\n/g, ' | '))) ?? 'ASSENTE'), await larg());
     await vai('/metodo/pronostico', 10000);
     console.log('METODO', vp.width, await pg.evaluate(() => [...document.querySelectorAll('.ed-tit')].map(e => e.innerText).join(' / ')), await larg());
