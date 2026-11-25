@@ -19,6 +19,7 @@ const B = 'https://statippica.onrender.com';
       await vai(u, 10000);
       console.log('SCHEDA', vp.width, k, JSON.stringify((await pg.evaluate(k => document.querySelector(`[data-testid=scheda-in-piu-${k}]`)?.innerText.slice(0, 400).replace(/\n/g, ' | '), k)) ?? 'ASSENTE'), await larg());
     }
+    console.log('DBG', JSON.stringify(await pg.evaluate(async () => { const v = await (await fetch('/api/calendar/verifica?giorni=62')).json(); const t = await (await fetch('/api/track/TORINO')).json(); return { piste: (v.piste || []).slice(0, 6), nome: t.nome, codice: t.codice }; })));
     await vai('/ippodromo/TORINO', 10000);
     console.log('IPPO', vp.width, JSON.stringify((await pg.evaluate(() => document.querySelector('[data-testid=ippodromo-in-piu]')?.innerText.slice(0, 500).replace(/\n/g, ' | '))) ?? 'ASSENTE'), await larg());
     await vai('/metodo/pronostico', 10000);
