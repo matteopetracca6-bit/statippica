@@ -21,6 +21,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Search, X, Timer, ArrowRight } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
@@ -235,6 +237,7 @@ export default function AllenatoriPage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
+      <LinguetteGruppo gruppo="persone" />
       <IntestazionePagina icona={Timer} colore={COLORE} titolo="Allenatori" margineSotto={16}
         sottotitolo={`Chi allena i cavalli del trotto italiano: corse, vittorie e premi dal 2016${data?.aggiornato_al ? `, aggiornati al ${new Date(data.aggiornato_al).toLocaleDateString("it-IT")}` : ""}.`}>
         Vittorie e premi dicono soprattutto quali cavalli ha un allenatore. Per confrontare quanto li fa rendere c'è il conto
