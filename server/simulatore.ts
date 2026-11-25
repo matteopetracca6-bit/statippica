@@ -165,6 +165,9 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
       const rischioS = esiste(db, "rischio_galoppo_storico") ? db.prepare(`SELECT prob FROM rischio_galoppo_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
       // Dalla versione 5 anche la probabilita' di vincere (prob_vince), se la colonna c'e'.
       const colV = (t: string) => esiste(db, t) && (db.prepare(`PRAGMA table_info(${t})`).all() as any[]).some(c => c.name === "prob_vince") ? "prob_vince" : "NULL AS prob_vince";
+      // Tempo al km previsto da XGBoost (tempo_previsto.py, dal 25/11/2026).
+      const tempoP = esiste(db, "tempo_previsto") ? db.prepare(`SELECT km FROM tempo_previsto WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
+      const tempoS = esiste(db, "tempo_previsto_storico") ? db.prepare(`SELECT km FROM tempo_previsto_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
       const pronP = esiste(db, "pronostico_top3") ? db.prepare(`SELECT prob, ${colV("pronostico_top3")} FROM pronostico_top3 WHERE track = ? AND race_date = ? AND race_time = ? AND horse_name = ?`) : null;
       const pronS = esiste(db, "pronostico_top3_storico") ? db.prepare(`SELECT prob, ${colV("pronostico_top3_storico")} FROM pronostico_top3_storico WHERE pista = ? AND race_date = ? AND corsa = ? AND horse_name = ?`) : null;
       // Quote finali per nome senza segni: Hippoweb scrive "-S-", l'archivio "(S)".
@@ -212,6 +215,10 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
         const pr = tipo === "passata"
           ? (pronS && ora ? (pronS.get(pista, data, ora, p.nome) as any) : null)
           : (pronP ? (pronP.get(sigla, data, ora, p.nome) as any) : null);
+        const tp = tipo === "passata"
+          ? (tempoS && ora ? (tempoS.get(pista, data, ora, p.nome) as any)?.km : null)
+          : (tempoP ? (tempoP.get(sigla, data, ora, p.nome) as any)?.km : null);
+        const kmPrevisto = kmSecondi(tp) != null ? kmSecondi(tp)! + ferriOggi : null;
         const top3 = pr?.prob ?? null;
         const vince = pr?.prob_vince ?? null;
         const q = quoteCorsa.get(nq(p.nome)) ?? null;
@@ -220,6 +227,7 @@ export function registraSimulatore(app: Express, getDb: () => any, nomiPiste: Re
           nome: p.nome, numero: p.numero, distanza: p.distanza ?? base, penalita: Math.max(0, (p.distanza ?? base) - base),
           guidatore: p.guidatore, ferri: p.shoes ?? null, anno: h?.birth_year ?? null,
           km_base: kmBase != null ? Math.round(kmBase * 10) / 10 : null,
+          km_previsto: kmPrevisto != null ? Math.round(kmPrevisto * 10) / 10 : null,
           km_migliore: migliore != null ? Math.round(migliore * 10) / 10 : null, record_corto: corto, record_lungo: lungo,
           corse_note: tempi.length,
           ferri_effetto: Math.round(ferriOggi * 100) / 100,

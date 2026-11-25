@@ -22,7 +22,7 @@ import { Spiegazione } from "../components/Spiegazione";
 import { PROVA, PROVA_XGB } from "@/lib/provaSimulatore";
 import CavalloCaricamento from "@/components/CavalloCaricamento";
 import {
-  nuovaSimulazione, passo, geometria, simulaMolte, formatoKm, LARGHEZZA_CORSIA, pesaMercato, pesaPronostico,
+  nuovaSimulazione, passo, geometria, simulaMolte, formatoKm, LARGHEZZA_CORSIA, pesaMercato, pesaPronostico, conTempoPrevisto,
   type CorsaDati, type Simulazione, type Riepilogo, type Corridore,
 } from "@/lib/simulaCorsa";
 
@@ -34,7 +34,7 @@ interface CavalloApi {
   anno: number | null; km_base: number | null; km_migliore: number | null; record_corto: number | null; record_lungo: number | null;
   corse_note: number; galoppo: number; galoppo_fonte: string; effetto_guidatore: number | null;
   pronostico_top3: number | null; pronostico_vince?: number | null; quota: number | null; arrivo: number | null; arrivo_testo: string | null; km_reale: number | null;
-  ferri_effetto?: number; forma?: number | null; giorni_riposo?: number | null; vantaggio_numero?: number;
+  ferri_effetto?: number; forma?: number | null; giorni_riposo?: number | null; vantaggio_numero?: number; km_previsto?: number | null;
 }
 interface CorsaApi extends CorsaDati {
   tipo: "prossima" | "passata"; pista: string; sigla: string | null; data: string; ora: string | null; numero: number | null;
@@ -337,7 +337,7 @@ export default function SimulatorePage() {
 
   const conQuote = !!corsa && corsa.cavalli.every(c => c.quota != null && c.quota > 1);
   const haPronostico = !!corsa && corsa.cavalli.length >= 4 && corsa.cavalli.filter(c => c.pronostico_top3 != null).length >= Math.ceil(0.75 * corsa.cavalli.length);
-  const corsaTarata = useMemo<CorsaDati | null>(() => !corsa ? null : (conPronostico && haPronostico ? pesaPronostico(corsa) : corsa), [corsa, conPronostico, haPronostico]);
+  const corsaTarata = useMemo<CorsaDati | null>(() => !corsa ? null : (conPronostico && haPronostico ? pesaPronostico(corsa) : conTempoPrevisto(corsa)), [corsa, conPronostico, haPronostico]);
   const corsaSim = useMemo<CorsaDati | null>(() => !corsaTarata ? null : (mercato && conQuote ? pesaMercato(corsaTarata, mercato) : corsaTarata), [corsaTarata, mercato, conQuote]);
   const azzeraCronaca = () => { statoCronaca.current = { testa: null, ultimaTesta: -99, stati: [], punti: new Set() }; setCronaca([]); };
   useEffect(() => {
@@ -721,7 +721,7 @@ function TabellaMille({ corsa, r }: { corsa: CorsaApi; r: Riepilogo }) {
       </table>
       <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8 }}>
         Con «pesa il pronostico XGBoost» acceso, la colonna «Primi 3» segue il pronostico: le differenze rimaste vengono dalla corsa metro per
-        metro (penalità, numero, galoppo). Spento, il simulatore usa solo tempi, ferri, forma e numero, e può dire cose molto diverse.
+        metro (penalità, numero, galoppo). Spento, il simulatore parte dalla media fra il km atteso e il km previsto da XGBoost, più ferri, forma e numero, e può dire cose molto diverse.
       </div>
     </div>
   );
@@ -763,6 +763,7 @@ function Partenti({ corsa }: { corsa: CorsaApi }) {
       <table className="sim-tab" style={{ marginTop: 8 }}>
         <thead><tr>
           <th>N.</th><th>Cavallo</th><th>Guidatore</th><th className="n">Penalità</th><th className="n" title="Mediana delle ultime corse su distanze vicine">Km atteso</th>
+          <th className="n" title="Il tempo al km previsto da XGBoost per questa corsa, ferri di oggi compresi">Km previsto</th>
           <th className="n" title="Il miglior tempo recente">Km migliore</th><th className="n">Record corto / lungo</th>
           <th className="n" title="Probabilità di squalifica per galoppo">Rischio galoppo</th>
           <th className="n" title="Ferratura di oggi: secondi al km rispetto al suo solito (misurato sull'archivio)">Ferri</th>
@@ -779,6 +780,7 @@ function Partenti({ corsa }: { corsa: CorsaApi }) {
               <td style={{ color: MUTED }}>{c.guidatore ?? "—"}</td>
               <td className="n">{c.penalita ? `+${c.penalita} m` : "—"}</td>
               <td className="n">{formatoKm(c.km_base)}</td>
+              <td className="n">{formatoKm(c.km_previsto)}</td>
               <td className="n">{formatoKm(c.km_migliore)}</td>
               <td className="n" style={{ color: MUTED }}>{formatoKm(c.record_corto)} / {formatoKm(c.record_lungo)}</td>
               <td className="n" title={c.galoppo_fonte === "modello" ? "dal modello del calendario" : "dalle sue corse"}>{(c.galoppo * 100).toFixed(0)}%</td>
