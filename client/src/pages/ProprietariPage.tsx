@@ -16,6 +16,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Search, X, KeyRound, ArrowRight } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
@@ -220,6 +222,7 @@ export default function ProprietariPage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
+      <LinguetteGruppo gruppo="persone" />
       <IntestazionePagina icona={KeyRound} colore={COLORE} titolo="Proprietari" margineSotto={16}
         sottotitolo={`Chi possiede i cavalli del trotto italiano: corse, vittorie e premi dal ${annoDal}${data?.aggiornato_al ? `, aggiornati al ${new Date(data.aggiornato_al).toLocaleDateString("it-IT")}` : ""}.`}>
         Vittorie e premi dicono quanti e quali cavalli ha una scuderia. Per confrontare scuderie grandi e piccole c'è il premio

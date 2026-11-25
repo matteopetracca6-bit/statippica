@@ -23,6 +23,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Search, X, Users, ArrowRight } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento, ErroreCaricamento } from "../components/Caricamento";
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
@@ -184,6 +186,7 @@ export default function DriversPage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
+      <LinguetteGruppo gruppo="persone" />
       <IntestazionePagina icona={Users} colore={COLORE} titolo="Guidatori" margineSotto={16}
         sottotitolo="Chi porta i cavalli a rendere più del loro solito, a parità di cavallo e di numero di partenza.">
         La classifica NON è per vittorie: quelle dipendono soprattutto da quali cavalli vengono affidati.

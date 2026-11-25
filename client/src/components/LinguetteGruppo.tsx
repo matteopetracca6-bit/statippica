@@ -5,10 +5,18 @@
  * vecchi continuano a funzionare e il tasto indietro fa quello che ci si aspetta.
  */
 import { Link, useLocation } from "wouter";
-import { Building2, Medal, Sparkles, FlaskConical, BookMarked, Target, History } from "lucide-react";
+import { Building2, Medal, Sparkles, FlaskConical, BookMarked, Target, History, Users, Timer, KeyRound } from "lucide-react";
 
 type Voce = { href: string; label: string; hint: string; icon: any; anche?: RegExp };
 const GRUPPI_LINGUETTE: Record<string, { nome: string; colore: string; voci: Voce[] }> = {
+  persone: {
+    nome: "Guidatori, allenatori e proprietari", colore: "hsl(10 72% 60%)",
+    voci: [
+      { href: "/guidatori", label: "Guidatori", hint: "Chi fa rendere di più i cavalli", icon: Users, anche: /^\/guidator/ },
+      { href: "/allenatori", label: "Allenatori", hint: "Corse, vittorie e premi dal 2016", icon: Timer, anche: /^\/allenator/ },
+      { href: "/proprietari", label: "Proprietari", hint: "Scuderie: cavalli, vittorie e premi", icon: KeyRound, anche: /^\/proprietar/ },
+    ],
+  },
   allevatori: {
     nome: "Allevatori", colore: "hsl(318 52% 58%)",
     voci: [
