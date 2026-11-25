@@ -58,9 +58,23 @@ const TrackPage = lazy(() => import("./pages/TrackPage"));
 // Gli indirizzi possono portare dei parametri dopo il "?" (per esempio
 // #/puledro?padre=...): per scegliere la pagina conta solo il percorso, i
 // parametri li legge la pagina da window.location.hash.
+//
+// 25/11/2026: wouter 3 porta i parametri fuori dal "#" (/?eta=4#/classifiche-eta)
+// quando si naviga con <Link> o naviga(): le pagine, che li leggono dopo il
+// "#", non li trovavano (la classifica si apriva sempre ai 3 anni, il
+// simulatore dal calendario e il conto da Chi rende di piu' perdevano la
+// corsa o il puledro). Con un "?" nell'indirizzo si scrive direttamente il "#".
 function useHashSenzaParametri(): [string, (to: string, opts?: any) => void] {
   const [luogo, naviga] = useHashLocation();
-  return [luogo.split("?")[0], naviga];
+  const vai = (to: string, opts?: any) => {
+    if (!to.includes("?")) return naviga(to, opts);
+    const h = "#" + to.replace(/^#/, "");
+    const base = window.location.pathname;   // via eventuali ?... rimasti fuori dal #
+    if (opts?.replace) window.history.replaceState(null, "", base + h);
+    else window.history.pushState(null, "", base + h);
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  };
+  return [luogo.split("?")[0], vai];
 }
 
 export default function App() {
