@@ -51,11 +51,12 @@ export default function TrackPage() {
   // solo le stime del giorno) e dove sta la pista fra le altre per velocita'.
   const { data: ver } = useQuery<any>({ queryKey: ["/api/calendar/verifica?giorni=62"], staleTime: 10 * 60_000 });
   const nomeP = String(t?.nome ?? codice).toUpperCase();
-  const qui = ver?.piste?.find((p: any) => String(p.pista).toUpperCase() === nomeP);
+  const chiavi = [nomeP, String(t?.codice ?? "").toUpperCase(), codice.toUpperCase()].filter(Boolean);
+  const qui = ver?.piste?.find((p: any) => { const x = String(p.pista).toUpperCase(); return chiavi.some(k => k === x || k.startsWith(x + " ")); });
   const tutte = ver?.sintesi?.del_giorno ?? ver?.sintesi?.tutte;
   const posto = (classe: string) => {
     const el = (vel ?? []).filter(x => x.classe === classe).sort((a, b) => a.scarto - b.scarto);
-    const i = el.findIndex(x => x.pista === nomeP || x.pista === codice.toUpperCase());
+    const i = el.findIndex(x => chiavi.some(k => k === x.pista || k.startsWith(x.pista + " ")));
     return i >= 0 ? { pos: i + 1, su: el.length, prima: el[0]?.pista, ultima: el[el.length - 1]?.pista } : null;
   };
 
