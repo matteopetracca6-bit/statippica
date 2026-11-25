@@ -135,6 +135,22 @@ export default function CurvaVoto({ f, colore }: { f: Forza; colore: string }) {
         )}
         {f.ferma && <span style={{ fontSize: 11, color: "var(--muted)" }}>· carriera ferma da oltre sei mesi</span>}
       </div>
+      {f.picco != null && f.picco_eta != null && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6, fontSize: 11.5, color: "var(--muted)" }}>
+          <span>Picco già raggiunto</span>
+          <GradeBadge grade={lettera(f.picco)} size="sm" />
+          <span className="tabular" style={{ color: "hsl(210 10% 78%)" }}>{num(f.picco)} a {f.picco_eta} anni</span>
+          {f.potenziale != null && f.potenziale < f.picco - 1 && (
+            <span style={{ color: "hsl(38 70% 62%)" }}>· dopo il picco: il voto di carriera scende se le stagioni corse restano poche rispetto a quelle possibili</span>
+          )}
+        </div>
+      )}
+      {(f.corse_estero_12_mesi ?? 0) > 0 && (
+        <div style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 6 }}>
+          Corre all'estero ({f.corse_estero_12_mesi} corse negli ultimi 12 mesi): contano nel voto e nella curva, non nella velocità,
+          perché l'archivio non sa su quale pista estera si correva.
+        </div>
+      )}
       <Grafico f={f} colore={colore} lettera={lettera} />
       <Spiegazione titolo="Come si legge la curva" compatta>
         Ogni punto è il voto di carriera che il cavallo avrebbe avuto se la carriera si fosse chiusa quel 31 dicembre: stessa
