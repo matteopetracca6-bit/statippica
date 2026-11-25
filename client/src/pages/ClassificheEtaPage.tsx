@@ -19,6 +19,7 @@ import CavalloCaricamento from "../components/CavalloCaricamento";
 import GradeBadge from "../components/GradeBadge";
 import { lettera } from "../components/PotenzialeCavallo";
 import { tempoKm } from "@/lib/record";
+import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro, nomeBello } from "../components/DueColonne";
 
 const COLORE = coloreScheda("/classifiche-eta");
@@ -65,7 +66,7 @@ function Scheda({ r, d, onClose }: { r: Riga; d: Risposta; onClose?: () => void 
         <Cifra titolo="Vittorie" valore={num(r.vittorie)} sotto={`su ${num(r.corse)} corse · ${num(r.primi_tre)} volte nei primi tre`} />
         <Cifra titolo="Tempo breve" valore={tempoKm(r.breve)} sotto={r.breve_corr != null ? `fino a 1700 m · corretto per la pista ${tempoKm(r.breve_corr)}` : "il migliore fino a 1700 m"} />
         <Cifra titolo="Tempo lungo" valore={tempoKm(r.lunga)} sotto={r.lunga_corr != null ? `da 2000 m · corretto per la pista ${tempoKm(r.lunga_corr)}` : "il migliore da 2000 m in su"} />
-        {r.potenziale && <Cifra titolo="Potenziale a 4 anni" valore={lettera(r.potenziale.potenziale)} colore="hsl(265 85% 76%)"
+        {r.potenziale && <Cifra titolo="Potenziale a 4 anni" valore={<GradeBadge grade={lettera(r.potenziale.potenziale)} />} colore={COLORE_SCHEDA_VOTO[lettera(r.potenziale.potenziale)]}
           sotto={`fra ${lettera(r.potenziale.basso)} e ${lettera(r.potenziale.alto)} · ${r.potenziale.stadio}`} />}
       </div>
       <div className="ed-etich" style={{ margin: "16px 0 6px" }}>Famiglia</div>
@@ -193,8 +194,8 @@ export function ClassificheEta({ incorporata = false, etaIniziale = "3" }: { inc
                           {r.voto && <GradeBadge grade={r.voto} size="sm" />}
                           {r.potenziale && (
                             <span title={`Potenziale a 4 anni: ${lettera(r.potenziale.potenziale)}, fra ${lettera(r.potenziale.basso)} e ${lettera(r.potenziale.alto)}`}
-                              style={{ fontSize: 10.5, fontWeight: 700, color: "hsl(265 85% 76%)", flexShrink: 0 }}>
-                              → {lettera(r.potenziale.potenziale)}
+                              style={{ fontSize: 10.5, fontWeight: 700, color: "var(--ed-muto)", flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              → <GradeBadge grade={lettera(r.potenziale.potenziale)} size="sm" />
                             </span>
                           )}
                           {r.sesso && <span style={{ fontSize: 10.5, fontWeight: 700, color: r.sesso === "F" ? "hsl(330 70% 70%)" : "hsl(205 70% 68%)", flexShrink: 0 }}>{r.sesso === "F" ? "F" : r.sesso === "C" ? "C" : "M"}</span>}
@@ -209,7 +210,7 @@ export function ClassificheEta({ incorporata = false, etaIniziale = "3" }: { inc
                           {ordine === "breve" ? tempoKm(r.breve) : ordine === "lunga" ? tempoKm(r.lunga)
                             : ordine === "breve_corr" ? tempoKm(r.breve_corr) : ordine === "lunga_corr" ? tempoKm(r.lunga_corr)
                             : ordine === "vittorie" ? `${r.vittorie} vitt.`
-                            : ordine === "potenziale" && r.potenziale ? lettera(r.potenziale.potenziale) : euro(r.vincite)}
+                            : ordine === "potenziale" && r.potenziale ? <GradeBadge grade={lettera(r.potenziale.potenziale)} /> : euro(r.vincite)}
                         </span>
                         <span style={{ display: "block", fontSize: 10.5, color: "var(--ed-fioco)", whiteSpace: "nowrap" }}>
                           {ordine === "vincite" ? `${r.vittorie} vitt. su ${r.corse}` : euro(r.vincite)}
@@ -243,7 +244,7 @@ export function ClassificheEta({ incorporata = false, etaIniziale = "3" }: { inc
           «A parità di pista» riporta ogni tempo a un ippodromo medio: ogni pista è misurata con gli stessi cavalli che hanno corso anche altrove
           (sul miglio Siracusa e Follonica sono le più veloci, Aversa e Montecatini fra le più lente). Le gare all'estero lì non contano, e
           l'archivio non dice se la partenza era con l'autostart o con i nastri.
-          Si vedono i primi 200 di ogni classifica. La freccia viola è il potenziale: la lettera che il cavallo dovrebbe avere a fine
+          Si vedono i primi 200 di ogni classifica. La freccia con la lettera colorata è il potenziale: la lettera che il cavallo dovrebbe avere a fine
           anno dei 4 anni contro tutti i nati del suo anno, aggiornata ogni notte con qualifiche e corse (dettagli nella scheda).
         </Spiegazione>
       </div>
