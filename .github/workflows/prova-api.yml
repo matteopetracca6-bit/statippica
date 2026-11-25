@@ -5,18 +5,10 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q pandas numpy
-      - env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          id=$(gh api repos/${{ github.repository }}/releases/tags/archivio --jq '.assets[] | select(.name=="data.db.gz") | .id')
-          gh api -H "Accept: application/octet-stream" repos/${{ github.repository }}/releases/assets/$id > data.db.gz
-          gunzip -f data.db.gz
-      - run: python3 prova/km_recenti.py
       - run: |
           set +e
-          npm i tsx@4.19.2 >/dev/null 2>&1
-          npx tsx prova/sim4.ts
+          sleep 420
+          npm i playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          node prova/fine.cjs
