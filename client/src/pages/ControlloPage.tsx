@@ -15,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { History } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import { Spiegazione } from "../components/Spiegazione";
 import Sagoma from "../components/Sagoma";
 import { ErroreCaricamento } from "../components/Caricamento";
@@ -87,14 +89,15 @@ export default function ControlloPage() {
     staleTime: 30 * 60 * 1000,
   });
 
-  const intestazione = (
+  const intestazione = (<>
+    <LinguetteGruppo gruppo="metodo" />
     <IntestazionePagina icona={History} colore={COLORE} titolo="Controllo a posteriori"
       sottotitolo="Le stime del sito rifatte con i soli dati di una data passata, confrontate con com'è andata davvero.">
       Si torna a una data passata, si rifanno i conti con quello che si sapeva quel giorno e si guarda cosa è successo nei 12 mesi dopo.
       La data principale è il 1° ottobre 2025: né il modello dei premi né le fasce di rischio l'avevano vista, quindi è una prova pulita.
       Per i puledri si rifà la stima dell'asta yearling 2024 com'era a ottobre 2024. Il controllo si rilancia a mano quando cambiano i modelli: non è aggiornato ogni notte.
     </IntestazionePagina>
-  );
+  </>);
 
   if (error) return <div className="page-shell" style={{ maxWidth: 1240 }}>{intestazione}<ErroreCaricamento titolo="Controllo a posteriori" cosa="il controllo a posteriori" /></div>;
   if (!d) return <div className="page-shell" style={{ maxWidth: 1240 }}>{intestazione}<Sagoma riquadri={4} /></div>;

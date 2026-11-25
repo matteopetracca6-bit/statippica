@@ -15,6 +15,8 @@ import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ReferenceLine,
 } from "recharts";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import Sagoma from "../components/Sagoma";
 import GraficoColonne, { COLORI_GRAFICO, STILE_SCHEDA } from "../components/GraficoColonne";
 import { CSS_DUE_COLONNE, Cifra } from "../components/DueColonne";
@@ -223,6 +225,7 @@ export default function MetodoPronosticoPage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE + CSS}</style>
+      <LinguetteGruppo gruppo="metodo" />
       <IntestazionePagina icona={Target} colore={COLORE} titolo="Come si fa il pronostico" margineSotto={14}
         sottotitolo="Dalle corse al calendario, i modelli XGBoost e i loro pesi, le prove contro i metodi semplici e contro il mercato, e com'è andato dal vivo.">
         Ogni numero di questa pagina viene dai file che i modelli scrivono quando si allenano e dalla verifica del calendario,

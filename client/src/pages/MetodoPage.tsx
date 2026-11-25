@@ -17,6 +17,8 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { BookMarked, Database, RefreshCw, CheckCircle2, AlertTriangle, Clock, ChevronDown } from "lucide-react";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 import { Caricamento } from "../components/Caricamento";
 import QualitaDati from "../components/QualitaDati";
 
@@ -99,13 +101,10 @@ export default function MetodoPage() {
         .testo-metodo th { color: hsl(210 8% 45%); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
       `}</style>
 
+      <LinguetteGruppo gruppo="metodo" />
       <IntestazionePagina icona={BookMarked} colore={coloreScheda("/metodo")} titolo="Metodo e dati" margineSotto={20}
         sottotitolo="Da dove vengono i numeri del sito, come si calcola ogni voto e cosa non se ne può concludere. Apri la sezione che ti serve." />
 
-      <Link href="/metodo/pronostico" className="pannello" style={{ display: "block", padding: "12px 18px", marginBottom: 16, textDecoration: "none", color: "inherit" }}>
-        <b style={{ color: coloreScheda("/metodo") }}>Come si fa il pronostico →</b>
-        <span style={{ display: "block", fontSize: 12.5, color: MUTED, marginTop: 2 }}>Corse e calendario, i modelli XGBoost con i loro pesi, le prove contro i metodi semplici e il mercato, com'è andato dal vivo.</span>
-      </Link>
 
       {/* STATO DAL VIVO */}
       <section className="pannello" style={{ ...CARD, marginBottom: "20px", borderColor: "hsl(183 60% 30% / 0.5)" }}>

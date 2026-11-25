@@ -33,6 +33,8 @@ import { Search, AlertCircle, Euro, Sparkles, X, GitCompare, ChevronRight, Exter
 import CollegamentiCorrelati from "../components/CollegamentiCorrelati";
 import { Spiegazione } from "../components/Spiegazione";
 import IntestazionePagina from "../components/IntestazionePagina";
+import LinguetteGruppo from "../components/LinguetteGruppo";
+
 
 /* ------------------------------------------------------------------ */
 /* Numeri sicuri                                                       */
@@ -810,6 +812,7 @@ export default function AdvisorPage() {
   return (
     <div className="page-shell">
       <style>{CSS}</style>
+      <LinguetteGruppo gruppo="advisor" />
       <IntestazionePagina icona={Sparkles} colore={C.viola} titolo="Advisor Allevatore" etichetta={nascitaOk ? "verificato alla nascita" : "in verifica"} margineSotto={18}
         sottotitolo="Scegli una fattrice: ti mostro tutti gli stalloni in monta in ordine di quanti puledri su 100 diventano buoni cavalli, con come sono andati gli incroci simili.">
         Per ogni stallone compatibile vedi quanti puledri su 100 di quella coppia
