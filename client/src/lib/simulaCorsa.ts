@@ -30,6 +30,20 @@ export interface CavalloDati {
   pronostico_top3?: number | null;
   /** Il pronostico XGBoost per la vittoria, in % (dalla versione 5). */
   pronostico_vince?: number | null;
+  /** Tempo al km previsto da XGBoost (tempo_previsto.py), ferri di oggi compresi. */
+  km_previsto?: number | null;
+}
+
+/**
+ * Senza la taratura sul pronostico: il passo di partenza e' la media fra il
+ * tempo delle ultime corse e quello previsto da XGBoost. Prova del 25/11/2026
+ * su 210 corse vere (ultimi 20 giorni): log loss sul vincitore 1,983 -> 1,900,
+ * il piu' vincente nelle simulazioni vince il 27,6% invece del 25,2%. Con la
+ * taratura acceso non cambia niente (1,792 contro 1,800): li' non si usa.
+ */
+export function conTempoPrevisto(corsa: CorsaDati): CorsaDati {
+  return { ...corsa, cavalli: corsa.cavalli.map(c => c.km_previsto == null ? c
+    : { ...c, km_base: c.km_base != null ? (c.km_base + c.km_previsto) / 2 : c.km_previsto }) };
 }
 export interface CorsaDati {
   distanza: number; partenza: "autostart" | "nastri"; lunghezza_pista: number; km_pista: number;

@@ -505,8 +505,9 @@ export default function MetodoPronosticoPage() {
                 contro {dec(tk.metodi_semplici?.pista_piu_indice_medio?.errore_medio, 2)} del metodo semplice migliore (tempo tipico della pista più l'indice medio del cavallo).
                 Sul vincitore sbaglia di {dec(tk.modello?.errore_tempo_vincitore, 2)} secondi.</p>
               <p>Il cavallo con il tempo previsto più basso vince il {pc(tk.modello?.piu_veloce_vince)} delle corse ({pc(tk.metodi_semplici?.pista_piu_indice_medio?.piu_veloce_vince)} con il metodo semplice):
-                meno del modello della vittoria ({pc(vince?.modello?.primo_scelto_vince)}), perché il tempo non vede la partenza, la tattica e il galoppo. Serve al simulatore come passo
-                di partenza, prima della taratura sul pronostico.</p>
+                meno del modello della vittoria ({pc(vince?.modello?.primo_scelto_vince)}), perché il tempo non vede la partenza, la tattica e il galoppo. Nel simulatore entra quando la
+                taratura sul pronostico è spenta: la media fra il tempo delle ultime corse e quello previsto abbassa l'errore sul vincitore da 1,98 a 1,90 (210 corse
+                vere, 25/11/2026). Con la taratura accesa non cambia niente, perché è già il pronostico a fissare i passi.</p>
               {tk.peso_variabili && <p style={{ marginBottom: 0 }}>Pesano di più: {tk.peso_variabili.slice(0, 5).map((v: any) => `${v.variabile === "rif_km" ? "il tempo tipico della pista" : (NOMI[v.variabile] ?? v.variabile)} (${pcN(v.peso * 100, 0)})`).join(", ")}.</p>}
             </div>
           </div>
