@@ -47,6 +47,18 @@ export default function TrackPage() {
     return Math.abs(v.scarto) < 0.05 ? "nella media" : `${a} s/km più ${v.scarto < 0 ? "veloce" : "lenta"}`;
   };
 
+  // 25/11/2026: com'e' andato il pronostico su questa pista (ultimi 2 mesi,
+  // solo le stime del giorno) e dove sta la pista fra le altre per velocita'.
+  const { data: ver } = useQuery<any>({ queryKey: ["/api/calendar/verifica?giorni=62"], staleTime: 10 * 60_000 });
+  const nomeP = String(t?.nome ?? codice).toUpperCase();
+  const qui = ver?.piste?.find((p: any) => String(p.pista).toUpperCase() === nomeP);
+  const tutte = ver?.sintesi?.del_giorno ?? ver?.sintesi?.tutte;
+  const posto = (classe: string) => {
+    const el = (vel ?? []).filter(x => x.classe === classe).sort((a, b) => a.scarto - b.scarto);
+    const i = el.findIndex(x => x.pista === nomeP || x.pista === codice.toUpperCase());
+    return i >= 0 ? { pos: i + 1, su: el.length, prima: el[0]?.pista, ultima: el[el.length - 1]?.pista } : null;
+  };
+
   if (isLoading) return <Caricamento testo="Carico la scheda della pista..." />;
   if (error || !t || t.error) {
     return (
@@ -80,6 +92,46 @@ export default function TrackPage() {
           {velocita("lunga") && <Cifra titolo="Velocità sul lungo" valore={velocita("lunga")!} sotto="da 2000 m, a parità di cavallo" colore="hsl(205 75% 66%)" />}
         </>}
       />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: "16px", marginBottom: "16px" }} data-testid="ippodromo-in-piu">
+        <div className="pannello" style={CARD}>
+          <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+            Com'è andato il pronostico qui
+          </div>
+          {qui ? <>
+            <div style={{ fontSize: 22, fontWeight: 800, color: qui.quota_favoriti >= 55 ? "hsl(150 55% 55%)" : qui.quota_favoriti < 45 ? "hsl(5 65% 62%)" : "hsl(210 10% 90%)" }} className="tabular">
+              {String(qui.quota_favoriti).replace(".", ",")}% <span style={{ fontSize: 13, fontWeight: 600, color: MUTED }}>dei favoriti nei primi tre</span>
+            </div>
+            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6, lineHeight: 1.6 }}>
+              Negli ultimi due mesi, su {qui.corse} corse con la stima del giorno.
+              {tutte?.quota_favoriti != null && <> Su tutte le piste: {String(tutte.quota_favoriti).replace(".", ",")}%.</>}
+              {qui.corse < 20 && " Con poche corse la quota oscilla molto."}
+              {" "}<Link href="/calendario"><a style={{ color: "hsl(183 75% 55%)" }}>Calendario</a></Link> ·{" "}
+              <Link href="/metodo/pronostico"><a style={{ color: "hsl(183 75% 55%)" }}>come si fa il pronostico</a></Link>
+            </div>
+          </> : <div style={{ fontSize: 12.5, color: MUTED }}>{ver ? "Negli ultimi due mesi nessuna corsa qui con il pronostico del giorno." : "Carico…"}</div>}
+        </div>
+        {(posto("corta") || posto("lunga")) && (
+          <div className="pannello" style={CARD}>
+            <div style={{ fontSize: "10.5px", color: DIM, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+              Velocità fra le piste italiane
+            </div>
+            {(["corta", "lunga"] as const).map(c => {
+              const x = posto(c);
+              if (!x) return null;
+              return (
+                <div key={c} style={{ fontSize: 13, color: "hsl(210 10% 84%)", lineHeight: 1.7 }}>
+                  {c === "corta" ? "Sul miglio" : "Sul lungo"}: <b>{x.pos}ª più veloce</b> su {x.su} ({velocita(c)})
+                </div>
+              );
+            })}
+            <div style={{ fontSize: 11.5, color: MUTED, marginTop: 6, lineHeight: 1.55 }}>
+              Misurata con gli stessi cavalli che corrono anche altrove, così una pista non sembra veloce solo perché ci corrono i migliori.
+              Le più veloci: {posto("corta")?.prima ?? posto("lunga")?.prima}; le più lente: {posto("corta")?.ultima ?? posto("lunga")?.ultima}.
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Numero di partenza su questa pista */}
       {t.partenze?.length > 2 && (
