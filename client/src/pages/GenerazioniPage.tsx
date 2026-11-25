@@ -9,7 +9,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Layers } from "lucide-react";
+import { Layers, Medal } from "lucide-react";
+import { ClassificheEta } from "./ClassificheEtaPage";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import Sagoma from "../components/Sagoma";
 import { Spiegazione } from "../components/Spiegazione";
@@ -130,7 +131,12 @@ function Annata({ g, totale }: { g: any; totale: any[] }) {
       )}
 
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
-        <Riquadro titolo="I migliori per premi">
+        <Riquadro titolo="I migliori per premi" nota={(() => {
+          const e = new Date().getFullYear() - g.anno;
+          const k = e >= 2 && e <= 4 ? String(e) : e > 4 ? "anziani" : null;
+          return k ? <Link href={`/classifiche-eta?eta=${k}`} style={{ color: COLORE }} data-testid="link-classifica-completa">
+            {k === "anziani" ? "Classifica completa degli anziani →" : `Classifica completa dei ${e} anni →`}</Link> : null;
+        })()}>
           {!d ? <Sagoma righe={6} /> : (
             <div className="ed-lista">
               {d.migliori.map((x: any, i: number) => (
@@ -170,10 +176,24 @@ function Annata({ g, totale }: { g: any; totale: any[] }) {
 export default function GenerazioniPage() {
   const { data: d, error } = useQuery<any>({ queryKey: ["/api/generazioni"], queryFn: () => get("/api/generazioni"), staleTime: 3600_000 });
   const { data: genM } = useQuery<any>({ queryKey: ["/api/generazione-m"], queryFn: () => get("/api/generazione-m"), staleTime: 3600_000 });
-  const [anno, setAnno] = useState<number | null>(() => {
-    const a = Number(new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("anno"));
-    return Number.isInteger(a) && a > 1900 ? a : null;
-  });
+  // Dal 25/11/2026 la pagina tiene anche le classifiche per eta': due linguette.
+  const leggi = () => {
+    const h = window.location.hash.replace(/^#/, "");
+    const q = new URLSearchParams(h.split("?")[1] ?? "");
+    const a = Number(q.get("anno"));
+    const classifiche = h.startsWith("/classifiche-eta") || q.get("vista") === "classifiche";
+    const e = q.get("eta");
+    return { anno: Number.isInteger(a) && a > 1900 ? a : null, vista: classifiche ? "classifiche" as const : "annate" as const,
+             eta: e === "2" || e === "3" || e === "4" || e === "anziani" ? e : "3" };
+  };
+  const [anno, setAnno] = useState<number | null>(() => leggi().anno);
+  const [vista, setVista] = useState<"annate" | "classifiche">(() => leggi().vista);
+  const [etaClass, setEtaClass] = useState<string>(() => leggi().eta);
+  useEffect(() => {
+    const f = () => { const l = leggi(); setVista(l.vista); setEtaClass(l.eta); if (l.anno) setAnno(l.anno); window.scrollTo(0, 0); };
+    window.addEventListener("hashchange", f);
+    return () => window.removeEventListener("hashchange", f);
+  }, []);
   const gen: any[] = d?.generazioni ?? [];
   useEffect(() => { if (gen.length && (anno == null || !gen.some(x => x.anno === anno))) setAnno(gen.filter(x => !x.in_corso).slice(-1)[0]?.anno ?? gen[gen.length - 1].anno); }, [d]);
   const scelta = gen.find(x => x.anno === anno);
@@ -188,14 +208,23 @@ export default function GenerazioniPage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE + CSS_PULEDRO}</style>
-      <IntestazionePagina icona={Layers} colore={COLORE} titolo="Generazioni" margineSotto={14}
-        sottotitolo="Ogni annata di nascita a confronto: quanti nati, quanti corrono, voti, premi, velocità e campioni.">
+      <IntestazionePagina icona={Layers} colore={COLORE} titolo="Generazioni ed età" margineSotto={14}
+        sottotitolo="Ogni annata di nascita a confronto, e le classifiche dei migliori 2, 3, 4 anni e anziani.">
         {d ? <>Ci sono {gen.length} annate, dai nati nel {gen[0]?.anno} ai nati nel {gen[gen.length - 1]?.anno}. Le annate prima del 2012 vengono dal registro UNIRE:
           entrano qui da sole quando il recupero notturno le completa{d.in_recupero ? <> (adesso è in corso il {d.in_recupero.anno}, a {Math.round(100 * d.in_recupero.fatte / d.in_recupero.n)}%)</> : null}.
           Le annate a righe hanno carriere ancora in corso.</> : "Carico le annate…"}
       </IntestazionePagina>
 
-      {!d ? <Sagoma cornice righe={10} /> : <>
+      <div className="ed-linguette" role="tablist">
+        {([["annate", "Le annate", "Statistiche e grafici per anno di nascita", Layers], ["classifiche", "Classifiche per età", "I migliori 2, 3, 4 anni e anziani", Medal]] as const).map(([k, t, h, Icona]) => (
+          <button key={k} role="tab" className="ed-linguetta" aria-selected={vista === k} onClick={() => setVista(k)} data-testid={`tab-${k}`}>
+            <Icona size={17} color={vista === k ? COLORE : "hsl(210 8% 50%)"} />
+            <span><b>{t}</b><small>{h}</small></span>
+          </button>
+        ))}
+      </div>
+
+      {vista === "classifiche" ? <ClassificheEta incorporata etaIniziale={etaClass} /> : !d ? <Sagoma cornice righe={10} /> : <>
         <div className="ed-barra" style={{ flexWrap: "wrap", gap: 6 }} role="group" aria-label="Scegli l'annata">
           {gen.map(x => (
             <button key={x.anno} className="chip-filtro" aria-pressed={x.anno === anno} onClick={() => setAnno(x.anno)}
@@ -297,7 +326,7 @@ export default function GenerazioniPage() {
 
       <CollegamentiCorrelati voci={[
         { href: "/leaderboard", titolo: "Cavalli e classifica", descrizione: "Tutti i cavalli valutati, con voti e filtri" },
-        { href: "/classifiche-eta", titolo: "Classifiche per età", descrizione: "I migliori 2, 3, 4 anni e anziani" },
+        { href: "/qualifiche", titolo: "Qualifiche", descrizione: "Il primo tempo ufficiale dei giovani" },
         { href: "/stalloni/classifiche", titolo: "Classifiche stalloni", descrizione: "Gli stalloni stagione per stagione" },
       ]} />
     </div>

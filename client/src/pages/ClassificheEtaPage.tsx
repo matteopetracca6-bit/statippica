@@ -74,6 +74,10 @@ function Scheda({ r, d, onClose }: { r: Riga; d: Risposta; onClose?: () => void 
         <span style={{ color: "var(--ed-muto)" }}>Madre</span><span style={{ color: "var(--ed-testo)" }}>{r.madre || "—"}</span>
         <span style={{ color: "var(--ed-muto)" }}>Nonno materno</span><span><LinkStallone nome={r.nonno} /></span>
       </div>
+      <Link href={`/generazioni?anno=${r.nato}`} style={{ display: "inline-block", marginTop: 12, fontSize: 12.5, color: COLORE }} data-testid="link-annata">
+        Tutta la generazione {r.nato} →
+      </Link>
+      <br />
       <Link href={`/horse/${encodeURIComponent(r.nome)}/${r.nato}`}>
         <a data-testid="link-scheda-cavallo" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, background: COLORE, color: "hsl(220 13% 7%)",
           borderRadius: 9, padding: "9px 14px", fontWeight: 800, fontSize: 13, textDecoration: "none" }}>
@@ -85,8 +89,14 @@ function Scheda({ r, d, onClose }: { r: Riga; d: Risposta; onClose?: () => void 
 }
 
 export default function ClassificheEtaPage() {
+  return <ClassificheEta />;
+}
+
+/** La classifica; dal 25/11/2026 vive anche come linguetta della pagina Generazioni ed età. */
+export function ClassificheEta({ incorporata = false, etaIniziale = "3" }: { incorporata?: boolean; etaIniziale?: string }) {
   const desktop = useDesktop();
-  const [eta, setEta] = useState("3");
+  const [eta, setEta] = useState(etaIniziale);
+  useEffect(() => { setEta(etaIniziale); }, [etaIniziale]);
   const [periodo, setPeriodo] = useState<string>("carriera");
   const [sesso, setSesso] = useState("");
   const [ordine, setOrdine] = useState("vincite");
@@ -115,14 +125,14 @@ export default function ClassificheEtaPage() {
   const tempo = ordine === "breve" || ordine === "lunga" || ordine === "breve_corr" || ordine === "lunga_corr";
 
   return (
-    <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
+    <div className={incorporata ? "ed" : "page-shell ed"} style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
-      <IntestazionePagina icona={Medal} colore={COLORE} titolo="Classifiche per età" margineSotto={16}
+      {!incorporata && <IntestazionePagina icona={Medal} colore={COLORE} titolo="Classifiche per età" margineSotto={16}
         sottotitolo="I migliori 2 anni, 3 anni, 4 anni e anziani: in carriera o in una sola stagione.">
         Ogni classifica mette in fila i cavalli della stessa età per quanto hanno vinto. «In carriera» guarda l'età di adesso e conta
         tutte le corse; «Stagione» guarda un solo anno e l'età che i cavalli avevano quell'anno. Per ognuno trovi padre, madre,
         nonno materno e il miglior tempo al chilometro sulla distanza breve e su quella lunga. Tocca una riga per aprire la scheda.
-      </IntestazionePagina>
+      </IntestazionePagina>}
 
       <div className="ed-barra">
         <div className="ed-segm" role="group" aria-label="Età">
@@ -237,11 +247,11 @@ export default function ClassificheEtaPage() {
           anno dei 4 anni contro tutti i nati del suo anno, aggiornata ogni notte con qualifiche e corse (dettagli nella scheda).
         </Spiegazione>
       </div>
-      <CollegamentiCorrelati voci={[
+      {!incorporata && <CollegamentiCorrelati voci={[
         { href: "/leaderboard", titolo: "Cavalli e classifica", descrizione: "Tutti i cavalli valutati, con il voto." },
         { href: "/stalloni/classifiche", titolo: "Classifiche stalloni", descrizione: "Gli stalloni per stagione e come nonni." },
         { href: "/qualifiche", titolo: "Qualifiche", descrizione: "Il primo tempo dei giovani." },
-      ]} />
+      ]} />}
     </div>
   );
 }
