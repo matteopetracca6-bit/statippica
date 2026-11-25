@@ -5,6 +5,7 @@
  */
 
 import { useRoute, Link } from "wouter";
+import SchedaInPiu from "../components/SchedaInPiu";
 import FormaPersona from "@/components/FormaPersona";
 import { quotaStimata } from "../lib/quotePremi";
 import RottureGaloppo from "@/components/RottureGaloppo";
@@ -124,6 +125,7 @@ export default function AllenatorePage() {
           </div>
         </>}
       />
+      <SchedaInPiu tipo="allenatore" nome={d.nome ?? chiave} />
 
       <RottureGaloppo tipo="allenatore" nome={chiave.toUpperCase()} />
 

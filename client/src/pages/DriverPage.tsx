@@ -1,4 +1,5 @@
 import NomePista from "@/components/NomePista";
+import SchedaInPiu from "../components/SchedaInPiu";
 import RottureGaloppo from "@/components/RottureGaloppo";
 import FormaPersona from "@/components/FormaPersona";
 /**
@@ -88,6 +89,7 @@ export default function DriverPage() {
             sotto="5% del premio, da regolamento" />
         </>}
       />
+      <SchedaInPiu tipo="guidatore" nome={d.driver} />
 
       {!affidabile && (
         <div style={{

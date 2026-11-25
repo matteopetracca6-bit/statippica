@@ -144,6 +144,49 @@ export function registraRende(app: Express, getDb: () => any) {
     try { res.json(f(db)); } catch (e: any) { res.status(500).json({ message: String(e?.message ?? e) }); } finally { db.close(); }
   };
   app.get("/api/rende/stalloni", con(stalloniRende));
+  // Schede di guidatore, allenatore e stallone (25/11/2026): per distanza,
+  // ultimi 3 mesi contro l'anno prima e lo scarto dal previsto (XGBoost).
+  const memoExtra = new Map<string, { t: number; v: any }>();
+  app.get("/api/persona/extra", (req, res) => {
+    const tipo = String(req.query.tipo ?? "");
+    const nome = String(req.query.nome ?? "").trim();
+    if (!["guidatore", "allenatore", "stallone"].includes(tipo) || !nome) return res.status(400).json({ message: "tipo o nome mancante" });
+    const k = `${tipo}|${nome}`;
+    const m = memoExtra.get(k);
+    if (m && Date.now() - m.t < 3600_000) return res.json(m.v);
+    const db = getDb();
+    try {
+      const filtro = tipo === "guidatore" ? "r.driver = ?" : tipo === "allenatore" ? "UPPER(r.trainer) = UPPER(?)"
+        : "r.horse_name IN (SELECT name FROM horses WHERE UPPER(TRIM(sire)) = UPPER(?))";
+      const base = `FROM races r WHERE ${filtro} AND r.race_date >= '2016-01-01' AND r.track <> 'ESTERO'`;
+      const agg = `COUNT(*) AS partenze, SUM(r.placement = 1) AS vittorie, SUM(r.placement BETWEEN 1 AND 3) AS primi_tre,
+                   ROUND(SUM(COALESCE(r.prize_net, 0))) AS premi, COUNT(DISTINCT r.horse_name) AS cavalli`;
+      const distanze = db.prepare(`SELECT CASE WHEN r.distance <= 1700 THEN 'miglio (fino a 1.700 m)'
+                                              WHEN r.distance < 2200 THEN 'media (1.700-2.200 m)' ELSE 'lunga (da 2.200 m)' END AS fascia,
+                                         MIN(r.distance) AS da, ${agg} ${base} AND r.distance IS NOT NULL GROUP BY 1 ORDER BY da`).all(nome);
+      const periodo = (da: string, a: string) => db.prepare(`SELECT ${agg} ${base} AND r.race_date >= date('now', ?) AND r.race_date < date('now', ?)`).get(nome, da, a);
+      const ultimi3 = periodo("-91 days", "+1 day");
+      const anno_prima = periodo("-456 days", "-91 days");
+      let previsto: any = null;
+      for (const f of [path.resolve(process.cwd(), "modelli", "sopra_previsto.json"), path.resolve(process.cwd(), "..", "modelli", "sopra_previsto.json")]) {
+        try {
+          const j = JSON.parse(fs.readFileSync(f, "utf-8"));
+          const gruppo = j[tipo === "guidatore" ? "guidatori" : tipo === "allenatore" ? "allenatori" : "stalloni"];
+          const el: any[] = gruppo?.elenco ?? [];
+          const i = el.findIndex(x => String(x.nome).toUpperCase() === nome.toUpperCase());
+          previsto = { periodo: j.periodo, minimo: gruppo?.minimo_partenze, stabilita: gruppo?.stabilita_2025_2026, in_classifica: el.length,
+                       voce: i >= 0 ? { ...el[i], posizione: i + 1 } : null };
+          break;
+        } catch { /* prossimo */ }
+      }
+      const v = { tipo, nome, distanze, ultimi3, anno_prima, previsto };
+      memoExtra.set(k, { t: Date.now(), v });
+      res.json(v);
+    } catch (e: any) {
+      res.status(500).json({ message: String(e?.message ?? e) });
+    } finally { db.close(); }
+  });
+
   // Chi fa meglio del previsto (scripts/sopra_previsto.py, ogni mese).
   app.get("/api/rende/previsto", (_req, res) => {
     for (const f of [path.resolve(process.cwd(), "modelli", "sopra_previsto.json"), path.resolve(process.cwd(), "..", "modelli", "sopra_previsto.json")]) {

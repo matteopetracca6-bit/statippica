@@ -1,4 +1,5 @@
 import { periodoMonta } from "@/lib/periodoMonta";
+import SchedaInPiu from "../components/SchedaInPiu";
 import { DistanzaFigli, type DatiDistanzaFigli as DistanzaFigliT } from "../components/DistanzaCavallo";
 import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
@@ -674,6 +675,8 @@ export default function StallionPage() {
               </div>
             ))}
           </div>
+
+          <div style={{ marginBottom: 18 }}><SchedaInPiu tipo="stallone" nome={stallion.sire ?? stallionName} /></div>
 
           {/* Genealogy */}
           {stallion.pedigree && (stallion.pedigree.sire || stallion.pedigree.dam) && (
