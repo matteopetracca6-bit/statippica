@@ -5,13 +5,10 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q requests beautifulsoup4
-      - env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          id=$(gh api repos/${{ github.repository }}/releases/tags/archivio --jq '.assets[] | select(.name=="data.db.gz") | .id')
-          gh api -H "Accept: application/octet-stream" repos/${{ github.repository }}/releases/assets/$id > data.db.gz
-          gunzip -f data.db.gz
-      - run: python3 prova/manti.py 2>&1 | tail -30
+      - run: |
+          set +e
+          npm i tsx@4.19.2 >/dev/null 2>&1
+          npx tsx prova/sim6.ts
