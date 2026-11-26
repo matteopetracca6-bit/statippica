@@ -3816,6 +3816,29 @@ def phase_normalize_country(conn: sqlite3.Connection) -> None:
                                   AND COALESCE(TRIM(t.{campo}), '') NOT IN ('', 'EST'))""").rowcount
         except sqlite3.Error as e:
             print(f"[PAESI] {tabella}: {e}", file=sys.stderr)
+    # Un paese solo per cavallo (26/11/2026): dove la scheda del cavallo ha il
+    # paese, catalogo e pedigree degli stalloni lo prendono da li'. Sui
+    # conflitti trovati la scheda aveva sempre ragione (NAD AL SHEBA ITA e non
+    # SWE, CONWAY HALL CAN e non USA, GANYMEDE FRA e non ITA, CALGARY GAMES SWE
+    # e non USA).
+    for tabella, campo, chiave in (("stallions", "country", "name"),
+                                   ("stallion_pedigree", "nationality", "name")):
+        try:
+            cols = {r[1] for r in conn.execute(f"PRAGMA table_info({tabella})")}
+            if campo not in cols:
+                continue
+            n_unif = conn.execute(f"""
+                UPDATE {tabella} SET {campo} = (
+                    SELECT UPPER(TRIM(h.country)) FROM horses h WHERE h.name = {tabella}.{chiave}
+                       AND COALESCE(TRIM(h.country), '') NOT IN ('', 'EST') LIMIT 1)
+                 WHERE COALESCE(TRIM({campo}), '') NOT IN ('', 'EST')
+                   AND EXISTS (SELECT 1 FROM horses h WHERE h.name = {tabella}.{chiave}
+                                AND COALESCE(TRIM(h.country), '') NOT IN ('', 'EST')
+                                AND UPPER(TRIM(h.country)) <> UPPER(TRIM({tabella}.{campo})))""").rowcount
+            if n_unif:
+                print(f"[PAESI] {tabella}: {n_unif} paesi allineati alla scheda del cavallo", file=sys.stderr)
+        except sqlite3.Error as e:
+            print(f"[PAESI] {tabella}: {e}", file=sys.stderr)
     # Le stesse sigle lunghe anche nelle schede stalloni.
     for tabella, campo in (("stallions", "country"), ("stallion_pedigree", "nationality")):
         try:
