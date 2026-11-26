@@ -28,13 +28,17 @@ export function registraElencoCavalli(app: Express, getDb: () => any, esiste: (d
   // vale quella delle corse, poi gli storici, poi il pedigree).
   const BASE = (db: any) => `
     WITH r AS (
-      SELECT name, grade, rating_mode,
+      SELECT name, grade, rating_mode, career_races AS r_corse, career_earnings AS r_vincite,
              ROW_NUMBER() OVER (PARTITION BY name ORDER BY CASE rating_mode WHEN 'performance' THEN 0 WHEN 'storico' THEN 1 ELSE 2 END) AS rn
         FROM horse_ratings WHERE grade IS NOT NULL AND grade <> 'N/A'
     ),
     tutti AS (
       SELECT h.name AS nome, h.birth_year AS anno, h.sex AS sesso, h.country AS paese, h.sire AS padre, h.dam AS madre,
-             COALESCE(h.career_races, 0) AS corse, COALESCE(h.career_earnings, 0) AS vincite,
+             -- 26/11/2026: per i campioni storici la classifica ha i totali di
+             -- tutta la carriera (estero compreso, carriere_mondiali), la scheda
+             -- dell'archivio solo quelli italiani: VARENNE 2,3 milioni invece di 6.
+             MAX(COALESCE(h.career_races, 0), CASE WHEN r.rating_mode IN ('performance', 'storico') THEN COALESCE(r.r_corse, 0) ELSE 0 END) AS corse,
+             MAX(COALESCE(h.career_earnings, 0), CASE WHEN r.rating_mode IN ('performance', 'storico') THEN COALESCE(r.r_vincite, 0) ELSE 0 END) AS vincite,
              r.grade AS voto, COALESCE(r.rating_mode, 'senza_voto') AS tipo
         FROM horses h LEFT JOIN r ON r.name = h.name AND r.rn = 1
       ${esiste(db, "cavalli_alias") ? "WHERE h.name NOT IN (SELECT alias FROM cavalli_alias)" : ""}
@@ -80,7 +84,8 @@ export function registraElencoCavalli(app: Express, getDb: () => any, esiste: (d
       const par = periodo === "7" || periodo === "30" ? [] : [ultimo];
       const righe = db.prepare(`
         SELECT n.nome, n.anno, n.tipo, n.fonte, n.classe, n.quando, h.sex AS sesso, h.country AS paese, h.sire AS padre, h.dam AS madre,
-               COALESCE(h.career_races, 0) AS corse, COALESCE(h.career_earnings, 0) AS vincite,
+               MAX(COALESCE(h.career_races, 0), COALESCE((SELECT MAX(r.career_races) FROM horse_ratings r WHERE r.name = n.nome AND r.rating_mode IN ('performance', 'storico')), 0)) AS corse,
+               MAX(COALESCE(h.career_earnings, 0), COALESCE((SELECT MAX(r.career_earnings) FROM horse_ratings r WHERE r.name = n.nome AND r.rating_mode IN ('performance', 'storico')), 0)) AS vincite,
                (SELECT grade FROM horse_ratings r WHERE r.name = n.nome AND r.grade IS NOT NULL AND r.grade <> 'N/A'
                  ORDER BY CASE r.rating_mode WHEN 'performance' THEN 0 WHEN 'storico' THEN 1 ELSE 2 END LIMIT 1) AS voto
           FROM cavalli_novita n LEFT JOIN horses h ON h.name = n.nome
