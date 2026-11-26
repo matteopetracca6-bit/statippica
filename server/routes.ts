@@ -1594,7 +1594,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
           }
         : null;
 
-      // Nationality: prefer stallion_pedigree, fallback to stallions.country, then horses.country
+      // Nazionalita' (26/11/2026): prima la scheda del cavallo (anagrafe UNIRE
+      // e TrottoWeb), poi il pedigree e il catalogo. Prima vinceva il pedigree,
+      // che per NAD AL SHEBA (nato in Italia) diceva SWE: la bandiera era
+      // svedese nella scheda stallone e italiana in quella del cavallo.
       const natFromHorses = db.prepare(`
         SELECT h.country
         FROM horses h
@@ -1603,9 +1606,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
       `).get(name) as any;
 
       const nationality =
+        natFromHorses?.country ||
         spRow?.nationality ||
         stud?.country ||
-        natFromHorses?.country ||
         null;
 
       // Return 404 solo se il cavallo non esiste da nessuna parte
@@ -2171,10 +2174,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
           -- avvertenza. Chi sceglie uno stallone deve poter distinguere una
           -- misura da un'impressione.
           sr.affidabilita, sr.affidabilita_txt, sr.n_figli_corsi,
-          COALESCE(NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), ''),
-                   (SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
+          COALESCE((SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
                      WHERE hx.name = COALESCE(s.name, sr.sire)
-                       AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1)) AS nationality,
+                       AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1),
+                   NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), '')) AS nationality,
           CASE WHEN s.name IS NOT NULL THEN 1 ELSE 0 END    AS in_catalog
         FROM stallion_rating_stats sr
         LEFT JOIN stallions s          ON UPPER(TRIM(s.name))  = UPPER(TRIM(sr.sire))
@@ -2189,10 +2192,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
           s.country, s.season, s.fee_source,
           NULL, NULL, NULL, NULL, NULL, NULL, NULL,
           NULL, NULL, NULL,
-          COALESCE(NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), ''),
-                   (SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
+          COALESCE((SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
                      WHERE hx.name = s.name
-                       AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1)), 1
+                       AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1),
+                   NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), '')), 1
         FROM stallions s
         LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
         WHERE UPPER(TRIM(s.name)) NOT IN (
@@ -2570,10 +2573,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
         const bestStallion = db.prepare(`
           SELECT s.name, sr.final_score, sr.grade, sr.n_figli_totali, sr.pct_top_S,
                  s.stud_fee_eur,
-                 COALESCE(NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), ''),
-                          (SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
+                 COALESCE((SELECT NULLIF(TRIM(hx.country), '') FROM horses hx
                             WHERE hx.name = s.name
-                              AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1)) AS nationality
+                              AND COALESCE(TRIM(hx.country), '') NOT IN ('', 'EST') LIMIT 1),
+                          NULLIF(TRIM(s.country), ''), NULLIF(TRIM(sp.nationality), '')) AS nationality
           FROM stallions s
           LEFT JOIN stallion_rating_stats sr ON UPPER(TRIM(sr.sire)) = UPPER(TRIM(s.name))
           LEFT JOIN stallion_pedigree sp ON UPPER(TRIM(sp.name)) = UPPER(TRIM(s.name))
