@@ -1,17 +1,17 @@
 {
  "version": 3,
- "trained_on": 18318,
- "population_mean": 48.3334,
+ "trained_on": 18325,
+ "population_mean": 48.3342,
  "k_sire": 8.0,
  "k_dam": 2.0,
- "intercept": -2.572347,
- "w_sire": 0.8019,
- "w_dam": 0.229488,
- "w_dam_con_figli": 6.540498,
- "w_nonna": 0.115122,
- "residual_sd": 22.2112,
+ "intercept": -2.433493,
+ "w_sire": 0.801598,
+ "w_dam": 0.230373,
+ "w_dam_con_figli": 6.386707,
+ "w_nonna": 0.113114,
+ "residual_sd": 22.208,
  "backtest_summary": {
-  "spearman": 0.153,
+  "spearman": 0.154,
   "mae": 17.37,
   "baseline_spearman": 0.135
  }
