@@ -175,7 +175,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
                 <div style={{ fontSize: 12, color: MUTED }}>Cavalli con una stima simile</div>
                 <div className="tabular" style={{ fontSize: 18, fontWeight: 800, color: "hsl(210 10% 88%)", margin: "6px 0 2px" }}>{euro(p.simili.basso)} – {euro(p.simili.alto)}</div>
                 <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.55 }}>
-                  Nel 2025-26 la metà di loro ha vinto fra queste cifre{p.simili.zero >= 0.05 ? `; il ${Math.round(p.simili.zero * 100)}% non ha vinto niente` : ""}.
+                  metà dei casi nel 2025-26{p.simili.zero >= 0.05 ? ` · ${Math.round(p.simili.zero * 100)}% zero` : ""}
                 </div>
               </div>
             )}

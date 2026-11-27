@@ -241,9 +241,6 @@ function AllenatoriCavallo({ nome }: { nome: string }) {
           </div>
         ))}
       </div>
-      <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "8px" }}>
-        Dai risultati ufficiali, che riportano l'allenatore dal 2016.
-      </div>
     </div>
   );
 }
@@ -287,9 +284,7 @@ function ProprietariCavallo({ nome }: { nome: string }) {
           </div>
         ))}
       </div>
-      <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", marginTop: "8px" }}>
-        Dai risultati ufficiali, che riportano il proprietario dal 2016.
-      </div>
+      <Spiegazione titolo="Da dove vengono" compatta>Dai risultati ufficiali, che riportano allenatore e proprietario dal 2016.</Spiegazione>
     </div>
   );
 }
@@ -661,8 +656,7 @@ export default function HorsePage() {
           {(horse as any).voto_non_comparabile && (
             <span data-testid="nota-voto-estero" style={{ display: "block", marginTop: 6, fontSize: 12.5, lineHeight: 1.45,
               color: "hsl(45 85% 70%)" }}>
-              Voto non confrontabile: ha corso soprattutto all'estero, e qui contano solo le corse in Italia
-              {(horse.career_races ?? 0) > 0 ? ` (${horse.career_races})` : " (nessuna)"}.
+              Voto non confrontabile: ha corso soprattutto all'estero.
             </span>
           )}
           {(horse as any).come_fattrice && (() => {
@@ -733,34 +727,38 @@ export default function HorsePage() {
             <div data-testid="nota-carriera-completa" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(205 70% 78%)",
                  border: "1px solid hsl(205 60% 45% / .45)", background: "hsl(205 50% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
               {(() => { const cc = (horse as any).carriera_completa; return <>
-              Carriera completa, in tutto il mondo: {cc.corse} corse, {cc.vittorie} vittorie
-              {cc.primi_tre != null ? <>, {cc.primi_tre} volte nei primi tre</> : null}
+              Carriera nel mondo: {cc.corse} corse, {cc.vittorie} vittorie
+              {cc.primi_tre != null ? <>, {cc.primi_tre} nei primi tre</> : null}
               {cc.record ? <>, record {formatRecord(cc.record)}{cc.record_luogo ? <> ({cc.record_luogo})</> : null}</> : null}.
-              {" "}Fonte: {cc.url ? <a href={cc.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{cc.fonte}</a> : cc.fonte}.
+              <Spiegazione titolo="Fonte e calcolo" compatta>
+              Fonte: {cc.url ? <a href={cc.url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{cc.fonte}</a> : cc.fonte}.
               {cc.valuta_originale ? <> I guadagni sono {Math.round(cc.importo_originale).toLocaleString("it-IT")} {cc.valuta_originale === "SEK" ? "corone svedesi" : cc.valuta_originale === "USD" ? "dollari" : cc.valuta_originale},
                 convertiti in euro al cambio medio della BCE degli anni di corsa ({String(cc.cambio).replace(".", ",")} per un euro): circa.</> : null}
               {" "}Il voto è calcolato su questi totali, senza spostare la scala degli altri cavalli, che contano solo le corse in Italia
               {cc.stagioni_stimate ? <>; le stagioni di corsa non sono nella fonte e sono stimate dalle corse (una ogni 12)</> : null}.
               {" "}Le gare una per una qui sotto sono solo quelle corse in Italia.
+              </Spiegazione>
               </>; })()}
             </div>
           ) : (horse as any).ospite_estero ? (
             <div data-testid="nota-ospite-estero" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(205 70% 78%)",
                  border: "1px solid hsl(205 60% 45% / .45)", background: "hsl(205 50% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
               Corre soprattutto all&apos;estero: {(horse as any).ospite_estero.gare_italia} corse in Italia su {(horse as any).ospite_estero.gare_totali}.
-              {" "}Il voto conta tutta la carriera, come per gli altri cavalli, ma non entra nel calcolo delle soglie delle lettere:
-              le corse all&apos;estero pagano in media quasi quattro volte quelle italiane, e i suoi premi alzerebbero l&apos;asticella a chi corre in Italia.
+              <Spiegazione titolo="Cosa cambia per il voto" compatta>Il voto conta tutta la carriera, come per gli altri cavalli, ma non entra nel calcolo delle soglie delle lettere:
+              le corse all&apos;estero pagano in media quasi quattro volte quelle italiane, e i suoi premi alzerebbero l&apos;asticella a chi corre in Italia.</Spiegazione>
             </div>
           ) : eStorico && !parziale ? <CarrieraMondo italia={horse} mondo={(horse as any).totali_mondiali} />
           : parziale ? (
             <div data-testid="nota-carriera-parziale" style={{ fontSize: 12.5, lineHeight: 1.5, color: "hsl(45 85% 70%)",
                  border: "1px solid hsl(45 70% 45% / .45)", background: "hsl(45 60% 12% / .5)", borderRadius: 10, padding: "9px 12px" }}>
-              Carriera parziale: questi numeri contano solo le {parziale.n} gare che abbiamo
-              (dal {parziale.dal.slice(8, 10)}/{parziale.dal.slice(5, 7)}/{parziale.dal.slice(0, 4)}), lette dai risultati ufficiali.
+              Carriera parziale: solo le {parziale.n} gare dal {parziale.dal.slice(8, 10)}/{parziale.dal.slice(5, 7)}/{parziale.dal.slice(0, 4)}.
+              <Spiegazione titolo="Cosa vuol dire" compatta>
+              Sono lette dai risultati ufficiali.
               {eStorico
                 ? <> La carriera completa non è disponibile: il voto storico è calcolato su queste gare, sulla stessa scala degli altri storici, e per una carriera iniziata prima del 2016 o corsa in parte all&apos;estero probabilmente sottostima il cavallo.</>
                 : <> La carriera completa non è disponibile, quindi il cavallo non ha un voto.</>}
               {parziale.premi_stimati > 0 && <> In {parziale.premi_stimati} gare il premio è stimato dalla tabella del regolamento.</>}
+              </Spiegazione>
             </div>
           ) : undefined}
       />
@@ -779,11 +777,9 @@ export default function HorsePage() {
             <div style={panelTitle}>Voto storico, non confrontabile con i cavalli in gara</div>
             {/* L'avvertenza resta in chiaro: e' il punto, non un dettaglio. Il
                 perche' tecnico va invece sotto la tendina. */}
-            <div style={{ fontSize: 13, color: "hsl(210 10% 78%)", lineHeight: 1.55, maxWidth: "70ch" }}>
-              Confrontato solo con gli altri cavalli storici, su guadagni, record e percentuale
-              di vittorie.
-            </div>
             <Spiegazione titolo="Perché ha una scala a parte">
+              Confrontato solo con gli altri cavalli storici, su guadagni, record e percentuale
+              di vittorie.{" "}
               {parziale ? <>
                 Di questo cavallo l&apos;archivio non ha i totali ufficiali di carriera, solo le
                 gare corse dal 2016 in poi (quelle precedenti non esistono online): il voto è

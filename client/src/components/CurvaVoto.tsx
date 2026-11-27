@@ -157,7 +157,6 @@ export default function CurvaVoto({ f, colore }: { f: Forza; colore: string }) {
           <span>Dal pedigree, prima delle corse</span>
           <GradeBadge grade={letteraPotenziale(f.nascita.potenziale)} size="sm" />
           <span style={{ color: "hsl(210 10% 78%)" }}>fra {letteraPotenziale(f.nascita.basso)} e {letteraPotenziale(f.nascita.alto)}</span>
-          <span>· la promessa di padre e madre; i punti dopo sono il voto delle corse fatte fino a quell'anno</span>
         </div>
       )}
       {f.picco != null && f.picco_eta != null && (
@@ -166,14 +165,8 @@ export default function CurvaVoto({ f, colore }: { f: Forza; colore: string }) {
           <GradeBadge grade={lettera(f.picco)} size="sm" />
           <span className="tabular" style={{ color: "hsl(210 10% 78%)" }}>{num(f.picco)} a {f.picco_eta} anni</span>
           {f.potenziale != null && f.potenziale < f.picco - 1 && (
-            <span style={{ color: "hsl(38 70% 62%)" }}>· dopo il picco: il voto di carriera scende se le stagioni corse restano poche rispetto a quelle possibili</span>
+            <span style={{ color: "hsl(38 70% 62%)" }}>· dopo il picco</span>
           )}
-        </div>
-      )}
-      {(f.corse_estero_12_mesi ?? 0) > 0 && (
-        <div style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 6 }}>
-          Corre all'estero ({f.corse_estero_12_mesi} corse negli ultimi 12 mesi): contano nel voto e nella curva, non nella velocità,
-          perché l'archivio non sa su quale pista estera si correva.
         </div>
       )}
       <Grafico f={f} colore={colore} lettera={lettera} />
@@ -183,6 +176,8 @@ export default function CurvaVoto({ f, colore }: { f: Forza; colore: string }) {
         anni senza corse. Il rombo a sinistra è la partenza dal solo pedigree: dove ci si aspettava che arrivasse fra i nati del suo anno, prima di
         vederlo correre. Nei primi anni il voto delle corse è quasi sempre basso, perché le corse sono poche: non vuol dire che la promessa fosse sbagliata.
         {" "}{previsto ? "Il tratteggio e la banda sono gli anni previsti, con la forbice che dovrebbe contenere il vero 8 volte su 10; il cerchio è il voto di fine carriera previsto. " : ""}
+        {f.picco != null && f.potenziale != null && f.potenziale < f.picco - 1 ? "Dopo il picco il voto di carriera scende se le stagioni corse restano poche rispetto a quelle possibili. " : ""}
+        {(f.corse_estero_12_mesi ?? 0) > 0 ? `Corre all'estero (${f.corse_estero_12_mesi} corse negli ultimi 12 mesi): contano nel voto e nella curva, non nella velocità, perché l'archivio non sa su quale pista estera si correva. ` : ""}
         {f.ferma ? "Per una carriera ferma non c'è previsione: il voto cambia solo per le stagioni che avrebbe potuto correre, fino ai 7 anni. " : ""}
         {vc ? <>Verifica con la formula allenata fino al 2021 e provata sul 2022-2025: errore medio {num(vc.errore_modello)} punti
           contro {num(vc.errore_riferimento)} di chi aggiunge al voto di oggi la crescita tipica di quell'età; forbice giusta
