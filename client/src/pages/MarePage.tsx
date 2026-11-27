@@ -8,6 +8,7 @@ import GradeBadge from "../components/GradeBadge";
 import { Heart } from "lucide-react";
 import IntestazioneScheda from "../components/IntestazioneScheda";
 import MantoSesso from "../components/MantoSesso";
+import { VotoNegliAnni } from "../components/Riproduttori";
 import { Cifra } from "../components/DueColonne";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
@@ -186,6 +187,8 @@ export default function MarePage() {
         </div>
       )}
       </div>
+
+      <VotoNegliAnni tipo="fattrice" nome={data.dam} colore={coloreScheda("/fattrici")} />
 
       {/* Progenie */}
       <div className="pannello" style={{ overflowX: "auto" }}>

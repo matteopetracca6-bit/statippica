@@ -41,6 +41,7 @@ import { alberoStalloni, attivitaStallone, NOMI_GENERAZIONE, MIN_FIGLI_ALBERO, A
 import { leadersEta, stalloniStagione, figliStalloneStagione, nipotiStalloni, nonnoStallone, allevatoriStagione, cavalliAllevatoreStagione } from "./classifiche";
 import { lineaMaterna } from "./lineaMaterna";
 import { registraRende } from "./rende";
+import { registraRiproduttori } from "./riproduttori";
 import { registraGenerazioni } from "./generazioni";
 const cacheNonni: { chiave: string; dati: ReturnType<typeof nipotiStalloni> | null } = { chiave: "", dati: null };
 import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
@@ -342,6 +343,7 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // Simulatore della corsa (simulatore.ts).
   registraSimulatore(app, getDb, NOMI_CALENDARIO, vpTableExists);
   registraRende(app, getDb);
+  registraRiproduttori(app, getDb);
   registraGenerazioni(app, getDb);
   // Schede Tutti e Novita' della pagina Cavalli (elencoCavalli.ts).
   registraElencoCavalli(app, getDb, vpTableExists);
