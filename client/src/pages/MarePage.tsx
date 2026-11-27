@@ -7,6 +7,7 @@ import LineaMaterna from "../components/LineaMaterna";
 import GradeBadge from "../components/GradeBadge";
 import { Heart } from "lucide-react";
 import IntestazioneScheda from "../components/IntestazioneScheda";
+import MantoSesso from "../components/MantoSesso";
 import { Cifra } from "../components/DueColonne";
 import { Spiegazione } from "../components/Spiegazione";
 import { Caricamento } from "../components/Caricamento";
@@ -137,6 +138,7 @@ export default function MarePage() {
       <IntestazioneScheda
         indietro={{ href: "/fattrici", testo: "Tutte le fattrici" }}
         icona={Heart} colore={coloreScheda("/fattrici")} tipo="Fattrice" titolo={data.dam}
+        azioni={<MantoSesso coat={(own as any)?.coat_color} sex="F" />}
         accanto={s ? <GradeBadge grade={s.grade} /> : undefined}
         sotto={<>
           {own?.birth_year ? `Nata nel ${own.birth_year}` : "Anno di nascita non disponibile"}
