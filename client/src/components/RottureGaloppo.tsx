@@ -9,6 +9,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Spiegazione } from "./Spiegazione";
 
 type Dati = {
   corse: number; rotture: number; in_arrivo: number; quota: number | null;
@@ -71,10 +72,10 @@ export default function RottureGaloppo({ tipo, nome }: { tipo: "cavallo" | "guid
           {d.per_anno.map(a => <span key={a.anno}>{a.anno}: {pct(a.quota)} su {num(a.corse)}</span>)}
         </div>
       )}
-      <div className="nota">
+      <Spiegazione titolo="Come si legge" compatta>
         Conta {chi} finite con una squalifica per galoppo, durante la corsa o in arrivo{d.in_arrivo ? ` (${num(d.in_arrivo)} in arrivo)` : ""}.
         In tutto l'archivio succede nel {pct(d.media_archivio)} delle corse, nell'ultimo anno nel {pct(d.media_anno)}. Sono dati, non una previsione.
-      </div>
+      </Spiegazione>
     </div>
   );
 }

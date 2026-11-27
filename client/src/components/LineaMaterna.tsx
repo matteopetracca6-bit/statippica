@@ -53,10 +53,10 @@ export default function LineaMaterna({ nome, titolo = "Linea materna" }: { nome:
   return (
     <div id="sez-linea-materna" className="pannello" style={{ padding: "var(--pad-pannello, 20px 22px)", marginBottom: "var(--spazio-pannello, 22px)" }} data-testid="linea-materna">
       <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(210 8% 50%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{titolo}</div>
-      <div style={{ fontSize: 13, color: "hsl(210 8% 65%)", marginBottom: 12, lineHeight: 1.5 }}>
+      <Spiegazione titolo="Cos'è la linea materna" compatta>
         La famiglia dal lato della madre: madre, nonna e bisnonna, con tutti i figli che conosciamo. Se una famiglia dà
         spesso cavalli che vincono, è un buon segno anche per i nuovi nati.
-      </div>
+      </Spiegazione>
 
       {/* Le tre madri: si tocca per cambiare */}
       <div role="tablist" style={{ display: "grid", gridTemplateColumns: `repeat(${data.madri.length}, minmax(0, 1fr))`, gap: 6, marginBottom: 14 }}>

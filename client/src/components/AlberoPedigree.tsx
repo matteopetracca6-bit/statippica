@@ -17,6 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import BandieraCavallo from "./BandieraCavallo";
 import CavalloCaricamento from "./CavalloCaricamento";
 import { formatRecord } from "@/lib/record";
+import { Spiegazione } from "./Spiegazione";
 
 export interface VotiNodo { atleta: string | null; stallone: string | null; fattrice: string | null;
   /** Voto storico da riproduttore: figli tutti storici, scala a parte (24/11/2026). */
@@ -362,11 +363,14 @@ export default function AlberoPedigree({ root, generazioni, hovered = null, onHo
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 11, color: "hsl(210 8% 48%)", flexWrap: "wrap", alignItems: "center" }}>
+      <Spiegazione titolo="Come si legge l'albero" compatta>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
         <span>Primo voto = da <b style={{ color: "hsl(210 8% 70%)" }}>atleta</b> (dalle sue corse) · secondo = da <b style={{ color: "hsl(210 8% 70%)" }}>stallone o fattrice</b> (dai figli) · «st» = scala storica, figli nati prima del 2012 · – = non disponibile</span>
         <span><span style={{ color: "hsl(183 55% 62%)" }}>1.11.2</span> = miglior km in carriera</span>
         <span>Nome azzurro = maschio, rosa = femmina · bordo colorato e ×N = antenato ripetuto</span>
+        <span>La linea maschile è la catena padre → padre del padre → … fino a dove arriva l'albero.</span>
       </div>
+      </Spiegazione>
       <LineeERipetuti root={root} rip={rip} colore={colore} chiave={chiave} hovered={hovered} onHover={onHover} />
     </div>
   );
@@ -414,9 +418,6 @@ function LineeERipetuti({ root, rip, colore, chiave, hovered, onHover }: {
           {materna.length > 0 && <div style={{ fontSize: 12.5, lineHeight: 1.7, display: "flex", flexWrap: "wrap", gap: "0 6px", alignItems: "center", marginTop: 4 }}>
             <span style={{ fontSize: 11, color: "hsl(330 60% 70%)", marginRight: 2 }}>Dal padre della madre:</span>{materna.map(nodo)}
           </div>}
-          <div style={{ fontSize: 11, color: "hsl(210 8% 48%)", marginTop: 6 }}>
-            La linea maschile è la catena padre → padre del padre → … fino a dove arriva l'albero.
-          </div>
         </div>
       )}
       {rip.length > 0 && (

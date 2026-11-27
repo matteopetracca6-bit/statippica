@@ -180,9 +180,7 @@ export default function ValoreResiduo({ v }: { v: ValoreCarriera | null | undefi
 
       {/* La frase riassuntiva resta in chiaro: e' il senso del riquadro.
           I dettagli del metodo vanno sotto la tendina. */}
-      <div style={{ fontSize: "12px", color: MUTED, lineHeight: 1.55, marginTop: "12px" }}>
-        {v.spiegazione}
-      </div>
+      <Spiegazione titolo="In parole" compatta>{v.spiegazione}</Spiegazione>
 
       {/* Anno per anno */}
       {v.prossimi_anni.length > 0 && (

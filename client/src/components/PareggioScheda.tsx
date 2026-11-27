@@ -18,6 +18,7 @@ import { useScuderia } from "@/lib/scuderia";
 const MUTED = "hsl(210 8% 50%)";
 import { ESITO_COLORE as COLORE, ESITO_NOME as NOME } from "@/lib/esiti";
 import LegendaEsiti from "./LegendaEsiti";
+import { Spiegazione } from "./Spiegazione";
 const euro = (n: number) => (n < 0 ? "−\u2060" : "") + "€" + Math.abs(Math.round(n)).toLocaleString("it-IT");
 
 const pannello: React.CSSProperties = {
@@ -121,11 +122,11 @@ export function PareggioCavallo({ nome, anno }: { nome: string; anno: number }) 
             nota={<>Vince {euro(d.tipico_del_voto.guadagno_mediano)} in {d.tipico_del_voto.stagioni_mediane} stagioni; finisce in utile il {d.tipico_del_voto.pct_in_utile.toLocaleString("it-IT")}%.</>} />
         )}
       </div>
-      <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "10px" }}>
+      <Spiegazione titolo="Su quali ipotesi" compatta>
         Ipotesi: {euro(d.mensile)} al mese di allenamento e mantenimento
         {d.ingresso != null && <>, {euro(d.ingresso)} fino ai 2 anni (allevamento più monta di {euro(d.monta ?? 0)}{d.monta_da_catalogo ? ", dal catalogo" : ", indicata da te"})</>}.
         {" "}Non conta rivendita né valore da riproduttore.
-      </div>
+      </Spiegazione>
       <LegendaEsiti style={{ marginTop: "8px" }} />
     </div>
   );
