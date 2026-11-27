@@ -1,10 +1,7 @@
 const { chromium } = require('playwright');
 const B = 'https://statippica.onrender.com/#';
-const PAG = ['/', '/stalloni', '/stalloni/albero', '/stalloni/classifiche', '/allevamento', '/allevatori/classifiche', '/trend', '/pedigree', '/fattrici',
-  '/calendario', '/simulatore', '/gran-premi', '/guidatori', '/allenatori', '/proprietari', '/ippodromi', '/mercato', '/conto', '/rende', '/generazioni',
-  '/generazione-m', '/controllo', '/economia', '/scuderia', '/metodo', '/metodo/pronostico', '/qualifiche', '/advisor', '/validazione', '/compare', '/seguiti',
-  ['/fattrici', /#\/fattrice\//], ['/stalloni', /#\/stallion\//], ['/guidatori', /#\/guidatore\//], ['/allenatori', /#\/allenatore\//],
-  ['/proprietari', /#\/proprietario\//], ['/ippodromi', /#\/ippodromo\//], ['/allevamento', /#\/allevatore\//]];
+const RE = [/#\/guidatore\//, /#\/allenatore\//, /#\/proprietario\//, /#\/ippodromo\//, /#\/stallion\//, /#\/fattrice\//];
+const PAG = ['/stalloni', '/allevatori/classifiche', '/allevamento', '/calendario', '/simulatore', '/guidatori', '/allenatori', '/proprietari', '/ippodromi', '/generazione-m'];
 async function prosa(pg) {
   return pg.evaluate(() => {
     const vis = el => { for (let e = el; e; e = e.parentElement) { if (e.tagName === 'DETAILS' && !e.open) return false; if (e.tagName === 'SUMMARY' || e.tagName === 'NAV' || e.tagName === 'HEADER') return false; } return el.offsetParent !== null; };
@@ -42,6 +39,12 @@ async function prosa(pg) {
     } catch (e) { console.log(`PRO ${u} ERR ${e.message.slice(0, 80)}`); }
     await pg.close();
   };
+  const p0 = await br.newPage(); await p0.goto(B + '/horse/FLY%20HOME/2021', { waitUntil: 'networkidle', timeout: 90000 }); await p0.waitForTimeout(8000);
+  for (const b of await p0.$$('button.sez-testa[aria-expanded="false"]')) { try { await b.click(); await p0.waitForTimeout(300); } catch {} }
+  await p0.waitForTimeout(4000);
+  const hrefs = await p0.evaluate(() => [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href')));
+  for (const re of RE) { const h = hrefs.find(x => re.test(x.startsWith('#') ? x : '#' + x)); if (h) PAG.push(decodeURIComponent(h.replace(/^#/, ''))); else console.log('PRO manca ' + re.source); }
+  await p0.close();
   const coda = [...PAG]; await Promise.all([0, 1, 2, 3].map(async () => { while (coda.length) await lavora(coda.shift()); }));
   await br.close();
 })();
