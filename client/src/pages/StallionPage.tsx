@@ -272,7 +272,7 @@ function StallionNavArrow({ direction, neighbor, onClick }: {
         maxWidth: "240px",
         justifyContent: isNext ? "flex-end" : "flex-start",
         transition: "background 0.15s, border-color 0.15s" }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(220 12% 16%)"; e.currentTarget.style.borderColor = "hsl(183 40% 30%)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(220 12% 16%)"; e.currentTarget.style.borderColor = "hsl(120 40% 30%)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "hsl(220 12% 12%)"; e.currentTarget.style.borderColor = "hsl(220 10% 18%)"; }}
     >
       {!isNext && <ChevronLeft size={18} style={{ color: "hsl(210 8% 45%)", flexShrink: 0 }} />}
@@ -374,6 +374,20 @@ function Fact({ label, value, wide }: { label: string; value: string; wide?: boo
   );
 }
 
+
+/* 27/11/2026: scheda stallone tutta verde e, dentro le quattro sezioni,
+   niente riquadri dentro i riquadri: i blocchi diventano parti della
+   sezione separate da una riga. */
+const CSS_STALLONE = `
+.scheda-stallone { --colore-pagina: hsl(120 60% 50%); --colore-pannello: hsl(120 60% 50%); }
+.scheda-stallone .sez-corpo .pannello { background: none !important; border: none !important; box-shadow: none !important; border-radius: 0 !important;
+  animation: none !important; transform: none !important; padding: 4px 6px 16px !important; margin: 0 0 14px !important;
+  border-bottom: 1px solid hsl(220 10% 15%) !important; }
+.scheda-stallone .sez-corpo .pannello .pannello { border-bottom: none !important; padding: 6px 0 !important; margin: 0 !important; }
+.scheda-stallone .sez-corpo .pannello:last-child { border-bottom: none !important; }
+.scheda-stallone .sez-corpo div[style*="1px solid hsl(220"][style*="border-radius"] { border-color: transparent !important; background: hsl(220 12% 11% / .5) !important; }
+`;
+
 export default function StallionPage() {
   const [match, params] = useRoute("/stallion/:name");
   const [, navigate] = useLocation();
@@ -419,7 +433,8 @@ export default function StallionPage() {
   };
 
   return (
-    <div className="page-shell fade-in">
+    <div className="page-shell fade-in scheda-stallone">
+      <style>{CSS_STALLONE}</style>
       {/* Come nella scheda cavallo: elenco, ricerca e stalloni vicini su una fascia sola. */}
       <div className="barra-scheda">
         <div style={{ display: "flex", gap: "16px", alignItems: "center", flex: "1 1 420px", flexWrap: "wrap" }}>
