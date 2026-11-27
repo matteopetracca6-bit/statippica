@@ -5268,14 +5268,25 @@ def phase_dam_ratings(conn: sqlite3.Connection):
     # subito dopo (stessa ragione documentata per stallion_rating_stats).
     conn.execute("DELETE FROM dam_rating_stats")
 
-    # Figli: solo ATLETI. Un riproduttore non e' progenie da valutare.
+    # Figli: TUTTI quelli registrati (27/11/2026). Prima contavano solo gli
+    # atleti nati dal 2012: una fattrice con i figli migliori nati prima (la
+    # madre di un campione degli anni 2000) restava senza voto o con il voto
+    # dei soli figli recenti. Ora ogni figlio conta con il suo voto: quello
+    # delle corse (nella sua annata) per i nati dal 2012, quello storico per
+    # i nati prima. Anche un figlio diventato riproduttore resta suo figlio.
     children = conn.execute("""
         SELECT name, birth_year, dam FROM horses
         WHERE dam IS NOT NULL AND TRIM(dam) <> ''
-          AND COALESCE(horse_class, 'athlete') = 'athlete'
     """).fetchall()
 
     ratings: dict[tuple, tuple] = {}
+    # Prima il voto storico, poi quello delle corse che lo sostituisce dove
+    # c'e' tutti e due (le carriere dal 2012 hanno le gare una per una).
+    for name, birth_year, grade, score, earn in conn.execute("""
+        SELECT name, birth_year, grade, score, career_earnings
+        FROM horse_ratings WHERE rating_mode = 'storico' AND grade IS NOT NULL AND grade <> 'N/A'
+    """):
+        ratings[(name, birth_year)] = (grade, score or 0.0, earn or 0.0)
     # 20/11/2026: come per gli stalloni, il voto dei figli nella loro annata.
     for name, birth_year, grade, score, earn in conn.execute("""
         SELECT name, birth_year, COALESCE(grade_annata, grade), score, career_earnings
