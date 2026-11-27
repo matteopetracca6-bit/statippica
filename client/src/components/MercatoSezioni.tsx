@@ -298,9 +298,11 @@ export function GenerazioneM({ d }: { d: any }) {
     <div>
       <div className="ed-pannello" style={{ borderColor: "color-mix(in srgb, " + GIALLO + " 45%, transparent)", fontSize: 12.5, color: "var(--ed-testo)", lineHeight: 1.6, marginBottom: 14 }}
         data-testid="avviso-sperimentale">
-        <b style={{ color: GIALLO }}>Sperimentale.</b> I trottatori nati nel 2025 hanno il nome che comincia per M e debutteranno a 2 anni nel 2027.
+        <b style={{ color: GIALLO }}>Sperimentale.</b> I nati nel 2025 (nomi con la M) debutteranno a 2 anni nel 2027.
+        <Spiegazione titolo="Quanto fidarsi" compatta>
         I numeri della generazione intera sono provati sul passato e tengono; quelli del singolo puledro sono un intervallo largo, non una previsione.
         Questo non è il modello di allevamento del sito.
+        </Spiegazione>
       </div>
 
       <div className="ed-cifre">
@@ -334,11 +336,11 @@ export function GenerazioneM({ d }: { d: any }) {
               </div>
             </div>
           ))}
-          <p style={{ color: "var(--ed-muto)", fontSize: 12, lineHeight: 1.6, margin: 0 }}>
+          <Spiegazione titolo="Premi previsti e puledro tipico" compatta>
             Premi netti previsti: {euro(g.torta_2_anni_prevista_2027)} per i 2 anni nel 2027 e {euro(g.torta_3_anni_prevista_2028)} per i 3 anni nel 2028,
             la media degli ultimi tre anni. Fra chi corre, il puledro tipico vince {euro(g.premi_2_e_3_anni_mediana_di_chi_corre)} in due stagioni;
             circa {num(g.almeno_10000_euro_in_due_stagioni[1])} arriveranno ad almeno 10.000 € e circa {num(g.almeno_50000_euro_in_due_stagioni[1])} ad almeno 50.000 €.
-          </p>
+          </Spiegazione>
         </div>
 
         <div className="ed-pannello" style={{ minWidth: 0 }}>
@@ -365,8 +367,8 @@ export function GenerazioneM({ d }: { d: any }) {
             ))}
           </div>
           <p style={{ fontSize: 12, color: "var(--ed-muto)", lineHeight: 1.6, margin: "10px 0 0" }}>
-            Chi ha pagato di più ha vinto di più a 3 anni, ma molto meno di quanto ha speso. A 2 anni il prezzo non distingueva quasi nulla.
-            La stessa prova, rifatta con i soli dati di settembre 2024, è in <Link href="/controllo" style={{ color: COLORE }}>Controllo a posteriori</Link>.
+            Chi ha pagato di più ha vinto di più a 3 anni, ma molto meno di quanto ha speso.
+            {" "}<Link href="/controllo" style={{ color: COLORE }}>La prova rifatta</Link>.
           </p>
         </div>
       </div>

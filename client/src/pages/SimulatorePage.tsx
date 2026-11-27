@@ -437,7 +437,9 @@ export default function SimulatorePage() {
   return (
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: ACCENTO }}>
       <IntestazionePagina icona={Flag} colore={ACCENTO} titolo="Simulatore della corsa" etichetta="sperimentale" margineSotto={14}
-        sottotitolo="Scegli una corsa in programma o già corsa e guardala girare: velocità, spunto, tenuta, penalità ai nastri, corda e ruote esterne, galoppi e squalifiche. Poi simulala mille volte." />
+        sottotitolo="Scegli una corsa, guardala girare e simulala mille volte.">
+        La corsa animata tiene conto di velocità, spunto, tenuta, penalità ai nastri, corda e ruote esterne, galoppi e squalifiche.
+      </IntestazionePagina>
 
       {/* Scelta della corsa */}
       <style>{CSS_DUE_COLONNE}</style>
@@ -528,7 +530,7 @@ export default function SimulatorePage() {
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: riepilogo ? 12 : 0 }}>
               <b style={{ fontSize: 14 }}>Mille corse</b>
               <span style={{ fontSize: 12, color: MUTED, flex: 1, minWidth: 220 }}>
-                La stessa corsa simulata 1000 volte: quante volte vince ogni cavallo, quante arriva nei primi tre e quante viene squalificato.
+                vittorie, primi tre e squalifiche su 1000 simulazioni
               </span>
               <button className="sim-bottone forte" onClick={simulaMille} disabled={avanz != null}>
                 <Dices size={15} /> {avanz != null ? `${Math.round(avanz * 100)}%` : riepilogo ? "Rifai le 1000" : "Simula 1000 volte"}
@@ -736,10 +738,10 @@ function Precisione() {
   return (
     <div className="pannello" style={{ padding: "14px 16px", marginTop: 16 }}>
       <b style={{ fontSize: 14 }}>Quanto ci azzecca</b>
-      <div style={{ fontSize: 12, color: MUTED, margin: "4px 0 8px" }}>
+      <Spiegazione titolo="Come è fatta la prova" compatta>
         Prova su {x.corse} corse vere degli ultimi 14 giorni ({x.conQuote} con le quote finali), simulate senza conoscere l'arrivo:
         il simulatore da solo, tarato sul pronostico XGBoost, e tarato più metà del mercato.
-      </div>
+      </Spiegazione>
       {riga("Probabilità data al vincitore vero", <>da solo {x.alVincitore.solo}% · <b>tarato {x.alVincitore.tarato}%</b> · con metà mercato {x.alVincitore.conMercato}% · totalizzatore {x.alVincitore.totalizzatore}%</>)}
       {riga("Il più vincente nelle simulazioni ha vinto", <>da solo {x.favoritoVince.solo}% · <b>tarato {x.favoritoVince.tarato}%</b> · con metà mercato {x.favoritoVince.conMercato}% · favorito del pubblico {x.favoritoVince.totalizzatore}%</>)}
       {riga("Errore sui primi tre (più basso è meglio)", <>da solo {v(x.errorePrimiTre.solo)} · <b>tarato {v(x.errorePrimiTre.tarato)}</b> · pronostico {v(x.errorePrimiTre.pronostico)}</>)}

@@ -358,9 +358,9 @@ export default function ValidazionePage() {
               Un modello che dichiarasse 0,80 su questi dati non sarebbe bravo, starebbe
               sbagliando la prova.
             </Spiegazione>
-            <div style={{ fontSize: "10.5px", color: DIM, marginTop: "10px", lineHeight: 1.5 }}>
+            <Spiegazione titolo="Fonti" compatta>
               Ereditabilita' di riferimento da: {ceil.fonti.join(" · ")}
-            </div>
+            </Spiegazione>
           </div>
         </Section>
       )}
@@ -497,6 +497,7 @@ export default function ValidazionePage() {
           icon={<BookOpen size={17} />}
           sub={data.science.sintesi}
         >
+          <Spiegazione titolo="Cosa dicono gli studi e quali sono">
           <div className="pannello" style={{ padding: "16px 18px", marginBottom: "14px" }}>
             <p style={{ fontSize: "12.5px", color: TEXT, lineHeight: 1.65, margin: "0 0 10px" }}>
               {data.science.implicazione_modello}
@@ -519,6 +520,7 @@ export default function ValidazionePage() {
               </div>
             ))}
           </div>
+          </Spiegazione>
         </Section>
       )}
       <CollegamentiCorrelati voci={[

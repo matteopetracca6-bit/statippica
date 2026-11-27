@@ -341,11 +341,11 @@ export default function AllenatoriPage() {
             </div>
           )}
 
-          <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", marginTop: 18, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 18 }}><Spiegazione titolo="Come si legge" compatta>
             La barra «a parità di cavallo» parte dal centro: verso sinistra i cavalli rendono meglio del loro solito con questo allenatore, verso
             destra peggio; grigia vuol dire non giudicabile. Il numero è quanto vale in posizioni, su una corsa da dieci partenti. «In attività» vuol
             dire almeno dieci corse negli ultimi diciotto mesi. Hanno una scheda gli allenatori con almeno venti corse dal 2016.
-          </p>
+          </Spiegazione></div>
         </>
       )}
 

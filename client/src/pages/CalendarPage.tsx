@@ -202,10 +202,10 @@ export default function CalendarPage() {
       ) : (
         <>
           {data.pronostico && (
-            <p style={{ fontSize: 12.5, color: "hsl(210 8% 58%)", margin: "0 0 12px", lineHeight: 1.5 }}>
+            <div style={{ margin: "-6px 0 12px" }}><Spiegazione titolo="Come si leggono le percentuali" compatta>
               La percentuale grande è la probabilità di arrivare nei primi tre (in ogni corsa sommano a 3), quella piccola di vincere. Il giorno della
               corsa il pronostico si rifà la mattina, con la ferratura dichiarata. Tocca una corsa per i partenti.
-            </p>
+            </Spiegazione></div>
           )}
           <div className="cal-filtri">
             <div className="cal-chips" role="group" aria-label="Giorno">
@@ -294,9 +294,10 @@ export default function CalendarPage() {
                                     <div style={{ borderTop: "1px solid hsl(220 10% 16%)" }}>
                                       {data.galoppo?.supera && (
                                         <div className="nota-galoppo">
-                                          <span className="chip-galoppo medio" aria-hidden>galoppo</span>
+                                          <Spiegazione titolo="Rischio galoppo sotto ogni cavallo" compatta>
                                           Sotto ogni cavallo, la probabilità che venga squalificato per galoppo. Dove diceva «alto» ha rotto {conArticolo(Math.round((data.galoppo.fasce.alto?.vera ?? 0) * 100))} dei cavalli,
                                           dove diceva «basso» {conArticolo(Math.round((data.galoppo.fasce.basso?.vera ?? 0) * 100))}.
+                                          </Spiegazione>
                                         </div>
                                       )}
                                       {data.pronostico && race.n_runners <= 3 && (

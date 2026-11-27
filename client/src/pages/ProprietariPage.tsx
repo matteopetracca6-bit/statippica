@@ -327,11 +327,11 @@ export default function ProprietariPage() {
             </div>
           )}
 
-          <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", marginTop: 18, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 18 }}><Spiegazione titolo="Come si legge" compatta>
             La barretta sotto il nome è il premio a cavallo all'anno: piena per il 5% delle scuderie che vincono di più a cavallo; grigia vuol
             dire meno di tre cavalli. «In attività» vuol dire almeno dieci corse negli ultimi diciotto mesi. Hanno una scheda i proprietari con almeno venti
             corse dal 2016.
-          </p>
+          </Spiegazione></div>
         </>
       )}
 

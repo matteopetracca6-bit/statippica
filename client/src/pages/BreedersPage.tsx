@@ -18,6 +18,7 @@ import GradeBadge from "../components/GradeBadge";
 import CavalloCaricamento from "../components/CavalloCaricamento";
 import { Search, X, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { CSS_DUE_COLONNE, Cifra, Barretta, useDesktop, num, euro, isNum } from "../components/DueColonne";
+import { Spiegazione } from "../components/Spiegazione";
 
 interface BreederRow {
   breeder_name: string;
@@ -230,10 +231,10 @@ export default function BreedersPage(_props: { embedded?: boolean } = {}) {
         <div style={{ marginTop: 10 }}><SchedaAllevatore nome={aperto} onClose={() => setAperto(null)} /></div>
       )}
 
-      <p style={{ fontSize: 11, color: "var(--ed-fioco)", marginTop: 22, lineHeight: 1.6 }}>
+      <div style={{ marginTop: 22 }}><Spiegazione titolo="Da dove vengono i dati" compatta>
         Fonte del dato di allevamento: VendoPuledri, aggiornato ogni notte. I recapiti non sono mostrati.
         Vedi anche il <Link href="/stalloni"><a style={{ color: "var(--ed-acc)" }}>catalogo stalloni</a></Link>.
-      </p>
+      </Spiegazione></div>
     </div>
   );
 }

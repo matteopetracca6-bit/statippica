@@ -896,7 +896,7 @@ export default function AdvisorPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           {[
             ["1", "Scegli la fattrice", "Dall'elenco, e se vuoi un tetto alla tassa di monta."],
-            ["2", "Leggi la classifica", "Tutti gli stalloni in monta: quanti puledri su 100 diventano buoni, la consanguineità, e come è andato lo stesso incrocio con le figlie del padre della fattrice."],
+            ["2", "Leggi la classifica", "Gli stalloni in monta, dal più consigliato."],
             ["3", "Apri o confronta", "Il dettaglio della coppia: costi, consanguineità, regole. Oppure più stalloni affiancati."],
           ].map(([n, t, d]) => (
             <div key={n} style={{ padding: 16, borderRadius: 12, background: "hsl(220 12% 9%)", border: `1px solid ${C.bordo}` }}>

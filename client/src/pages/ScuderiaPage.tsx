@@ -200,9 +200,9 @@ function ImportaProprietario() {
               ))}
             </div>
           )}
-          <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8, lineHeight: 1.5 }}>
+          <Spiegazione titolo="Quali cavalli prende" compatta>
             Prende i cavalli che oggi corrono per quel proprietario, cioè quelli la cui ultima corsa, negli ultimi 12 mesi, è con i suoi colori.
-          </div>
+          </Spiegazione>
         </div>
       ) : (
         <div>
