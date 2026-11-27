@@ -162,9 +162,9 @@ export function PareggioStallone({ nome }: { nome: string }) {
           valore={d.monta_massima_di_pareggio > 0 ? euro(d.monta_massima_di_pareggio) : "nessuna"}
           nota={d.monta_massima_di_pareggio > 0 ? "Il prezzo di monta che porta il figlio medio in pari." : "Con fattrice qualunque il figlio medio non va in pari neanche con la monta gratis."} />
       </div>
-      <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "10px" }}>
+      <Spiegazione titolo="Su quali ipotesi" compatta>
         Ipotesi: {euro(d.mensile)} al mese, fattrice qualunque. Con una fattrice precisa il conto cambia: provalo in Prima di correre, «Un incrocio conviene?».
-      </div>
+      </Spiegazione>
       <LegendaEsiti style={{ marginTop: "8px" }} />
     </div>
   );
