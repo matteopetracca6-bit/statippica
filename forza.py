@@ -267,6 +267,7 @@ def tabella_voti(vt: pd.DataFrame, s_forza: pd.DataFrame, anag: pd.DataFrame) ->
 def esempi(s: pd.DataFrame, anag: pd.DataFrame, fino_al: int, padri: pd.Series | None = None):
     """Righe di allenamento/prova: dalla situazione a fine anno A (eta' a),
     la forza a fine anno A+h. Anche la situazione 'prima di correre' (a=1)."""
+    madri = media_madri(s, fino_al) if PEDIGREE_CURVA else None
     s = s[s["anno"] <= fino_al]
     per_cav = {c: g.set_index("eta") for c, g in s.groupby("cavallo")}
     righe = []
@@ -274,12 +275,14 @@ def esempi(s: pd.DataFrame, anag: pd.DataFrame, fino_al: int, padri: pd.Series |
         nato = int(g["nato"].iloc[0])
         sesso = g["sesso"].iloc[0]
         padre = g["padre"].iloc[0]
+        madre = g["madre"].iloc[0] if "madre" in g else None
+        pm = g["padre_madre"].iloc[0] if "padre_madre" in g else None
         for a in range(1, ETA_MAX):
             anno = nato + a
             if anno > fino_al:
                 break
             passato = g[g.index <= a]
-            f = situazione(a, passato, sesso, padre, padri)
+            f = situazione(a, passato, sesso, padre, padri, madre, pm, madri)
             for h in range(1, ETA_MAX - a + 1):
                 if nato + a + h > fino_al:
                     break
@@ -289,10 +292,16 @@ def esempi(s: pd.DataFrame, anag: pd.DataFrame, fino_al: int, padri: pd.Series |
     return pd.DataFrame(righe)
 
 
-def situazione(a, passato: pd.DataFrame, sesso, padre, padri) -> dict:
+def situazione(a, passato: pd.DataFrame, sesso, padre, padri, madre=None, pm=None, madri=None) -> dict:
     ult = passato.loc[a] if a in passato.index else None
     prec = passato.loc[a - 1] if (a - 1) in passato.index else None
-    return {
+    extra = {}
+    if PEDIGREE_CURVA:
+        # 27/11/2026: il pedigree intero, non solo il padre: come rendono i
+        # figli della madre e quelli del padre della madre (nonno materno).
+        extra = {"madre_m": float(madri.get(madre, np.nan)) if madri is not None and madre else np.nan,
+                 "pm_m": float(padri.get(pm, np.nan)) if padri is not None and pm else np.nan}
+    return {**extra,
         "eta": a,
         "femmina": 1.0 if str(sesso or "").upper().startswith("F") else 0.0,
         "v_ora": float(ult["v"]) if ult is not None else np.nan,
@@ -309,6 +318,22 @@ def situazione(a, passato: pd.DataFrame, sesso, padre, padri) -> dict:
 
 VARIABILI = ["eta", "h", "femmina", "v_ora", "v_prima", "v_migliore", "stagioni", "corse_anno",
              "corse_tot", "padre_m", "f_ora", "f_migliore"]
+# 27/11/2026: anche madre e nonno materno nella previsione della curva
+# (spento con FORZA_PEDIGREE=0, per confrontare).
+PEDIGREE_CURVA = os.environ.get("FORZA_PEDIGREE", "1") != "0"
+if PEDIGREE_CURVA:
+    VARIABILI = VARIABILI + ["madre_m", "pm_m"]
+
+
+def media_madri(s: pd.DataFrame, fino_al: int) -> pd.Series:
+    """Per ogni madre: miglior stagione media dei figli, con un richiamo forte
+    alla media (una fattrice ha pochi figli)."""
+    if "madre" not in s:
+        return pd.Series(dtype=float)
+    best = s[(s["anno"] <= fino_al) & s["madre"].notna()].groupby(["madre", "cavallo"])["v"].max().reset_index()
+    g = best.groupby("madre")["v"].agg(["sum", "count"])
+    m = best["v"].mean()
+    return (g["sum"] + 3 * m) / (g["count"] + 3)
 
 
 def media_padri(s: pd.DataFrame, fino_al: int) -> pd.Series:
@@ -415,6 +440,15 @@ def verifica_curva(s: pd.DataFrame, anag, fino_al=2021, prova=(2022, 2025)) -> d
            "errore_crescita_tipica": round(float(np.mean(np.abs(base - y))), 2),
            "copertura_80": round(float(np.mean((y >= lo) & (y <= hi))), 3),
            "per_anni_avanti": {}}
+    # 27/11/2026: anche per eta' del momento della previsione (i giovani con
+    # poche corse sono quelli per cui conta di piu' il pedigree).
+    out["per_eta_base"] = {}
+    for e in sorted(te["eta"].unique()):
+        k = te["eta"].to_numpy() == e
+        if k.sum() >= 200:
+            out["per_eta_base"][int(e)] = {"n": int(k.sum()), "errore_modello": round(float(np.mean(np.abs(p50[k] - y[k]))), 2),
+                                           "errore_crescita_tipica": round(float(np.mean(np.abs(base[k] - y[k]))), 2),
+                                           "copertura_80": round(float(np.mean((y[k] >= lo[k]) & (y[k] <= hi[k]))), 3)}
     for h in sorted(te["h"].unique()):
         k = te["h"].to_numpy() == h
         out["per_anni_avanti"][int(h)] = {
@@ -486,8 +520,10 @@ def calcola(conn, con_verifica: bool = False) -> dict:
     # curva lo prevedeva come un cavallo mai corso, dal solo padre (E). Le
     # corse all'estero restano fuori solo dalla FORZA (velocita' confrontata
     # pista per pista), non dal voto, che le ha sempre contate.
-    anag = pd.read_sql_query("""SELECT name AS cavallo, birth_year AS nato, sex AS sesso, UPPER(TRIM(sire)) AS padre
-                                FROM horses WHERE birth_year IS NOT NULL""", conn).drop_duplicates("cavallo").set_index("cavallo")
+    anag = pd.read_sql_query("""SELECT h.name AS cavallo, h.birth_year AS nato, h.sex AS sesso, UPPER(TRIM(h.sire)) AS padre,
+                                       UPPER(TRIM(h.dam)) AS madre,
+                                       (SELECT UPPER(TRIM(m.sire)) FROM horses m WHERE m.name = h.dam LIMIT 1) AS padre_madre
+                                FROM horses h WHERE h.birth_year IS NOT NULL""", conn).drop_duplicates("cavallo").set_index("cavallo")
     s_forza = tabella_stagioni(r, s0, punti)
     vt, extra = voti_per_anno(conn, anno_ora)
     # L'anno in corso: il voto della testata, cosi' la curva arriva li'.
@@ -498,6 +534,7 @@ def calcola(conn, con_verifica: bool = False) -> dict:
     s = tabella_voti(vt, s_forza, anag)
     completo = anno_ora - 1
     padri = media_padri(s, completo)
+    madri_ora = media_madri(s, completo) if PEDIGREE_CURVA else None
     tr = esempi(s, anag, completo, padri)
     log(f"[FORZA] {len(t)} corse con il tempo, {len(s)} stagioni con il voto, {len(tr)} esempi per la curva")
     mod = allena(tr)
@@ -553,7 +590,9 @@ def calcola(conn, con_verifica: bool = False) -> dict:
                 if v is not None:
                     curve.append((cav, e, round(v, 1), round(v, 1), round(v, 1)))
         elif a < ETA_MAX:
-            sit = situazione(a, passato, sesso, padre, padri)
+            mm = anag["madre"].get(cav) if "madre" in anag else None
+            pmm = anag["padre_madre"].get(cav) if "padre_madre" in anag else None
+            sit = situazione(a, passato, sesso, padre, padri, mm, pmm, madri_ora)
             for hh in range(1, ETA_MAX - a + 1):
                 righe_prev.append({**sit, "h": hh, "cavallo": cav, "eta_obiettivo": a + hh})
         fc.append((cav, nato, f, u, ferma, passato))
