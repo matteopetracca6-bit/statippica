@@ -12,6 +12,7 @@
 import GradeBadge from "./GradeBadge";
 import { Spiegazione } from "./Spiegazione";
 import type { Forza } from "./FormaPotenziale";
+import { lettera as letteraPotenziale } from "./PotenzialeCavallo";
 
 // Gli stessi colori dei distintivi (index.css, .grade-*): sfondo, testo, bordo.
 const DISTINTIVO: Record<string, [string, string, string]> = {
@@ -46,7 +47,8 @@ function Grafico({ f, colore, lettera }: { f: Forza; colore: string; lettera: (v
   const vere = f.stagioni;
   const future = f.curva;
   const eta = [...vere.map(s => s.eta), ...future.map(c => c.eta)];
-  const e0 = Math.min(2, ...eta), e1 = Math.max(7, ...eta);
+  const nasc = f.nascita ?? null;
+  const e0 = Math.min(nasc ? 1 : 2, ...eta), e1 = Math.max(7, ...eta);
   const n = e1 - e0 + 1;
   const W = 520, H = 150, L = 40, R = 14, T = 8, B = 22;
   const X = (e: number) => L + ((e - e0) / Math.max(1, e1 - e0)) * (W - L - R);
@@ -89,9 +91,24 @@ function Grafico({ f, colore, lettera }: { f: Forza; colore: string; lettera: (v
       {Array.from({ length: n }, (_, i) => e0 + i).map((e, i) => (
         <g key={e}>
           <line x1={X(e)} x2={X(e)} y1={T} y2={H - B} stroke="hsl(220 10% 30% / .25)" />
-          {i % passo === 0 && <text x={X(e)} y={H - B + 14} textAnchor="middle" fontSize="10" fill="hsl(210 8% 55%)">{e}</text>}
+          {(i % passo === 0 || (nasc && e === 1)) && <text x={X(e)} y={H - B + 14} textAnchor="middle" fontSize="10" fill="hsl(210 8% 55%)">{nasc && e === 1 ? "pedigree" : e}</text>}
         </g>
       ))}
+      {nasc && (() => {
+        // Il pedigree e' una posizione fra i nati dell'anno: si disegna al centro
+        // della fascia della sua lettera, con la forbice fra le lettere basso e alto.
+        const centro = (g: string) => fasce.find(x => x.g === g)?.y ?? null;
+        const yc = centro(letteraPotenziale(nasc.potenziale)), yb = centro(letteraPotenziale(nasc.basso)), ya = centro(letteraPotenziale(nasc.alto));
+        if (yc == null) return null;
+        const x = X(1);
+        return (
+          <g>
+            {yb != null && ya != null && <line x1={x} x2={x} y1={ya} y2={yb} stroke="hsl(265 50% 70%)" strokeWidth="1.4" strokeDasharray="2 3" />}
+            <path d={`M ${x} ${yc - 5} L ${x + 5} ${yc} L ${x} ${yc + 5} L ${x - 5} ${yc} Z`} fill="hsl(265 60% 72%)" stroke="hsl(220 13% 10%)" strokeWidth="1" />
+            <title>{`Dal solo pedigree, prima delle corse: ${letteraPotenziale(nasc.potenziale)}, fra ${letteraPotenziale(nasc.basso)} e ${letteraPotenziale(nasc.alto)} (posizione attesa fra i nati dell'anno, non un voto delle corse)`}</title>
+          </g>
+        );
+      })()}
       <text x={W - R} y={H - 1} textAnchor="end" fontSize="9" fill="hsl(210 8% 48%)">età</text>
       {ponte.length > 1 && <polygon points={banda} fill={colore} fillOpacity={0.14} stroke="none" />}
       {ponte.length > 1 && (
@@ -135,6 +152,14 @@ export default function CurvaVoto({ f, colore }: { f: Forza; colore: string }) {
         )}
         {f.ferma && <span style={{ fontSize: 11, color: "var(--muted)" }}>· carriera ferma da oltre sei mesi</span>}
       </div>
+      {f.nascita && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6, fontSize: 11.5, color: "var(--muted)" }}>
+          <span>Dal pedigree, prima delle corse</span>
+          <GradeBadge grade={letteraPotenziale(f.nascita.potenziale)} size="sm" />
+          <span style={{ color: "hsl(210 10% 78%)" }}>fra {letteraPotenziale(f.nascita.basso)} e {letteraPotenziale(f.nascita.alto)}</span>
+          <span>· la promessa di padre e madre; i punti dopo sono il voto delle corse fatte fino a quell'anno</span>
+        </div>
+      )}
       {f.picco != null && f.picco_eta != null && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6, fontSize: 11.5, color: "var(--muted)" }}>
           <span>Picco già raggiunto</span>
@@ -155,7 +180,9 @@ export default function CurvaVoto({ f, colore }: { f: Forza; colore: string }) {
       <Spiegazione titolo="Come si legge la curva" compatta>
         Ogni punto è il voto di carriera che il cavallo avrebbe avuto se la carriera si fosse chiusa quel 31 dicembre: stessa
         formula del voto in testata, con le corse fino a quell'anno. L'ultimo punto pieno è il voto di oggi; i punti vuoti sono
-        anni senza corse. {previsto ? "Il tratteggio e la banda sono gli anni previsti, con la forbice che dovrebbe contenere il vero 8 volte su 10; il cerchio è il voto di fine carriera previsto. " : ""}
+        anni senza corse. Il rombo a sinistra è la partenza dal solo pedigree: dove ci si aspettava che arrivasse fra i nati del suo anno, prima di
+        vederlo correre. Nei primi anni il voto delle corse è quasi sempre basso, perché le corse sono poche: non vuol dire che la promessa fosse sbagliata.
+        {" "}{previsto ? "Il tratteggio e la banda sono gli anni previsti, con la forbice che dovrebbe contenere il vero 8 volte su 10; il cerchio è il voto di fine carriera previsto. " : ""}
         {f.ferma ? "Per una carriera ferma non c'è previsione: il voto cambia solo per le stagioni che avrebbe potuto correre, fino ai 7 anni. " : ""}
         {vc ? <>Verifica con la formula allenata fino al 2021 e provata sul 2022-2025: errore medio {num(vc.errore_modello)} punti
           contro {num(vc.errore_riferimento)} di chi aggiunge al voto di oggi la crescita tipica di quell'età; forbice giusta

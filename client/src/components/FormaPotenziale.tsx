@@ -18,6 +18,8 @@ import { Spiegazione } from "./Spiegazione";
 
 export interface Forza {
   forza: number | null; tendenza: number | null; corse_12_mesi: number; corse_estero_12_mesi?: number;
+  /** Il potenziale dal solo pedigree, prima delle corse (posizione 0-100 fra i nati dell'anno). */
+  nascita?: { data: string; potenziale: number; basso: number; alto: number } | null;
   ultima_corsa: string | null; ferma: boolean;
   potenziale: number | null; potenziale_basso: number | null; potenziale_alto: number | null;
   potenziale_eta: number | null; picco: number | null; picco_eta: number | null; nato: number | null;

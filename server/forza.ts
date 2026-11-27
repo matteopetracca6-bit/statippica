@@ -42,7 +42,16 @@ export function forzaCavallo(db: Database.Database, nome: string) {
   // Corse all'estero degli ultimi 12 mesi: la velocita' non si confronta li'.
   const estero = (db.prepare(`SELECT COUNT(*) AS n FROM races WHERE horse_name = ? AND track = 'ESTERO'
                               AND race_date >= date('now', '-365 days')`).get(nome) as any)?.n ?? 0;
+  // 27/11/2026: da dove partiva, secondo il solo pedigree (potenziale.py,
+  // l'ultima stima "alla nascita", prima delle qualifiche e delle corse).
+  let nascita: any = null;
+  try {
+    if (tabella(db, "potenziale_storico"))
+      nascita = db.prepare(`SELECT data, potenziale, basso, alto FROM potenziale_storico
+                            WHERE horse_name = ? AND stadio = 'nascita' ORDER BY data DESC LIMIT 1`).get(nome) ?? null;
+  } catch { /* senza registro: niente punto di partenza */ }
   return {
+    nascita,
     corse_estero_12_mesi: estero,
     forza: f.forza, tendenza: f.tendenza, corse_12_mesi: f.corse_12_mesi,
     ultima_corsa: f.ultima_corsa, ferma: !!f.ferma,
