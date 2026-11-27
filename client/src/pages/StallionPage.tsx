@@ -824,9 +824,6 @@ export default function StallionPage() {
                   );
                 })}
               </div>
-              <div style={{ fontSize: "11px", color: "hsl(210 8% 40%)", marginTop: "10px" }}>
-                Dati reali dal database StatIppica. Usati dal modello ROI per stimare il ritorno economico degli accoppiamenti.
-              </div>
             </div>
           )}
         </>

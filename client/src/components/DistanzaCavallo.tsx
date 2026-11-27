@@ -138,12 +138,12 @@ export function DistanzaFigli({ d }: { d: DatiDistanzaFigli | null | undefined }
         <span><strong style={{ color: COLORI.entrambi }}>{d.entrambi}</strong> su tutte e due</span>
         <span><strong style={{ color: COLORI.lungo }}>{d.lungo}</strong> più adatti al lungo ({pct(d.lungo)}%)</span>
       </div>
-      <div style={{ fontSize: 12, color: MUTO, marginTop: 8, lineHeight: 1.5 }}>
+      <Spiegazione titolo="Come si legge" compatta>
         Su {d.figli} figli con almeno 3 gare italiane sul corto e 3 sul lungo. Per caso se ne aspetta circa un quarto da
         ciascuna parte. In media vanno più piano sul lungo di {virgola(d.differenza_media)} secondi al km
         {d.soglie?.mediana != null ? <> (un cavallo tipico: {virgola(d.soglie.mediana)})</> : null}.
         {!d.profilo && " Sono ancora pochi per dire da che parte pende lo stallone."}
-      </div>
+      </Spiegazione>
     </div>
   );
 }
