@@ -119,14 +119,16 @@ export function incrociStallone(db: any, nomeGrezzo: string) {
   const figli = figliStallone(db, nome);
   if (!figli.length) return { gruppi: [], media: null, n_figli: 0 };
   const madreDi = db.prepare(`SELECT dam FROM horses WHERE name = ? AND (birth_year IS ? OR ? IS NULL) LIMIT 1`);
-  const padreDi = db.prepare(`SELECT sire FROM horses WHERE UPPER(TRIM(name)) = ? AND sire IS NOT NULL AND TRIM(sire) <> '' LIMIT 1`);
+  // name = ? usa l'indice; UPPER(TRIM(name)) scorreva tutta la tabella per ogni madre (VARENNE: 1.500 madri).
+  const padreDi = db.prepare(`SELECT sire FROM horses WHERE name = ? AND sire IS NOT NULL AND TRIM(sire) <> '' LIMIT 1`);
   const cachePadre = new Map<string, string | null>();
   const gruppi = new Map<string, Figlio[]>();
   let conPm = 0;
   for (const f of figli) {
-    const m = norm((madreDi.get(f.nome, f.anno, f.anno) as any)?.dam);
+    const madre = (madreDi.get(f.nome, f.anno, f.anno) as any)?.dam;
+    const m = norm(madre);
     if (!m) continue;
-    if (!cachePadre.has(m)) cachePadre.set(m, norm((padreDi.get(m) as any)?.sire) || null);
+    if (!cachePadre.has(m)) cachePadre.set(m, norm(((padreDi.get(m) ?? padreDi.get(String(madre).trim())) as any)?.sire) || null);
     const pm = cachePadre.get(m);
     if (!pm) continue;
     conPm++;
