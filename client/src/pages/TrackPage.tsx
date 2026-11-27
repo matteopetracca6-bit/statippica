@@ -127,9 +127,11 @@ export default function TrackPage() {
               );
             })}
             <div style={{ fontSize: 11.5, color: MUTED, marginTop: 6, lineHeight: 1.55 }}>
-              Misurata con gli stessi cavalli che corrono anche altrove, così una pista non sembra veloce solo perché ci corrono i migliori.
-              Le più veloci: {posto("corta")?.prima ?? posto("lunga")?.prima}; le più lente: {posto("corta")?.ultima ?? posto("lunga")?.ultima}.
+              Più veloce: {posto("corta")?.prima ?? posto("lunga")?.prima} · più lenta: {posto("corta")?.ultima ?? posto("lunga")?.ultima}
             </div>
+            <Spiegazione titolo="Come si misura" compatta>
+              Con gli stessi cavalli che corrono anche altrove, così una pista non sembra veloce solo perché ci corrono i migliori.
+            </Spiegazione>
           </div>
         )}
       </div>
@@ -205,10 +207,10 @@ export default function TrackPage() {
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: "9px", fontSize: "10.5px", color: DIM, lineHeight: 1.6 }}>
+            <Spiegazione titolo="Perché per vittorie" compatta>
               Ordinati per vittorie, che pero' dipendono anche da quanti cavalli guidano
               e da quali. Per il rendimento vero si veda la scheda di ciascuno.
-            </div>
+            </Spiegazione>
           </div>
         )}
       </div>

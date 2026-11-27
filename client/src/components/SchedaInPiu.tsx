@@ -7,6 +7,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { Spiegazione } from "./Spiegazione";
 
 const MUTED = "hsl(210 8% 55%)";
 const VERDE = "hsl(150 55% 55%)", ROSSO = "hsl(5 65% 62%)", GIALLO = "hsl(45 80% 60%)";
@@ -47,15 +48,16 @@ export default function SchedaInPiu({ tipo, nome }: { tipo: "guidatore" | "allen
             {v.scarto_100 >= 0 ? "+" : "−"}{Math.abs(v.scarto_100).toFixed(1).replace(".", ",")} <span style={{ fontSize: 13, fontWeight: 600, color: MUTED }}>piazzati ogni 100 partenze</span>
           </div>
           <div style={{ fontSize: 12.5, color: "hsl(210 10% 78%)", marginTop: 6, lineHeight: 1.55 }}>
+            {v.z >= 2 ? "Chiaramente sopra" : v.z <= -2 ? "Chiaramente sotto" : Math.abs(v.z) >= 1 ? "Scarto vicino al caso" : "In linea con il previsto"}
+            {" "}· {v.posizione}° su {pv.in_classifica} in <Link href={`/rende?vista=previsto`} style={{ color: "hsl(160 60% 55%)" }}>Sopra il previsto</Link>
+          </div>
+          <Spiegazione titolo="Come si legge" compatta>
             Dal {new Date(pv.periodo.da).toLocaleDateString("it-IT")}, {chi}, i cavalli sono arrivati nei primi tre {v.veri.toLocaleString("it-IT")} volte
             su {v.partenze.toLocaleString("it-IT")} partenze; il modello XGBoost, guardando solo i cavalli e la corsa, se ne aspettava {Math.round(v.attesi).toLocaleString("it-IT")}.
-            {" "}{v.z >= 2 ? "È chiaramente sopra: difficile che sia fortuna." : v.z <= -2 ? "È chiaramente sotto." : Math.abs(v.z) >= 1 ? "Lo scarto c'è ma è ancora vicino a quello che darebbe il caso." : "In linea con il previsto."}
-            {" "}{v.posizione}° su {pv.in_classifica} in <Link href={`/rende?vista=previsto`} style={{ color: "hsl(160 60% 55%)" }}>Sopra il previsto</Link>.
-          </div>
+          </Spiegazione>
         </> : (
           <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.55 }}>
-            Non è nella classifica <Link href={`/rende?vista=previsto`} style={{ color: "hsl(160 60% 55%)" }}>Sopra il previsto</Link>:
-            servono almeno {pv?.minimo ?? 150} partenze dal 2025 per un confronto che non sia fortuna.
+            Servono almeno {pv?.minimo ?? 150} partenze dal 2025 per entrare in <Link href={`/rende?vista=previsto`} style={{ color: "hsl(160 60% 55%)" }}>Sopra il previsto</Link>.
           </div>
         )}
       </div>

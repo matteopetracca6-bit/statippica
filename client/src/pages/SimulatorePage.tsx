@@ -748,11 +748,11 @@ function Precisione() {
       {riga("Errore sul vincitore (più basso è meglio)", <>da solo {v(x.erroreVince.solo)} · <b>tarato {v(x.erroreVince.tarato)}</b> · totalizzatore {v(x.erroreVince.totalizzatore)}</>)}
       {riga("Squalificati per galoppo", <>simulati {p.squalificheSim}% · veri {p.squalificheVere}% (prova del {p.al} su {p.corse} corse)</>)}
       {riga("Tempo al km del vincitore", <>{p.scartoKm >= 0 ? "+" : ""}{p.scartoKm.toFixed(1).replace(".", ",")} secondi dal vero, in media</>)}
-      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 8 }}>
+      <Spiegazione titolo="Cosa se ne ricava" compatta>
         Tarato sul pronostico, il simulatore indovina il vincitore molto più spesso (36 corse su 100 invece di 25) e sui primi tre è preciso quanto il
         pronostico. Il pubblico, con le quote finali, resta un po' più bravo sul vincitore: sa cose che la sera prima non si conoscono.
         È uno strumento per capire la corsa, non un consiglio di gioco.
-      </div>
+      </Spiegazione>
     </div>
   );
 }
