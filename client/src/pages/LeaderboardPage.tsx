@@ -91,7 +91,7 @@ const stileSelect: React.CSSProperties = {
   color: "var(--ed-testo)", fontSize: 12.5, outline: "none", cursor: "pointer", fontFamily: "inherit", minWidth: 0, width: "100%",
 };
 
-function Percentile({ titolo, valore, nota }: { titolo: string; valore: number | null; nota: string }) {
+function Percentile({ titolo, valore }: { titolo: string; valore: number | null }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
@@ -99,7 +99,6 @@ function Percentile({ titolo, valore, nota }: { titolo: string; valore: number |
         <span className="tabular" style={{ color: isNum(valore) ? COLORE : "var(--ed-fioco)", fontWeight: 700 }}>{isNum(valore) ? `${num(valore, 0)}%` : "—"}</span>
       </div>
       <Barretta valore={valore} max={100} />
-      <div style={{ fontSize: 10.5, color: "var(--ed-fioco)", marginTop: 3 }}>{nota}</div>
     </div>
   );
 }
@@ -124,7 +123,7 @@ function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: st
             </div>
           )}
           {voto === "annata" && r.grade_annata && r.grade_annata !== r.grade && (
-            <div style={{ fontSize: 11.5, color: "var(--ed-muto)", marginTop: 4 }}>Contro tutti i cavalli il voto è {r.grade}: è lo stesso punteggio, letto in un altro confronto.</div>
+            <div style={{ fontSize: 11.5, color: "var(--ed-muto)", marginTop: 4 }}>Contro tutti: {r.grade}</div>
           )}
         </div>
         {onClose && <button className="ed-chiudi" onClick={onClose} aria-label="Chiudi"><X size={15} /></button>}
@@ -132,13 +131,12 @@ function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: st
 
       {mode === "storico" && r.carriera_parziale ? (
         <div style={{ marginTop: 10, fontSize: 12, color: "var(--ed-muto)", background: "hsl(220 30% 18% / .5)", border: "1px solid hsl(220 25% 30%)", borderRadius: 8, padding: "7px 10px" }}>
-          Carriera parziale: l&apos;archivio ha solo le {num(corse)} gare corse {periodoParziale(r)}, non i totali ufficiali.
-          Il voto è calcolato su queste gare, sulla stessa scala degli altri storici, e probabilmente sottostima il cavallo.
+          Carriera parziale: {num(corse)} gare {periodoParziale(r)}, voto probabilmente basso.
         </div>
       ) : null}
       {corse > 0 && corse < MIN_RACES_SOLID && mode !== "pedigree" && (
         <div style={{ marginTop: 10, fontSize: 12, color: "hsl(38 85% 62%)", background: "hsl(38 60% 18% / .5)", border: "1px solid hsl(38 50% 28%)", borderRadius: 8, padding: "7px 10px" }}>
-          Voto calcolato su {corse} {corse === 1 ? "corsa" : "corse"}: poco affidabile.
+          Solo {corse} {corse === 1 ? "corsa" : "corse"}: voto poco affidabile.
         </div>
       )}
 
@@ -156,21 +154,25 @@ function SchedaCavallo({ r, mode, voto, onClose }: { r: LeaderboardRow; mode: st
         <>
           <div className="ed-etich" style={{ margin: "16px 0 8px" }}>Da dove vengono i punti</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <Percentile titolo="Guadagni" valore={r.earn_percentile} nota="quota di cavalli che hanno guadagnato meno" />
-            <Percentile titolo="Velocità" valore={r.time_percentile} nota="quota di cavalli con un record più lento" />
-            {mode === "performance" && <Percentile titolo="Padre" valore={r.sire_percentile} nota="quanto vale il padre fra gli stalloni" />}
+            <Percentile titolo="Guadagni" valore={r.earn_percentile} />
+            <Percentile titolo="Velocità" valore={r.time_percentile} />
+            {mode === "performance" && <Percentile titolo="Padre" valore={r.sire_percentile} />}
           </div>
+          <Spiegazione titolo="Come si leggono le percentuali" compatta>
+            Guadagni: quota di cavalli che hanno guadagnato meno. Velocità: quota di cavalli con un record più lento.
+            {mode === "performance" && " Padre: quanto vale il padre fra gli stalloni."}
+          </Spiegazione>
         </>
       )}
       {mode === "pedigree" && (
-        <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--ed-muto)", lineHeight: 1.55 }}>
+        <Spiegazione titolo="Da dove viene questo voto" compatta>
           Questo cavallo non ha ancora una carriera: il voto è una stima che viene da quanto valgono il padre e la madre, non da come corre. È lo stesso voto atteso dell'Advisor, ancora sperimentale: dice poco sul singolo cavallo, per questo quasi tutti stanno fra A e B e le lettere più alte sono rare.
-        </div>
+        </Spiegazione>
       )}
 
       {r.fuori_archivio ? (
         <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--ed-muto)", lineHeight: 1.55 }} data-testid="puledro-asta">
-          Puledro della generazione M, nato nel {r.birth_year}: lo conosciamo dalle aste yearling, con padre e madre, ma non è ancora nell'archivio delle corse, quindi non ha una scheda.{" "}
+          Puledro visto alle aste yearling, non ancora nell'archivio delle corse: niente scheda.{" "}
           <Link href="/generazione-m" className="collegamento-scheda">Vedi Generazione M</Link>
         </div>
       ) : (
@@ -278,54 +280,7 @@ export default function LeaderboardPage() {
     <div className="page-shell ed" style={{ ["--ed-acc" as any]: COLORE }}>
       <style>{CSS_DUE_COLONNE}</style>
       <IntestazionePagina icona={Trophy} colore={COLORE} titolo="Cavalli e classifica" margineSotto={16}
-        sottotitolo="Tutti i cavalli valutati, con voti e filtri.">
-        Tre classifiche separate: i cavalli in gara, votati sulle corse; quelli senza carriera, votati sul pedigree; e gli storici,
-        di cui conosciamo solo i totali e che hanno una scala a parte. Tocca una riga per aprire la scheda del cavallo.
-      </IntestazionePagina>
-
-      {!ELENCHI.has(mode) && <div className="ed-cifre" style={{ marginBottom: 16 }}>
-        <Cifra titolo="In questo elenco" valore={data ? num(data.total) : "—"} sotto={nFiltri || grade || cerca ? "con i filtri scelti" : "tutti"} />
-        <Cifra titolo="Classifica" valore={modo.l} colore={COLORE} sotto={modo.sotto} />
-        {mode === "performance" && (
-          <Cifra titolo="Voto letto" valore={voto === "annata" ? "Fra coetanei" : "Contro tutti"} colore="hsl(51 80% 68%)"
-            sotto={voto === "annata" ? "solo con i nati nello stesso anno" : "con tutte le generazioni insieme"} />
-        )}
-      </div>}
-
-      {/* Tre classifiche, tre popolazioni. Senza dirlo, un utente crede che
-          il 93 di Varenne e il 90 di Cobra Killer Gar siano la stessa cosa. */}
-      {mode === "storico" && (
-        <div style={{ marginBottom: 12 }}>
-          <Spiegazione titolo="Perché questi cavalli hanno una scala a parte" compatta>
-            Di questi cavalli l&apos;archivio conosce i totali di carriera ma non le singole
-            gare, perche&apos; per gli anni in cui hanno corso non esistono online. Sono
-            confrontati solo fra loro, su guadagni, record e percentuale di vittorie: i loro
-            voti non si possono paragonare a quelli dei cavalli in gara oggi, che correvano
-            in un&apos;altra epoca e con altri montepremi. I cavalli segnati come
-            &laquo;carriera parziale&raquo; non hanno i totali ufficiali: il voto è calcolato
-            sulle sole gare presenti nell&apos;archivio (di solito dal 2016), sulla stessa
-            scala, quindi è probabilmente più basso di quello che meriterebbero.
-            {" "}&laquo;Tutta la carriera&raquo; conta anche le corse all&apos;estero, quando le conosciamo
-            (Wikipedia e la scheda ufficiale francese LeTrot, guadagni in euro al cambio medio di
-            quegli anni): Varenne 73 corse e 6 milioni invece delle 46 corse e 2,3 milioni corsi
-            in Italia. &laquo;Solo in Italia&raquo; mostra i totali del registro italiano. Il voto
-            usa sempre tutta la carriera.
-          </Spiegazione>
-        </div>
-      )}
-      {/* Il voto d'annata non e' un voto nuovo: e' lo stesso punteggio letto
-          contro i coetanei. */}
-      {mode === "performance" && voto === "annata" && (
-        <div style={{ marginBottom: 12 }}>
-          <Spiegazione titolo="Come si legge" compatta>
-            Ogni cavallo e&apos; confrontato solo con i nati nel suo stesso anno, che hanno
-            avuto lo stesso tempo per correre. Il punteggio non cambia, cambia con chi viene
-            paragonato: nel confronto generale i giovani sono penalizzati perche&apos; hanno
-            meno stagioni alle spalle. Fra i nati nel 2023, il 63% sale di lettera guardandoli
-            fra coetanei.
-          </Spiegazione>
-        </div>
-      )}
+        sottotitolo="Tutti i cavalli valutati, con voti e filtri." />
 
       <div className="ed-barra">
         <div className="ed-segm" role="group" aria-label="Classifica" style={SCORRE}>
@@ -350,6 +305,57 @@ export default function LeaderboardPage() {
           </div>
         )}
       </div>
+
+      {/* Le spiegazioni stanno tutte qui, chiuse (27/11/2026): prima erano
+          tre riquadri di numeri con le didascalie e due tendine sopra l'elenco. */}
+      <Spiegazione titolo={`Come si legge: ${modo.l}`} compatta>
+        <p style={{ margin: 0 }}>{modo.l}: {modo.sotto}.</p>
+        {mode === "performance" && (voto === "annata" ? (
+          <p style={{ margin: "6px 0 0" }}>
+            Ogni cavallo è confrontato solo con i nati nel suo stesso anno, che hanno avuto lo stesso tempo per correre. Il punteggio
+            non cambia, cambia con chi viene paragonato: nel confronto generale i giovani sono penalizzati perché hanno meno stagioni
+            alle spalle. Fra i nati nel 2023, il 63% sale di lettera guardandoli fra coetanei.
+          </p>
+        ) : (
+          <p style={{ margin: "6px 0 0" }}>
+            «Contro tutti» confronta ogni cavallo con tutte le generazioni insieme; «Nella sua annata» solo con i nati nello stesso anno.
+          </p>
+        ))}
+        {mode === "storico" && (<>
+          <p style={{ margin: "6px 0 0" }}>
+            Di questi cavalli l&apos;archivio conosce i totali di carriera ma non le singole gare, perché per gli anni in cui hanno corso
+            non esistono online. Sono confrontati solo fra loro, su guadagni, record e percentuale di vittorie: i loro voti non si possono
+            paragonare a quelli dei cavalli in gara oggi, che correvano in un&apos;altra epoca e con altri montepremi.
+          </p>
+          <p style={{ margin: "6px 0 0" }}>
+            «Parziale» vuol dire che mancano i totali ufficiali: il voto è calcolato sulle sole gare presenti nell&apos;archivio (di solito
+            dal 2016), sulla stessa scala, quindi è probabilmente più basso di quello che meriterebbero.
+          </p>
+          <p style={{ margin: "6px 0 0" }}>
+            «Tutta la carriera» conta anche le corse all&apos;estero, quando le conosciamo (Wikipedia e la scheda ufficiale francese LeTrot,
+            guadagni in euro al cambio medio di quegli anni): Varenne 73 corse e 6 milioni invece delle 46 corse e 2,3 milioni corsi in
+            Italia. «Solo in Italia» mostra i totali del registro italiano. Il voto usa sempre tutta la carriera.
+          </p>
+        </>)}
+        {mode === "pedigree" && (
+          <p style={{ margin: "6px 0 0" }}>
+            Cavalli senza carriera: il voto è una stima che viene da quanto valgono il padre e la madre, non da come corrono. È lo stesso
+            voto atteso dell&apos;Advisor, ancora sperimentale: dice poco sul singolo cavallo, per questo quasi tutti stanno fra A e B.
+          </p>
+        )}
+        {mode === "tutti" && (
+          <p style={{ margin: "6px 0 0" }}>
+            I voti delle classifiche non si confrontano fra loro (corse, storici e pedigree hanno scale diverse): qui ogni cavallo ha
+            l&apos;etichetta del suo tipo e l&apos;elenco si ordina per nome, vincite o anno.
+          </p>
+        )}
+        {!ELENCHI.has(mode) && (
+          <p style={{ margin: "6px 0 0" }}>
+            Nelle righe: «estero» corre soprattutto fuori Italia (votato su tutta la carriera, ma non sposta le soglie degli altri);
+            «3 corse» o meno vuol dire voto poco affidabile. Tocca una riga per vedere il dettaglio.
+          </p>
+        )}
+      </Spiegazione>
 
       {mode === "tutti" ? <SchedaTutti /> : mode === "novita" ? <SchedaNovita /> : (<>
       <div className="ed-barra" style={{ marginTop: -4 }}>
@@ -427,6 +433,12 @@ export default function LeaderboardPage() {
         </div>
       )}
 
+      {data && (
+        <div style={{ fontSize: 12, color: "var(--ed-muto)", margin: "0 0 8px" }} className="tabular">
+          {num(data.total)} cavalli{nFiltri || grade || cerca ? " con i filtri scelti" : ""}
+        </div>
+      )}
+
       {isLoading && !data ? <CavalloCaricamento label="Carico la classifica..." /> : rows.length === 0 ? (
         <div className="ed-pannello" style={{ color: "var(--ed-muto)", fontSize: 13 }}>Nessun cavallo corrisponde ai filtri scelti.</div>
       ) : (
@@ -469,7 +481,7 @@ export default function LeaderboardPage() {
                         </span>
                         <span style={{ display: "block", margin: "6px 0 4px" }}><Barretta valore={r.score} max={100} /></span>
                         <span className="ed-sotto" style={{ display: "block" }}>
-                          {r.birth_year}{r.sire ? ` · da ${r.sire}` : ""}{corse ? ` · ${corse} corse, ${r.career_wins ?? 0} vinte` : ""}{corse && r.primi_tre != null ? `, ${r.primi_tre} nei primi 3` : ""}{corse && r.primi_cinque != null ? `, ${r.primi_cinque} nei primi 5` : ""}{r.career_earnings ? ` · ${euro(r.career_earnings)}` : ""}
+                          {r.birth_year}{r.sire ? ` · da ${r.sire}` : ""}{corse ? ` · ${corse} corse, ${r.career_wins ?? 0} vinte` : ""}{corse && sort === "top3" && r.primi_tre != null ? `, ${r.primi_tre} nei primi 3` : ""}{corse && sort === "top5" && r.primi_cinque != null ? `, ${r.primi_cinque} nei primi 5` : ""}{r.career_earnings ? ` · ${euro(r.career_earnings)}` : ""}
                         </span>
                       </span>
                       <span style={{ textAlign: "right" }}>

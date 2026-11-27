@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import BandieraCavallo from "@/components/BandieraCavallo";
 import GradeBadge from "./GradeBadge";
 import CavalloCaricamento from "./CavalloCaricamento";
-import { Cifra, num, euro } from "./DueColonne";
+import { num, euro } from "./DueColonne";
 
 const TIPI: Record<string, { testo: string; colore: string }> = {
   performance: { testo: "in gara", colore: "hsl(51 80% 62%)" },
@@ -78,19 +78,6 @@ export function SchedaTutti() {
   const pagine = data ? Math.max(1, Math.ceil(data.totale / data.per_pagina)) : 1;
   return (
     <>
-      <div className="ed-cifre" style={{ marginBottom: 14 }}>
-        <Cifra titolo="Cavalli nell'archivio" valore={data ? num(data.totale) : "—"} sotto={cerca || tipo || anno || sesso ? "con i filtri scelti" : "tutti, con e senza voto"} />
-        {data?.per_tipo && <>
-          <Cifra titolo="In gara" valore={num(data.per_tipo.performance ?? 0)} sotto="voto dalle corse" />
-          <Cifra titolo="Storici" valore={num(data.per_tipo.storico ?? 0)} sotto="scala a parte" />
-          <Cifra titolo="Pedigree" valore={num(data.per_tipo.pedigree ?? 0)} sotto="voto da padre e madre" />
-          <Cifra titolo="Senza voto" valore={num((data.per_tipo.senza_voto ?? 0) + (data.per_tipo.solo_pedigree ?? 0))} sotto={`di cui ${num(data.per_tipo.solo_pedigree ?? 0)} solo nei pedigree`} />
-        </>}
-      </div>
-      <div style={{ fontSize: 12, color: "var(--ed-muto)", marginBottom: 10 }}>
-        I voti delle classifiche non si confrontano fra loro (corse, storici e pedigree hanno scale diverse): qui ogni cavallo ha l'etichetta del suo tipo
-        e l'elenco si ordina per nome, vincite o anno.
-      </div>
       <div className="ed-barra">
         <label className="ed-cerca">
           <Search size={15} style={{ color: "var(--ed-muto)" }} />
@@ -104,7 +91,8 @@ export function SchedaTutti() {
       <div className="ed-barra" style={{ marginTop: -4 }}>
         <div className="ed-segm" role="group" aria-label="Tipo" style={{ flexWrap: "wrap" }}>
           {[["", "Tutti i tipi"], ["performance", "In gara"], ["storico", "Storici"], ["pedigree", "Pedigree"], ["senza_voto", "Senza voto"], ["solo_pedigree", "Solo pedigree"]]
-            .map(([k, t]) => <button key={k} aria-pressed={tipo === k} onClick={() => setTipo(k)}>{t}</button>)}
+            .map(([k, t]) => { const n = k ? data?.per_tipo?.[k] : undefined;
+              return <button key={k} aria-pressed={tipo === k} onClick={() => setTipo(k)}>{t}{n != null ? ` ${num(n)}` : ""}</button>; })}
         </div>
         <input value={anno} onChange={e => setAnno(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Anno" aria-label="Anno di nascita"
           style={{ width: 80, background: "hsl(220 14% 12%)", color: "inherit", border: "1px solid hsl(0 0% 100% / .14)", borderRadius: 8, padding: "6px 9px", fontSize: 13 }} />
@@ -112,6 +100,11 @@ export function SchedaTutti() {
           {[["", "M/F"], ["M", "Maschi"], ["F", "Femmine"]].map(([k, t]) => <button key={k} aria-pressed={sesso === k} onClick={() => setSesso(k)}>{t}</button>)}
         </div>
       </div>
+      {data && (
+        <div style={{ fontSize: 12, color: "var(--ed-muto)", margin: "0 0 8px" }} className="tabular">
+          {num(data.totale)} cavalli{cerca || tipo || anno || sesso ? " con i filtri scelti" : " nell'archivio, con e senza voto"}
+        </div>
+      )}
       {isLoading && !data ? <CavalloCaricamento label="Carico i cavalli" /> : (
         <div className="pannello" style={{ padding: 0, overflow: "hidden" }}>
           {data?.righe.length ? data.righe.map(r => <RigaCavallo key={`${r.nome}|${r.anno}`} r={r} />)
@@ -159,12 +152,8 @@ export function SchedaNovita() {
         </div>
       ) : (
         <>
-          <div className="ed-cifre" style={{ marginBottom: 12 }}>
-            <Cifra titolo="Novità" valore={num(data.totale)} sotto={periodo === "ultima" ? "nell'ultima notte" : `negli ultimi ${periodo} giorni`} />
-            {gruppi.slice(0, 4).map(([k, n]) => {
-              const [tipo, fonte] = k.split("|");
-              return <Cifra key={k} titolo={tipo === "nuovo" ? "Entrati" : "Carriera aggiunta"} valore={num(n)} sotto={`da ${FONTI[fonte] ?? fonte}`} />;
-            })}
+          <div style={{ fontSize: 12, color: "var(--ed-muto)", margin: "0 0 8px" }} className="tabular">
+            {num(data.totale)} novità {periodo === "ultima" ? "nell'ultima notte" : `negli ultimi ${periodo} giorni`}
           </div>
           {gruppi.length > 1 && (
             <div className="ed-segm" role="group" aria-label="Fonte" style={{ flexWrap: "wrap", marginBottom: 10 }}>
