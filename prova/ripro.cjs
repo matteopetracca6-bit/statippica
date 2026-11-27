@@ -1,16 +1,24 @@
 const { chromium } = require('playwright');
 (async () => {
   const br = await chromium.launch();
-  for (const u of ['stallion/VARENNE', 'stallion/MAHARAJAH', 'stallion/SPEEDY%20SOMOLLI', 'stallion/LOVE%20YOU']) {
+  for (const u of ['stallion/VARENNE', 'stallion/MAHARAJAH', 'stallion/LOVE%20YOU']) {
     const pg = await br.newPage({ viewport: { width: 390, height: 900 } }); const err = []; pg.on('pageerror', e => err.push(e.message.slice(0, 120)));
-    await pg.goto('https://statippica.onrender.com/#/' + u, { waitUntil: 'networkidle', timeout: 90000 }); await pg.waitForTimeout(9000);
-    const b = await pg.$('#sez-stallone-incroci button.sez-testa'); if (b && (await b.getAttribute('aria-expanded')) === 'false') { await b.click(); const t0 = Date.now(); await pg.waitForSelector('[data-testid="incroci-stallone"]', { timeout: 60000 }).catch(() => {}); console.log('RIP tempo', u, Date.now() - t0); }
+    await pg.goto('https://statippica.onrender.com/#/' + u, { waitUntil: 'networkidle', timeout: 90000 }); await pg.waitForTimeout(8000);
+    for (const b of await pg.$$('button.sez-testa[aria-expanded="false"]')) { await b.click(); await pg.waitForTimeout(400); }
+    const t0 = Date.now();
+    await pg.waitForSelector('[data-testid="incroci-stallone"]', { timeout: 60000 }).catch(() => {});
+    const tempo = Date.now() - t0; await pg.waitForTimeout(4000);
     const r = await pg.evaluate(() => {
-      const a = document.querySelector('[data-testid^="voto-anni"]'); const i = document.querySelector('[data-testid="incroci-stallone"]');
-      return { anni: a ? a.innerText.replace(/\s+/g, ' ').slice(0, 140) : null, punti: a ? a.querySelectorAll('circle').length : 0,
-        incroci: i ? [...i.querySelectorAll('tbody tr')].slice(0, 3).map(t => t.innerText.replace(/\s+/g, ' ')).join(' || ') : null, larg: document.documentElement.scrollWidth };
+      const root = document.querySelector('.scheda-stallone');
+      const pan = [...document.querySelectorAll('.sez-corpo .pannello')];
+      const conBordo = pan.filter(p => { const s = getComputedStyle(p); return s.borderTopWidth !== '0px' && s.borderTopStyle !== 'none' || s.boxShadow !== 'none'; }).length;
+      const sez = [...document.querySelectorAll('.sez-scheda')].map(s => getComputedStyle(s).getPropertyValue('--c').trim());
+      const fuori = [...document.querySelectorAll('.scheda-stallone > .pannello, [data-testid="voto-stallone"], [data-testid="linea-paterna-stallone"]')].map(p => getComputedStyle(p).boxShadow.slice(0, 40));
+      const inc = document.querySelector('[data-testid="incroci-stallone"]');
+      return { verde: root ? getComputedStyle(root).getPropertyValue('--colore-pannello') : null, pannelliNelleSezioni: pan.length, conBordo, sez, fuori,
+        incroci: inc ? [...inc.querySelectorAll('tbody tr')].slice(0, 2).map(t => t.innerText.replace(/\s+/g, ' ')).join(' || ') : null, larg: document.documentElement.scrollWidth };
     });
-    console.log('RIP', u, JSON.stringify(r), JSON.stringify(err)); await pg.close();
+    console.log('RIP', u, 'incroci in', tempo, 'ms', JSON.stringify(r), JSON.stringify(err)); await pg.close();
   }
   await br.close();
 })();
