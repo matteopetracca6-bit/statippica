@@ -104,7 +104,7 @@ function Scheda({ s, asse, scelto, legato, onScegli }: { s: Stallone; asse: [num
         {s.morto ? <span style={{ color: s.seme_congelato ? "hsl(195 80% 70%)" : undefined }}>deceduto{s.morto.data ? ` il ${dataIt(s.morto.data)}` : ""}</span>
           : s.fuori_catalogo_recente ? <span>non nel catalogo italiano, figli nati fino al {s.ultimo_figlio}</span>
           : s.posto_generazione ? <span>{s.posto_generazione}° su {s.su_generazione} nella sua generazione</span>
-          : s.voto && !s.voto_confrontabile ? <span>voto non confrontabile: pochi figli negli anni dell'archivio</span>
+          : s.voto && !s.voto_confrontabile ? <span>voto poco affidabile: meno di 30 figli valutati</span>
           : null}
         {s.posto_generazione && (s.morto || s.fuori_catalogo_recente) ? <span> · {s.posto_generazione}° su {s.su_generazione}</span> : null}
       </div>
@@ -194,11 +194,10 @@ export default function AlberoStalloniPage() {
         all'ultimo anno. Fra un padre e un suo figlio stallone passano di solito {data?.distanza_generazione ?? 8} anni: è la distanza
         usata per separare le generazioni.
         <br /><br />
-        Il voto di uno stallone conta solo i figli che hanno corso negli anni dell'archivio, cioè quelli nati dal {data?.anno_inizio_voto ?? 2012} in poi.
-        Per gli stalloni vecchi, come COKTAIL JET, quei figli sono pochi e il voto è basso. Non vuol dire che lo stallone fosse scarso.
-        Per questo il voto è sbiadito quando non è confrontabile, e ogni stallone si confronta solo con quelli della sua generazione.
+        Il voto di uno stallone conta tutti i suoi figli registrati: quelli nati dal 2012 con il voto delle corse, quelli nati prima con il voto storico.
+        È sbiadito quando i figli valutati sono meno di 30: con pochi figli il voto dice poco. Ogni stallone si confronta solo con quelli della sua generazione.
         Il grafico di ogni scheda mostra i figli nati anno per anno, sullo stesso asse per tutti, dal {asse[0]} al {asse[1]}.
-        Nell'albero entrano gli stalloni con almeno {data?.min_figli ?? 10} figli in archivio.
+        Nell'albero entrano gli stalloni con almeno {data?.min_figli ?? 10} figli in archivio e tutti quelli che hanno un voto.
       </IntestazionePagina>
 
       {isLoading && <CavalloCaricamento label="Costruisco l'albero..." />}

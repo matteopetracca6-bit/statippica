@@ -211,8 +211,12 @@ export function alberoStalloni(db: Database.Database, chiaveCache: string): Albe
       voto: v?.grade ?? null, punteggio: v?.final_score ?? null, figli_valutati: v?.n_figli_totali ?? 0,
       posto_generazione: null, su_generazione: null,
       per_anno,
-      nell_albero: figli >= MIN_FIGLI_ALBERO || inMonta,
-      voto_confrontabile: (v?.n_figli_totali ?? 0) >= 30 && figli > 0 && anni.filter(y => y >= ANNO_INIZIO_VOTO).length / figli >= 0.5,
+      // 27/11/2026: il voto degli stalloni conta tutti i figli registrati
+      // (storici compresi). Nell'albero entra ogni stallone con un voto, anche
+      // con pochi figli in archivio, e il voto e' confrontabile quando i figli
+      // valutati sono almeno 30, qualunque sia l'anno in cui sono nati.
+      nell_albero: figli >= MIN_FIGLI_ALBERO || inMonta || (figli > 0 && !!v?.grade && v.grade !== "N/A"),
+      voto_confrontabile: (v?.n_figli_totali ?? 0) >= 30 && figli > 0,
     });
   }
 
