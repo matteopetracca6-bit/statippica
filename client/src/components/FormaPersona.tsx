@@ -55,7 +55,7 @@ export default function FormaPersona({ f, chi }: { f: Forma | null | undefined; 
           <div style={{ fontSize: 12, color: MUTO, marginTop: 4, lineHeight: 1.5 }}>
             {f.ultimi_30.vittorie} vittorie e {f.ultimi_30.primi_tre} volte nei primi tre su {f.ultimi_30.corse} corse, {euro(f.ultimi_30.premi)} di premi.
             {" "}Negli ultimi 12 mesi: {v1(f.ultimi_12_mesi.pct_vittorie)}% di vittorie su {f.ultimi_12_mesi.corse} corse.
-            {f.ultimi_30.corse < 15 && " Troppe poche corse per dire se è in forma."}
+            {f.ultimi_30.corse < 15 && " (poche corse)"}
           </div>
           {f.ultime.length > 0 && (
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }} title="Le ultime corse, dalla più recente">
