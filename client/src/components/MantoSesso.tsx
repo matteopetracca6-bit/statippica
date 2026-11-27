@@ -1,13 +1,14 @@
 /**
  * Manto e sesso del cavallo, con un disegno piccolo.
  *
- * I manti con un disegno sono tre: baio, baio oscuro (detto anche morello)
- * e sauro (anche sauro bruciato). Gli altri, rari nell'archivio (grigio,
- * roano), compaiono solo scritti. Il castrone usa il simbolo del maschio.
+ * I manti con un disegno sono quattro: baio, baio oscuro (detto anche
+ * morello), sauro (anche sauro bruciato) e grigio (27/11/2026). Il roano,
+ * raro nell'archivio, compare solo scritto. Il castrone usa il simbolo del maschio.
  */
 import baio from "../assets/manti/baio.webp";
 import baioOscuro from "../assets/manti/baio-oscuro.webp";
 import sauro from "../assets/manti/sauro.webp";
+import grigio from "../assets/manti/grigio.webp";
 import maschio from "../assets/manti/maschio.webp";
 import femmina from "../assets/manti/femmina.webp";
 
@@ -17,6 +18,7 @@ function manto(coat: string | null | undefined): { nome: string; img: string | n
   if (c.startsWith("baio oscuro") || c.startsWith("morello")) return { nome: "Baio oscuro", img: baioOscuro };
   if (c.startsWith("sauro")) return { nome: c.includes("bruciato") ? "Sauro bruciato" : "Sauro", img: sauro };
   if (c.startsWith("baio")) return { nome: "Baio", img: baio };
+  if (c.startsWith("grigio")) return { nome: "Grigio", img: grigio };
   return { nome: c.charAt(0).toUpperCase() + c.slice(1), img: null };
 }
 
