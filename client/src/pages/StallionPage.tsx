@@ -9,6 +9,7 @@ import MantoSesso from "../components/MantoSesso";
 import { coloreScheda } from "@/lib/sezioni";
 import SezioneScheda from "../components/SezioneScheda";
 import LineaPaternaStallone from "../components/LineaPaternaStallone";
+import { VotoNegliAnni, IncrociStallone } from "../components/Riproduttori";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -624,6 +625,8 @@ export default function StallionPage() {
           )}
 
 
+          {!stallion.no_offspring_data && <VotoNegliAnni tipo="stallone" nome={stallion.sire} colore={coloreScheda("/stalloni")} />}
+
           <LineaPaternaStallone nome={stallion.sire} padre={stallion.pedigree?.sire} nonnoPaterno={stallion.pedigree?.sire_sire}
             madre={stallion.pedigree?.dam} padreMadre={stallion.pedigree?.dam_sire} />
 
@@ -710,6 +713,12 @@ export default function StallionPage() {
           {stallion.distanza_figli && <DistanzaFigli d={stallion.distanza_figli} />}
           {stallion.nonno && stallion.nonno.nipoti_corsi > 0 && <ComeNonno n={stallion.nonno} nome={stallion.sire} />}
           <FigliInAttivita nome={stallionName.toUpperCase()} />
+          </SezioneScheda>
+          )}
+
+          {!stallion.no_offspring_data && (
+          <SezioneScheda id="stallone-incroci" titolo="Incroci" riassunto="con quali padri della madre i suoi figli rendono di più">
+            <IncrociStallone nome={stallion.sire} />
           </SezioneScheda>
           )}
 
