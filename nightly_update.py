@@ -3955,10 +3955,24 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
     # lascerebbe la tabella vuota — bug reale successo in produzione.
     conn.execute("DELETE FROM stallion_rating_stats")
 
-    stallions = conn.execute("""
-        SELECT DISTINCT sire FROM horse_ratings
-        WHERE sire IS NOT NULL AND sire != \'\' AND rating_mode=\'performance\'
-    """).fetchall()
+    # 27/11/2026: tutti i figli registrati, anche i nati prima del 2012 con il
+    # loro voto storico (prima contavano solo i figli valutati sulle corse dal
+    # 2012). Dove un figlio ha tutti e due i voti vale quello delle corse.
+    figli_di: dict[str, dict] = {}
+    for name, by, sire, grade, earn in conn.execute("""
+        SELECT name, birth_year, sire, grade, career_earnings FROM horse_ratings
+        WHERE rating_mode = 'storico' AND sire IS NOT NULL AND TRIM(sire) <> ''
+          AND grade IS NOT NULL AND grade <> 'N/A'"""):
+        figli_di.setdefault(sire.strip().upper(), {})[(name, by)] = (grade, earn or 0.0)
+    for name, by, sire, grade, earn in conn.execute("""
+        SELECT name, birth_year, sire, COALESCE(grade_annata, grade), career_earnings FROM horse_ratings
+        WHERE rating_mode = 'performance' AND sire IS NOT NULL AND TRIM(sire) <> ''"""):
+        figli_di.setdefault(sire.strip().upper(), {})[(name, by)] = (grade, earn or 0.0)
+    nome_sire: dict[str, str] = {}
+    for (sire,) in conn.execute("""SELECT DISTINCT sire FROM horse_ratings WHERE rating_mode IN ('performance', 'storico')
+                                   AND sire IS NOT NULL AND TRIM(sire) <> ''"""):
+        nome_sire.setdefault(sire.strip().upper(), sire)
+    stallions = [(nome_sire[k],) for k in figli_di]
 
     # Leggi dati VP: offspring reale + earnings per boost
     vp_data: dict[str, dict] = {}
@@ -3992,10 +4006,7 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
         # (EL IDEAL: 13 figli su 95 S o meglio fra i coetanei, 3 su 95 contro
         # tutti). Dove l'annata e' troppo piccola per avere un voto proprio
         # resta il voto generale.
-        children = conn.execute("""
-            SELECT COALESCE(grade_annata, grade) FROM horse_ratings
-            WHERE UPPER(TRIM(sire))=UPPER(TRIM(?)) AND rating_mode=\'performance\'
-        """, (sire_name,)).fetchall()
+        children = [(g,) for g, _e in figli_di.get(sire_name.strip().upper(), {}).values()]
 
         if not children:
             continue
@@ -4027,10 +4038,8 @@ def phase_stallion_ratings(conn: sqlite3.Connection):
         if sire_key in vp_data and max_vp_earnings > 0:
             vp_boost = round((vp_data[sire_key]["earnings"] / max_vp_earnings) * 5.0, 2)
 
-        avg_earnings = conn.execute("""
-            SELECT AVG(career_earnings) FROM horse_ratings
-            WHERE UPPER(TRIM(sire))=UPPER(TRIM(?)) AND rating_mode=\'performance\'
-        """, (sire_name,)).fetchone()[0] or 0.0
+        _ee = [e for _g, e in figli_di.get(sire_name.strip().upper(), {}).values()]
+        avg_earnings = (sum(_ee) / len(_ee)) if _ee else 0.0
 
         n_in_corsa = conn.execute("""
             SELECT COUNT(DISTINCT h.name)
@@ -5268,14 +5277,25 @@ def phase_dam_ratings(conn: sqlite3.Connection):
     # subito dopo (stessa ragione documentata per stallion_rating_stats).
     conn.execute("DELETE FROM dam_rating_stats")
 
-    # Figli: solo ATLETI. Un riproduttore non e' progenie da valutare.
+    # Figli: TUTTI quelli registrati (27/11/2026). Prima contavano solo gli
+    # atleti nati dal 2012: una fattrice con i figli migliori nati prima (la
+    # madre di un campione degli anni 2000) restava senza voto o con il voto
+    # dei soli figli recenti. Ora ogni figlio conta con il suo voto: quello
+    # delle corse (nella sua annata) per i nati dal 2012, quello storico per
+    # i nati prima. Anche un figlio diventato riproduttore resta suo figlio.
     children = conn.execute("""
         SELECT name, birth_year, dam FROM horses
         WHERE dam IS NOT NULL AND TRIM(dam) <> ''
-          AND COALESCE(horse_class, 'athlete') = 'athlete'
     """).fetchall()
 
     ratings: dict[tuple, tuple] = {}
+    # Prima il voto storico, poi quello delle corse che lo sostituisce dove
+    # c'e' tutti e due (le carriere dal 2012 hanno le gare una per una).
+    for name, birth_year, grade, score, earn in conn.execute("""
+        SELECT name, birth_year, grade, score, career_earnings
+        FROM horse_ratings WHERE rating_mode = 'storico' AND grade IS NOT NULL AND grade <> 'N/A'
+    """):
+        ratings[(name, birth_year)] = (grade, score or 0.0, earn or 0.0)
     # 20/11/2026: come per gli stalloni, il voto dei figli nella loro annata.
     for name, birth_year, grade, score, earn in conn.execute("""
         SELECT name, birth_year, COALESCE(grade_annata, grade), score, career_earnings
