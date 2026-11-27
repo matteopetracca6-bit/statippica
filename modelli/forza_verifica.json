@@ -1,6 +1,6 @@
 {
  "versione": "forza-v2",
- "calcolato_il": "2026-11-19",
+ "calcolato_il": "2026-11-27",
  "forza": {
   "corse": 5051,
   "coppie": 122751,
@@ -8,35 +8,85 @@
   "esito": "affidabile"
  },
  "curva": {
-  "taratura": 1.02,
-  "esempi_prova": 35295,
-  "errore_modello": 7.07,
-  "errore_crescita_tipica": 8.19,
-  "copertura_80": 0.793,
+  "taratura": 1.06,
+  "esempi_prova": 36017,
+  "errore_modello": 6.19,
+  "errore_crescita_tipica": 8.21,
+  "copertura_80": 0.794,
   "per_anni_avanti": {
    "1": {
-    "n": 10202,
-    "errore_modello": 3.87,
-    "errore_crescita_tipica": 4.71,
-    "copertura_80": 0.821
+    "n": 10420,
+    "errore_modello": 3.73,
+    "errore_crescita_tipica": 4.69,
+    "copertura_80": 0.825
    },
    "2": {
-    "n": 9507,
-    "errore_modello": 6.49,
-    "errore_crescita_tipica": 7.55,
-    "copertura_80": 0.794
+    "n": 9704,
+    "errore_modello": 5.79,
+    "errore_crescita_tipica": 7.57,
+    "copertura_80": 0.803
    },
    "3": {
-    "n": 8392,
-    "errore_modello": 8.61,
-    "errore_crescita_tipica": 9.83,
-    "copertura_80": 0.775
+    "n": 8559,
+    "errore_modello": 7.33,
+    "errore_crescita_tipica": 9.85,
+    "copertura_80": 0.777
    },
    "4": {
-    "n": 7194,
-    "errore_modello": 10.6,
-    "errore_crescita_tipica": 12.1,
-    "copertura_80": 0.775
+    "n": 7334,
+    "errore_modello": 8.9,
+    "errore_crescita_tipica": 12.16,
+    "copertura_80": 0.76
+   }
+  },
+  "per_eta_base": {
+   "1": {
+    "n": 5613,
+    "errore_modello": 12.38,
+    "errore_crescita_tipica": 15.78,
+    "copertura_80": 0.791
+   },
+   "2": {
+    "n": 5930,
+    "errore_modello": 10.98,
+    "errore_crescita_tipica": 15.35,
+    "copertura_80": 0.772
+   },
+   "3": {
+    "n": 5940,
+    "errore_modello": 7.74,
+    "errore_crescita_tipica": 10.13,
+    "copertura_80": 0.766
+   },
+   "4": {
+    "n": 5659,
+    "errore_modello": 3.89,
+    "errore_crescita_tipica": 5.51,
+    "copertura_80": 0.787
+   },
+   "5": {
+    "n": 5213,
+    "errore_modello": 2.29,
+    "errore_crescita_tipica": 3.07,
+    "copertura_80": 0.801
+   },
+   "6": {
+    "n": 3790,
+    "errore_modello": 1.43,
+    "errore_crescita_tipica": 1.7,
+    "copertura_80": 0.824
+   },
+   "7": {
+    "n": 2483,
+    "errore_modello": 0.84,
+    "errore_crescita_tipica": 0.73,
+    "copertura_80": 0.843
+   },
+   "8": {
+    "n": 1389,
+    "errore_modello": 0.76,
+    "errore_crescita_tipica": 0.41,
+    "copertura_80": 0.856
    }
   },
   "esito": "affidabile"
