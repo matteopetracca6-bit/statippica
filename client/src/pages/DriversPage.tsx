@@ -248,7 +248,7 @@ export default function DriversPage() {
           </div>
           {(soloAffidabili || ordine === "vittorie") && (
             <div style={{ fontSize: 11.5, color: "var(--ed-fioco)", margin: "-4px 0 12px", lineHeight: 1.6 }}>
-              {soloAffidabili ? "Sono nascosti i guidatori con meno di un centinaio di gare: su numeri piccoli il rendimento è dominato dal caso. " : ""}
+              {soloAffidabili ? "Solo chi ha almeno un centinaio di gare. " : ""}
               {ordine === "vittorie" ? "Le vittorie dipendono soprattutto dai cavalli ricevuti: non vanno usate per confrontare due guidatori." : ""}
             </div>
           )}
@@ -297,11 +297,12 @@ export default function DriversPage() {
             </div>
           )}
 
-          <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", marginTop: 18, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 18 }}><Spiegazione titolo="Come si legge" compatta>
+            Sono nascosti i guidatori con meno di un centinaio di gare: su numeri piccoli il rendimento è dominato dal caso.
             La barra parte dal centro: verso sinistra il guidatore porta i cavalli a rendere meglio del loro solito, verso destra peggio. Il numero
             accanto è quanto vale in posizioni, su una gara da dieci partenti. Le vittorie sono lì per completezza, ma non vanno usate per confrontare
             due guidatori: dipendono soprattutto dai cavalli che ricevono. La partenza media dice da quale numero partono di solito, ed è già scontata dal rendimento.
-          </p>
+          </Spiegazione></div>
         </>
       )}
 

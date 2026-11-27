@@ -61,7 +61,6 @@ function Pannello({ tipo, d, isLoading }: { tipo: "sorpresa" | "delusione"; d?: 
       </div>
       <div style={{ fontSize: 11.5, color: "hsl(210 8% 48%)", marginBottom: 12, lineHeight: 1.45 }}>
         {sorp ? "Vincitori pagati almeno 10 volte la posta al totalizzatore." : "Favoriti del pubblico (quota fino a 3) arrivati fuori dai primi tre."}
-        {" "}I motivi sono indizi letti dalla corsa precedente, non spiegazioni.
       </div>
       {isLoading ? <CavalloCaricamento label="Caricamento" />
         : voci.length === 0 ? <div style={{ fontSize: 13, color: "hsl(210 8% 50%)" }}>Niente da segnalare negli ultimi {d?.giorni ?? 7} giorni.</div>

@@ -54,10 +54,7 @@ function Partenze({ partenze }: { partenze: Partenza[] }) {
   return (
     <div className="ed-pannello" style={{ marginBottom: 16 }} data-testid="pannello-partenze">
       <div className="ed-tit" style={{ marginTop: 0 }}>Quanto conta il numero di partenza</div>
-      <p style={{ fontSize: 12.5, color: "var(--ed-muto)", lineHeight: 1.6, margin: "0 0 12px", maxWidth: 780 }}>
-        Quante volte su cento si arriva nei primi tre, per numero di partenza, in tutte le corse dell'archivio con almeno cinque partenti.
-        Non è un pronostico: è quello che è successo.
-      </p>
+      <div style={{ fontSize: 12.5, color: "var(--ed-muto)", margin: "0 0 12px" }}>% nei primi tre per numero di partenza (corse con almeno 5 partenti)</div>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 150 }}>
         {partenze.map(p => {
           const col = p.start_pos <= 5 ? COLORE : p.start_pos <= 8 ? "hsl(60 70% 55%)" : "hsl(25 75% 58%)";
@@ -214,11 +211,12 @@ function Piste({ vaiGara }: { vaiGara: (id: string) => void }) {
             : <div className="ed-dettaglio ed-vuoto">Scegli una pista dall'elenco.</div>)}
         </div>
       )}
-      <p style={{ fontSize: 11.5, color: "var(--ed-fioco)", marginTop: 18, lineHeight: 1.6 }}>
+      <div style={{ marginTop: 18 }}><Spiegazione titolo="Come si legge" compatta>
+        Le barre del numero di partenza non sono un pronostico: è quello che è successo in tutte le corse dell'archivio.
         «Partire dentro vale» è la differenza, su quella pista, fra la quota di arrivi nei primi tre partendo dai primi tre numeri e partendo dal settimo
         in poi. Le gare corse all'estero sono nell'archivio e contano nelle carriere dei cavalli, ma non hanno una scheda: la fonte le raccoglie tutte sotto
         un'unica voce, e sono decine di piste diverse in paesi diversi.
-      </p>
+      </Spiegazione></div>
     </div>
   );
 }

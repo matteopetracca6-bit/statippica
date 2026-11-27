@@ -105,9 +105,9 @@ export default function ConfrontoStalloni() {
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
-              <div style={{ fontSize: "11.5px", color: MUTED, margin: "2px 0 14px" }}>
+              <div style={{ margin: "-6px 0 10px" }}><Spiegazione titolo="Come si legge il grafico" compatta>
                 Cerchio più grande = più figli osservati, più pieno = giudizio più affidabile. Verde: figli sopra la mediana, arancio: sotto.
-              </div>
+              </Spiegazione></div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center", marginBottom: "8px" }}>
                 <span style={{ fontSize: "12px", color: MUTED }}>Ordina per:</span>
                 <button style={bottone(ordine === "utile")} onClick={() => setOrdine("utile")}>Utile atteso</button>

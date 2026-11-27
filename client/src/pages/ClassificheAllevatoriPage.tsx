@@ -148,13 +148,12 @@ export default function ClassificheAllevatoriPage() {
       </div>
 
       {data && data.copertura.cavalli > 0 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: "var(--ed-muto)", margin: "0 0 12px", lineHeight: 1.5 }} data-testid="copertura-allevatori">
-          <Info size={14} style={{ flexShrink: 0, marginTop: 3 }} />
-          <span>
+        <div style={{ margin: "0 0 12px" }} data-testid="copertura-allevatori">
+          <Spiegazione titolo={`${num(data.allevatori)} allevamenti · quanti ne conosciamo`} compatta>
             Conosciamo l'allevamento di {num(data.copertura.cavalli_noti)} cavalli su {num(data.copertura.cavalli)} che hanno corso,
             pari al {num(data.copertura.pct_premi, 1)}% dei premi della stagione. Gli altri non sono contati: ogni notte ne
-            cerchiamo altri, quindi i totali crescono un po' alla volta. {num(data.allevatori)} allevamenti in classifica.
-          </span>
+            cerchiamo altri, quindi i totali crescono un po' alla volta.
+          </Spiegazione>
         </div>
       )}
 
