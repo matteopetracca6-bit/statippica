@@ -5,6 +5,8 @@ import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
 import { Spiegazione } from "../components/Spiegazione";
 import { useState } from "react";
+import SezioneScheda from "../components/SezioneScheda";
+import LineaPaternaStallone from "../components/LineaPaternaStallone";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -372,6 +374,7 @@ function Fact({ label, value, wide }: { label: string; value: string; wide?: boo
 export default function StallionPage() {
   const [match, params] = useRoute("/stallion/:name");
   const [, navigate] = useLocation();
+  const [tuttiFigli, setTuttiFigli] = useState(false);
   const stallionName = params?.name ? decodeURIComponent(params.name) : "";
 
   const isSearch = !stallionName || stallionName === "search";
@@ -523,7 +526,198 @@ export default function StallionPage() {
             );
           })()}
 
-          {/* Scheda monta: dati del catalogo stalloni della stagione */}
+          {/* 27/11/2026: scheda accorciata. In vista il voto (con i voti dei
+              figli) e la linea paterna; figli, rendimento e monta in sezioni
+              che si aprono, come nella scheda del cavallo. */}
+          {!stallion.no_offspring_data && stallion.final_score != null && (
+            <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }} data-testid="voto-stallone">
+              <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Voto da stallone</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+                    {stallion.grade && <GradeBadge grade={stallion.grade} size="lg" />}
+                    <span className="tabular" style={{ fontSize: "26px", fontWeight: 800, color: "hsl(210 10% 90%)" }}>{stallion.final_score.toFixed(1)}</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Score base</div>
+                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(210 10% 75%)" }}>{stallion.avg_score?.toFixed(1) ?? "—"}</div>
+                </div>
+                {(stallion.vp_boost ?? 0) > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>VP Boost</div>
+                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(120 50% 55%)" }}>+{(stallion.vp_boost ?? 0).toFixed(2)}</div>
+                </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>% top-S</div>
+                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(183 60% 55%)" }}>{stallion.pct_top_S != null ? `${stallion.pct_top_S.toFixed(1)}%` : "—"}</div>
+                </div>
+                {stallion.affidabilita != null && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Affidabilità</div>
+                    <div className="tabular" style={{ fontSize: "18px", fontWeight: 700,
+                      color: stallion.affidabilita >= 0.6 ? "hsl(120 45% 58%)" : stallion.affidabilita >= 0.4 ? "hsl(45 70% 58%)" : "hsl(8 65% 60%)" }}>
+                      {Math.round(stallion.affidabilita * 100)}%
+                    </div>
+                  </div>
+                )}
+                {stallion.stud?.progeny_earnings_2024 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Prod. 2024</div>
+                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(51 80% 60%)" }}>€{(stallion.stud.progeny_earnings_2024 / 1000).toFixed(0)}k</div>
+                </div>
+                ) : null}
+              </div>
+          {/* Grade distribution */}
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Voti dei figli in corsa</div>
+              <div style={{ display: "flex", height: "24px", borderRadius: "4px", overflow: "hidden", gap: "2px", marginBottom: "10px" }}>
+                {GRADE_ORDER.map(g => {
+                  const cnt = stallion.gradeDist.find(d => d.grade === g)?.cnt ?? 0;
+                  if (!cnt) return null;
+                  return (
+                    <div key={g} title={`${g}: ${cnt}`} style={{
+                      flex: cnt,
+                      background: conAlfa(GRADE_COLORS[g], 0.33),
+                      borderTop: `3px solid ${GRADE_COLORS[g]}`,
+                    }} />
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                {GRADE_ORDER.map(g => {
+                  const cnt = stallion.gradeDist.find(d => d.grade === g)?.cnt ?? 0;
+                  if (!cnt) return null;
+                  return (
+                    <div key={g} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <GradeBadge grade={g} size="sm" />
+                      <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 50%)" }}>{cnt}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            </div>
+          )}
+
+          {stallion.affidabilita != null && stallion.affidabilita < 0.5 && (
+            <div style={{
+              background: "hsl(8 40% 12%)", border: "1px solid hsl(8 45% 26%)",
+              borderRadius: "10px", padding: "13px 16px", marginBottom: "18px",
+              fontSize: "12.5px", lineHeight: 1.6, color: "hsl(8 25% 80%)",
+            }}>
+              <strong style={{ color: "hsl(8 60% 72%)" }}>Giudizio non attendibile: poggia su {stallion.n_figli_corsi ?? 0}{" "}
+              {stallion.n_figli_corsi === 1 ? "figlio che ha" : "figli che hanno"} corso.</strong>
+              <Spiegazione titolo="Perché" compatta>
+              Con così pochi risultati la parte dovuta al caso supera quella
+              dovuta allo stallone: due figli fortunati o sfortunati spostano
+              tutto. Il voto è mostrato per trasparenza, non per orientare una
+              scelta. Serve almeno una dozzina di figli in pista perché il
+              giudizio cominci a reggere, e la solidità cresce con il numero.
+              </Spiegazione>
+            </div>
+          )}
+
+
+          <LineaPaternaStallone nome={stallion.sire} padre={stallion.pedigree?.sire} nonnoPaterno={stallion.pedigree?.sire_sire}
+            madre={stallion.pedigree?.dam} padreMadre={stallion.pedigree?.dam_sire} />
+
+          {!stallion.no_offspring_data && (
+          <SezioneScheda id="stallone-figli" titolo="I figli" apertaDaComputer
+            riassunto={`${stallion.n_figli_totali ?? 0} figli · i migliori, anno per anno, distanze`}>
+          {/* Top children */}
+          <div className="pannello" style={panelStyle}>
+            <div style={panelTitle}>Top prodotti (per guadagni)</div>
+            {/* Otto colonne non si stringono sotto una certa larghezza: invece
+                di tagliarle fuori dallo schermo, la tabella scorre dentro il
+                suo riquadro. */}
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
+                  {["Cavallo", "Anno", "Voto", "Score", "Guadagni", "Record", "Win%", "% vs fratelli"].map(h => (
+                    <th key={h} style={{ textAlign: "left", padding: "6px 10px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(stats?.topOffspring ?? stallion.children).slice(0, tuttiFigli ? undefined : 10).map((c, i, arr) => (
+                  <tr key={`${c.name}-${c.birth_year}`} style={{ borderBottom: i < arr.length - 1 ? "1px solid hsl(220 10% 14%)" : "none", transition: "background 0.1s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 14%)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}
+                  >
+                    <td style={{ padding: "9px 10px" }}>
+                      <Link href={`/horse/${encodeURIComponent(c.name)}/${c.birth_year}`}>
+                        <a style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 80%)", textDecoration: "none", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "5px" }}>
+                          <BandieraCavallo nome={c.name} /><span>{c.name}</span>
+                        </a>
+                      </Link>
+                    </td>
+                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.birth_year}</td>
+                    <td style={{ padding: "9px 10px" }}><GradeBadge grade={c.grade} size="sm" /></td>
+                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>{c.score?.toFixed(1)}</td>
+                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(51 80% 60%)" }}>€{c.career_earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
+                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(183 70% 55%)" }}>{formatRecord(c.record_career)}</td>
+                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.win_rate != null ? `${c.win_rate.toFixed(1)}%` : "—"}</td>
+                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.sire_percentile != null ? `${c.sire_percentile.toFixed(0)}°` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </div>
+            {(stats?.topOffspring ?? stallion.children).length > 10 && (
+              <button type="button" className="lista-altre" onClick={() => setTuttiFigli(v => !v)}>
+                {tuttiFigli ? "Mostra meno" : `Mostra tutti (${(stats?.topOffspring ?? stallion.children).length})`}
+              </button>
+            )}
+          </div>
+
+          {/* Offspring by year (new panel) */}
+          {stats?.offspringByYear && stats.offspringByYear.length > 0 && (
+            <div className="pannello" style={panelStyle}>
+              <div style={panelTitle}>Produzione per anno</div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
+                      {["Anno", "Figli totali", "Top (SSS+SS+S)", "Score medio", "Guadagno medio"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.offspringByYear.map((y, i) => (
+                      <tr key={y.birth_year} style={{ borderBottom: i < stats.offspringByYear.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 60%)", fontWeight: 600 }}>{y.birth_year}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.total}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: y.top_count > 0 ? "hsl(51 80% 55%)" : "hsl(210 8% 40%)" }}>{y.top_count}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.avg_score?.toFixed(1) ?? "—"}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.avg_earn?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {stallion.attivita && stallion.attivita.per_anno.length > 0 && <AnniInMonta a={stallion.attivita} nome={stallion.sire} />}
+          {stallion.distanza_figli && <DistanzaFigli d={stallion.distanza_figli} />}
+          {stallion.nonno && stallion.nonno.nipoti_corsi > 0 && <ComeNonno n={stallion.nonno} nome={stallion.sire} />}
+          <FigliInAttivita nome={stallionName.toUpperCase()} />
+          </SezioneScheda>
+          )}
+
+          {!stallion.no_offspring_data && (
+          <SezioneScheda id="stallone-rendimento" titolo="Rendimento" riassunto="rispetto al previsto, ultimi 3 mesi, per distanza">
+            <SchedaInPiu tipo="stallone" nome={stallion.sire ?? stallionName} />
+          </SezioneScheda>
+          )}
+
+          <SezioneScheda id="stallone-monta" titolo="Monta ed economia"
+            riassunto={stallion.stud?.stud_farm ? `${stallion.stud.stud_farm} · pareggio della monta, guadagni per voto` : "pareggio della monta, guadagni per voto"}>
           {stallion.stud && (stallion.stud.stud_farm_address || stallion.stud.record_1600
             || stallion.stud.record_2000 || stallion.stud.catalog_sire) && (
             <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }}>
@@ -560,11 +754,6 @@ export default function StallionPage() {
             </div>
           )}
 
-          {stallion.attivita && stallion.attivita.per_anno.length > 0 && <AnniInMonta a={stallion.attivita} nome={stallion.sire} />}
-          {stallion.distanza_figli && <DistanzaFigli d={stallion.distanza_figli} />}
-          {stallion.nonno && stallion.nonno.nipoti_corsi > 0 && <ComeNonno n={stallion.nonno} nome={stallion.sire} />}
-
-          {/* Punto di pareggio della monta */}
           {!stallion.no_offspring_data && <PareggioStallone nome={stallionName.toUpperCase()} />}
           {!stallion.no_offspring_data && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "12.5px", margin: "-4px 0 14px" }}>
@@ -574,232 +763,6 @@ export default function StallionPage() {
               <Link href="/generazione-m" style={{ color: "hsl(38 80% 62%)" }}>I suoi figli alle aste 2026 →</Link>
             </div>
           )}
-          <FigliInAttivita nome={stallionName.toUpperCase()} />
-
-          {/* Rating card */}
-          {!stallion.no_offspring_data && stallion.final_score != null && (
-            <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px",
-              display: "flex", alignItems: "center", gap: "28px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Rating Stallone</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
-                  {stallion.grade && <GradeBadge grade={stallion.grade} size="lg" />}
-                  <span className="tabular" style={{ fontSize: "26px", fontWeight: 800, color: "hsl(210 10% 90%)" }}>
-                    {stallion.final_score.toFixed(1)}
-                  </span>
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Score base</div>
-                <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(210 10% 75%)" }}>
-                  {stallion.avg_score?.toFixed(1) ?? "—"}
-                </div>
-              </div>
-              {(stallion.vp_boost ?? 0) > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>VP Boost</div>
-                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(120 50% 55%)" }}>
-                    +{(stallion.vp_boost ?? 0).toFixed(2)}
-                  </div>
-                </div>
-              )}
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>% top-S</div>
-                <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(183 60% 55%)" }}>
-                  {stallion.pct_top_S != null ? `${stallion.pct_top_S.toFixed(1)}%` : "—"}
-                </div>
-              </div>
-
-              {/* AFFIDABILITA' — sta accanto al voto, non in fondo alla pagina.
-                  Un voto costruito su 2 figli e uno su 400 avevano lo stesso
-                  aspetto: chi legge non poteva distinguere una misura da
-                  un'impressione. Il colore segue il livello, cosi' si capisce
-                  a colpo d'occhio. */}
-              {stallion.affidabilita != null && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Affidabilità</div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "7px" }}>
-                    <span className="tabular" style={{
-                      fontSize: "18px", fontWeight: 700,
-                      color: stallion.affidabilita >= 0.6 ? "hsl(120 45% 58%)"
-                           : stallion.affidabilita >= 0.4 ? "hsl(45 70% 58%)"
-                           : "hsl(8 65% 60%)",
-                    }}>
-                      {Math.round(stallion.affidabilita * 100)}%
-                    </span>
-                    <span style={{ fontSize: "11px", color: "hsl(210 8% 50%)" }}>
-                      {stallion.affidabilita_txt}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Avvertenza quando il giudizio non regge. Sotto il 50% di
-              affidabilita' — che con questa ereditabilita' vuol dire meno di
-              tredici figli in pista — il voto non e' una misura: e' il caso.
-              Prima la pagina mostrava comunque una lettera, e uno stallone
-              con un figlio solo risultava "F" come se fosse stato valutato. */}
-          {stallion.affidabilita != null && stallion.affidabilita < 0.5 && (
-            <div style={{
-              background: "hsl(8 40% 12%)", border: "1px solid hsl(8 45% 26%)",
-              borderRadius: "10px", padding: "13px 16px", marginBottom: "18px",
-              fontSize: "12.5px", lineHeight: 1.6, color: "hsl(8 25% 80%)",
-            }}>
-              <strong style={{ color: "hsl(8 60% 72%)" }}>Giudizio non attendibile: poggia su {stallion.n_figli_corsi ?? 0}{" "}
-              {stallion.n_figli_corsi === 1 ? "figlio che ha" : "figli che hanno"} corso.</strong>
-              <Spiegazione titolo="Perché" compatta>
-              Con così pochi risultati la parte dovuta al caso supera quella
-              dovuta allo stallone: due figli fortunati o sfortunati spostano
-              tutto. Il voto è mostrato per trasparenza, non per orientare una
-              scelta. Serve almeno una dozzina di figli in pista perché il
-              giudizio cominci a reggere, e la solidità cresce con il numero.
-              </Spiegazione>
-            </div>
-          )}
-
-          {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", marginBottom: "22px" }}>
-            {[
-              { label: "Avg score", value: stallion.avg_score?.toFixed(1) ?? "—" },
-              { label: "% top-S", value: stallion.pct_top_S != null ? `${stallion.pct_top_S.toFixed(1)}%` : "—" },
-              { label: "Guadagni medi", value: stallion.avg_earnings != null ? `€${stallion.avg_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—" },
-              { label: "Massimo figlio", value: stallion.max_earnings != null ? `€${stallion.max_earnings.toLocaleString("it-IT", { maximumFractionDigits: 0 })}` : "—" },
-              { label: "Win rate medio", value: stallion.avg_win_rate != null ? `${stallion.avg_win_rate.toFixed(1)}%` : "—" },
-              ...(stallion.stud?.progeny_earnings_2024 ? [{ label: "Prod. 2024", value: `€${(stallion.stud.progeny_earnings_2024 / 1000).toFixed(0)}k` }] : []),
-            ].map(({ label, value }) => (
-              <div key={label} className="pannello" style={{ padding: "14px 16px" }}>
-                <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(210 10% 90%)" }}>{value}</div>
-                <div style={{ fontSize: "11px", color: "hsl(210 8% 48%)", marginTop: "4px" }}>{label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginBottom: 18 }}><SchedaInPiu tipo="stallone" nome={stallion.sire ?? stallionName} /></div>
-
-          {/* Genealogy */}
-          {stallion.pedigree && (stallion.pedigree.sire || stallion.pedigree.dam) && (
-            <div className="pannello" style={panelStyle}>
-              <div style={panelTitle}>Genealogia (clicca per navigare tra stalloni)</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0", alignItems: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingRight: "16px" }}>
-                  <PedigreeNode label="Nonno pat." name={stallion.pedigree.sire_sire} />
-                  <PedigreeNode label="Nonna pat." name={stallion.pedigree.sire_dam} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "0 20px", position: "relative" }}>
-                  <PedigreeNode label="Padre (Sire)" name={stallion.pedigree.sire} highlight />
-                  <PedigreeNode label="Madre (Dam)" name={stallion.pedigree.dam} highlight />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "16px" }}>
-                  <PedigreeNode label="Nonno mat." name={stallion.pedigree.dam_sire} />
-                  <PedigreeNode label="Nonna mat." name={stallion.pedigree.dam_dam} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Grade distribution */}
-          <div className="pannello" style={panelStyle}>
-            <div style={panelTitle}>Distribuzione figli (in corsa)</div>
-            <div style={{ display: "flex", height: "24px", borderRadius: "4px", overflow: "hidden", gap: "2px", marginBottom: "10px" }}>
-              {GRADE_ORDER.map(g => {
-                const cnt = stallion.gradeDist.find(d => d.grade === g)?.cnt ?? 0;
-                if (!cnt) return null;
-                return (
-                  <div key={g} title={`${g}: ${cnt}`} style={{
-                    flex: cnt,
-                    background: conAlfa(GRADE_COLORS[g], 0.33),
-                    borderTop: `3px solid ${GRADE_COLORS[g]}`,
-                  }} />
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              {GRADE_ORDER.map(g => {
-                const cnt = stallion.gradeDist.find(d => d.grade === g)?.cnt ?? 0;
-                if (!cnt) return null;
-                return (
-                  <div key={g} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <GradeBadge grade={g} size="sm" />
-                    <span className="tabular" style={{ fontSize: "11px", color: "hsl(210 8% 50%)" }}>{cnt}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Offspring by year (new panel) */}
-          {stats?.offspringByYear && stats.offspringByYear.length > 0 && (
-            <div className="pannello" style={panelStyle}>
-              <div style={panelTitle}>Produzione per anno</div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
-                      {["Anno", "Figli totali", "Top (SSS+SS+S)", "Score medio", "Guadagno medio"].map(h => (
-                        <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.offspringByYear.map((y, i) => (
-                      <tr key={y.birth_year} style={{ borderBottom: i < stats.offspringByYear.length - 1 ? "1px solid hsl(220 10% 14%)" : "none" }}>
-                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 60%)", fontWeight: 600 }}>{y.birth_year}</td>
-                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.total}</td>
-                        <td className="tabular" style={{ padding: "8px 10px", color: y.top_count > 0 ? "hsl(51 80% 55%)" : "hsl(210 8% 40%)" }}>{y.top_count}</td>
-                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.avg_score?.toFixed(1) ?? "—"}</td>
-                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.avg_earn?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Top children */}
-          <div className="pannello" style={panelStyle}>
-            <div style={panelTitle}>Top prodotti (per guadagni)</div>
-            {/* Otto colonne non si stringono sotto una certa larghezza: invece
-                di tagliarle fuori dallo schermo, la tabella scorre dentro il
-                suo riquadro. */}
-            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
-                  {["Cavallo", "Anno", "Voto", "Score", "Guadagni", "Record", "Win%", "% vs fratelli"].map(h => (
-                    <th key={h} style={{ textAlign: "left", padding: "6px 10px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(stats?.topOffspring ?? stallion.children).map((c, i, arr) => (
-                  <tr key={`${c.name}-${c.birth_year}`} style={{ borderBottom: i < arr.length - 1 ? "1px solid hsl(220 10% 14%)" : "none", transition: "background 0.1s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 14%)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}
-                  >
-                    <td style={{ padding: "9px 10px" }}>
-                      <Link href={`/horse/${encodeURIComponent(c.name)}/${c.birth_year}`}>
-                        <a style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 80%)", textDecoration: "none", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "5px" }}>
-                          <BandieraCavallo nome={c.name} /><span>{c.name}</span>
-                        </a>
-                      </Link>
-                    </td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.birth_year}</td>
-                    <td style={{ padding: "9px 10px" }}><GradeBadge grade={c.grade} size="sm" /></td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>{c.score?.toFixed(1)}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(51 80% 60%)" }}>€{c.career_earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(183 70% 55%)" }}>{formatRecord(c.record_career)}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.win_rate != null ? `${c.win_rate.toFixed(1)}%` : "—"}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.sire_percentile != null ? `${c.sire_percentile.toFixed(0)}°` : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
-
           {/* Grade earnings map (context for ROI) */}
           {stats?.gradeEarnings && stats.gradeEarnings.length > 0 && (
             <div className="pannello" style={panelStyle}>
@@ -826,6 +789,7 @@ export default function StallionPage() {
               </div>
             </div>
           )}
+          </SezioneScheda>
         </>
       )}
 
