@@ -1694,6 +1694,14 @@ export function registerRoutes(httpServer: Server, app: Express) {
           const h = db.prepare(`SELECT name, birth_year FROM horses WHERE name = ? AND birth_year IS NOT NULL`).get(name) as any;
           return h ? { name: h.name, birth_year: h.birth_year } : null;
         })(),
+        // Manto (27/11/2026): dalla sua riga in horses, se c'e'.
+        coat: (() => {
+          try {
+            const r = db.prepare(`SELECT coat_color FROM horses WHERE UPPER(TRIM(name)) IN (?, ?) AND coat_color IS NOT NULL AND TRIM(coat_color) <> ''
+                                  ORDER BY (sex = 'M') DESC LIMIT 1`).get(name, nomeCatalogo) as any;
+            return r?.coat_color ?? null;
+          } catch { return null; }
+        })(),
       };
 
       res.json(payload);
@@ -2011,9 +2019,9 @@ export function registerRoutes(httpServer: Server, app: Express) {
 
       const own = db.prepare(`
         SELECT name, birth_year, sire, dam, country,
-               career_races, career_wins, career_earnings, record_career,
+               career_races, career_wins, career_earnings, record_career, coat_color,
                COALESCE(horse_class, 'athlete') AS horse_class
-        FROM horses WHERE UPPER(TRIM(name)) = ? LIMIT 1
+        FROM horses WHERE UPPER(TRIM(name)) = ? ORDER BY (sex = 'F') DESC LIMIT 1
       `).get(name) as any;
 
       // I figli si leggono comunque, anche senza riga di rating: una fattrice

@@ -5,6 +5,8 @@ import { COLORE_SCHEDA_VOTO } from "@/lib/coloreVoto";
 import { PareggioStallone, FigliInAttivita } from "../components/PareggioScheda";
 import { Spiegazione } from "../components/Spiegazione";
 import { useState } from "react";
+import MantoSesso from "../components/MantoSesso";
+import { coloreScheda } from "@/lib/sezioni";
 import SezioneScheda from "../components/SezioneScheda";
 import LineaPaternaStallone from "../components/LineaPaternaStallone";
 import { useRoute, useLocation, Link } from "wouter";
@@ -458,7 +460,8 @@ export default function StallionPage() {
             const euro = (n?: number | null) => (n != null ? `€${Math.round(n).toLocaleString("it-IT")}` : "—");
             return (
               <IntestazioneScheda
-                icona={Crown} colore={COLORE_VOTO[stallion.grade ?? ""] ?? "hsl(183 70% 55%)"} tipo="Stallone"
+                icona={Crown} colore={coloreScheda("/stalloni")} tipo="Stallone"
+                azioni={<MantoSesso coat={(stallion as any).coat} sex="M" />}
                 titolo={<span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
                   <BandieraCavallo nome={stallion.sire} paese={stallion.nationality} ignoto_se_vuoto grande />{stallion.sire}
                 </span>}
@@ -551,7 +554,7 @@ export default function StallionPage() {
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <div style={{ fontSize: "11px", color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.06em" }}>% top-S</div>
-                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(183 60% 55%)" }}>{stallion.pct_top_S != null ? `${stallion.pct_top_S.toFixed(1)}%` : "—"}</div>
+                  <div className="tabular" style={{ fontSize: "18px", fontWeight: 700, color: "hsl(120 60% 50%)" }}>{stallion.pct_top_S != null ? `${stallion.pct_top_S.toFixed(1)}%` : "—"}</div>
                 </div>
                 {stallion.affidabilita != null && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
@@ -693,7 +696,7 @@ export default function StallionPage() {
                         <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 60%)", fontWeight: 600 }}>{y.birth_year}</td>
                         <td className="tabular" style={{ padding: "8px 10px", color: "hsl(210 8% 50%)" }}>{y.total}</td>
                         <td className="tabular" style={{ padding: "8px 10px", color: y.top_count > 0 ? "hsl(51 80% 55%)" : "hsl(210 8% 40%)" }}>{y.top_count}</td>
-                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(183 60% 55%)" }}>{y.avg_score?.toFixed(1) ?? "—"}</td>
+                        <td className="tabular" style={{ padding: "8px 10px", color: "hsl(120 60% 50%)" }}>{y.avg_score?.toFixed(1) ?? "—"}</td>
                         <td className="tabular" style={{ padding: "8px 10px", color: "hsl(51 80% 55%)" }}>€{y.avg_earn?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
                       </tr>
                     ))}
@@ -721,7 +724,7 @@ export default function StallionPage() {
           {stallion.stud && (stallion.stud.stud_farm_address || stallion.stud.record_1600
             || stallion.stud.record_2000 || stallion.stud.catalog_sire) && (
             <div className="pannello" style={{ padding: "18px 22px", marginBottom: "18px" }}>
-              <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "hsl(183 60% 55%)", marginBottom: "12px" }}>
+              <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: "hsl(120 60% 50%)", marginBottom: "12px" }}>
                 {["active", "da_concordare", "free"].includes(stallion.stud.stud_status || "")
                   ? "STAGIONE DI MONTA"
                   : stallion.stud.stud_status === "deceased" ? "DATI DI MONTA — DECEDUTO"
