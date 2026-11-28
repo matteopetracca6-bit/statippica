@@ -340,6 +340,25 @@ function totaleMondiale(nome: string, anno: number) {
   return e && e.esito === "trovato" ? e : null;
 }
 
+
+// 28/11/2026: i figli dello stallone sono quelli in horses (tutti, anche i
+// nati prima del 2012), ognuno con il voto delle corse se c'e', altrimenti
+// quello storico. Prima si leggevano solo i voti dalle corse: LEMON DRA, 511
+// figli, ne mostrava uno.
+const SQL_FIGLI_STALLONE = `
+  SELECT h.name, h.birth_year, h.sex, h.dam,
+         COALESCE(p.grade, s.grade) AS grade, COALESCE(p.score, s.score) AS score,
+         CASE WHEN p.name IS NOT NULL THEN 'corse' WHEN s.name IS NOT NULL THEN 'storico' END AS scala,
+         COALESCE(p.career_races, s.career_races, h.career_races) AS career_races,
+         COALESCE(p.career_wins, s.career_wins, h.career_wins) AS career_wins,
+         COALESCE(p.career_earnings, s.career_earnings, h.career_earnings) AS career_earnings,
+         COALESCE(p.record_career, s.record_career, h.record_career) AS record_career,
+         COALESCE(p.win_rate, s.win_rate) AS win_rate, p.sire_percentile AS sire_percentile
+    FROM horses h
+    LEFT JOIN horse_ratings p ON p.name = h.name AND p.birth_year = h.birth_year AND p.rating_mode = 'performance'
+    LEFT JOIN horse_ratings s ON s.name = h.name AND s.birth_year = h.birth_year AND s.rating_mode = 'storico'
+   WHERE UPPER(TRIM(h.sire)) = UPPER(TRIM(?))`;
+
 export function registerRoutes(httpServer: Server, app: Express) {
   // Simulatore della corsa (simulatore.ts).
   registraSimulatore(app, getDb, NOMI_CALENDARIO, vpTableExists);
@@ -1490,23 +1509,13 @@ export function registerRoutes(httpServer: Server, app: Express) {
         LIMIT 1
       `).get(nomeCatalogo) as any;
 
-      // Top children (performance only) - empty if no offspring data
-      const children = db.prepare(`
-        SELECT name, birth_year, grade, score, career_earnings, record_career, win_rate, sire_percentile
-        FROM horse_ratings
-        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
-        ORDER BY career_earnings DESC
-        LIMIT 20
-      `).all(name) as any[];
+      // I figli migliori, tutti quelli registrati (anche gli storici).
+      const children = db.prepare(`${SQL_FIGLI_STALLONE} AND COALESCE(p.grade, s.grade) IS NOT NULL
+        ORDER BY COALESCE(p.career_earnings, s.career_earnings, h.career_earnings) DESC LIMIT 20`).all(name) as any[];
 
-      // Grade distribution - empty if no offspring data
-      const gradeDist = db.prepare(`
-        SELECT grade, COUNT(*) as cnt
-        FROM horse_ratings
-        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
-        GROUP BY grade
-        ORDER BY cnt DESC
-      `).all(name) as any[];
+      // Voti dei figli: corse, e storici per chi non ha il voto delle corse.
+      const gradeDist = db.prepare(`SELECT grade, COUNT(*) AS cnt FROM (${SQL_FIGLI_STALLONE})
+        WHERE grade IS NOT NULL AND grade <> 'N/A' GROUP BY grade ORDER BY cnt DESC`).all(name) as any[];
 
       // Genealogy: try horses table first, then fallback to stallion_pedigree
       const horseSelf = db.prepare(`
@@ -2495,6 +2504,17 @@ export function registerRoutes(httpServer: Server, app: Express) {
   // ──────────────────────────────────────────────
   // GET /api/stallion/:name/stats — offspring yearly trend + ROI data
   // ──────────────────────────────────────────────
+  // Tutti i figli dello stallone, come la progenie delle fattrici.
+  app.get("/api/stallion/:name/figli", (req, res) => {
+    const name = decodeURIComponent(req.params.name).toUpperCase();
+    const db = getDb();
+    try {
+      const figli = db.prepare(`${SQL_FIGLI_STALLONE}
+        ORDER BY COALESCE(p.career_earnings, s.career_earnings, h.career_earnings, 0) DESC, h.birth_year DESC`).all(name) as any[];
+      res.json({ figli });
+    } catch (e: any) { res.status(500).json({ message: String(e?.message ?? e) }); } finally { db.close(); }
+  });
+
   app.get("/api/stallion/:name/stats", (req, res) => {
     const name = decodeURIComponent(req.params.name).toUpperCase();
     const db = getDb();
@@ -2505,23 +2525,16 @@ export function registerRoutes(httpServer: Server, app: Express) {
                COUNT(*) AS total,
                SUM(CASE WHEN grade IN ('SSS','SS','S') THEN 1 ELSE 0 END) AS top_count,
                AVG(score) AS avg_score,
-               AVG(career_earnings) AS avg_earn
-        FROM horse_ratings
-        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
-          AND birth_year IS NOT NULL
+               AVG(COALESCE(career_earnings, 0)) AS avg_earn
+        FROM (${SQL_FIGLI_STALLONE})
+        WHERE birth_year IS NOT NULL
         GROUP BY birth_year
         ORDER BY birth_year ASC
       `).all(name) as any[];
 
       // Top offspring by earnings (top 10)
-      const topOffspring = db.prepare(`
-        SELECT name, birth_year, grade, score, career_earnings,
-               record_career, win_rate, sire_percentile
-        FROM horse_ratings
-        WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?)) AND rating_mode = 'performance'
-        ORDER BY career_earnings DESC
-        LIMIT 10
-      `).all(name) as any[];
+      const topOffspring = db.prepare(`${SQL_FIGLI_STALLONE} AND COALESCE(p.grade, s.grade) IS NOT NULL
+        ORDER BY COALESCE(p.career_earnings, s.career_earnings, h.career_earnings) DESC LIMIT 10`).all(name) as any[];
 
       // Grade earnings map (for ROI context)
       const gradeEarnings = db.prepare(`
