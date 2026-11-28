@@ -9,6 +9,7 @@ import MantoSesso from "../components/MantoSesso";
 import { coloreScheda } from "@/lib/sezioni";
 import SezioneScheda from "../components/SezioneScheda";
 import LineaPaternaStallone from "../components/LineaPaternaStallone";
+import FigliStallone from "../components/FigliStallone";
 import { VotoNegliAnni, IncrociStallone } from "../components/Riproduttori";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -391,7 +392,6 @@ const CSS_STALLONE = `
 export default function StallionPage() {
   const [match, params] = useRoute("/stallion/:name");
   const [, navigate] = useLocation();
-  const [tuttiFigli, setTuttiFigli] = useState(false);
   const stallionName = params?.name ? decodeURIComponent(params.name) : "";
 
   const isSearch = !stallionName || stallionName === "search";
@@ -648,52 +648,7 @@ export default function StallionPage() {
           {!stallion.no_offspring_data && (
           <SezioneScheda id="stallone-figli" titolo="I figli" apertaDaComputer
             riassunto={`${stallion.n_figli_totali ?? 0} figli · i migliori, anno per anno, distanze`}>
-          {/* Top children */}
-          <div className="pannello" style={panelStyle}>
-            <div style={panelTitle}>Top prodotti (per guadagni)</div>
-            {/* Otto colonne non si stringono sotto una certa larghezza: invece
-                di tagliarle fuori dallo schermo, la tabella scorre dentro il
-                suo riquadro. */}
-            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
-                  {["Cavallo", "Anno", "Voto", "Score", "Guadagni", "Record", "Win%", "% vs fratelli"].map(h => (
-                    <th key={h} style={{ textAlign: "left", padding: "6px 10px 10px", fontSize: "11px", fontWeight: 600, color: "hsl(210 8% 40%)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(stats?.topOffspring ?? stallion.children).slice(0, tuttiFigli ? undefined : 10).map((c, i, arr) => (
-                  <tr key={`${c.name}-${c.birth_year}`} style={{ borderBottom: i < arr.length - 1 ? "1px solid hsl(220 10% 14%)" : "none", transition: "background 0.1s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "hsl(220 10% 14%)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}
-                  >
-                    <td style={{ padding: "9px 10px" }}>
-                      <Link href={`/horse/${encodeURIComponent(c.name)}/${c.birth_year}`}>
-                        <a style={{ fontSize: "13px", fontWeight: 600, color: "hsl(210 8% 80%)", textDecoration: "none", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "5px" }}>
-                          <BandieraCavallo nome={c.name} /><span>{c.name}</span>
-                        </a>
-                      </Link>
-                    </td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.birth_year}</td>
-                    <td style={{ padding: "9px 10px" }}><GradeBadge grade={c.grade} size="sm" /></td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 55%)" }}>{c.score?.toFixed(1)}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(51 80% 60%)" }}>€{c.career_earnings?.toLocaleString("it-IT", { maximumFractionDigits: 0 }) ?? "—"}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(183 70% 55%)" }}>{formatRecord(c.record_career)}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.win_rate != null ? `${c.win_rate.toFixed(1)}%` : "—"}</td>
-                    <td className="tabular" style={{ padding: "9px 10px", fontSize: "12px", color: "hsl(210 8% 50%)" }}>{c.sire_percentile != null ? `${c.sire_percentile.toFixed(0)}°` : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-            {(stats?.topOffspring ?? stallion.children).length > 10 && (
-              <button type="button" className="lista-altre" onClick={() => setTuttiFigli(v => !v)}>
-                {tuttiFigli ? "Mostra meno" : `Mostra tutti (${(stats?.topOffspring ?? stallion.children).length})`}
-              </button>
-            )}
-          </div>
+          <FigliStallone nome={stallion.sire} dichiarati={stallion.n_figli_totali} />
 
           {/* Offspring by year (new panel) */}
           {stats?.offspringByYear && stats.offspringByYear.length > 0 && (
