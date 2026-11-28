@@ -2189,7 +2189,7 @@
     "guadagno_medio": 240.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 357.0,
-    "n_attivi": 1105,
+    "n_attivi": 1104,
     "fonte_guadagno": "fascia"
    },
    {
@@ -2201,7 +2201,7 @@
     "guadagno_medio": 249.0,
     "guadagno_p25": 0.0,
     "guadagno_p75": 280.0,
-    "n_attivi": 2322,
+    "n_attivi": 2321,
     "fonte_guadagno": "fascia"
    },
    {
