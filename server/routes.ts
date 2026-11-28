@@ -42,6 +42,7 @@ import { leadersEta, stalloniStagione, figliStalloneStagione, nipotiStalloni, no
 import { lineaMaterna } from "./lineaMaterna";
 import { registraRende } from "./rende";
 import { registraRiproduttori } from "./riproduttori";
+import { confrontoMonta } from "./montaRende";
 import { registraGenerazioni } from "./generazioni";
 const cacheNonni: { chiave: string; dati: ReturnType<typeof nipotiStalloni> | null } = { chiave: "", dati: null };
 import { stimaPremiCavallo, pronosticoCavallo, leggiVerificaPremi, tenereElenco, tenereStalloni, controlloModelli } from "./previsioni";
@@ -768,29 +769,12 @@ export function registerRoutes(httpServer: Server, app: Express) {
     const db = getDb();
     try {
       const ip = ipotesiCorrenti(db);
-      const mensile = numero(req.query.mensile, ip.costo_mensile, 100, 10000);
+      const mensile = Math.round(numero(req.query.mensile, ip.costo_mensile, 100, 10000) / 50) * 50;
       const c = cacheStalloniPareggio.get(mensile);
       if (c && Date.now() - c.quando < 60 * 60 * 1000) return res.json(c.dati);
-      const stalloni = db.prepare(`
-        SELECT s.name, s.stud_fee_eur fee, srs.grade
-        FROM stallions s
-        LEFT JOIN stallion_rating_stats srs ON srs.sire = s.name
-        WHERE s.stud_fee_eur > 0
-      `).all() as any[];
-      const righe = stalloni.map(s => {
-        const r = valutaIncrocio(db, s.name, null, mensile, null) as any;
-        return {
-          nome: s.name, voto: s.grade ?? null, monta: Math.round(s.fee), figli: r.figli_osservati.padre,
-          affidabilita: r.affidabilita, utile_atteso: r.utile_atteso, prob_profitto: r.prob_profitto,
-          monta_massima: r.monta_massima_di_pareggio, esito: r.esito,
-          // Quanto vale un figlio prima della monta: utile atteso + monta pagata.
-          valore_prima_della_monta: r.utile_atteso + Math.round(s.fee),
-          guadagno_atteso: r.utile_atteso + r.costo_atteso,
-          costo_atteso: r.costo_atteso,
-        };
-      }).filter(r => r.figli >= 5)
-        .sort((a, b) => b.utile_atteso - a.utile_atteso);
-      const dati = { mensile, stalloni: righe };
+      // 28/11/2026: tutti gli stalloni con prezzo, ciascuno con la prova che ha (server/montaRende.ts).
+      const dati = confrontoMonta(db, mensile, vpTableExists(db, "omonimi"));
+      if (cacheStalloniPareggio.size > 40) cacheStalloniPareggio.clear();
       cacheStalloniPareggio.set(mensile, { quando: Date.now(), dati });
       res.json(dati);
     } finally {
