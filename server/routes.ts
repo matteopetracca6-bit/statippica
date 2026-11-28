@@ -1618,7 +1618,10 @@ export function registerRoutes(httpServer: Server, app: Express) {
       const payload = {
         // Identificazione (flat, come si aspetta StallionPage)
         sire:            stats?.sire            ?? name,
-        n_figli_totali:  stats?.n_figli_totali  ?? 0,
+        // 28/11/2026: i figli sono quelli nell'archivio, contati ogni volta
+        // (crescono con il recupero notturno); il numero dichiarato resta a parte.
+        n_figli_totali:  ((db.prepare(`SELECT COUNT(*) c FROM horses WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))`).get(name) as any)?.c || stats?.n_figli_totali || 0),
+        n_figli_dichiarati: stats?.n_figli_totali ?? null,
         n_in_corsa:      stats?.n_in_corsa      ?? 0,
         avg_score:       stats?.avg_score       ?? null,
         grade:           stats?.grade           ?? null,      // NUOVO — voto stallone (SSS…F)

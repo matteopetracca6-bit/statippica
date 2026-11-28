@@ -19,7 +19,12 @@ interface Figlio {
   scala: "corse" | "storico" | null; career_races: number | null; career_wins: number | null; career_earnings: number | null;
   record_career: string | null; win_rate: number | null;
 }
-type Ordine = "guadagni" | "voto" | "recenti" | "vecchi";
+type Ordine = "nome" | "anno" | "madre" | "voto" | "corse" | "vinte" | "guadagni" | "record";
+/** Record in secondi al km (1.13.0 -> 73,0); senza record in fondo. */
+const secondi = (r: string | null) => {
+  const m = formatRecord(r).match(/^(\d+)\.(\d{2})\.(\d)$/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) + Number(m[3]) / 10 : null;
+};
 const MUTO = "hsl(210 8% 52%)";
 const PESO: Record<string, number> = { SSS: 9, SS: 8, S: 7, A: 6, B: 5, C: 4, D: 3, E: 2, F: 1 };
 const euro = (n: number | null) => n ? `€${Math.round(n).toLocaleString("it-IT")}` : "—";
@@ -32,29 +37,37 @@ export default function FigliStallone({ nome, dichiarati }: { nome: string; dich
     enabled: !!nome, staleTime: 3600_000,
   });
   const [ordine, setOrdine] = useState<Ordine>("guadagni");
+  const [cresc, setCresc] = useState(false);
+  // Clic sull'intestazione: ordina per quella colonna, un secondo clic inverte.
+  // Il verso di partenza e' il piu' utile: record dal piu' veloce, nomi dalla A, il resto dal piu' alto.
+  const ordina = (k: Ordine) => {
+    if (k === ordine) setCresc(c => !c);
+    else { setOrdine(k); setCresc(k === "record" || k === "nome" || k === "madre"); }
+    setQuanti(PASSO);
+  };
   const [cerca, setCerca] = useState("");
   const [quanti, setQuanti] = useState(PASSO);
   const figli = data?.figli ?? [];
   const righe = useMemo(() => {
     const q = cerca.trim().toUpperCase();
     const r = figli.filter(f => !q || f.name.includes(q) || (f.dam ?? "").toUpperCase().includes(q));
-    const by = (f: Figlio) => f.birth_year ?? 0;
-    const cmp: Record<Ordine, (a: Figlio, b: Figlio) => number> = {
-      guadagni: (a, b) => (b.career_earnings ?? 0) - (a.career_earnings ?? 0),
-      voto: (a, b) => (PESO[b.grade ?? ""] ?? 0) - (PESO[a.grade ?? ""] ?? 0) || (b.score ?? 0) - (a.score ?? 0),
-      recenti: (a, b) => by(b) - by(a) || (b.career_earnings ?? 0) - (a.career_earnings ?? 0),
-      vecchi: (a, b) => (by(a) || 9999) - (by(b) || 9999) || (b.career_earnings ?? 0) - (a.career_earnings ?? 0),
+    const val: Record<Ordine, (f: Figlio) => number | string | null> = {
+      nome: f => f.name, madre: f => f.dam || null, anno: f => f.birth_year,
+      voto: f => f.grade && PESO[f.grade] ? PESO[f.grade] * 1000 + (f.score ?? 0) : null,
+      corse: f => f.career_races, vinte: f => f.career_wins, guadagni: f => f.career_earnings || null, record: f => secondi(f.record_career),
     };
-    return r.sort(cmp[ordine]);
-  }, [figli, ordine, cerca]);
+    const v = val[ordine];
+    return r.sort((a, b) => {
+      const x = v(a), y = v(b);
+      if (x == null && y == null) return (b.career_earnings ?? 0) - (a.career_earnings ?? 0);
+      if (x == null) return 1; if (y == null) return -1;   // i dati mancanti sempre in fondo
+      const c = typeof x === "string" ? x.localeCompare(String(y)) : (x as number) - (y as number);
+      return (cresc ? c : -c) || (b.career_earnings ?? 0) - (a.career_earnings ?? 0);
+    });
+  }, [figli, ordine, cresc, cerca]);
   const conVoto = figli.filter(f => f.grade && f.grade !== "N/A").length;
   const storici = figli.filter(f => f.scala === "storico").length;
   const anni = figli.map(f => f.birth_year).filter((x): x is number => !!x);
-  const chip = (attivo: boolean): React.CSSProperties => ({
-    padding: "4px 10px", borderRadius: 999, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit",
-    border: `1px solid ${attivo ? "hsl(120 60% 50%)" : "hsl(220 10% 20%)"}`, background: attivo ? "hsl(120 60% 50% / .14)" : "transparent",
-    color: attivo ? "hsl(120 55% 62%)" : MUTO,
-  });
   const th: React.CSSProperties = { textAlign: "left", padding: "6px 8px 8px", fontSize: 10.5, fontWeight: 600, color: "hsl(210 8% 42%)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" };
   const td: React.CSSProperties = { padding: "8px", fontSize: 12, color: "hsl(210 8% 60%)", whiteSpace: "nowrap" };
 
@@ -71,10 +84,8 @@ export default function FigliStallone({ nome, dichiarati }: { nome: string; dich
           {anni.length ? ` · nati dal ${Math.min(...anni)} al ${Math.max(...anni)}` : ""}
           {dichiarati && dichiarati > figli.length ? ` · dichiarati ${dichiarati.toLocaleString("it-IT")}: gli altri arrivano con il recupero notturno dal registro UNIRE` : ""}
         </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
-          {([["guadagni", "Guadagni"], ["voto", "Voto"], ["recenti", "Più giovani"], ["vecchi", "Più vecchi"]] as [Ordine, string][]).map(([k, t]) => (
-            <button key={k} type="button" style={chip(ordine === k)} onClick={() => { setOrdine(k); setQuanti(PASSO); }}>{t}</button>
-          ))}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 10, fontSize: 11.5, color: MUTO }}>
+          <span>Tocca un titolo della tabella per ordinare.</span>
           <label style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto", background: "hsl(220 12% 8%)", border: "1px solid hsl(220 10% 20%)",
             borderRadius: 8, padding: "5px 9px", minWidth: 0, flex: "0 1 220px" }}>
             <Search size={13} style={{ color: MUTO, flexShrink: 0 }} />
@@ -87,7 +98,14 @@ export default function FigliStallone({ nome, dichiarati }: { nome: string; dich
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid hsl(220 10% 18%)" }}>
-                {["Cavallo", "Anno", "Madre", "Voto", "Corse", "Vinte", "Guadagni", "Record"].map(h => <th key={h} style={th}>{h}</th>)}
+                {([["nome", "Cavallo"], ["anno", "Anno"], ["madre", "Madre"], ["voto", "Voto"], ["corse", "Corse"], ["vinte", "Vinte"], ["guadagni", "Guadagni"], ["record", "Record"]] as [Ordine, string][]).map(([k, h]) => (
+                  <th key={k} style={th} aria-sort={ordine === k ? (cresc ? "ascending" : "descending") : "none"}>
+                    <button type="button" onClick={() => ordina(k)} title={`Ordina per ${h.toLowerCase()}`}
+                      style={{ all: "unset", cursor: "pointer", color: ordine === k ? "hsl(120 55% 62%)" : "inherit", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      {h}{ordine === k ? (cresc ? " ▲" : " ▼") : ""}
+                    </button>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
