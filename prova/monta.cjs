@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
     console.log('MON giovani coda', JSON.stringify(g.slice(-3).map(s => [s.nome, s.indice, s.utile_atteso])));
     const p = r0.stalloni.filter(s => s.gruppo === 'provati').sort((a, b) => b.utile_atteso - a.utile_atteso);
     console.log('MON provati top', JSON.stringify(p.slice(0, 3).map(s => [s.nome, s.monta, s.guadagno_atteso, s.utile_atteso])));
-    console.log('MON senza', JSON.stringify(r0.stalloni.filter(s => s.gruppo === 'senza').slice(0, 8).map(s => s.nome)));
+    console.log('MON senza', JSON.stringify(r0.senza_motivo));
   } else console.log('MON api err', JSON.stringify(r0).slice(0, 300));
   const r1 = await (await fetch('https://statippica.onrender.com/api/pareggio/stalloni?mensile=600')).json();
   console.log('MON 600 in utile', r1.stalloni.filter(s => (s.utile_atteso ?? -1) > 0).length, '1200 in utile', r0.stalloni.filter(s => (s.utile_atteso ?? -1) > 0).length);
