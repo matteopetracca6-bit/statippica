@@ -45,12 +45,26 @@ function base(db: any) {
   return memoBase;
 }
 
+/** Nome senza spazi, apostrofi e accenti: "PASCIA LEST" del catalogo e' "PASCIA' LEST" nell'archivio. */
+const chiave = (s: string) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+let memoPadri: { t: number; m: Map<string, string> } | null = null;
+function padriNormalizzati(db: any) {
+  if (memoPadri && Date.now() - memoPadri.t < 6 * 3600_000) return memoPadri.m;
+  const conta = new Map<string, { nome: string; n: number }>();
+  for (const r of db.prepare(`SELECT sire, COUNT(*) n FROM horses WHERE sire IS NOT NULL AND TRIM(sire) <> '' GROUP BY sire`).all() as any[]) {
+    const k = chiave(r.sire), c = conta.get(k);
+    if (!c || r.n > c.n) conta.set(k, { nome: r.sire, n: r.n });
+  }
+  memoPadri = { t: Date.now(), m: new Map(Array.from(conta.entries()).map(([k, v]) => [k, v.nome])) };
+  return memoPadri.m;
+}
+
 function nomeConFigli(db: any, nome: string, haOmonimi: boolean): string {
   const n = (x: string) => (db.prepare(`SELECT COUNT(*) c FROM horses WHERE sire = ?`).get(x) as any).c as number;
-  if (n(nome) > 0 || !haOmonimi) return nome;
-  for (const o of db.prepare(`SELECT nome_omonimo FROM omonimi WHERE nome = ?`).all(nome) as any[])
+  if (n(nome) > 0) return nome;
+  if (haOmonimi) for (const o of db.prepare(`SELECT nome_omonimo FROM omonimi WHERE nome = ?`).all(nome) as any[])
     if (n(o.nome_omonimo) > 0) return o.nome_omonimo;
-  return nome;
+  return padriNormalizzati(db).get(chiave(nome)) ?? nome;
 }
 
 export function confrontoMonta(db: any, mensile: number, haOmonimi: boolean) {
