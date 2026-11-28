@@ -22,6 +22,8 @@
 import { valutaIncrocio } from "./pareggio";
 
 const INTERCETTA = -0.128, PENDENZA = 1.287, K = 5, FORBICE = 0.45, MIN_FIGLI = 5;
+/** Forbice all'80%, dalla stessa prova: l'errore cresce con la stima (stime alte, errori alti). */
+const forbice = (rel: number) => rel < 0.7 ? 0.28 : rel < 1.3 ? 0.45 : rel < 2 ? 0.69 : 0.57 * rel;
 const PREMIO = "COALESCE(r.prize_calc, r.prize_net, 0)";
 
 let memoBase: { t: number; anno: number; medieCoorte: Map<number, number>; mediaFinale: number } | null = null;
@@ -63,7 +65,11 @@ export function confrontoMonta(db: any, mensile: number, haOmonimi: boolean) {
     SELECT h.name, h.birth_year y, COALESCE(h.career_races, 0) corse,
            (SELECT SUM(${PREMIO}) FROM races r WHERE r.horse_name = h.name AND CAST(substr(r.race_date, 1, 4) AS INTEGER) <= h.birth_year + 3) p
       FROM horses h WHERE h.sire = ? AND h.birth_year BETWEEN ? AND ?`);
-  const tuttiFigli = db.prepare(`SELECT COUNT(*) c, MIN(birth_year) primo FROM horses WHERE sire = ?`);
+  const figliGiovaniLargo = db.prepare(`
+    SELECT h.name, h.birth_year y, COALESCE(h.career_races, 0) corse,
+           (SELECT SUM(${PREMIO}) FROM races r WHERE r.horse_name = h.name AND CAST(substr(r.race_date, 1, 4) AS INTEGER) <= h.birth_year + 3) p
+      FROM horses h WHERE UPPER(TRIM(h.sire)) = UPPER(TRIM(?)) AND h.birth_year BETWEEN ? AND ?`);
+  const tuttiFigli = db.prepare(`SELECT COUNT(*) c, MIN(birth_year) primo FROM horses WHERE UPPER(TRIM(sire)) = UPPER(TRIM(?))`);
   const atleta = db.prepare(`SELECT name, birth_year, sire, career_races, career_wins, career_earnings, record_career FROM horses WHERE name = ?`);
   const votoPadre = db.prepare(`SELECT grade FROM stallion_rating_stats WHERE sire = ?`);
 
@@ -79,7 +85,9 @@ export function confrontoMonta(db: any, mensile: number, haOmonimi: boolean) {
     }
     const tf = tuttiFigli.get(nome) as any;
     if (anni.length) {
-      const fg = figliGiovani.all(nome, Math.min(...anni), Math.max(...anni)) as any[];
+      let fg = figliGiovani.all(nome, Math.min(...anni), Math.max(...anni)) as any[];
+      // Il padre scritto in un altro modo (spazi, minuscole): si riprova senza l'indice.
+      if (fg.length < MIN_FIGLI) fg = figliGiovaniLargo.all(nome, Math.min(...anni), Math.max(...anni)) as any[];
       if (fg.length >= MIN_FIGLI) {
         const indice = fg.reduce((t, f) => t + (f.p ?? 0) / (b.medieCoorte.get(f.y) || 1), 0) / fg.length;
         const w = fg.length / (fg.length + K);
@@ -88,7 +96,8 @@ export function confrontoMonta(db: any, mensile: number, haOmonimi: boolean) {
         const guadagno = Math.round(rel * b.mediaFinale);
         const costo = r.costo_atteso;
         const utile = guadagno - costo;
-        const basso = Math.round(Math.max(0, rel - FORBICE) * b.mediaFinale), alto = Math.round((rel + FORBICE) * b.mediaFinale);
+        const fb = forbice(rel);
+        const basso = Math.round(Math.max(0, rel - fb) * b.mediaFinale), alto = Math.round((rel + fb) * b.mediaFinale);
         return { ...comune, gruppo: "giovani", figli: fg.length, figli_totali: tf?.c ?? fg.length, primo_figlio: tf?.primo ?? null,
           debuttati: fg.filter(f => f.corse > 0).length, indice: Math.round(indice * 100) / 100,
           affidabilita: Math.round(100 * w * 0.5) / 100,
@@ -109,5 +118,7 @@ export function confrontoMonta(db: any, mensile: number, haOmonimi: boolean) {
     mensile, stalloni: righe, conteggi, media_figlio_popolazione: Math.round(b.mediaFinale),
     anni_giovani: anni.length ? [Math.min(...anni), Math.max(...anni)] : null,
     prova_giovani: { stalloni: 167, correlazione: 0.685, errore: 0.48, errore_riferimento: 0.75, forbice_80: FORBICE },
+    // per controllo: quanti figli giovani ha trovato chi e' rimasto senza conto
+    senza_motivo: righe.filter(r => r.gruppo === "senza").map(r => [r.nome, r.figli, (r as any).primo_figlio]),
   };
 }
