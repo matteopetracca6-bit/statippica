@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Pencil, Check, CalendarRange } from "lucide-react";
 import { useScuderia } from "@/lib/scuderia";
 import GradeBadge from "./GradeBadge";
+import CostoMese from "./CostoMese";
 import { VERDE, GIALLO, ROSSO, COLORE_ECONOMIA } from "@/lib/coloriEconomia";
 
 const euro = (n: number) => "€ " + Math.round(n).toLocaleString("it-IT");
@@ -83,13 +84,7 @@ export default function SpeseBar({ periodo, conMonta = false, colore = COLORE_EC
       </div>}
       {aperta && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 22px", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid hsl(220 10% 20%)" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: MUTO, flexWrap: "wrap" }}>
-            Allenamento e mantenimento al mese (€)
-            <input type="number" min={100} step={50} inputMode="numeric" value={mensile} style={campo} data-testid="input-mensile"
-              onChange={e => setMensile(e.target.value)} onBlur={e => salvaMensile(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") salvaMensile((e.target as HTMLInputElement).value); }} />
-          </label>
-          <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{preset(800, "basso")}{preset(1200, "tipico")}{preset(1800, "alto")}</span>
+          <div style={{ flex: "1 1 320px", minWidth: 0 }}><CostoMese colore={colore} etichetta="Allenamento e mantenimento al mese" /></div>
           {conMonta && (
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: MUTO, flexWrap: "wrap" }}>
               Prezzo della monta (€)

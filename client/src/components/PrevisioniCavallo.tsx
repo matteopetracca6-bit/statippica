@@ -13,6 +13,7 @@ import NomePista from "@/components/NomePista";
  */
 import { Spiegazione } from "./Spiegazione";
 import { useState } from "react";
+import CostoMese, { useCostoMese } from "./CostoMese";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -104,8 +105,8 @@ const pct = (p: number | null, estremo?: string | null) =>
   p == null ? "—" : estremo === "sotto" ? "meno del 5%" : estremo === "sopra" ? "oltre il 95%" : `${Math.round(p)}%`;
 
 export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: number }) {
-  const [mensileScritto, setMensileScritto] = useState("");
-  const mensile = Number(mensileScritto) >= 100 ? String(Math.round(Number(mensileScritto))) : "";
+  // 28/11/2026: il costo al mese e' la barra comune del sito (CostoMese).
+  const mensile = String(useCostoMese());
   const { data: d, isFetching } = useQuery<any>({
     queryKey: ["/api/horse/previsioni", nome, anno, mensile],
     queryFn: async () => (await apiRequest("GET", `/api/horse/${encodeURIComponent(nome)}/${anno}/previsioni?mensile=${mensile}`)).json(),
@@ -189,12 +190,7 @@ export default function PrevisioniCavallo({ nome, anno }: { nome: string; anno: 
               <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.55 }}>
                 di vincere almeno {euro(p.costo_anno)}. Saldo atteso: <b style={{ color: esito ? ESITO_COLORE[esito] : "inherit" }}>{euro(p.saldo_atteso)}</b>.
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: MUTED, marginTop: 8 }}>
-                Costo al mese €
-                <input type="number" min={100} step={100} inputMode="numeric" value={mensileScritto} placeholder={String(d.mensile)}
-                  onChange={e => setMensileScritto(e.target.value)}
-                  style={{ width: 90, background: "hsl(220 12% 6%)", border: "1px solid hsl(220 10% 22%)", borderRadius: 7, color: "hsl(210 10% 92%)", padding: "4px 8px", fontSize: 12.5 }} />
-              </label>
+              <div style={{ marginTop: 8 }}><CostoMese /></div>
             </div>
           </div>
           <Motivi m={p.motivi} />
