@@ -648,7 +648,7 @@ export default function StallionPage() {
           {!stallion.no_offspring_data && (
           <SezioneScheda id="stallone-figli" titolo="I figli" apertaDaComputer
             riassunto={`${stallion.n_figli_totali ?? 0} figli · i migliori, anno per anno, distanze`}>
-          <FigliStallone nome={stallion.sire} dichiarati={stallion.n_figli_totali} />
+          <FigliStallone nome={stallion.sire} dichiarati={(stallion as any).n_figli_dichiarati} />
 
           {/* Offspring by year (new panel) */}
           {stats?.offspringByYear && stats.offspringByYear.length > 0 && (

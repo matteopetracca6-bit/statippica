@@ -46,7 +46,6 @@ export function VotoNegliAnni({ tipo, nome, colore }: { tipo: "stallone" | "fatt
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12.5, color: "hsl(210 10% 80%)", margin: "8px 0 4px" }}>
         <span className="tabular">Con i figli nati fino al {scelto.anno}:</span>
         <GradeBadge grade={scelto.voto} size="sm" />
-        <span className="tabular" style={{ color: MUTO }}>{v1(scelto.punteggio)} punti · {scelto.figli} figli{scelto.migliore ? ` · nuovo: ${scelto.migliore}` : ""}</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", maxHeight: 200 }} onMouseLeave={() => setSel(null)} role="img"
         aria-label={`Voto negli anni: da ${p[0].voto} nel ${p[0].anno} a ${p[p.length - 1].voto} nel ${p[p.length - 1].anno}`}>
